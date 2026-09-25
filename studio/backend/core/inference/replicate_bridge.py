@@ -11,38 +11,38 @@ async def stream_replicate(
     temperature: Optional[float] = None,
     max_tokens: Optional[int] = None,
 ) -> AsyncGenerator[str, None]:
-    \"\"\"Stream responses natively from Replicate's API, translating to OpenAI SSE format.\"\"\"
+    """Stream responses natively from Replicate's API, translating to OpenAI SSE format."""
     
     # Extract the latest prompt for Replicate's standard input format
-    prompt = \"\"
-    system_prompt = \"\"
+    prompt = ""
+    system_prompt = ""
     for msg in messages:
-        if msg.get(\"role\") == \"system\":
-            system_prompt = msg.get(\"content\", \"\")
-        elif msg.get(\"role\") == \"user\":
-            prompt = msg.get(\"content\", \"\")
+        if msg.get("role") == "system":
+            system_prompt = msg.get("content", "")
+        elif msg.get("role") == "user":
+            prompt = msg.get("content", "")
             
     input_data = {
-        \"prompt\": prompt,
-        \"system_prompt\": system_prompt,
+        "prompt": prompt,
+        "system_prompt": system_prompt,
     }
     if temperature is not None:
-        input_data[\"temperature\"] = temperature
+        input_data["temperature"] = temperature
     if max_tokens is not None:
-        input_data[\"max_new_tokens\"] = max_tokens
+        input_data["max_new_tokens"] = max_tokens
         
     # Replicate native prediction endpoint
-    url = f\"{base_url}/models/{model}/predictions\"
-    payload = {\"input\": input_data, \"stream\": True}
+    url = f"{base_url}/models/{model}/predictions"
+    payload = {"input": input_data, "stream": True}
     
-    async with client.stream(\"POST\", url, headers=headers, json=payload) as response:
+    async with client.stream("POST", url, headers=headers, json=payload) as response:
         response.raise_for_status()
         async for line in response.aiter_lines():
-            if not line or not line.startswith(\"data: \"):
+            if not line or not line.startswith("data: "):
                 continue
-            data_str = line[len(\"data: \"):]
-            if data_str.strip() == \"[DONE]\":
-                yield line + \"\\n\"
+            data_str = line[len("data: "):]
+            if data_str.strip() == "[DONE]":
+                yield line + "\\n"
                 return
             
             try:
@@ -50,14 +50,14 @@ async def stream_replicate(
                 chunk = json.loads(data_str)
                 # Replicate sends raw strings or objects depending on the model pipeline.
                 # Assuming standard text output:
-                text = chunk if isinstance(chunk, str) else chunk.get(\"text\", \"\")
+                text = chunk if isinstance(chunk, str) else chunk.get("text", "")
                 
                 oai_chunk = {
-                    \"choices\": [{\"delta\": {\"content\": text}}]
+                    "choices": [{"delta": {"content": text}}]
                 }
-                yield f\"data: {json.dumps(oai_chunk)}\\n\\n\"
+                yield f"data: {json.dumps(oai_chunk)}\\n\\n"
             except Exception:
                 pass
         
-        yield \"data: [DONE]\\n\\n\"
+        yield "data: [DONE]\\n\\n"
 
