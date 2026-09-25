@@ -1022,6 +1022,7 @@ async def list_provider_models(
         _NATIVE_HOSTS = {
             "gemini": ("generativelanguage.googleapis.com",),
             "openai": ("api.openai.com",),
+            "replicate": ("api.replicate.com",),
         }
         apply_registry_model_filters = True
         native_hosts = _NATIVE_HOSTS.get(payload.provider_type)
