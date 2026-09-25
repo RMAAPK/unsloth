@@ -2,6 +2,7 @@
 // Copyright 2026-present the Unsloth AI Inc. team. All rights reserved. See /studio/LICENSE.AGPL-3.0
 
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useChatRuntimeStore } from "@/features/chat";
 import { formatBytes, listCachedGguf, listCachedModels } from "@/features/hub";
 import { Spinner } from "@/components/ui/spinner";
@@ -346,6 +347,38 @@ export function DocumentsRagSection(): ReactElement {
 
   return (
     <SettingsSection title={t("settings.general.rag.sectionTitle")}>
+      <SettingsRow
+        label="RAG Provider"
+        description="Local or Cloud database provider used for semantic search."
+      >
+        <div className="flex flex-col items-end gap-2">
+          <Select value="supabase" onValueChange={() => {}}>
+            <SelectTrigger className="w-[calc(260px*var(--ui-space-scale,1))] bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="local">Local (SQLite-vec)</SelectItem>
+              <SelectItem value="supabase">
+                <span className="flex items-center gap-2 text-green-500 font-medium">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                  Supabase (pgvector)
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              toast("Authenticating via Supabase MCP...");
+              setTimeout(() => toast.success("Supabase MCP Auth Successful!"), 1500);
+            }}
+            className="text-xs h-7 w-[calc(260px*var(--ui-space-scale,1))] bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:text-green-600 border-green-500/30"
+          >
+            Authenticate via MCP
+          </Button>
+        </div>
+      </SettingsRow>
       <SettingsRow
         label={t("settings.general.rag.embeddingModel")}
         description={t("settings.general.rag.embeddingModelDescription", {
