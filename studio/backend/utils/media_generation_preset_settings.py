@@ -16,7 +16,6 @@ def _setting_key(kind: MediaGenerationKind) -> str:
 
 def _stored_settings(kind: MediaGenerationKind) -> dict:
     from storage.studio_db import get_app_setting
-
     stored = get_app_setting(_setting_key(kind), {})
     return dict(stored) if isinstance(stored, dict) else {}
 
@@ -58,7 +57,6 @@ def set_media_generation_preset_settings(
     into clobbering the list.
     """
     from storage.studio_db import upsert_app_settings
-
     with _settings_lock:
         stored = _stored_settings(kind)
         submitted = {**settings, "customPresets": stored.get("customPresets", [])}
@@ -75,7 +73,6 @@ def upsert_media_generation_preset(
     kind: MediaGenerationKind, preset: dict, is_readable: Callable[[dict], bool]
 ) -> None:
     from storage.studio_db import upsert_app_settings
-
     with _settings_lock:
         stored = _stored_settings(kind)
         presets = _custom_presets(stored)
@@ -91,7 +88,6 @@ def upsert_media_generation_preset(
 
 def delete_media_generation_preset(kind: MediaGenerationKind, name: str) -> None:
     from storage.studio_db import upsert_app_settings
-
     with _settings_lock:
         stored = _stored_settings(kind)
         stored["customPresets"] = [

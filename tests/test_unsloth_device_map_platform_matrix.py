@@ -33,7 +33,7 @@ import pytest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOADER_UTILS = os.path.join(HERE, "unsloth", "models", "loader_utils.py")
-_SRC = open(LOADER_UTILS, encoding="utf-8").read()
+_SRC = open(LOADER_UTILS, encoding = "utf-8").read()
 
 # (label, sys.platform, os.name, an /proc/version marker for the WSL case)
 HOSTS = [
@@ -79,8 +79,8 @@ class _FakeCuda:
     def __init__(
         self,
         count,
-        count_raises=None,
-        mem_raises=None,
+        count_raises = None,
+        mem_raises = None,
     ):
         self._count = count
         self._count_raises = count_raises
@@ -102,8 +102,8 @@ class _Recorder:
 
     def __init__(
         self,
-        plan=None,
-        raises=None,
+        plan = None,
+        raises = None,
     ):
         self.calls = []
         self._plan = plan
@@ -129,15 +129,15 @@ def _build(
     devices,
     distributed,
     planner,
-    planner_available=True,
-    count_raises=None,
-    mem_raises=None,
+    planner_available = True,
+    count_raises = None,
+    mem_raises = None,
 ):
     """Rebuild the resolver over a fabricated torch, unsloth_zoo and host."""
     ns = {
         "os": os,
         "torch": types.SimpleNamespace(
-            cuda=_FakeCuda(devices, count_raises=count_raises, mem_raises=mem_raises)
+            cuda = _FakeCuda(devices, count_raises = count_raises, mem_raises = mem_raises)
         ),
         "DEVICE_TYPE_TORCH": device_type,
         "is_distributed": lambda: distributed,
@@ -171,8 +171,8 @@ def _build(
 def host(request, monkeypatch):
     """Spoof the operating system around a case, so a platform branch cannot hide."""
     label, platform_name, os_name, proc_version = request.param
-    monkeypatch.setattr(sys, "platform", platform_name, raising=False)
-    monkeypatch.setattr(os, "name", os_name, raising=False)
+    monkeypatch.setattr(sys, "platform", platform_name, raising = False)
+    monkeypatch.setattr(os, "name", os_name, raising = False)
     monkeypatch.setenv("UNSLOTH_TEST_HOST", label)
     if proc_version is not None:
         monkeypatch.setenv("UNSLOTH_TEST_PROC_VERSION", proc_version)
@@ -182,18 +182,18 @@ def host(request, monkeypatch):
 _HOST_IDS = [h[0] for h in HOSTS]
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
-@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids=[a[0] for a in ACCELERATORS])
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
+@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids = [a[0] for a in ACCELERATORS])
 @pytest.mark.parametrize("devices", DEVICE_COUNTS)
-@pytest.mark.parametrize("device_map", UNTOUCHED_DEVICE_MAPS, ids=repr)
+@pytest.mark.parametrize("device_map", UNTOUCHED_DEVICE_MAPS, ids = repr)
 def test_an_existing_device_map_is_identical_on_every_host(
     host, accelerator, device_type, devices, device_map, monkeypatch
 ):
     """Property 1. 4 hosts x 5 accelerators x 4 GPU counts x 14 placements = 1120 cases,
     none of which may differ by so much as an object identity from what main returns."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(plan=_Plan())
-    ns = _build(device_type=device_type, devices=devices, distributed=False, planner=planner)
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(plan = _Plan())
+    ns = _build(device_type = device_type, devices = devices, distributed = False, planner = planner)
     resolved = ns["resolve_unsloth_device_map"](
         ns["requested_device_map"](device_map), "unsloth/Qwen3-0.6B"
     )
@@ -201,8 +201,8 @@ def test_an_existing_device_map_is_identical_on_every_host(
     assert planner.calls == []
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
-@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids=[a[0] for a in ACCELERATORS])
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
+@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids = [a[0] for a in ACCELERATORS])
 @pytest.mark.parametrize("devices", DEVICE_COUNTS)
 @pytest.mark.parametrize("distributed", [False, True])
 @pytest.mark.parametrize("fast_inference", [False, True])
@@ -225,40 +225,40 @@ def test_the_sentinel_never_reaches_transformers(
     flags, and whether unsloth_zoo is new enough to have a planner at all, the resolved
     value is either a placement transformers understands or a plan dict. Never "unsloth".
     """
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(plan=_Plan())
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(plan = _Plan())
     ns = _build(
-        device_type=device_type,
-        devices=devices,
-        distributed=distributed,
-        planner=planner,
-        planner_available=planner_available,
+        device_type = device_type,
+        devices = devices,
+        distributed = distributed,
+        planner = planner,
+        planner_available = planner_available,
     )
     resolved = ns["resolve_unsloth_device_map"](
         "unsloth",
         "unsloth/Qwen3-0.6B",
-        fast_inference=fast_inference,
-        full_finetuning=full_finetuning,
+        fast_inference = fast_inference,
+        full_finetuning = full_finetuning,
     )
     assert resolved != "unsloth"
     assert resolved == "sequential" or isinstance(resolved, dict)
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
-@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids=[a[0] for a in ACCELERATORS])
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
+@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids = [a[0] for a in ACCELERATORS])
 @pytest.mark.parametrize("devices", DEVICE_COUNTS)
 @pytest.mark.parametrize("distributed", [False, True])
 def test_the_planner_runs_exactly_where_a_plan_can_apply(
     host, accelerator, device_type, devices, distributed, monkeypatch
 ):
     """Property 3, stated as the whole truth table rather than one path at a time."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(plan=_Plan())
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(plan = _Plan())
     ns = _build(
-        device_type=device_type,
-        devices=devices,
-        distributed=distributed,
-        planner=planner,
+        device_type = device_type,
+        devices = devices,
+        distributed = distributed,
+        planner = planner,
     )
     resolved = ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B")
 
@@ -270,8 +270,8 @@ def test_the_planner_runs_exactly_where_a_plan_can_apply(
         assert resolved == "sequential"
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
-@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids=[a[0] for a in ACCELERATORS])
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
+@pytest.mark.parametrize("accelerator,device_type", ACCELERATORS, ids = [a[0] for a in ACCELERATORS])
 @pytest.mark.parametrize("devices", DEVICE_COUNTS)
 @pytest.mark.parametrize("value", ["0", "", "false", "no", "true", "1"])
 def test_the_env_var_opts_in_on_1_and_nothing_else(
@@ -281,25 +281,25 @@ def test_the_env_var_opts_in_on_1_and_nothing_else(
     ambiguous. Only the literal "1" upgrades, on every host -- and only the default, never
     the same string handed over by a caller who meant it."""
     monkeypatch.setenv("UNSLOTH_AUTO_DEVICE_MAP", value)
-    planner = _Recorder(plan=_Plan())
-    ns = _build(device_type=device_type, devices=devices, distributed=False, planner=planner)
+    planner = _Recorder(plan = _Plan())
+    ns = _build(device_type = device_type, devices = devices, distributed = False, planner = planner)
     requested = ns["requested_device_map"](ns["DEFAULT_DEVICE_MAP"])
     assert requested == ("unsloth" if value == "1" else "sequential")
     assert ns["resolve_unsloth_device_map"](requested, "unsloth/Qwen3-0.6B") != "unsloth"
     assert ns["requested_device_map"]("sequential") == "sequential"
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
 def test_an_old_unsloth_zoo_without_a_planner_still_loads(host, monkeypatch):
     """An install that predates unsloth_zoo's planner must degrade, not fail: the whole
     point of the fallback is that a model which loads the old way beats one that will not
     load. Two shapes of old: the module is missing, and the module exists without the
     entry point."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
 
     # Shape one: the module is there but predates the entry point.
     ns = _build(
-        device_type="cuda", devices=4, distributed=False, planner=None, planner_available=False
+        device_type = "cuda", devices = 4, distributed = False, planner = None, planner_available = False
     )
     assert ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B") == "sequential"
 
@@ -310,21 +310,21 @@ def test_an_old_unsloth_zoo_without_a_planner_still_loads(host, monkeypatch):
         def find_module(
             self,
             name,
-            path=None,
+            path = None,
         ):
             return None
 
         def find_spec(
             self,
             name,
-            path=None,
-            target=None,
+            path = None,
+            target = None,
         ):
             if name == "unsloth_zoo.device_map_planner":
                 raise ModuleNotFoundError(f"No module named {name!r}")
             return None
 
-    ns = _build(device_type="cuda", devices=4, distributed=False, planner=None)
+    ns = _build(device_type = "cuda", devices = 4, distributed = False, planner = None)
     sys.modules.pop("unsloth_zoo.device_map_planner", None)
     blocker = _Blocked()
     sys.meta_path.insert(0, blocker)
@@ -335,7 +335,7 @@ def test_an_old_unsloth_zoo_without_a_planner_still_loads(host, monkeypatch):
         sys.modules.pop("unsloth_zoo.device_map_planner", None)
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
 @pytest.mark.parametrize(
     "error",
     [
@@ -344,33 +344,33 @@ def test_an_old_unsloth_zoo_without_a_planner_still_loads(host, monkeypatch):
         OSError("no network"),
         KeyError("lm_head"),
     ],
-    ids=["runtime", "value", "os", "key"],
+    ids = ["runtime", "value", "os", "key"],
 )
 def test_a_planner_that_raises_anything_but_infeasible_falls_back(host, error, monkeypatch):
     """Everything except the deliberate refusal degrades to the old placement."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(raises=error)
-    ns = _build(device_type="cuda", devices=2, distributed=False, planner=planner)
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(raises = error)
+    ns = _build(device_type = "cuda", devices = 2, distributed = False, planner = planner)
     assert ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B") == "sequential"
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
 def test_the_deliberate_refusal_is_not_swallowed(host, monkeypatch):
     """`DeviceMapInfeasible` is the planner declining to place a model that would OOM.
     Turning it into "sequential" would hand the user the OOM instead of the diagnosis.
     Matched by name, because an old unsloth_zoo may not export the class."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
 
     class DeviceMapInfeasible(RuntimeError):
         pass
 
-    planner = _Recorder(raises=DeviceMapInfeasible("2 x 8 GiB is not enough"))
-    ns = _build(device_type="cuda", devices=2, distributed=False, planner=planner)
+    planner = _Recorder(raises = DeviceMapInfeasible("2 x 8 GiB is not enough"))
+    ns = _build(device_type = "cuda", devices = 2, distributed = False, planner = planner)
     with pytest.raises(DeviceMapInfeasible):
         ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B")
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
 @pytest.mark.parametrize(
     "error",
     [
@@ -378,7 +378,7 @@ def test_the_deliberate_refusal_is_not_swallowed(host, monkeypatch):
         RuntimeError("CUDA error: all CUDA-capable devices are busy or unavailable"),
         RuntimeError("CUDA driver initialization failed"),
     ],
-    ids=["ecc", "exclusive-process", "driver"],
+    ids = ["ecc", "exclusive-process", "driver"],
 )
 def test_a_card_that_refuses_to_report_memory_does_not_fail_the_load(host, error, monkeypatch):
     """Reading free memory is itself a CUDA call on every visible device, and it is the
@@ -386,32 +386,32 @@ def test_a_card_that_refuses_to_report_memory_does_not_fail_the_load(host, error
     parent handle, or a GPU another process holds in Exclusive_Process mode. That must
     degrade to the placement the caller would have had anyway, for the same reason a
     planner exception does. Nothing here is the deliberate refusal, which still raises."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(plan=_Plan())
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(plan = _Plan())
     ns = _build(
-        device_type="cuda",
-        devices=4,
-        distributed=False,
-        planner=planner,
-        mem_raises=error,
+        device_type = "cuda",
+        devices = 4,
+        distributed = False,
+        planner = planner,
+        mem_raises = error,
     )
     assert ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B") == "sequential"
     assert planner.calls == []
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
 def test_a_device_count_that_raises_does_not_fail_the_load(host, monkeypatch):
     """Same reasoning one call earlier. `device_count()` swallows most driver faults and
     answers 0, but not all of them, and a load with a working `sequential` placement should
     not die because the count could not be taken."""
-    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising=False)
-    planner = _Recorder(plan=_Plan())
+    monkeypatch.delenv("UNSLOTH_AUTO_DEVICE_MAP", raising = False)
+    planner = _Recorder(plan = _Plan())
     ns = _build(
-        device_type="cuda",
-        devices=4,
-        distributed=False,
-        planner=planner,
-        count_raises=RuntimeError("CUDA unknown error"),
+        device_type = "cuda",
+        devices = 4,
+        distributed = False,
+        planner = planner,
+        count_raises = RuntimeError("CUDA unknown error"),
     )
     assert ns["resolve_unsloth_device_map"]("unsloth", "unsloth/Qwen3-0.6B") == "sequential"
     assert planner.calls == []
@@ -425,8 +425,8 @@ def _planner_quantization_kwargs():
     return ns["planner_quantization_kwargs"]
 
 
-@pytest.mark.parametrize("host", HOSTS, ids=_HOST_IDS, indirect=True)
-@pytest.mark.parametrize("four_bit,eight_bit", [(True, False), (False, True)], ids=["4bit", "8bit"])
+@pytest.mark.parametrize("host", HOSTS, ids = _HOST_IDS, indirect = True)
+@pytest.mark.parametrize("four_bit,eight_bit", [(True, False), (False, True)], ids = ["4bit", "8bit"])
 def test_a_zoo_without_the_shared_skip_list_still_loads_in_4bit(host, four_bit, eight_bit):
     """The leaf loaders evaluate these arguments on every quantized load, whether or not
     anything is going to be planned. So the one import in here is on the hot path of every
@@ -438,7 +438,7 @@ def test_a_zoo_without_the_shared_skip_list_still_loads_in_4bit(host, four_bit, 
     saved = sys.modules.get("unsloth_zoo.peft_utils")
     sys.modules["unsloth_zoo.peft_utils"] = peft_utils
     try:
-        kwargs = build(load_in_4bit=four_bit, load_in_8bit=eight_bit)
+        kwargs = build(load_in_4bit = four_bit, load_in_8bit = eight_bit)
     finally:
         if saved is None:
             sys.modules.pop("unsloth_zoo.peft_utils", None)

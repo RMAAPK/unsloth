@@ -27,47 +27,47 @@ def _rewrite(line):
     "line, expected",
     [
         pytest.param(
-            "!python -m pip install peft\n", "!pip install peft\n", id="literal_python_rewritten"
+            "!python -m pip install peft\n", "!pip install peft\n", id = "literal_python_rewritten"
         ),
         pytest.param(
             "!python3.12 -m pip install peft",
             "!pip install peft",
-            id="literal_python_version_rewritten",
+            id = "literal_python_version_rewritten",
         ),
         pytest.param(
             "!{sys.executable} -m pip install peft\n",
             "!pip install peft\n",
-            id="sys_executable_braces_rewritten",
+            id = "sys_executable_braces_rewritten",
         ),
         pytest.param(
             '!"{sys.executable}" -m pip install peft',
             "!pip install peft",
-            id="sys_executable_braces_quoted_rewritten",
+            id = "sys_executable_braces_quoted_rewritten",
         ),
         pytest.param(
             "!{ sys.executable } -m pip install peft",
             "!pip install peft",
-            id="sys_executable_braces_spaced_rewritten",
+            id = "sys_executable_braces_spaced_rewritten",
         ),
         pytest.param(
             "!/opt/unsloth-venv/bin/python -m pip install peft\n",
             "!pip install peft\n",
-            id="absolute_interpreter_path_rewritten",
+            id = "absolute_interpreter_path_rewritten",
         ),
         pytest.param(
             "!/usr/bin/python3.11 -m uv pip install peft",
             "!uv pip install peft",
-            id="absolute_interpreter_versioned_path_rewritten",
+            id = "absolute_interpreter_versioned_path_rewritten",
         ),
         pytest.param(
             '!"/opt/unsloth venv/bin/python" -m pip install peft',
             "!pip install peft",
-            id="quoted_interpreter_path_rewritten",
+            id = "quoted_interpreter_path_rewritten",
         ),
         pytest.param(
             "    !{sys.executable} -m pip install peft",
             "    !pip install peft",
-            id="indent_preserved",
+            id = "indent_preserved",
         ),
     ],
 )

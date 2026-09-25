@@ -39,7 +39,7 @@ _FAMILY_NAMES = supported_video_family_names()
 
 
 def _family(name: str):
-    fam = detect_video_family("", override=name)
+    fam = detect_video_family("", override = name)
     assert fam is not None, f"{name} is listed but does not resolve"
     return fam
 
@@ -101,13 +101,13 @@ def test_presets_are_unique_and_land_in_the_status_payload(name):
 
     backend = video_module.VideoBackend()
     backend._state = video_module._VideoLoadState(
-        pipe=object(),
-        family=fam,
-        repo_id=f"unsloth/{name}",
-        base_repo=fam.base_repo,
-        device="cpu",
-        dtype="bfloat16",
-        kind="pipeline",
+        pipe = object(),
+        family = fam,
+        repo_id = f"unsloth/{name}",
+        base_repo = fam.base_repo,
+        device = "cpu",
+        dtype = "bfloat16",
+        kind = "pipeline",
     )
     # Through VideoStatusResponse, the model GET /video/status actually declares, not just the
     # inner VideoGenerationDefaults: the outer model dropping or renaming `defaults` leaves the
@@ -129,7 +129,7 @@ def test_presets_are_unique_and_land_in_the_status_payload(name):
 
 def _fallback_presets() -> list[tuple[int, int]]:
     """``FALLBACK_RESOLUTION_PRESETS`` from video-page.tsx."""
-    src = _VIDEO_PAGE.read_text(encoding="utf-8")
+    src = _VIDEO_PAGE.read_text(encoding = "utf-8")
     start = src.index("const FALLBACK_RESOLUTION_PRESETS")
     body = src[start : src.index("];", start)]
     pairs = [(int(w), int(h)) for w, h in re.findall(r"\[\s*(\d+)\s*,\s*(\d+)\s*\]", body)]
@@ -167,7 +167,7 @@ def test_the_frontend_fallback_is_a_usable_default_for_the_family_it_mirrors():
 def test_the_resolution_select_renders_the_backend_presets_not_a_hardcoded_list():
     """The select must map over the memo fed by ``status.defaults.resolution_presets``;
     if it were rebound to the fallback the backend's per-family list would never show."""
-    src = _VIDEO_PAGE.read_text(encoding="utf-8")
+    src = _VIDEO_PAGE.read_text(encoding = "utf-8")
     memo = src[src.index("const resolutionPresets = useMemo<") :]
     memo = memo[: memo.index("\n  }, [")]
     assert "status?.defaults?.resolution_presets" in memo

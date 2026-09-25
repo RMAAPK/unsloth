@@ -149,7 +149,7 @@ def hunt(paths: list[Path], limit: int = 12) -> int:
     for action, cell, kind, _i, base, treat in pairs:
         d = first_divergence(base, treat)
         if d is not None:
-            d.update(action=action, cell=cell, kind=kind)
+            d.update(action = action, cell = cell, kind = kind)
             findings.append(d)
 
     print(f"\nHUNT over {len(pairs)} raw pair(s) from {len(paths)} shard(s)")
@@ -164,7 +164,7 @@ def hunt(paths: list[Path], limit: int = 12) -> int:
         by_shape[f"{shape_of(f['base'])} -> {shape_of(f['treat'])}"].append(f)
 
     print("\n  BY SHAPE, which is the thing to fix rather than the individual bytes:")
-    for shape, group in sorted(by_shape.items(), key=lambda kv: -len(kv[1])):
+    for shape, group in sorted(by_shape.items(), key = lambda kv: -len(kv[1])):
         same = sum(1 for f in group if f["same_length"])
         print(f"    {len(group):>4}x  {shape}   ({same} of them same-length)")
 
@@ -183,15 +183,15 @@ def hunt(paths: list[Path], limit: int = 12) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        description = __doc__, formatter_class = argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("payloads", nargs="+", help="null-control output dirs (globs allowed)")
+    ap.add_argument("payloads", nargs = "+", help = "null-control output dirs (globs allowed)")
     ap.add_argument(
         "--hunt",
-        action="store_true",
-        help="name the bytes that differ between the two arms, rather than counting mismatches",
+        action = "store_true",
+        help = "name the bytes that differ between the two arms, rather than counting mismatches",
     )
-    ap.add_argument("--limit", type=int, default=12, help="how many regions to print")
+    ap.add_argument("--limit", type = int, default = 12, help = "how many regions to print")
     args = ap.parse_args(argv)
 
     paths: list[Path] = []

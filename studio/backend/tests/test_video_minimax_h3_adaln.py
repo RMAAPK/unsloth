@@ -48,7 +48,7 @@ class _Modulation(nn.Module):
 
     def forward(self, temb):
         temb = self.linear(nn.functional.silu(temb).to(self.linear.weight.dtype))
-        return temb.view(-1, 6 * self.hidden_size).chunk(6, dim=-1)
+        return temb.view(-1, 6 * self.hidden_size).chunk(6, dim = -1)
 
 
 class _NormOut(nn.Module):
@@ -56,12 +56,12 @@ class _NormOut(nn.Module):
 
     def __init__(self, time_embed_dim: int, hidden_size: int):
         super().__init__()
-        self.norm = nn.RMSNorm(hidden_size, eps=1e-5)
+        self.norm = nn.RMSNorm(hidden_size, eps = 1e-5)
         self.linear = nn.Linear(time_embed_dim, 2 * hidden_size)
 
     def forward(self, hidden_states, temb, timestep_indices):
         shift, scale = self.linear(nn.functional.silu(temb).to(self.linear.weight.dtype)).chunk(
-            2, dim=-1
+            2, dim = -1
         )
         hidden_states = self.norm(hidden_states)
         return hidden_states * (1.0 + scale.index_select(0, timestep_indices)) + shift.index_select(
@@ -82,7 +82,7 @@ class _FourierTimeProj(nn.Module):
     fails when the conversion forgets to replace it."""
 
     def forward(self, timestep):
-        return torch.stack([timestep.sin(), timestep.cos()], dim=-1)
+        return torch.stack([timestep.sin(), timestep.cos()], dim = -1)
 
 
 class _FakeH3(nn.Module):
@@ -138,7 +138,7 @@ def test_dense_metadata_leaves_the_model_untouched():
 
 
 def test_curve_conversion_reshapes_every_projection():
-    model = _FakeH3(num_layers=3)
+    model = _FakeH3(num_layers = 3)
     assert apply_h3_adaln_curve(model, _curve_meta()) is True
     for block in model.transformer_blocks:
         assert block.adaln_proj.linear.in_features == CURVE_DIM
@@ -150,14 +150,14 @@ def test_curve_conversion_reshapes_every_projection():
 
 
 def test_curve_conversion_rejects_a_model_without_the_h3_layout():
-    with pytest.raises(ValueError, match="MiniMaxH3Transformer3DModel"):
+    with pytest.raises(ValueError, match = "MiniMaxH3Transformer3DModel"):
         apply_h3_adaln_curve(nn.Linear(2, 2), _curve_meta())
 
 
 def test_curve_conversion_rejects_a_block_whose_projection_is_not_a_linear():
     model = _FakeH3()
     model.transformer_blocks[0].adaln_proj.linear = nn.Identity()
-    with pytest.raises(ValueError, match="expected a Linear"):
+    with pytest.raises(ValueError, match = "expected a Linear"):
         apply_h3_adaln_curve(model, _curve_meta())
 
 
@@ -184,7 +184,7 @@ def test_the_dtype_shim_stays_out_of_the_state_dict():
 def _fill_table(model):
     with torch.no_grad():
         model.time_embedder.table.copy_(
-            torch.arange(CURVE_GRID * CURVE_DIM, dtype=torch.float32).view(CURVE_GRID, CURVE_DIM)
+            torch.arange(CURVE_GRID * CURVE_DIM, dtype = torch.float32).view(CURVE_GRID, CURVE_DIM)
         )
 
 
@@ -196,7 +196,7 @@ def test_time_embedder_interpolates_between_the_two_neighbouring_grid_rows():
     # Half-way between grid rows 0 and 1 (grid of 5 spans [0,1], so t=0.125 is row 0.5).
     got = model.time_embedder(torch.tensor([0.125]))
     expected = 0.5 * table[0] + 0.5 * table[1]
-    assert torch.allclose(got[0], expected, atol=1e-6)
+    assert torch.allclose(got[0], expected, atol = 1e-6)
 
 
 def test_time_embedder_pins_the_grid_endpoints():
@@ -227,11 +227,11 @@ def test_modulation_forward_drops_the_silu():
     apply_h3_adaln_curve(model, _curve_meta())
     proj = model.transformer_blocks[0].adaln_proj
     temb = torch.randn(2, CURVE_DIM)
-    got = torch.cat(proj(temb), dim=-1)
+    got = torch.cat(proj(temb), dim = -1)
     raw = proj.linear(temb).view(-1, 6 * HIDDEN)
     silu = proj.linear(nn.functional.silu(temb)).view(-1, 6 * HIDDEN)
-    assert torch.allclose(got, raw, atol=1e-6)
-    assert not torch.allclose(got, silu, atol=1e-4)
+    assert torch.allclose(got, raw, atol = 1e-6)
+    assert not torch.allclose(got, silu, atol = 1e-4)
 
 
 def test_modulation_casts_the_chunks_to_the_recorded_stream_dtype():
@@ -239,7 +239,7 @@ def test_modulation_casts_the_chunks_to_the_recorded_stream_dtype():
     # forward multiplies without casting. Leaving the chunks float32 promotes the stack and the
     # first quantized matmul fails on mismatched dtypes, so this cast is what makes the model run.
     model = _FakeH3()
-    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype="bfloat16"))
+    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype = "bfloat16"))
     proj = model.transformer_blocks[0].adaln_proj
     assert proj.linear.weight.dtype == torch.float32
     chunks = proj(torch.randn(2, CURVE_DIM))
@@ -249,7 +249,7 @@ def test_modulation_casts_the_chunks_to_the_recorded_stream_dtype():
 def test_modulation_keeps_the_projection_dtype_when_none_was_recorded():
     # An unrecognised or absent value must not be guessed at: leave the chunks where they were.
     model = _FakeH3()
-    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype="not_a_dtype"))
+    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype = "not_a_dtype"))
     chunks = model.transformer_blocks[0].adaln_proj(torch.randn(2, CURVE_DIM))
     assert all(chunk.dtype == torch.float32 for chunk in chunks)
 
@@ -258,14 +258,14 @@ def test_norm_out_is_not_cast_down():
     # Unlike the block modulation, the final layer's shift/scale stay at their own precision: the
     # result goes straight into the float32 output heads.
     model = _FakeH3()
-    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype="bfloat16"))
+    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype = "bfloat16"))
     out = model.norm_out(torch.randn(2, HIDDEN), torch.randn(1, CURVE_DIM), torch.tensor([0, 0]))
     assert out.dtype == torch.float32
 
 
 def test_the_out_dtype_marker_stays_out_of_the_state_dict():
     model = _FakeH3()
-    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype="bfloat16"))
+    apply_h3_adaln_curve(model, _curve_meta(adaln_out_dtype = "bfloat16"))
     assert not any("adaln_out_dtype" in k for k in model.state_dict())
 
 
@@ -288,16 +288,16 @@ def test_norm_out_forward_drops_the_silu_and_indexes_per_row():
     hidden = torch.randn(4, HIDDEN)
     indices = torch.tensor([0, 1, 1, 0])
     got = norm_out(hidden, temb, indices)
-    shift, scale = norm_out.linear(temb).chunk(2, dim=-1)
+    shift, scale = norm_out.linear(temb).chunk(2, dim = -1)
     expected = norm_out.norm(hidden) * (1.0 + scale.index_select(0, indices)) + shift.index_select(
         0, indices
     )
-    assert torch.allclose(got, expected, atol=1e-6)
-    silu_shift, silu_scale = norm_out.linear(nn.functional.silu(temb)).chunk(2, dim=-1)
+    assert torch.allclose(got, expected, atol = 1e-6)
+    silu_shift, silu_scale = norm_out.linear(nn.functional.silu(temb)).chunk(2, dim = -1)
     silu_expected = norm_out.norm(hidden) * (
         1.0 + silu_scale.index_select(0, indices)
     ) + silu_shift.index_select(0, indices)
-    assert not torch.allclose(got, silu_expected, atol=1e-4)
+    assert not torch.allclose(got, silu_expected, atol = 1e-4)
 
 
 def test_time_proj_becomes_a_passthrough():
@@ -314,8 +314,8 @@ def test_the_curve_forward_is_bound_per_instance_not_on_the_class():
     dense = _FakeH3()
     apply_h3_adaln_curve(converted, _curve_meta())
     temb = torch.randn(2, dense.norm_out.linear.in_features)
-    got = torch.cat(dense.transformer_blocks[0].adaln_proj(temb), dim=-1)
+    got = torch.cat(dense.transformer_blocks[0].adaln_proj(temb), dim = -1)
     expected = (
         dense.transformer_blocks[0].adaln_proj.linear(nn.functional.silu(temb)).view(-1, 6 * HIDDEN)
     )
-    assert torch.allclose(got, expected, atol=1e-6)
+    assert torch.allclose(got, expected, atol = 1e-6)

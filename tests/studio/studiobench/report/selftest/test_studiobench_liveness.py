@@ -22,9 +22,9 @@ from studiobench.__main__ import main  # noqa: E402
 
 
 def write_payload(tmp_path: Path, rows: list[dict]) -> Path:
-    tmp_path.mkdir(parents=True, exist_ok=True)
+    tmp_path.mkdir(parents = True, exist_ok = True)
     path = tmp_path / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -65,7 +65,7 @@ def test_a_missed_slot_fails_even_though_the_action_ran(tmp_path):
     # `ran` and `slot_missed` are different failures: the second means the film moved on without it,
     # so its timing describes a different session than every other arm's. Default slack is 0, right
     # for the quiet machine a measurement is taken on.
-    path = write_payload(tmp_path, [cell([ran("settings", slot_missed=True)])])
+    path = write_payload(tmp_path, [cell([ran("settings", slot_missed = True)])])
     assert main(["--assert-liveness", str(path)]) == 1
 
 
@@ -74,11 +74,11 @@ def test_slack_excuses_a_missed_slot_and_only_up_to_the_number_given(tmp_path):
     # designed to roll on through one, precisely so a slow machine does not take a different path
     # through a different-length session. On a two-core shared runner, failing on that makes the gate
     # a speed test of the runner.
-    one = write_payload(tmp_path / "a", [cell([ran("settings", slot_missed=True)])])
+    one = write_payload(tmp_path / "a", [cell([ran("settings", slot_missed = True)])])
     assert main(["--assert-liveness", str(one), "--allow-slot-misses", "1"]) == 0
     two = write_payload(
         tmp_path / "b",
-        [cell([ran("settings", slot_missed=True), ran("keystroke", slot_missed=True)])],
+        [cell([ran("settings", slot_missed = True), ran("keystroke", slot_missed = True)])],
     )
     assert main(["--assert-liveness", str(two), "--allow-slot-misses", "1"]) == 1
 
@@ -119,13 +119,13 @@ def test_an_action_that_missed_its_slot_is_not_also_counted_as_a_scene_problem(t
 def test_a_tolerated_miss_still_says_the_run_is_not_quotable(tmp_path, capsys):
     # Exit 0 here claims only that the harness was not the cause. The payload still has a hole in it,
     # and saying so is the difference between tolerating a miss and hiding one.
-    path = write_payload(tmp_path, [cell([ran("settings", slot_missed=True)])])
+    path = write_payload(tmp_path, [cell([ran("settings", slot_missed = True)])])
     assert main(["--assert-liveness", str(path), "--allow-slot-misses", "1"]) == 0
     assert "Do not quote a number from this payload" in capsys.readouterr().out
 
 
 def test_negative_slack_is_treated_as_none(tmp_path):
-    path = write_payload(tmp_path, [cell([ran("settings", slot_missed=True)])])
+    path = write_payload(tmp_path, [cell([ran("settings", slot_missed = True)])])
     assert main(["--assert-liveness", str(path), "--allow-slot-misses", "-5"]) == 1
 
 
@@ -175,9 +175,9 @@ def test_an_action_whose_own_assertion_failed_fails(tmp_path):
                     ran("keystroke"),
                     ran(
                         "message_menu",
-                        expect_ok=False,
-                        reason="the menu opened with no items",
-                        timings={"open_ms": 31.0},
+                        expect_ok = False,
+                        reason = "the menu opened with no items",
+                        timings = {"open_ms": 31.0},
                     ),
                 ]
             )
@@ -189,7 +189,7 @@ def test_an_action_whose_own_assertion_failed_fails(tmp_path):
 def test_an_action_that_passed_its_assertion_still_passes(tmp_path):
     # The pair for the test above: `expect_ok = True` is the healthy recording, and a gate that failed
     # on it would be unusable rather than strict.
-    path = write_payload(tmp_path, [cell([ran("keystroke", expect_ok=True)])])
+    path = write_payload(tmp_path, [cell([ran("keystroke", expect_ok = True)])])
     assert main(["--assert-liveness", str(path)]) == 0
 
 
@@ -208,13 +208,13 @@ def test_a_failed_assertion_is_a_scene_problem_that_slack_cannot_excuse(tmp_path
     # that the machine was slow, so it belongs with the scene problems.
     path = write_payload(
         tmp_path,
-        [cell([ran("message_menu", expect_ok=False, reason="the menu opened with no items")])],
+        [cell([ran("message_menu", expect_ok = False, reason = "the menu opened with no items")])],
     )
     assert main(["--assert-liveness", str(path), "--allow-slot-misses", "99"]) == 1
 
 
 def test_an_incomplete_cell_fails(tmp_path):
-    path = write_payload(tmp_path, [cell([ran("keystroke")], completed=False)])
+    path = write_payload(tmp_path, [cell([ran("keystroke")], completed = False)])
     assert main(["--assert-liveness", str(path)]) == 1
 
 
@@ -256,7 +256,7 @@ def test_non_cell_rows_are_ignored_but_do_not_count_as_cells(tmp_path):
 @pytest.mark.parametrize("blank", ["", "   ", "\n"])
 def test_blank_lines_are_skipped(tmp_path, blank):
     path = tmp_path / "payload.jsonl"
-    path.write_text(json.dumps(cell([ran("keystroke")])) + "\n" + blank + "\n", encoding="utf-8")
+    path.write_text(json.dumps(cell([ran("keystroke")])) + "\n" + blank + "\n", encoding = "utf-8")
     assert main(["--assert-liveness", str(path)]) == 0
 
 
@@ -273,7 +273,7 @@ def attempt(
     completed: bool,
     cell_id: str = "100K/rep0",
 ):
-    row = cell(actions, completed=completed, cell_id=cell_id)
+    row = cell(actions, completed = completed, cell_id = cell_id)
     row["session_id"] = session
     return row
 
@@ -290,9 +290,9 @@ def test_a_resumed_cell_is_not_failed_by_the_attempt_that_died(tmp_path):
         tmp_path,
         [
             attempt(
-                OLD, [{"action": "message_menu", "ran": False, "reason": "died"}], completed=False
+                OLD, [{"action": "message_menu", "ran": False, "reason": "died"}], completed = False
             ),
-            attempt(NOW, [ran("keystroke"), ran("message_menu")], completed=True),
+            attempt(NOW, [ran("keystroke"), ran("message_menu")], completed = True),
         ],
     )
     assert main(["--assert-liveness", str(path)]) == 0
@@ -306,15 +306,15 @@ def test_the_superseded_attempt_does_not_count_as_a_second_cell(tmp_path):
     """
 
     rows = [
-        attempt(OLD, [{"action": "message_menu", "ran": False}], completed=False),
-        attempt(NOW, [ran("keystroke")], completed=True),
+        attempt(OLD, [{"action": "message_menu", "ran": False}], completed = False),
+        attempt(NOW, [ran("keystroke")], completed = True),
     ]
     path = write_payload(tmp_path, rows)
     logged: list[str] = []
     import studiobench.__main__ as m
 
     real = m._log
-    m._log = lambda msg="": (logged.append(str(msg)), real(msg))[1]
+    m._log = lambda msg = "": (logged.append(str(msg)), real(msg))[1]
     try:
         assert main(["--assert-liveness", str(path)]) == 0
     finally:
@@ -332,7 +332,7 @@ def test_a_cell_that_was_never_re_run_still_fails(tmp_path):
 
     path = write_payload(
         tmp_path,
-        [attempt(OLD, [{"action": "message_menu", "ran": False}], completed=False)],
+        [attempt(OLD, [{"action": "message_menu", "ran": False}], completed = False)],
     )
     assert main(["--assert-liveness", str(path)]) == 1
 
@@ -343,11 +343,11 @@ def test_the_latest_attempt_is_judged_on_its_own_failures(tmp_path):
     path = write_payload(
         tmp_path,
         [
-            attempt(OLD, [ran("keystroke"), ran("message_menu")], completed=True),
+            attempt(OLD, [ran("keystroke"), ran("message_menu")], completed = True),
             attempt(
                 NOW,
                 [{"action": "message_menu", "ran": False, "reason": "died again"}],
-                completed=False,
+                completed = False,
             ),
         ],
     )
@@ -365,9 +365,9 @@ def test_a_different_cell_in_an_earlier_session_is_not_superseded(tmp_path):
         tmp_path,
         [
             attempt(
-                OLD, [{"action": "message_menu", "ran": False}], completed=True, cell_id="10K/rep0"
+                OLD, [{"action": "message_menu", "ran": False}], completed = True, cell_id = "10K/rep0"
             ),
-            attempt(NOW, [ran("keystroke")], completed=True, cell_id="100K/rep0"),
+            attempt(NOW, [ran("keystroke")], completed = True, cell_id = "100K/rep0"),
         ],
     )
     assert main(["--assert-liveness", str(path)]) == 1
@@ -393,10 +393,10 @@ def test_an_attempt_killed_before_its_cell_row_is_not_a_pass(tmp_path):
                     ran("keystroke"),
                     {"action": "message_menu", "ran": False, "reason": "slot closed"},
                 ],
-                completed=False,
-                cell_id="10K/rep0",
+                completed = False,
+                cell_id = "10K/rep0",
             ),
-            attempt(OLD, [ran("keystroke")], completed=True, cell_id="1K/rep0"),
+            attempt(OLD, [ran("keystroke")], completed = True, cell_id = "1K/rep0"),
             # All the retry managed to flush before it was killed.
             {
                 "row_type": "action",
@@ -421,7 +421,7 @@ def test_a_run_killed_during_a_later_cell_does_not_pass_on_its_earlier_ones(tmp_
     path = write_payload(
         tmp_path,
         [
-            attempt(NOW, [ran("keystroke")], completed=True, cell_id="1K/rep0"),
+            attempt(NOW, [ran("keystroke")], completed = True, cell_id = "1K/rep0"),
             {
                 "row_type": "action",
                 "cell_id": "10K/rep0",
@@ -445,7 +445,7 @@ def test_an_allowed_action_that_ran_and_failed_its_assertion_still_fails(tmp_pat
 
     path = write_payload(
         tmp_path,
-        [cell([ran("image_upload", expect_ok=False, reason="no attachment appeared")])],
+        [cell([ran("image_upload", expect_ok = False, reason = "no attachment appeared")])],
     )
     assert main(["--assert-liveness", str(path), "--allow-not-run", "image_upload"]) == 1
 
@@ -473,7 +473,7 @@ def test_an_allowed_action_that_did_not_run_is_still_excused(tmp_path):
 def test_an_allowed_action_that_ran_and_missed_its_slot_still_fails(tmp_path):
     """A listed name that ran is still held to its slot, for the same reason."""
 
-    path = write_payload(tmp_path, [cell([ran("image_upload", slot_missed=True)])])
+    path = write_payload(tmp_path, [cell([ran("image_upload", slot_missed = True)])])
     assert main(["--assert-liveness", str(path), "--allow-not-run", "image_upload"]) == 1
 
 

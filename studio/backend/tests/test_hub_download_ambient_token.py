@@ -39,7 +39,7 @@ class _Proc:
     def __init__(
         self,
         rc,
-        stderr=b"",
+        stderr = b"",
     ):
         self.rc = rc
         self.stderr = io.BytesIO(stderr)
@@ -48,7 +48,7 @@ class _Proc:
     def poll(self):
         return self.rc if self.waited else None
 
-    def wait(self, timeout=None):
+    def wait(self, timeout = None):
         self.waited = True
         return self.rc
 
@@ -63,8 +63,8 @@ class _ImmediateThread:
         self,
         *,
         target,
-        args=(),
-        kwargs=None,
+        args = (),
+        kwargs = None,
         **_kwargs,
     ):
         self.target = target
@@ -77,8 +77,8 @@ class _ImmediateThread:
 
 def _client(via_api_key: bool) -> TestClient:
     app = FastAPI()
-    app.include_router(inventory_routes.router, prefix="/api/hub")
-    app.include_router(datasets_routes.router, prefix="/api/hub/datasets")
+    app.include_router(inventory_routes.router, prefix = "/api/hub")
+    app.include_router(datasets_routes.router, prefix = "/api/hub/datasets")
     app.dependency_overrides[get_current_subject] = lambda: "alice"
     app.dependency_overrides[authenticated_via_api_key] = lambda: via_api_key
     return TestClient(app)
@@ -86,7 +86,7 @@ def _client(via_api_key: bool) -> TestClient:
 
 def _models_client(via_api_key: bool) -> TestClient:
     app = FastAPI()
-    app.include_router(models_routes.router, prefix="/api/models")
+    app.include_router(models_routes.router, prefix = "/api/models")
     app.dependency_overrides[get_current_subject] = lambda: "alice"
     app.dependency_overrides[authenticated_via_api_key] = lambda: via_api_key
     return TestClient(app)
@@ -94,7 +94,7 @@ def _models_client(via_api_key: bool) -> TestClient:
 
 @pytest.mark.parametrize("via_api_key, expected", [(True, False), (False, True)])
 def test_only_a_ui_session_may_borrow_the_backend_token(via_api_key, expected):
-    assert asyncio.run(allow_ambient_hf_token(via_api_key=via_api_key)) is expected
+    assert asyncio.run(allow_ambient_hf_token(via_api_key = via_api_key)) is expected
 
 
 @pytest.mark.parametrize(
@@ -108,8 +108,8 @@ def test_only_a_ui_session_may_borrow_the_backend_token(via_api_key, expected):
 )
 def test_request_metadata_token_keeps_the_caller_boundary(hf_token, allow_ambient, expected):
     resolved = get_request_hf_token(
-        hf_token=hf_token,
-        allow_ambient_token=allow_ambient,
+        hf_token = hf_token,
+        allow_ambient_token = allow_ambient,
     )
     assert resolved == expected
     if expected in (None, False):
@@ -130,7 +130,7 @@ def test_gguf_metadata_route_does_not_lend_api_keys_the_backend_token(
     monkeypatch.setattr(inventory_routes.gguf_variants, "get_gguf_variants_response", _fake)
     response = _client(via_api_key).get(
         "/api/hub/gguf-variants?repo_id=attacker/private-model",
-        headers={"Authorization": "Bearer token"},
+        headers = {"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 200, response.text
@@ -147,7 +147,7 @@ def test_explicit_metadata_token_wins_for_an_api_key(monkeypatch):
     monkeypatch.setattr(inventory_routes.gguf_variants, "get_gguf_variants_response", _fake)
     response = _client(True).get(
         "/api/hub/gguf-variants?repo_id=owner/private-model",
-        headers={
+        headers = {
             "Authorization": "Bearer token",
             "X-Unsloth-HF-Token": "request-token",
         },
@@ -169,7 +169,7 @@ def test_compatibility_progress_route_keeps_the_caller_boundary(monkeypatch, via
     monkeypatch.setattr(model_downloads, "get_download_progress_response", _fake)
     response = _models_client(via_api_key).get(
         "/api/models/download-progress?repo_id=attacker/private-model",
-        headers={"Authorization": "Bearer token"},
+        headers = {"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 200, response.text
@@ -182,9 +182,9 @@ def test_model_download_route_gates_the_ambient_token(monkeypatch, via_api_key, 
 
     async def _fake(
         body,
-        hf_token=None,
+        hf_token = None,
         *,
-        allow_ambient_token=True,
+        allow_ambient_token = True,
     ):
         seen["repo_id"] = body.repo_id
         seen["allow_ambient_token"] = allow_ambient_token
@@ -194,8 +194,8 @@ def test_model_download_route_gates_the_ambient_token(monkeypatch, via_api_key, 
 
     response = _client(via_api_key).post(
         "/api/hub/download",
-        json={"repo_id": "attacker/private-model"},
-        headers={"Authorization": "Bearer token"},
+        json = {"repo_id": "attacker/private-model"},
+        headers = {"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 202, response.text
@@ -209,9 +209,9 @@ def test_dataset_download_route_gates_the_ambient_token(monkeypatch, via_api_key
 
     async def _fake(
         body,
-        hf_token=None,
+        hf_token = None,
         *,
-        allow_ambient_token=True,
+        allow_ambient_token = True,
     ):
         seen["repo_id"] = body.repo_id
         seen["allow_ambient_token"] = allow_ambient_token
@@ -221,8 +221,8 @@ def test_dataset_download_route_gates_the_ambient_token(monkeypatch, via_api_key
 
     response = _client(via_api_key).post(
         "/api/hub/datasets/download",
-        json={"repo_id": "attacker/private-dataset"},
-        headers={"Authorization": "Bearer token"},
+        json = {"repo_id": "attacker/private-dataset"},
+        headers = {"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 202, response.text
@@ -256,7 +256,7 @@ def test_an_api_caller_does_not_borrow_the_backend_hf_token(monkeypatch):
     though the backend process has an HF_TOKEN of its own."""
     monkeypatch.setenv("HF_TOKEN", "operator-secret-token")
 
-    env = _spawn_env(monkeypatch, None, allow_ambient_token=False)
+    env = _spawn_env(monkeypatch, None, allow_ambient_token = False)
 
     assert "HF_TOKEN" not in env
     assert env["HF_HUB_DISABLE_IMPLICIT_TOKEN"] == "1"
@@ -267,7 +267,7 @@ def test_the_ui_still_falls_back_to_the_backend_hf_token(monkeypatch):
     an install whose token lives in the environment rather than in Settings."""
     monkeypatch.setenv("HF_TOKEN", "operator-secret-token")
 
-    env = _spawn_env(monkeypatch, None, allow_ambient_token=True)
+    env = _spawn_env(monkeypatch, None, allow_ambient_token = True)
 
     assert env["HF_TOKEN"] == "operator-secret-token"
     assert env["HF_HUB_DISABLE_IMPLICIT_TOKEN"] == "0"
@@ -276,7 +276,7 @@ def test_the_ui_still_falls_back_to_the_backend_hf_token(monkeypatch):
 def test_an_explicit_request_token_wins_over_the_backend_one(monkeypatch):
     monkeypatch.setenv("HF_TOKEN", "operator-secret-token")
 
-    env = _spawn_env(monkeypatch, "request-token", allow_ambient_token=True)
+    env = _spawn_env(monkeypatch, "request-token", allow_ambient_token = True)
 
     assert env["HF_TOKEN"] == "request-token"
 
@@ -297,10 +297,10 @@ def test_http_retry_preserves_ambient_token_policy(
     assert registry.claim(
         key,
         download_registry.TRANSPORT_XET,
-        repo_type="model",
-        repo_id="Org/Model",
-        variant=None,
-        blob_hashes=frozenset({"blob"}),
+        repo_type = "model",
+        repo_id = "Org/Model",
+        variant = None,
+        blob_hashes = frozenset({"blob"}),
     )[0]
     retried = []
     environments = []
@@ -317,15 +317,15 @@ def test_http_retry_preserves_ambient_token_policy(
         _token,
         *,
         use_xet,
-        allow_ambient_token=True,
+        allow_ambient_token = True,
         **_kwargs,
     ):
         retried.append(allow_ambient_token)
         return original_spawn(
             _args,
             _token,
-            use_xet=use_xet,
-            allow_ambient_token=allow_ambient_token,
+            use_xet = use_xet,
+            allow_ambient_token = allow_ambient_token,
             **_kwargs,
         )
 
@@ -335,15 +335,15 @@ def test_http_retry_preserves_ambient_token_policy(
         registry,
         key,
         _Proc(1, b"xet failed"),
-        hf_token=None,
-        label="Org/Model",
-        log_prefix="Download",
-        logger=logging.getLogger("test"),
-        repo_type="model",
-        repo_id="Org/Model",
-        transport=download_registry.TRANSPORT_XET,
-        watch_name="model-watch",
-        allow_ambient_token=allow_ambient,
+        hf_token = None,
+        label = "Org/Model",
+        log_prefix = "Download",
+        logger = logging.getLogger("test"),
+        repo_type = "model",
+        repo_id = "Org/Model",
+        transport = download_registry.TRANSPORT_XET,
+        watch_name = "model-watch",
+        allow_ambient_token = allow_ambient,
     )
 
     assert retried == [allow_ambient]
@@ -366,7 +366,7 @@ def cached_hf_login(monkeypatch, tmp_path):
         "HUGGINGFACE_HUB_TOKEN",
         "HUGGINGFACEHUB_API_TOKEN",
     ):
-        monkeypatch.delenv(key, raising=False)
+        monkeypatch.delenv(key, raising = False)
     return "hf_test_cached_login"
 
 
@@ -379,7 +379,7 @@ def test_cached_login_obeys_caller_and_implicit_auth_policy(
     from huggingface_hub import constants
 
     monkeypatch.setattr(constants, "HF_HUB_DISABLE_IMPLICIT_TOKEN", implicit_disabled)
-    env = _spawn_env(monkeypatch, explicit, allow_ambient_token=allow_ambient)
+    env = _spawn_env(monkeypatch, explicit, allow_ambient_token = allow_ambient)
 
     expected = explicit or (cached_hf_login if allow_ambient and not implicit_disabled else None)
     assert env.get("HF_TOKEN") == expected
@@ -389,7 +389,7 @@ def test_cached_login_obeys_caller_and_implicit_auth_policy(
 def test_environment_token_takes_precedence_over_cached_login(monkeypatch, cached_hf_login):
     monkeypatch.setenv("HF_TOKEN", "hf_test_environment")
 
-    env = _spawn_env(monkeypatch, None, allow_ambient_token=True)
+    env = _spawn_env(monkeypatch, None, allow_ambient_token = True)
 
     assert env["HF_TOKEN"] == "hf_test_environment"
 
@@ -404,8 +404,8 @@ def test_forbidden_ambient_token_is_not_resolved(monkeypatch, cached_hf_login):
     env = _spawn_env(
         monkeypatch,
         None,
-        allow_ambient_token=False,
-        cache_env={
+        allow_ambient_token = False,
+        cache_env = {
             "HF_TOKEN": "hf_test_environment",
             "HF_HUB_TOKEN": "hf_test_alias",
             "HUGGING_FACE_HUB_TOKEN": "hf_test_alias",
@@ -447,7 +447,7 @@ def test_unusable_cached_login_does_not_block_an_anonymous_worker(
 
         monkeypatch.setattr(Path, "read_text", read_text)
 
-    env = _spawn_env(monkeypatch, None, allow_ambient_token=True)
+    env = _spawn_env(monkeypatch, None, allow_ambient_token = True)
 
     assert "HF_TOKEN" not in env
     assert env["HF_HUB_DISABLE_IMPLICIT_TOKEN"] == "1"
@@ -472,7 +472,7 @@ _RESOLVER_FAILURES = [
 ]
 
 
-@pytest.mark.parametrize("failure", _RESOLVER_FAILURES, ids=lambda e: type(e).__name__)
+@pytest.mark.parametrize("failure", _RESOLVER_FAILURES, ids = lambda e: type(e).__name__)
 def test_a_failed_ambient_lookup_still_starts_an_anonymous_worker(
     monkeypatch, cached_hf_login, failure
 ):
@@ -484,7 +484,7 @@ def test_a_failed_ambient_lookup_still_starts_an_anonymous_worker(
         raise failure
 
     monkeypatch.setattr(huggingface_hub.utils, "get_token_to_send", raiser)
-    env = _spawn_env(monkeypatch, None, allow_ambient_token=True)
+    env = _spawn_env(monkeypatch, None, allow_ambient_token = True)
 
     assert "HF_TOKEN" not in env
     assert env["HF_HUB_DISABLE_IMPLICIT_TOKEN"] == "1"
@@ -496,12 +496,12 @@ def test_a_failed_ambient_lookup_does_not_strand_the_xet_reservation(monkeypatch
     import huggingface_hub.utils
     from utils import hf_xet_fallback
 
-    def sized(env, cache_dir=None):
+    def sized(env, cache_dir = None):
         hf_xet_fallback._reserve_worker_budget(1 << 30)
         return dict(env)
 
     monkeypatch.setattr(hf_xet_fallback, "apply_xet_env", sized)
-    monkeypatch.setattr(hf_xet_fallback._pending_reservation, "token", None, raising=False)
+    monkeypatch.setattr(hf_xet_fallback._pending_reservation, "token", None, raising = False)
     with hf_xet_fallback._budget_lock:
         hf_xet_fallback._budget_reservations.clear()
 
@@ -509,7 +509,7 @@ def test_a_failed_ambient_lookup_does_not_strand_the_xet_reservation(monkeypatch
         raise _OIDCLike("no OIDC id token is available")
 
     monkeypatch.setattr(huggingface_hub.utils, "get_token_to_send", raiser)
-    _spawn_env(monkeypatch, None, use_xet=True, allow_ambient_token=True)
+    _spawn_env(monkeypatch, None, use_xet = True, allow_ambient_token = True)
 
     with hf_xet_fallback._budget_lock:
         unbound = [e for e in hf_xet_fallback._budget_reservations.values() if e[1] is None]
@@ -530,7 +530,7 @@ def test_a_failed_ambient_lookup_reports_the_cause_without_the_credential(
 
     monkeypatch.setattr(huggingface_hub.utils, "get_token_to_send", raiser)
     with caplog.at_level(logging.WARNING):
-        _spawn_env(monkeypatch, None, allow_ambient_token=True)
+        _spawn_env(monkeypatch, None, allow_ambient_token = True)
 
     assert leaked not in caplog.text
     assert "RuntimeError" in caplog.text

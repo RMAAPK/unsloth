@@ -187,13 +187,11 @@ def _run_stage(name: str, fn) -> None:
 
 def _warm_hardware(epoch: Optional[int] = None) -> None:
     from utils.hardware import ensure_hardware_detected
-
     ensure_hardware_detected(epoch)
 
 
 def _warm_transformers() -> None:
     from utils.models.model_config import _detection_sets
-
     _detection_sets()
 
 
@@ -240,7 +238,7 @@ def _prime_nvlink_topology() -> Optional[threading.Thread]:
         except Exception as e:  # noqa: BLE001 -- a warm miss costs latency, never correctness
             logger.debug("NVLink topology prime skipped: %r", e)
 
-    worker = threading.Thread(target=_probe, daemon=True, name="nvlink-topology-prime")
+    worker = threading.Thread(target = _probe, daemon = True, name = "nvlink-topology-prime")
     worker.start()
     return worker
 
@@ -331,7 +329,6 @@ def _owning_epoch(epoch: Optional[int]):
     """hardware.owning_detection_epoch(), a no-op when hardware is not importable: a --no-torch host still runs the warm and each stage reports its own absence."""
     try:
         from utils.hardware import hardware as _hw
-
         scope = _hw.owning_detection_epoch(epoch)
     except Exception:
         yield
@@ -344,7 +341,6 @@ def _detection_epoch() -> Optional[int]:
     """The current detection epoch, or None if hardware is not importable."""
     try:
         from utils.hardware import hardware as _hw
-
         return _hw.current_detection_epoch()
     except Exception:
         return None
@@ -379,10 +375,10 @@ def start_background_warm() -> bool:
             else:
                 _clear_finished_warm_locked()
         _thread = threading.Thread(
-            target=target,
-            args=args,
-            daemon=True,
-            name="torch-warm",
+            target = target,
+            args = args,
+            daemon = True,
+            name = "torch-warm",
         )
         _thread_epoch = epoch
         _status["started"] = True
@@ -449,7 +445,7 @@ def _a_local_model_would_load_through_diffusers() -> bool:
     # thread has none, so it answers for the owner; the failure mode is only no speedup.
     for task in _MEDIA_PREWARM_TASKS:
         for model_id in available_media_model_ids(task):
-            pick = resolve_local_media_model(model_id, task=task)
+            pick = resolve_local_media_model(model_id, task = task)
             if pick is None:
                 continue
             kind = pick.model_kind or ("gguf" if pick.gguf_filename else None)
@@ -463,7 +459,7 @@ def _a_local_model_would_load_through_diffusers() -> bool:
             family = detected_image_family(pick)
             if family is None:
                 return True  # unknown family: diffusers is where the load would land
-            if predict_engine(family, model_kind="gguf") == ENGINE_DIFFUSERS:
+            if predict_engine(family, model_kind = "gguf") == ENGINE_DIFFUSERS:
                 return True
     return False
 
@@ -575,7 +571,6 @@ def prewarm_diffusers_if_image_models_exist() -> bool:
         # its bars draw onto the structlog stream mid-record.
         try:
             from loggers.config import quiet_third_party_progress_bars  # noqa: PLC0415
-
             quiet_third_party_progress_bars()
         except Exception as exc:  # noqa: BLE001 -- cosmetic only
             logger.debug("quieting third-party progress bars failed: %r", exc)

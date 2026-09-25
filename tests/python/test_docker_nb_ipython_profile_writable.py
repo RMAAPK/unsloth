@@ -43,7 +43,7 @@ _IPY_DIR = "/opt/unsloth-nb/ipython"
 
 def _profile_setup_commands() -> list[str]:
     """The `mkdir` / `cp` / `chmod` steps of the RUN layer that builds the profile."""
-    text = DOCKERFILE.read_text(encoding="utf-8")
+    text = DOCKERFILE.read_text(encoding = "utf-8")
     # the layer is a single `RUN set -eux \` ... continuation block
     start = text.index("COPY unsloth_nb_compat.py")
     block = text[start : text.index("\nENV PATH=", start)]
@@ -69,7 +69,7 @@ def _as_foreign_uid(root: Path) -> None:
     question the same one.
     """
     # deepest first: dropping a directory's owner bits would hide its children
-    paths = sorted([root, *root.rglob("*")], key=lambda p: len(p.parts), reverse=True)
+    paths = sorted([root, *root.rglob("*")], key = lambda p: len(p.parts), reverse = True)
     for path in paths:
         mode = stat.S_IMODE(path.stat().st_mode)
         other = mode & 0o007
@@ -94,7 +94,7 @@ _PROBE = textwrap.dedent(
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def staged_profile(tmp_path_factory):
     pytest.importorskip("IPython")
     root = tmp_path_factory.mktemp("unsloth-nb")
@@ -103,11 +103,11 @@ def staged_profile(tmp_path_factory):
     assert cmds, "no profile setup commands found in the Dockerfile"
     assert any(c.startswith("cp ") for c in cmds), "the startup hook is no longer copied in"
     script = "set -eu\n" + "\n".join(c.replace("/opt/unsloth-nb", str(root)) for c in cmds)
-    subprocess.run(["bash", "-c", script], check=True)
+    subprocess.run(["bash", "-c", script], check = True)
     _as_foreign_uid(root / "ipython")
     yield root / "ipython"
     # hand the owner bits back, or pytest cannot remove its own tmp tree
-    for path in sorted(root.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+    for path in sorted(root.rglob("*"), key = lambda p: len(p.parts), reverse = True):
         try:
             path.chmod(stat.S_IMODE(path.stat().st_mode) | 0o700)
         except OSError:
@@ -120,10 +120,10 @@ def _probe(ipython_dir: Path) -> dict:
     env.pop("PYTHONWARNINGS", None)
     proc = subprocess.run(
         [sys.executable, "-c", _PROBE],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=300,
+        env = env,
+        capture_output = True,
+        text = True,
+        timeout = 300,
     )
     line = [l for l in proc.stdout.splitlines() if l.startswith("PROBE")]
     assert line, f"probe produced no result:\n{proc.stdout}\n{proc.stderr}"

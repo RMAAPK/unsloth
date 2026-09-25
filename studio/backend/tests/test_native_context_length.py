@@ -198,7 +198,7 @@ class TestNativeContextLengthProperty:
             tmp_path,
             "llama",
             [("context_length", 16384, 4)],
-            filename="a.gguf",
+            filename = "a.gguf",
         )
         backend._read_gguf_metadata(path_a)
         assert backend.native_context_length == 16384
@@ -207,7 +207,7 @@ class TestNativeContextLengthProperty:
             tmp_path,
             "gpt2",
             [("block_count", 12, 4)],
-            filename="b.gguf",
+            filename = "b.gguf",
         )
         backend._read_gguf_metadata(path_b)
         assert backend.native_context_length is None
@@ -255,9 +255,9 @@ class TestContextValueSeparation:
 
         # Tiny VRAM budget forces capping.
         result = backend._fit_context_to_vram(
-            requested_ctx=131072,
-            available_mib=512,  # very small
-            model_size_bytes=0,
+            requested_ctx = 131072,
+            available_mib = 512,  # very small
+            model_size_bytes = 0,
         )
         # Returns the capped value without modifying _context_length.
         assert backend._context_length == original
@@ -288,31 +288,31 @@ class TestPydanticModels:
     def test_load_response_defaults_none(self):
         """Omitting native_context_length defaults to None."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
         )
         assert resp.native_context_length is None
 
     def test_load_response_accepts_int(self):
         """native_context_length=131072 stores correctly."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
-            native_context_length=131072,
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
+            native_context_length = 131072,
         )
         assert resp.native_context_length == 131072
 
     def test_load_response_json_null(self):
         """None serializes to JSON null."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
         )
         data = json.loads(resp.model_dump_json())
         assert data["native_context_length"] is None
@@ -320,11 +320,11 @@ class TestPydanticModels:
     def test_load_response_json_int(self):
         """131072 serializes to JSON number."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
-            native_context_length=131072,
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
+            native_context_length = 131072,
         )
         data = json.loads(resp.model_dump_json())
         assert data["native_context_length"] == 131072
@@ -345,18 +345,18 @@ class TestPydanticModels:
 
     def test_status_response_chat_template_roundtrip(self):
         """chat_template serializes and validates as part of status."""
-        resp = InferenceStatusResponse(chat_template="{{ messages }}")
+        resp = InferenceStatusResponse(chat_template = "{{ messages }}")
         roundtripped = InferenceStatusResponse.model_validate_json(resp.model_dump_json())
         assert roundtripped.chat_template == "{{ messages }}"
 
     def test_roundtrip_preserves_value(self):
         """model_validate_json(model_dump_json()) round-trips."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
-            native_context_length=131072,
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
+            native_context_length = 131072,
         )
         roundtripped = LoadResponse.model_validate_json(resp.model_dump_json())
         assert roundtripped.native_context_length == 131072
@@ -364,11 +364,11 @@ class TestPydanticModels:
     def test_context_length_roundtrip(self):
         """Runtime context_length serializes for non-GGUF/hub models."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
-            context_length=8192,
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
+            context_length = 8192,
         )
         roundtripped = LoadResponse.model_validate_json(resp.model_dump_json())
         assert roundtripped.context_length == 8192
@@ -382,11 +382,11 @@ class TestPydanticModels:
 class TestRouteCompleteness:
     """All response construction sites in routes/inference.py include native_context_length."""
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse = True)
     def _load_source(self):
         """Read routes/inference.py source once."""
         routes_path = Path(__file__).resolve().parent.parent / "routes" / "inference.py"
-        self._source = routes_path.read_text(encoding="utf-8")
+        self._source = routes_path.read_text(encoding = "utf-8")
 
     def _find_construction_blocks(self, class_name: str) -> list[str]:
         """Extract all code blocks that construct a given response class."""
@@ -582,11 +582,11 @@ class TestCrossPlatform:
     def test_json_serialization_deterministic(self):
         """model_dump_json() is consistent across calls."""
         resp = LoadResponse(
-            status="loaded",
-            model="test",
-            display_name="Test",
-            inference={},
-            native_context_length=131072,
+            status = "loaded",
+            model = "test",
+            display_name = "Test",
+            inference = {},
+            native_context_length = 131072,
         )
         json1 = resp.model_dump_json()
         json2 = resp.model_dump_json()
@@ -598,7 +598,7 @@ def test_the_status_route_reports_what_a_self_sizing_load_asked_for():
     """The UI re-seeds its context pin from it, because the resolved window cannot say
     whether anyone chose that length; without it a pin is invisible after a refresh."""
     route_src = (Path(__file__).resolve().parents[1] / "routes" / "inference.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     assert "requested_context_length = llama_backend.requested_n_ctx" in route_src
     # The non-GGUF branch is covered by behaviour instead, in

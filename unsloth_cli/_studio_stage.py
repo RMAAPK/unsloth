@@ -82,10 +82,10 @@ def _relocatable_script(body: bytes, original: int) -> bytes:
 
 def make_relocatable(venv: Path) -> int:
     cfg = venv / "pyvenv.cfg"
-    lines = cfg.read_text(encoding="utf-8").splitlines()
+    lines = cfg.read_text(encoding = "utf-8").splitlines()
     if not any(line.split("=", 1)[0].strip() == "relocatable" for line in lines):
         lines.append("relocatable = true")
-        cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        cfg.write_text("\n".join(lines) + "\n", encoding = "utf-8")
     if platform.system() == "Windows":
         return 0
     rewritten = 0
@@ -93,7 +93,7 @@ def make_relocatable(venv: Path) -> int:
         if script.is_symlink() or not script.is_file():
             continue
         data = script.read_bytes()
-        lines = data.splitlines(keepends=True)
+        lines = data.splitlines(keepends = True)
         if not lines:
             continue
         first_line = lines[0].rstrip(b"\r\n")
@@ -111,21 +111,21 @@ def make_relocatable(venv: Path) -> int:
 def _run(command: list[str], *, cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
     return subprocess.run(
         command,
-        cwd=str(cwd),
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=PROBE_TIMEOUT_SECONDS,
+        cwd = str(cwd),
+        env = env,
+        capture_output = True,
+        text = True,
+        encoding = "utf-8",
+        errors = "replace",
+        timeout = PROBE_TIMEOUT_SECONDS,
     )
 
 
 def probe_cli(venv: Path, env: dict[str, str]) -> None:
     result = _run(
         [str(venv_python(venv)), "-I", "-X", "utf8", "-m", "unsloth_cli", "-h"],
-        cwd=venv.parent,
-        env=env,
+        cwd = venv.parent,
+        env = env,
     )
     if result.returncode != 0:
         raise StageError(f"staged CLI failed to start: {result.stderr.strip()[-2000:]}")
@@ -144,7 +144,7 @@ def probe_console_script(venv: Path, env: dict[str, str]) -> None:
     if not script.is_file():
         raise StageError(f"staged environment has no launcher at {script}")
     try:
-        result = _run([str(script), "-h"], cwd=venv.parent, env=env)
+        result = _run([str(script), "-h"], cwd = venv.parent, env = env)
     except OSError as exc:
         # A shebang naming a missing interpreter fails here, not with a return code.
         raise StageError(f"staged launcher is not executable: {exc}") from exc

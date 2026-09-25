@@ -208,7 +208,7 @@ def install_kind(marker_path: Path | None) -> str | None:
     if marker_path is None:
         return None
     try:
-        payload = json.loads(Path(marker_path).read_text(encoding="utf-8"))
+        payload = json.loads(Path(marker_path).read_text(encoding = "utf-8"))
     except Exception:  # noqa: BLE001
         return None
     if not isinstance(payload, dict):

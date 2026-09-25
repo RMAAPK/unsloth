@@ -210,8 +210,8 @@ def _peft_converter_source():
         if token:
             request.add_header("Authorization", f"Bearer {token}")
         try:
-            with urllib.request.urlopen(request, timeout=15) as response:
-                return response.read().decode("utf-8", errors="replace")
+            with urllib.request.urlopen(request, timeout = 15) as response:
+                return response.read().decode("utf-8", errors = "replace")
         except urllib.error.HTTPError as exc:
             if exc.code != 404:
                 pytest.skip(f"GitHub fetch failed ({exc.code}) for {url}")
@@ -259,7 +259,6 @@ def _peft_converter_source():
         pytest.skip("peft is not installed and upstream could not be read")
     try:
         import inspect
-
         loaded = importlib.import_module(module)
     except ModuleNotFoundError as exc:
         if (exc.name or "") in (module, "peft.utils", "peft"):
@@ -272,7 +271,6 @@ def _peft_converter_source():
     sources = [inspect.getsource(loaded)]
     for path in getattr(loaded, "__path__", ()) or ():
         import pkgutil
-
         for info in pkgutil.iter_modules([path]):
             try:
                 sources.append(inspect.getsource(importlib.import_module(f"{module}.{info.name}")))
@@ -519,7 +517,7 @@ def test_the_package_layout_is_fetched_when_the_module_layout_is_gone(monkeypatc
 
     tried = []
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         tried.append(request.full_url)
         if request.full_url.endswith("transformers_weight_conversion.py"):
             raise urllib.error.HTTPError(request.full_url, 404, "Not Found", None, None)
@@ -549,7 +547,7 @@ def test_a_package_split_is_followed_more_than_one_level(monkeypatch):
         "transformers_weight_conversion/ops.py": "from transformers.deep import TwoLevelsDown\n",
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -576,7 +574,7 @@ def test_the_package_walk_survives_a_circular_relative_import(monkeypatch):
         ),
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -615,7 +613,7 @@ def test_a_relative_import_under_an_import_time_block_is_followed(monkeypatch):
         ),
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -646,7 +644,7 @@ def test_a_nested_package_resolves_relative_imports_from_its_own_path(monkeypatc
         "transformers_weight_conversion/ops.py": ("from transformers.wrong_level import NotThis\n"),
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -735,7 +733,7 @@ def test_a_re_exporting_package_is_followed_to_its_implementation(monkeypatch):
         "transformers_weight_conversion/ops.py": "from transformers.utils import logging\n",
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -823,7 +821,7 @@ def test_a_called_symbol_refuses_rather_than_answering_wrongly(fake_modules):
     adapter state dict."""
     F._backfill_missing_conversion_symbols()
     core = fake_modules["transformers.core_model_loading"]
-    with pytest.raises(RuntimeError, match="would silently mis-convert"):
+    with pytest.raises(RuntimeError, match = "would silently mis-convert"):
         core.rename_source_key("k", [], [], "prefix", {})
 
 
@@ -832,7 +830,7 @@ def test_a_class_valued_symbol_stays_a_class(fake_modules):
     F._backfill_missing_conversion_symbols()
     core = fake_modules["transformers.core_model_loading"]
     assert isinstance(core.WeightRenaming, type)
-    with pytest.raises(RuntimeError, match="would silently mis-convert"):
+    with pytest.raises(RuntimeError, match = "would silently mis-convert"):
         core.WeightRenaming("a", "b")
 
 
@@ -842,9 +840,9 @@ def test_a_type_check_against_a_placeholder_raises_rather_than_missing():
     Concatenate)` -- so a placeholder that quietly matches nothing drops the
     operations and converts the adapter wrongly with no error."""
     placeholder = F._unsupported_conversion_symbol(
-        "transformers.core_model_loading.WeightConverter", donor_value=type
+        "transformers.core_model_loading.WeightConverter", donor_value = type
     )
-    with pytest.raises(RuntimeError, match="would silently mis-convert"):
+    with pytest.raises(RuntimeError, match = "would silently mis-convert"):
         isinstance(object(), placeholder)
 
 
@@ -852,7 +850,7 @@ def test_a_placeholder_can_still_be_subclassed():
     """peft does `class PeftConcatenate(Concatenate)` at module top, so class
     creation has to work even though construction refuses."""
     placeholder = F._unsupported_conversion_symbol(
-        "transformers.core_model_loading.Concatenate", donor_value=type
+        "transformers.core_model_loading.Concatenate", donor_value = type
     )
 
     class Mine(placeholder):
@@ -880,8 +878,8 @@ def test_the_operation_classes_are_treated_as_runtime(fake_modules):
     F._backfill_missing_conversion_symbols()
     core = fake_modules["transformers.core_model_loading"]
     for name in ("Concatenate", "MergeModulelist", "Transpose"):
-        with pytest.raises(RuntimeError, match="would silently mis-convert"):
-            getattr(core, name)(dim=1)
+        with pytest.raises(RuntimeError, match = "would silently mis-convert"):
+            getattr(core, name)(dim = 1)
 
 
 def test_every_runtime_symbol_is_one_we_backfill():
@@ -1043,7 +1041,7 @@ def test_a_parent_relative_import_resolves_above_its_own_package(monkeypatch):
         ),
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -1070,7 +1068,7 @@ def test_a_relative_import_above_the_package_root_is_dropped(monkeypatch):
         "transformers_weight_conversion/core.py": "from transformers.here import Kept\n",
     }
 
-    def fake_urlopen(request, timeout=None):
+    def fake_urlopen(request, timeout = None):
         for suffix, body in pages.items():
             if request.full_url.endswith(suffix):
                 return io.BytesIO(body.encode())
@@ -1096,7 +1094,7 @@ def test_a_fused_moe_model_is_still_refused():
     """The carve-out must not reach the types that really do need the rewrite."""
     stand_in = F._UnavailableConversionPatternMap()
     for model_type in ("qwen3_moe", "minimax", "deepseek_v3", "olmoe"):
-        with pytest.raises(RuntimeError, match="conversion map"):
+        with pytest.raises(RuntimeError, match = "conversion map"):
             stand_in.get(model_type)
 
 
@@ -1143,8 +1141,8 @@ def _fetch_conversion_mapping_source():
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return response.read().decode("utf-8", errors="replace")
+        with urllib.request.urlopen(request, timeout = 15) as response:
+            return response.read().decode("utf-8", errors = "replace")
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
         return None
 

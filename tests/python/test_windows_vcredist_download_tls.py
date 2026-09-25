@@ -22,7 +22,7 @@ _END = "Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue\n    
 
 def _download_block() -> str:
     """Slice the real download block out of setup.ps1 so the test cannot drift."""
-    source = SETUP_PS1.read_text(encoding="utf-8")
+    source = SETUP_PS1.read_text(encoding = "utf-8")
     start = source.index(_START)
     end = source.index(_END, start) + len(_END)
     return source[start:end]
@@ -65,9 +65,9 @@ def _run(starting_protocol: str) -> dict[str, str]:
     # as running the download block would look like setup.ps1 failing to negotiate TLS 1.2 at all.
     result = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", _script(starting_protocol)],
-        check=True,
-        capture_output=True,
-        text=True,
+        check = True,
+        capture_output = True,
+        text = True,
     )
     out = {}
     for line in result.stdout.splitlines():
@@ -77,7 +77,7 @@ def _run(starting_protocol: str) -> dict[str, str]:
     return out
 
 
-pwsh_only = pytest.mark.skipif(shutil.which("pwsh") is None, reason="PowerShell is unavailable")
+pwsh_only = pytest.mark.skipif(shutil.which("pwsh") is None, reason = "PowerShell is unavailable")
 
 
 @pwsh_only

@@ -59,20 +59,20 @@ PLATFORMS = ("linux", "wsl", "win32", "darwin")
 
 
 def _target(
-    device="cuda",
+    device = "cuda",
     *,
-    dtype="bfloat16",
-    vendor="amd",
+    dtype = "bfloat16",
+    vendor = "amd",
 ):
     return DiffusionDeviceTarget(
-        device=device,
-        dtype=dtype,
-        backend=device,
-        vendor=vendor,
-        supports_model_cpu_offload=True,
-        supports_default_torch_compile=False,
-        supports_pinned_transfer=True,
-        ordinal=None,
+        device = device,
+        dtype = dtype,
+        backend = device,
+        vendor = vendor,
+        supports_model_cpu_offload = True,
+        supports_default_torch_compile = False,
+        supports_pinned_transfer = True,
+        ordinal = None,
     )
 
 
@@ -82,18 +82,18 @@ def _classify(monkeypatch, *, device, integrated, total_mib, platform):
     if platform == "wsl":
         monkeypatch.setenv("WSL_DISTRO_NAME", "Ubuntu")
     else:
-        monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+        monkeypatch.delenv("WSL_DISTRO_NAME", raising = False)
 
-    props = types.SimpleNamespace(integrated=integrated)
+    props = types.SimpleNamespace(integrated = integrated)
     monkeypatch.setitem(
         sys.modules,
         "torch",
         types.SimpleNamespace(
-            cuda=types.SimpleNamespace(
-                current_device=lambda: 0,
-                get_device_properties=lambda _i: props,
+            cuda = types.SimpleNamespace(
+                current_device = lambda: 0,
+                get_device_properties = lambda _i: props,
             ),
-            xpu=None,
+            xpu = None,
         ),
     )
     hardware = types.ModuleType("utils.hardware")
@@ -113,22 +113,22 @@ def _guard(
     monkeypatch,
     snapshot,
     *,
-    device="cuda",
-    dtype="bfloat16",
+    device = "cuda",
+    dtype = "bfloat16",
 ):
     backend = DiffusionBackend()
     monkeypatch.setattr(
-        backend, "_target_for_ordinal", lambda *_a, **_k: _target(device, dtype=dtype)
+        backend, "_target_for_ordinal", lambda *_a, **_k: _target(device, dtype = dtype)
     )
     monkeypatch.setattr(diffusion_mod, "snapshot_device_memory", lambda _t: snapshot)
 
     def verdict(files):
         return backend.declared_footprint_shortfall(
-            types.SimpleNamespace(name="flux.2-dev", base_repo="black-forest-labs/FLUX.2-dev"),
+            types.SimpleNamespace(name = "flux.2-dev", base_repo = "black-forest-labs/FLUX.2-dev"),
             "unsloth/FLUX.2-dev",
             "black-forest-labs/FLUX.2-dev",
-            kind="pipeline",
-            declared_files=files,
+            kind = "pipeline",
+            declared_files = files,
         )
 
     return verdict
@@ -142,10 +142,10 @@ def test_a_discrete_card_keeps_loading_what_it_loads_today(monkeypatch, platform
     on the memory KIND and never on the pipeline being larger than the card."""
     snapshot = _classify(
         monkeypatch,
-        device="cuda",
-        integrated=False,
-        total_mib=total_mib,
-        platform=platform,
+        device = "cuda",
+        integrated = False,
+        total_mib = total_mib,
+        platform = platform,
     )
     assert snapshot.memory_kind == "discrete_vram"
     assert _guard(monkeypatch, snapshot)(FLUX2_DEV) is None
@@ -157,10 +157,10 @@ def test_an_integrated_gpu_is_the_one_machine_that_is_judged(monkeypatch, platfo
     oversized load outright. Refused before the download, and a model that fits is not."""
     snapshot = _classify(
         monkeypatch,
-        device="cuda",
-        integrated=True,
-        total_mib=64 * GIB_MIB,
-        platform=platform,
+        device = "cuda",
+        integrated = True,
+        total_mib = 64 * GIB_MIB,
+        platform = platform,
     )
     assert snapshot.memory_kind == "unified_memory"
     verdict = _guard(monkeypatch, snapshot)
@@ -171,13 +171,13 @@ def test_an_integrated_gpu_is_the_one_machine_that_is_judged(monkeypatch, platfo
 def test_apple_silicon_is_judged_the_same_way(monkeypatch):
     snapshot = _classify(
         monkeypatch,
-        device="mps",
-        integrated=False,
-        total_mib=36 * GIB_MIB,
-        platform="darwin",
+        device = "mps",
+        integrated = False,
+        total_mib = 36 * GIB_MIB,
+        platform = "darwin",
     )
     assert snapshot.memory_kind == "unified_memory"
-    verdict = _guard(monkeypatch, snapshot, device="mps")
+    verdict = _guard(monkeypatch, snapshot, device = "mps")
     assert verdict(FLUX2_DEV) is not None
     assert verdict(LUMINA_2) is None
 
@@ -189,25 +189,25 @@ def test_a_cpu_only_host_is_left_alone(monkeypatch, platform):
     one already makes, or a CPU install starts refusing models it can page through."""
     snapshot = _classify(
         monkeypatch,
-        device="cpu",
-        integrated=False,
-        total_mib=16 * GIB_MIB,
-        platform=platform,
+        device = "cpu",
+        integrated = False,
+        total_mib = 16 * GIB_MIB,
+        platform = platform,
     )
     assert snapshot.memory_kind == "system_memory"
-    assert _guard(monkeypatch, snapshot, device="cpu")(FLUX2_DEV) is None
+    assert _guard(monkeypatch, snapshot, device = "cpu")(FLUX2_DEV) is None
 
 
 def test_an_intel_gpu_is_left_alone(monkeypatch):
     snapshot = _classify(
         monkeypatch,
-        device="xpu",
-        integrated=False,
-        total_mib=16 * GIB_MIB,
-        platform="linux",
+        device = "xpu",
+        integrated = False,
+        total_mib = 16 * GIB_MIB,
+        platform = "linux",
     )
     assert snapshot.memory_kind == "discrete_vram"
-    assert _guard(monkeypatch, snapshot, device="xpu")(FLUX2_DEV) is None
+    assert _guard(monkeypatch, snapshot, device = "xpu")(FLUX2_DEV) is None
 
 
 def test_a_driver_that_will_not_answer_is_left_alone(monkeypatch):
@@ -218,9 +218,9 @@ def test_a_driver_that_will_not_answer_is_left_alone(monkeypatch):
         sys.modules,
         "torch",
         types.SimpleNamespace(
-            cuda=types.SimpleNamespace(
-                current_device=lambda: 0,
-                get_device_properties=lambda _i: (_ for _ in ()).throw(RuntimeError("no ctx")),
+            cuda = types.SimpleNamespace(
+                current_device = lambda: 0,
+                get_device_properties = lambda _i: (_ for _ in ()).throw(RuntimeError("no ctx")),
             ),
         ),
     )
@@ -247,13 +247,13 @@ def test_no_offload_request_can_talk_a_shared_pool_into_it(monkeypatch, memory_m
 
     def verdict(files, base):
         return backend.declared_footprint_shortfall(
-            types.SimpleNamespace(name="flux.2-dev", base_repo=base),
+            types.SimpleNamespace(name = "flux.2-dev", base_repo = base),
             "unsloth/FLUX.2-dev",
             base,
-            kind="pipeline",
-            declared_files=files,
-            memory_mode=memory_mode,
-            cpu_offload=cpu_offload,
+            kind = "pipeline",
+            declared_files = files,
+            memory_mode = memory_mode,
+            cpu_offload = cpu_offload,
         )
 
     assert verdict(FLUX2_DEV, "black-forest-labs/FLUX.2-dev") is not None
@@ -272,12 +272,12 @@ _MANIFEST = {
 }
 
 
-def _info(*, siblings=("model_index.json",), sha="deadbeef"):
+def _info(*, siblings = ("model_index.json",), sha = "deadbeef"):
     return types.SimpleNamespace(
-        siblings=None
+        siblings = None
         if siblings is None
-        else [types.SimpleNamespace(rfilename=name) for name in siblings],
-        sha=sha,
+        else [types.SimpleNamespace(rfilename = name) for name in siblings],
+        sha = sha,
     )
 
 
@@ -286,7 +286,7 @@ def _stub_manifest(
     tmp_path,
     payload,
     *,
-    raises=None,
+    raises = None,
 ):
     calls: list = []
 
@@ -306,7 +306,7 @@ def _stub_manifest(
 
 def test_the_manifest_names_the_components_and_the_revision_it_was_read_at(monkeypatch, tmp_path):
     calls = _stub_manifest(monkeypatch, tmp_path, _MANIFEST)
-    selected, ignored = _pipeline_components_from_index("repo", _info(sha="abc123"), None)
+    selected, ignored = _pipeline_components_from_index("repo", _info(sha = "abc123"), None)
     # A component declared [None, None] is not loaded, so its files are not priced.
     assert selected == frozenset({"transformer", "text_encoder", "vae"})
     assert ignored == frozenset({"transformer/diffusion_pytorch_model.fp16.safetensors"})
@@ -331,7 +331,7 @@ def test_the_manifest_names_the_components_and_the_revision_it_was_read_at(monke
         (_MANIFEST, ("model_index.json",), OSError("hub unreachable")),
         (_MANIFEST, ("model_index.json",), PermissionError("gated")),
     ],
-    ids=[
+    ids = [
         "invalid-json",
         "a-list",
         "a-string",
@@ -353,11 +353,11 @@ def test_a_manifest_that_cannot_be_read_declines_instead_of_raising(
 ):
     """None here means staging keeps the previous best-effort listing and resident sizing
     issues no hard verdict, which is the whole fail-open contract."""
-    _stub_manifest(monkeypatch, tmp_path, payload, raises=raises)
+    _stub_manifest(monkeypatch, tmp_path, payload, raises = raises)
     failures: list = []
     assert (
         _pipeline_components_from_index(
-            "repo", _info(siblings=siblings), None, failures_out=failures
+            "repo", _info(siblings = siblings), None, failures_out = failures
         )
         is None
     )
@@ -365,7 +365,7 @@ def test_a_manifest_that_cannot_be_read_declines_instead_of_raising(
 
 
 def test_an_ignore_list_of_the_wrong_shape_is_tolerated(monkeypatch, tmp_path):
-    _stub_manifest(monkeypatch, tmp_path, dict(_MANIFEST, _ignore_files="not-a-list"))
+    _stub_manifest(monkeypatch, tmp_path, dict(_MANIFEST, _ignore_files = "not-a-list"))
     selected, ignored = _pipeline_components_from_index("repo", _info(), None)
     assert selected == frozenset({"transformer", "text_encoder", "vae"})
     assert ignored == frozenset()
@@ -421,7 +421,7 @@ def test_suppressing_the_verdict_leaves_the_file_scope_alone(monkeypatch):
     "fully downloaded" answer goes wrong."""
     calls: list = []
     backend = _plan_probe(monkeypatch, calls)
-    plan = backend.download_plan("unsloth/FLUX.2-dev", model_kind="pipeline", memory_verdict=False)
+    plan = backend.download_plan("unsloth/FLUX.2-dev", model_kind = "pipeline", memory_verdict = False)
     assert plan["incompatible_reason"] is None
     assert calls == ["te_prequant", "dit_prequant"]
 
@@ -432,7 +432,7 @@ def test_clearing_the_probe_suppresses_the_verdict_too(monkeypatch):
     calls: list = []
     backend = _plan_probe(monkeypatch, calls)
     plan = backend.download_plan(
-        "unsloth/FLUX.2-dev", model_kind="pipeline", allow_device_probe=False
+        "unsloth/FLUX.2-dev", model_kind = "pipeline", allow_device_probe = False
     )
     assert plan["incompatible_reason"] is None
     assert calls == []
@@ -441,6 +441,6 @@ def test_clearing_the_probe_suppresses_the_verdict_too(monkeypatch):
 def test_the_default_plan_still_refuses_an_oversized_pipeline(monkeypatch):
     calls: list = []
     backend = _plan_probe(monkeypatch, calls)
-    plan = backend.download_plan("unsloth/FLUX.2-dev", model_kind="pipeline")
+    plan = backend.download_plan("unsloth/FLUX.2-dev", model_kind = "pipeline")
     assert plan["incompatible_reason"] is not None
     assert "unified memory" in plan["incompatible_reason"]

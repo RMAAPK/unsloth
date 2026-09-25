@@ -46,7 +46,7 @@ BOB = AccountContext("b" * 32, "bob")
 ACCOUNTS = {account.username: account for account in (OWNER, ALICE, BOB)}
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def account_databases(monkeypatch):
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
     for account in ACCOUNTS.values():
@@ -76,12 +76,12 @@ def client(monkeypatch):
 
     app.dependency_overrides[get_current_subject] = subject
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
-    app.include_router(chat_history.router, prefix="/chat")
-    app.include_router(chat_generation_runs.router, prefix="/runs")
-    app.include_router(settings.router, prefix="/settings")
-    app.include_router(prompts.router, prefix="/prompts")
-    app.include_router(profile_stats.router, prefix="/profile")
-    app.include_router(research_runs.router, prefix="/research")
+    app.include_router(chat_history.router, prefix = "/chat")
+    app.include_router(chat_generation_runs.router, prefix = "/runs")
+    app.include_router(settings.router, prefix = "/settings")
+    app.include_router(prompts.router, prefix = "/prompts")
+    app.include_router(profile_stats.router, prefix = "/profile")
+    app.include_router(research_runs.router, prefix = "/research")
 
     async def remove_sandboxes(*args):
         return 0, []
@@ -94,8 +94,8 @@ def client(monkeypatch):
 
 def seed_chat(
     account,
-    thread_id="private",
-    text="private text",
+    thread_id = "private",
+    text = "private text",
 ):
     def seed():
         studio_db.upsert_chat_thread(
@@ -131,18 +131,18 @@ def seed_chat(
 
 def seed_run(
     account,
-    run_id="run",
-    thread_id="private",
+    run_id = "run",
+    thread_id = "private",
 ):
     return run_as(
         account,
         chat_generation_runs_db.create_run,
-        run_id=run_id,
-        owner_subject=account.username,
-        thread_id=thread_id,
-        user_message_id="message",
-        assistant_message_id="reply",
-        request_payload={"model": "local", "messages": [{"role": "user", "content": "Hello"}]},
+        run_id = run_id,
+        owner_subject = account.username,
+        thread_id = thread_id,
+        user_message_id = "message",
+        assistant_message_id = "reply",
+        request_payload = {"model": "local", "messages": [{"role": "user", "content": "Hello"}]},
     )[0]
 
 
@@ -183,7 +183,7 @@ def seed_run(
 def test_foreign_ids_do_not_authorize_reads_or_writes(client, method, path, body):
     seed_chat(BOB)
     seed_run(BOB)
-    response = client.request(method, path, json=body)
+    response = client.request(method, path, json = body)
     assert response.status_code == 404, response.text
     assert run_as(BOB, studio_db.get_chat_thread, "private")["title"] == "private text"
     assert run_as(BOB, chat_generation_runs_db.get_run, "run")["status"] == "queued"
@@ -198,10 +198,10 @@ def test_list_export_and_delete_stay_in_the_account(client):
     assert client.get("/chat/export").json()["threadCount"] == 0
     bob_event = threading.Event()
     with run_as(
-        BOB, active_generations.ActiveGeneration, bob_event, thread_id="private", run_id="run"
+        BOB, active_generations.ActiveGeneration, bob_event, thread_id = "private", run_id = "run"
     ):
         assert (
-            client.request("DELETE", "/chat/threads", json={"ids": ["private"]}).status_code == 200
+            client.request("DELETE", "/chat/threads", json = {"ids": ["private"]}).status_code == 200
         )
         assert not bob_event.is_set()
     assert run_as(BOB, studio_db.get_chat_thread, "private") is not None
@@ -212,25 +212,25 @@ def test_list_export_and_delete_stay_in_the_account(client):
 def test_cancellation_never_uses_an_unscoped_supervisor(supervisor_name):
     calls = []
     request = SimpleNamespace(
-        app=SimpleNamespace(
-            state=SimpleNamespace(
+        app = SimpleNamespace(
+            state = SimpleNamespace(
                 **{
-                    supervisor_name: SimpleNamespace(cancel=calls.append),
+                    supervisor_name: SimpleNamespace(cancel = calls.append),
                 }
             )
         )
     )
     alice_event, bob_event = threading.Event(), threading.Event()
     with (
-        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id="same"),
-        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id="same"),
+        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id = "same"),
+        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id = "same"),
     ):
         run_as(
             ALICE,
             chat_generation_runs.cancel_account_run,
             request,
             "same",
-            supervisor_name=supervisor_name,
+            supervisor_name = supervisor_name,
         )
     assert alice_event.is_set() and not bob_event.is_set()
     assert calls == ([] if supervisor_name == "chat_generation_supervisor" else ["same"])
@@ -247,19 +247,19 @@ def test_cancellation_never_uses_an_unscoped_supervisor(supervisor_name):
 @pytest.mark.parametrize("supervisor_present", [True, False])
 def test_thread_cleanup_scopes_run_ids(cleanup, supervisor_present):
     calls = []
-    supervisor = SimpleNamespace(cancel=calls.append) if supervisor_present else None
+    supervisor = SimpleNamespace(cancel = calls.append) if supervisor_present else None
     request = SimpleNamespace(
-        app=SimpleNamespace(
-            state=SimpleNamespace(
-                research_supervisor=supervisor,
-                chat_generation_supervisor=supervisor,
+        app = SimpleNamespace(
+            state = SimpleNamespace(
+                research_supervisor = supervisor,
+                chat_generation_supervisor = supervisor,
             )
         )
     )
     alice_event, bob_event = threading.Event(), threading.Event()
     with (
-        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id="same"),
-        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id="same"),
+        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id = "same"),
+        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id = "same"),
     ):
         run_as(ALICE, cleanup, request, ["same"])
     assert alice_event.is_set() and not bob_event.is_set()
@@ -273,8 +273,8 @@ def test_cancel_route_scopes_same_id_in_two_accounts(client):
         seed_run(account)
     alice_event, bob_event = threading.Event(), threading.Event()
     with (
-        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id="run"),
-        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id="run"),
+        run_as(ALICE, active_generations.ActiveGeneration, alice_event, run_id = "run"),
+        run_as(BOB, active_generations.ActiveGeneration, bob_event, run_id = "run"),
     ):
         assert client.post("/runs/run/cancel").status_code == 200
     assert alice_event.is_set() and not bob_event.is_set()
@@ -293,14 +293,14 @@ def test_create_refuses_a_foreign_supervisor_slot_before_writing(client, monkeyp
         "assistantMessageId": "reply",
         "requestPayload": {"model": "local"},
     }
-    with run_as(BOB, active_generations.ActiveGeneration, threading.Event(), run_id="same"):
-        assert client.post("/runs", json=body).status_code == 404
+    with run_as(BOB, active_generations.ActiveGeneration, threading.Event(), run_id = "same"):
+        assert client.post("/runs", json = body).status_code == 404
     assert run_as(ALICE, chat_generation_runs_db.get_run, "same") is None
 
 
 def test_event_wait_executor_retains_account_context(client, monkeypatch):
     for account in (OWNER, ALICE):
-        seed_chat(account, text=account.username)
+        seed_chat(account, text = account.username)
         seed_run(account)
         run_as(account, chat_generation_runs_db.request_cancel, "run")
     seen = []
@@ -342,11 +342,11 @@ def test_clear_history_reaps_only_its_own_images_and_leaves_foreign_runs(client,
         seed_run(account)
     bob_event = threading.Event()
     with run_as(
-        BOB, active_generations.ActiveGeneration, bob_event, thread_id="private", run_id="run"
+        BOB, active_generations.ActiveGeneration, bob_event, thread_id = "private", run_id = "run"
     ):
         for _ in range(2):
             response = client.request(
-                "DELETE", "/chat", json={"ids": ["private"], "operationId": "same-clear"}
+                "DELETE", "/chat", json = {"ids": ["private"], "operationId": "same-clear"}
             )
             assert response.status_code == 200, response.text
         assert not bob_event.is_set()
@@ -393,7 +393,7 @@ OWNER_PATHS = [
 
 @pytest.mark.parametrize("method,path", OWNER_PATHS)
 def test_every_owner_setting_rejects_managed_accounts(client, method, path):
-    response = client.request(method, "/settings" + path, json={})
+    response = client.request(method, "/settings" + path, json = {})
     assert response.status_code == 403, response.text
 
 
@@ -416,7 +416,7 @@ def test_personal_settings_do_not_change_owner_rows(client, path, body):
         before = tuple(
             conn.execute("SELECT * FROM app_settings WHERE key = 'personalization'").fetchone()
         )
-    assert client.put("/settings" + path, json=body).status_code == 200
+    assert client.put("/settings" + path, json = body).status_code == 200
     with studio_db.get_connection() as conn:
         after = tuple(
             conn.execute("SELECT * FROM app_settings WHERE key = 'personalization'").fetchone()
@@ -433,7 +433,7 @@ def test_shared_policy_reads_owner_storage_and_restores_context(client, monkeypa
     assert client.get("/settings/upload-limit").status_code == 200
     assert seen == [OWNER.account_id]
     assert (
-        client.put("/settings/personalization", json={"profile": {"nickname": "alice"}}).status_code
+        client.put("/settings/personalization", json = {"profile": {"nickname": "alice"}}).status_code
         == 200
     )
     assert (
@@ -447,36 +447,36 @@ def test_owner_setting_keeps_200_and_single_account_policy_is_inert(client, monk
     monkeypatch.setattr(
         settings,
         "_llama_cpp_path_response",
-        lambda: settings.LlamaCppPathResponse(source="default", editable=True, available=False),
+        lambda: settings.LlamaCppPathResponse(source = "default", editable = True, available = False),
     )
-    response = client.get("/settings/llama-cpp-path", headers={"x-test-account": "unsloth"})
+    response = client.get("/settings/llama-cpp-path", headers = {"x-test-account": "unsloth"})
     assert response.status_code == 200, response.text
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: False)
     # Deactivating the last managed account must not open an owner-only setting to a request still bound to it.
-    owner = client.get("/settings/llama-cpp-path", headers={"x-test-account": "unsloth"})
+    owner = client.get("/settings/llama-cpp-path", headers = {"x-test-account": "unsloth"})
     assert owner.status_code == 200
     assert client.get("/settings/llama-cpp-path").status_code == 403
 
 
 def test_managed_last_model_key_survives_username_rename(client):
     payload = {"id": "alice-model", "kind": "gguf"}
-    assert client.put("/settings/last-local-model", json=payload).status_code == 200
+    assert client.put("/settings/last-local-model", json = payload).status_code == 200
     renamed = AccountContext(ALICE.account_id, "new-name")
-    result = run_as(renamed, settings.get_last_local_model, current_subject=renamed.username)
+    result = run_as(renamed, settings.get_last_local_model, current_subject = renamed.username)
     assert result.id == "alice-model"
     digest = hashlib.sha256(b"unsloth").hexdigest()[:32]
     assert settings._last_local_model_key("unsloth") == f"last_local_model_load:{digest}"
 
 
 def test_owner_chats_prompts_and_settings_survive_alice(client):
-    seed_chat(OWNER, text="owner chat")
-    seed_chat(ALICE, text="alice chat")
+    seed_chat(OWNER, text = "owner chat")
+    seed_chat(ALICE, text = "alice chat")
     studio_db.upsert_chat_settings_merge({"autoTitle": False})
-    assert client.put("/chat/settings", json={"autoTitle": True}).status_code == 200
+    assert client.put("/chat/settings", json = {"autoTitle": True}).status_code == 200
     prompt = {"id": "same", "name": "Owner", "text": "owner prompt", "createdAt": 1, "updatedAt": 1}
     studio_db.upsert_prompt_entry(prompt)
     assert (
-        client.put("/prompts/entries/same", json={**prompt, "text": "alice prompt"}).status_code
+        client.put("/prompts/entries/same", json = {**prompt, "text": "alice prompt"}).status_code
         == 200
     )
     assert client.delete("/prompts/entries/same").status_code == 204
@@ -498,14 +498,14 @@ def test_keyless_cache_is_always_populated_from_the_owner():
     )
     assert run_as(ALICE, keyless_api_access.get_keyless_api_access_settings) == ("off", False)
     assert keyless_api_access.get_keyless_api_access_settings() == ("off", False)
-    with pytest.raises(ValueError, match="owner"):
-        run_as(ALICE, keyless_api_access.set_keyless_api_access, "full", tools=True)
+    with pytest.raises(ValueError, match = "owner"):
+        run_as(ALICE, keyless_api_access.set_keyless_api_access, "full", tools = True)
     assert keyless_api_access.get_keyless_api_access_settings() == ("off", False)
 
 
 def test_profile_cache_cannot_follow_a_reused_username(monkeypatch):
-    seed_chat(ALICE, text="Alice model")
-    seed_chat(BOB, text="Bob model")
+    seed_chat(ALICE, text = "Alice model")
+    seed_chat(BOB, text = "Bob model")
     for account in (ALICE, BOB):
         run_as(
             account,
@@ -524,10 +524,10 @@ def test_profile_cache_cannot_follow_a_reused_username(monkeypatch):
         return await arun_as(
             account,
             profile_stats.get_profile_stats(
-                days=30,
-                tz_offset_minutes=0,
-                tz="",
-                current_subject="alice",
+                days = 30,
+                tz_offset_minutes = 0,
+                tz = "",
+                current_subject = "alice",
             ),
         )
 
@@ -552,10 +552,10 @@ def test_alternating_accounts_keep_their_cached_profile_stats(monkeypatch):
         return await arun_as(
             account,
             profile_stats.get_profile_stats(
-                days=30,
-                tz_offset_minutes=0,
-                tz="",
-                current_subject="reader",
+                days = 30,
+                tz_offset_minutes = 0,
+                tz = "",
+                current_subject = "reader",
             ),
         )
 
@@ -567,16 +567,16 @@ def test_alternating_accounts_keep_their_cached_profile_stats(monkeypatch):
 
 def test_api_usage_statistics_read_only_the_account_database(client):
     receipt = api_usage_db.ApiUsageReceipt(
-        id="receipt",
-        subject="bob",
-        endpoint="/v1/chat/completions",
-        model="bob-model",
-        status="completed",
-        prompt_tokens=10,
-        completion_tokens=20,
-        total_tokens=30,
-        created_at=1,
-        via_api_key=True,
+        id = "receipt",
+        subject = "bob",
+        endpoint = "/v1/chat/completions",
+        model = "bob-model",
+        status = "completed",
+        prompt_tokens = 10,
+        completion_tokens = 20,
+        total_tokens = 30,
+        created_at = 1,
+        via_api_key = True,
     )
     run_as(BOB, api_usage_db.record_api_usage, receipt)
     response = client.get("/profile/stats")
@@ -588,14 +588,14 @@ def test_single_account_cancel_still_calls_the_original_supervisor(monkeypatch):
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: False)
     calls = []
     request = SimpleNamespace(
-        app=SimpleNamespace(
-            state=SimpleNamespace(
-                chat_generation_supervisor=SimpleNamespace(cancel=calls.append),
+        app = SimpleNamespace(
+            state = SimpleNamespace(
+                chat_generation_supervisor = SimpleNamespace(cancel = calls.append),
             )
         )
     )
     chat_generation_runs.cancel_account_run(
-        request, "old-run", supervisor_name="chat_generation_supervisor"
+        request, "old-run", supervisor_name = "chat_generation_supervisor"
     )
     assert calls == ["old-run"]
 
@@ -608,7 +608,7 @@ def test_single_account_cancel_without_supervisor_keeps_existing_behavior(client
     monkeypatch.setattr(
         chat_generation_runs, "cancel_account_run", lambda *args, **kwargs: calls.append(args)
     )
-    response = client.post("/runs/run/cancel", headers={"x-test-account": "unsloth"})
+    response = client.post("/runs/run/cancel", headers = {"x-test-account": "unsloth"})
     assert response.status_code == 200
     assert calls == []
 
@@ -618,12 +618,12 @@ def test_deep_research_foreign_run_is_not_visible_or_cancellable(client):
     run_as(
         BOB,
         research_runs_db.create_run,
-        run_id="research",
-        owner_subject="bob",
-        thread_id="private",
-        user_message_id="message",
-        assistant_message_id=None,
-        config={},
+        run_id = "research",
+        owner_subject = "bob",
+        thread_id = "private",
+        user_message_id = "message",
+        assistant_message_id = None,
+        config = {},
     )
     assert client.get("/research/active?threadId=private").json() == {"runs": [], "hasRun": False}
     assert client.get("/research/research").status_code == 404
@@ -639,7 +639,7 @@ def test_research_cleanup_reaches_the_account_keyed_supervisor():
     )
     supervisor._cancel_events = {}
     request = SimpleNamespace(
-        app=SimpleNamespace(state=SimpleNamespace(research_supervisor=supervisor))
+        app = SimpleNamespace(state = SimpleNamespace(research_supervisor = supervisor))
     )
     alice_event = run_as(ALICE, supervisor._cancel_event, "same")
     bob_event = run_as(BOB, supervisor._cancel_event, "same")

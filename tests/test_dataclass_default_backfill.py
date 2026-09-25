@@ -76,7 +76,7 @@ class _KwOnlyConfig:
     """Stands in for transformers 5.5.1+, whose hook passes kw_only=True."""
 
     def __init_subclass__(cls, **kwargs):
-        _fake_dataclass(cls, kw_only=True)
+        _fake_dataclass(cls, kw_only = True)
 
 
 class _OrderedConfig:

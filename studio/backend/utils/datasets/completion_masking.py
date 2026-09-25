@@ -32,10 +32,10 @@ def apply_completion_masking(
     trainer,
     model_name,
     train_fn,
-    num_proc=None,
-    notify=None,
-    detect_fn=None,
-    dataset_template=None,
+    num_proc = None,
+    notify = None,
+    detect_fn = None,
+    dataset_template = None,
 ):
     """Apply completion-only masking with an explicit dataset template or
     auto-detection followed by the manual model-template fallback.
@@ -97,8 +97,8 @@ def apply_completion_masking(
         else:
             trainer = train_fn(
                 trainer,
-                instruction_part=markers["instruction"],
-                response_part=markers["response"],
+                instruction_part = markers["instruction"],
+                response_part = markers["response"],
                 **kwargs,
             )
         notify(
@@ -141,8 +141,8 @@ def apply_completion_masking(
     if auto_instruction and auto_response:
         trainer = train_fn(
             trainer,
-            instruction_part=auto_instruction,
-            response_part=auto_response,
+            instruction_part = auto_instruction,
+            response_part = auto_response,
             **kwargs,
         )
         notify(
@@ -154,8 +154,8 @@ def apply_completion_masking(
     if instruction_part and response_part:
         trainer = train_fn(
             trainer,
-            instruction_part=instruction_part,
-            response_part=response_part,
+            instruction_part = instruction_part,
+            response_part = response_part,
             **kwargs,
         )
         notify(

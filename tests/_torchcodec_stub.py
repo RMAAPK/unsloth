@@ -55,20 +55,20 @@ def install(target_dir: "str | Path | None" = None) -> "str | None":
     root = (
         Path(target_dir)
         if target_dir
-        else Path(tempfile.mkdtemp(prefix="unsloth-torchcodec-stub-"))
+        else Path(tempfile.mkdtemp(prefix = "unsloth-torchcodec-stub-"))
     )
     package = root / NAME
-    package.mkdir(parents=True, exist_ok=True)
+    package.mkdir(parents = True, exist_ok = True)
     (package / "__init__.py").write_text(
         f'"""Placeholder; the real torchcodec publishes no CPU wheel."""\n\n__version__ = "{VERSION}"\n',
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     dist_info = root / f"{NAME}-{VERSION}.dist-info"
-    dist_info.mkdir(parents=True, exist_ok=True)
-    (dist_info / "METADATA").write_text(_METADATA, encoding="utf-8")
+    dist_info.mkdir(parents = True, exist_ok = True)
+    (dist_info / "METADATA").write_text(_METADATA, encoding = "utf-8")
     # Names who put it there, so anyone reading the venv can tell this from a real install.
-    (dist_info / "INSTALLER").write_text("unsloth-notebooks-smoke\n", encoding="utf-8")
-    (dist_info / "RECORD").write_text("", encoding="utf-8")
+    (dist_info / "INSTALLER").write_text("unsloth-notebooks-smoke\n", encoding = "utf-8")
+    (dist_info / "RECORD").write_text("", encoding = "utf-8")
 
     sys.path.insert(0, str(root))
     # The path entry is new, so the finders' directory caches have to be dropped or the

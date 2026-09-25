@@ -37,10 +37,10 @@ def test_discovery_avoids_full_catalog(monkeypatch, operation):
 @pytest.mark.parametrize(
     "unsupported",
     [
-        pytest.param("404", id="route-404s"),
+        pytest.param("404", id = "route-404s"),
         # Studio's SPA catch-all answered an unknown /api path with a 200 body before it
         # was changed to raise 404, so a resident model must survive that shape too.
-        pytest.param({"error": "API endpoint not found"}, id="spa-catch-all-answers-200"),
+        pytest.param({"error": "API endpoint not found"}, id = "spa-catch-all-answers-200"),
     ],
 )
 def test_old_server_falls_back_to_compat_listing(monkeypatch, unsupported):
@@ -93,8 +93,8 @@ def test_discovery_timeout_is_not_retried_as_old_server(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "data",
     [
-        pytest.param([], id="resident-listing-is-empty"),
-        pytest.param([{"id": "org/Model", "loaded": False}], id="old-server-lists-only-unloaded"),
+        pytest.param([], id = "resident-listing-is-empty"),
+        pytest.param([{"id": "org/Model", "loaded": False}], id = "old-server-lists-only-unloaded"),
     ],
 )
 def test_nothing_resident_reads_the_same_whatever_the_server_lists(monkeypatch, capsys, data):

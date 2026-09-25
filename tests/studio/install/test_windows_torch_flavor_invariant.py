@@ -26,9 +26,9 @@ _SETUP_PS1 = PACKAGE_ROOT / "studio" / "setup.ps1"
 _INSTALL_PS1 = PACKAGE_ROOT / "install.ps1"
 _STACK_PATH = PACKAGE_ROOT / "studio" / "install_python_stack.py"
 
-_SETUP_SRC = _SETUP_PS1.read_text(encoding="utf-8")
-_INSTALL_SRC = _INSTALL_PS1.read_text(encoding="utf-8")
-_STACK_SRC = _STACK_PATH.read_text(encoding="utf-8")
+_SETUP_SRC = _SETUP_PS1.read_text(encoding = "utf-8")
+_INSTALL_SRC = _INSTALL_PS1.read_text(encoding = "utf-8")
+_STACK_SRC = _STACK_PATH.read_text(encoding = "utf-8")
 
 _MANIFEST_SPEC = importlib.util.spec_from_file_location(
     "studio_install_manifest_flavor", PACKAGE_ROOT / "studio" / "install_manifest.py"
@@ -41,7 +41,7 @@ _MANIFEST_SPEC.loader.exec_module(install_manifest)
 
 def _line_of(source: str, needle: str) -> int:
     """1-based line number of the first line containing `needle`."""
-    for number, line in enumerate(source.splitlines(), start=1):
+    for number, line in enumerate(source.splitlines(), start = 1):
         if needle in line:
             return number
     raise AssertionError(f"not found in source: {needle!r}")
@@ -331,8 +331,8 @@ class TestStepTotals:
         # Both carry the Windows-only accelerate repair (8c), which ignores NO_TORCH; the
         # no-torch case also gets the runtime-deps slot an update announces separately. Both also
         # carry the diffusers main slot (11c), which is spent on every path including opting out.
-        assert _base_total(IS_WINDOWS=True) == 17
-        assert _base_total(IS_WINDOWS=True, NO_TORCH=True) == 16
+        assert _base_total(IS_WINDOWS = True) == 17
+        assert _base_total(IS_WINDOWS = True, NO_TORCH = True) == 16
 
     @pytest.mark.parametrize(
         "flags,total",
@@ -352,7 +352,7 @@ class TestManifestRecordsTheFlavor:
     def test_round_trip(self, tmp_path):
         assert (
             install_manifest.write_manifest(
-                root=tmp_path, req_root=tmp_path, expected_torch_tag="cu124"
+                root = tmp_path, req_root = tmp_path, expected_torch_tag = "cu124"
             )
             is not None
         )
@@ -360,13 +360,13 @@ class TestManifestRecordsTheFlavor:
 
     def test_the_tag_is_normalised(self, tmp_path):
         install_manifest.write_manifest(
-            root=tmp_path, req_root=tmp_path, expected_torch_tag="  CU128 "
+            root = tmp_path, req_root = tmp_path, expected_torch_tag = "  CU128 "
         )
         assert install_manifest.recorded_torch_flavor(tmp_path) == "cu128"
 
     def test_absent_reads_as_unknown_not_cpu(self, tmp_path):
         # Claiming a flavor nobody selected would let a repair reinstall over a deliberate build.
-        install_manifest.write_manifest(root=tmp_path, req_root=tmp_path)
+        install_manifest.write_manifest(root = tmp_path, req_root = tmp_path)
         assert install_manifest.recorded_torch_flavor(tmp_path) is None
 
     def test_no_manifest_reads_as_unknown(self, tmp_path):
@@ -374,16 +374,16 @@ class TestManifestRecordsTheFlavor:
 
     def test_a_hand_edited_non_string_reads_as_unknown(self, tmp_path):
         path = install_manifest.manifest_path(tmp_path)
-        path.write_text(json.dumps({"schema": 1, "expected_torch_tag": 124}), encoding="utf-8")
+        path.write_text(json.dumps({"schema": 1, "expected_torch_tag": 124}), encoding = "utf-8")
         assert install_manifest.recorded_torch_flavor(tmp_path) is None
 
     def test_the_key_is_additive(self, tmp_path):
         # MANIFEST_SCHEMA must not move: verify_install rejects a schema it does not know.
         assert install_manifest.MANIFEST_SCHEMA == 1
         install_manifest.write_manifest(
-            root=tmp_path, req_root=tmp_path, expected_torch_tag="cu124", no_torch=False
+            root = tmp_path, req_root = tmp_path, expected_torch_tag = "cu124", no_torch = False
         )
-        payload = json.loads(install_manifest.manifest_path(tmp_path).read_text(encoding="utf-8"))
+        payload = json.loads(install_manifest.manifest_path(tmp_path).read_text(encoding = "utf-8"))
         assert payload["schema"] == 1
         assert payload["no_torch"] is False
         assert payload["expected_torch_tag"] == "cu124"
@@ -391,9 +391,9 @@ class TestManifestRecordsTheFlavor:
     def test_no_index_url_is_ever_written(self, tmp_path):
         # A pinned index can carry a token; this file sits in the venv and is read back.
         install_manifest.write_manifest(
-            root=tmp_path, req_root=tmp_path, expected_torch_tag="cu124"
+            root = tmp_path, req_root = tmp_path, expected_torch_tag = "cu124"
         )
-        raw = install_manifest.manifest_path(tmp_path).read_text(encoding="utf-8")
+        raw = install_manifest.manifest_path(tmp_path).read_text(encoding = "utf-8")
         assert "http" not in raw
 
     def test_the_stack_carries_a_previous_record_forward(self):
@@ -435,7 +435,7 @@ class TestTheFlavorProvenance:
     """A recorded flavor is only a CHOICE when someone named it."""
 
     def test_install_sh_marks_a_derived_backend_as_derived(self):
-        source = (PACKAGE_ROOT / "install.sh").read_text(encoding="utf-8")
+        source = (PACKAGE_ROOT / "install.sh").read_text(encoding = "utf-8")
         block = source[source.index('case "$_torch_index_leaf" in') :]
         block = block[: block.index("_is_pip_rocm_family_leaf")]
         assert 'UNSLOTH_TORCH_BACKEND_SOURCE="resolved"' in block, (
@@ -446,7 +446,7 @@ class TestTheFlavorProvenance:
     def test_a_backend_the_caller_stated_is_not_marked_derived(self):
         # On a GPU-less host the resolved value is cpu too, so a stated choice and the
         # automatic one are indistinguishable unless install.sh checks BEFORE overwriting.
-        source = (PACKAGE_ROOT / "install.sh").read_text(encoding="utf-8")
+        source = (PACKAGE_ROOT / "install.sh").read_text(encoding = "utf-8")
         assert "_torch_backend_was_stated" in source
         check = source.index("_torch_backend_was_stated=true")
         overwrite = source.index('case "$_torch_index_leaf" in')
@@ -493,7 +493,7 @@ class TestABrokenTorchForcesItsOwnReinstall:
         guard = _line_of(_SETUP_SRC, "if (-not $SkipPythonDeps) {")
         last = max(
             number
-            for number, line in enumerate(_SETUP_SRC.splitlines(), start=1)
+            for number, line in enumerate(_SETUP_SRC.splitlines(), start = 1)
             if "$script:TorchImportDefinitivelyFailed" in line
         )
         assert clear < guard < last, (
@@ -527,7 +527,7 @@ class TestTheProvenanceMarkerSurvivesAResolution:
     """A stated backend that the resolution overwrote is not a stated choice."""
 
     def test_install_sh_only_keeps_a_stated_backend_that_agreed(self):
-        source = (PACKAGE_ROOT / "install.sh").read_text(encoding="utf-8")
+        source = (PACKAGE_ROOT / "install.sh").read_text(encoding = "utf-8")
         block = source[source.index("_torch_backend_was_stated=true") :]
         block = block[: block.index("_is_pip_rocm_family_leaf")]
         assert "_torch_backend_stated_value" in block, (
@@ -568,10 +568,10 @@ class TestAnUnknownMirrorPinNamesNoFlavor:
 
 class TestPinProvenanceMustBeABoolean:
     def test_both_readers_reject_a_stringly_typed_pin(self):
-        stack = (PACKAGE_ROOT / "studio" / "install_manifest.py").read_text(encoding="utf-8")
+        stack = (PACKAGE_ROOT / "studio" / "install_manifest.py").read_text(encoding = "utf-8")
         backend = (
             PACKAGE_ROOT / "studio" / "backend" / "utils" / "hardware" / "hardware.py"
-        ).read_text(encoding="utf-8")
+        ).read_text(encoding = "utf-8")
         assert 'manifest.get("expected_torch_tag_pinned") is True' in stack
         assert "pinned is True" in backend, (
             'bool("false") is True, so a migrated or hand-edited manifest would read as a '
@@ -587,7 +587,7 @@ class TestPinProvenanceMustBeABoolean:
                     "expected_torch_tag_pinned": "false",
                 }
             ),
-            encoding="utf-8",
+            encoding = "utf-8",
         )
         assert install_manifest.recorded_torch_flavor_was_pinned(tmp_path) is False
 
@@ -600,7 +600,7 @@ class TestPinProvenanceMustBeABoolean:
                     "expected_torch_tag_pinned": True,
                 }
             ),
-            encoding="utf-8",
+            encoding = "utf-8",
         )
         assert install_manifest.recorded_torch_flavor_was_pinned(tmp_path) is True
 
@@ -610,7 +610,7 @@ def test_the_rocm_arm_forces_a_reinstall_only_when_the_other_arms_would():
     Windows ROCm venv re-resolved torch, torchvision and torchaudio against the ROCm index
     and moved their resolved dependencies. It now keys the flag on the same three facts
     the XPU and CPU arms read."""
-    text = _SETUP_PS1.read_text(encoding="utf-8")
+    text = _SETUP_PS1.read_text(encoding = "utf-8")
     start = text.index('substep "installing PyTorch (AMD ROCm, $ROCmGfxArch)..."')
     end = text.index('substep "GPU ROCm PyTorch installed', start)
     arm = text[start:end]
@@ -643,7 +643,7 @@ def test_the_rocm_trio_is_reinstalled_when_the_architecture_index_moves():
     per architecture family, so a changed UNSLOTH_ROCM_GFX_ARCH or a replaced card moves
     the index while the resident trio still satisfies its pins. The index a trio came
     from is recorded after each successful install and compared before the fast path."""
-    text = _SETUP_PS1.read_text(encoding="utf-8")
+    text = _SETUP_PS1.read_text(encoding = "utf-8")
     force = text.index("$_recordedRocmIndex -ne $_rocmIndexIdentity")
     record = text.index("Set-Content -LiteralPath $script:RocmIndexRecord")
     installed = text.index('$env:UNSLOTH_ROCM_TORCH_INSTALLED = "1"')

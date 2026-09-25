@@ -24,12 +24,12 @@ from routes import chat_history
 
 def _message(message_id: str, thread_id: str) -> chat_history.ChatMessage:
     return chat_history.ChatMessage(
-        id=message_id,
-        threadId=thread_id,
-        parentId=None,
-        role="user",
-        content=[{"type": "text", "text": "hello"}],
-        createdAt=1_700_000_000_000,
+        id = message_id,
+        threadId = thread_id,
+        parentId = None,
+        role = "user",
+        content = [{"type": "text", "text": "hello"}],
+        createdAt = 1_700_000_000_000,
     )
 
 
@@ -67,10 +67,10 @@ def test_replace_thread_messages_rejects_body_thread_mismatch(monkeypatch):
         chat_history.replace_thread_messages(
             "thread-1",
             chat_history.ChatMessageSyncRequest(
-                messages=[_message("msg-1", "thread-2")],
-                pruneMissing=True,
+                messages = [_message("msg-1", "thread-2")],
+                pruneMissing = True,
             ),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
 
     assert exc_info.value.status_code == 400
@@ -91,8 +91,8 @@ def test_replace_thread_messages_reports_protected_research_turn(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         chat_history.replace_thread_messages(
             "thread-1",
-            chat_history.ChatMessageSyncRequest(messages=[], pruneMissing=True),
-            current_subject="test-user",
+            chat_history.ChatMessageSyncRequest(messages = [], pruneMissing = True),
+            current_subject = "test-user",
         )
 
     assert exc_info.value.status_code == 409
@@ -103,18 +103,18 @@ def test_save_thread_message_forwards_explicit_generation_edit(monkeypatch):
     monkeypatch.setattr(chat_history, "get_chat_thread", lambda _thread_id: {"id": "thread-1"})
     captured = {}
 
-    def save(message, *, allow_generation_edit=False):
+    def save(message, *, allow_generation_edit = False):
         captured["allow_generation_edit"] = allow_generation_edit
         return message
 
     monkeypatch.setattr(chat_history, "upsert_chat_message", save)
-    payload = _message("assistant-1", "thread-1").model_copy(update={"role": "assistant"})
+    payload = _message("assistant-1", "thread-1").model_copy(update = {"role": "assistant"})
     chat_history.save_thread_message(
         "thread-1",
         "assistant-1",
         payload,
-        allow_generation_edit=True,
-        current_subject="test-user",
+        allow_generation_edit = True,
+        current_subject = "test-user",
     )
     assert captured == {"allow_generation_edit": True}
 
@@ -133,7 +133,7 @@ def test_save_thread_message_returns_404_when_thread_is_deleted_during_write(mon
             "thread-1",
             "msg-1",
             _message("msg-1", "thread-1"),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
 
     assert exc_info.value.status_code == 404
@@ -153,10 +153,10 @@ def test_replace_thread_messages_returns_404_when_thread_is_deleted_during_write
         chat_history.replace_thread_messages(
             "thread-1",
             chat_history.ChatMessageSyncRequest(
-                messages=[_message("msg-1", "thread-1")],
-                pruneMissing=True,
+                messages = [_message("msg-1", "thread-1")],
+                pruneMissing = True,
             ),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
 
     assert exc_info.value.status_code == 404
@@ -181,7 +181,7 @@ def test_save_thread_message_does_not_mask_an_unrelated_integrity_error(monkeypa
             "thread-1",
             "msg-1",
             _message("msg-1", "thread-1"),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
 
     assert exc_info.value is failure
@@ -193,15 +193,15 @@ def test_save_thread_distinguishes_a_tombstone_from_an_unknown_id(monkeypatch):
 
     monkeypatch.setattr(chat_history, "upsert_chat_thread", reject_deleted_thread)
     payload = chat_history.ChatThread(
-        id="thread-1",
-        title="Deleted",
-        modelType="base",
-        modelId="model-1",
-        createdAt=1,
+        id = "thread-1",
+        title = "Deleted",
+        modelType = "base",
+        modelId = "model-1",
+        createdAt = 1,
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        chat_history.save_thread(payload, current_subject="test-user")
+        chat_history.save_thread(payload, current_subject = "test-user")
 
     assert exc_info.value.status_code == 410
     assert exc_info.value.detail == "Thread thread-1 was deleted"
@@ -209,17 +209,17 @@ def test_save_thread_distinguishes_a_tombstone_from_an_unknown_id(monkeypatch):
 
 def test_chat_thread_payload_carries_gguf_variant():
     thread = chat_history.ChatThread(
-        id="thread-1",
-        title="GGUF chat",
-        modelType="base",
-        modelId="unsloth/Qwen3-GGUF",
-        modelGgufVariant="Q6_K",
-        createdAt=1,
+        id = "thread-1",
+        title = "GGUF chat",
+        modelType = "base",
+        modelId = "unsloth/Qwen3-GGUF",
+        modelGgufVariant = "Q6_K",
+        createdAt = 1,
     )
-    patch = chat_history.ChatThreadPatch(modelGgufVariant="Q8_0")
+    patch = chat_history.ChatThreadPatch(modelGgufVariant = "Q8_0")
 
     assert thread.model_dump()["modelGgufVariant"] == "Q6_K"
-    assert patch.model_dump(exclude_unset=True) == {"modelGgufVariant": "Q8_0"}
+    assert patch.model_dump(exclude_unset = True) == {"modelGgufVariant": "Q8_0"}
 
 
 def test_clear_history_fences_pending_thread_ids(monkeypatch):
@@ -227,9 +227,9 @@ def test_clear_history_fences_pending_thread_ids(monkeypatch):
     captured_operation_ids: list[str | None] = []
 
     def clear_with_ids(
-        thread_ids=(),
-        operation_id=None,
-        include_chat_generation_runs=False,
+        thread_ids = (),
+        operation_id = None,
+        include_chat_generation_runs = False,
     ):
         captured.extend(thread_ids)
         captured_operation_ids.append(operation_id)
@@ -243,13 +243,13 @@ def test_clear_history_fences_pending_thread_ids(monkeypatch):
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     response = asyncio.run(
         chat_history.clear_history(
             request,
-            chat_history.ChatClearRequest(ids=["pending-thread"], operationId="clear-operation-1"),
-            current_subject="test-user",
+            chat_history.ChatClearRequest(ids = ["pending-thread"], operationId = "clear-operation-1"),
+            current_subject = "test-user",
         )
     )
 
@@ -272,7 +272,7 @@ def test_clear_history_reaps_search_thumbnails_with_a_body(monkeypatch):
     from core.inference import search_images
 
     reaped: list[bool] = []
-    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids=None: reaped.append(True))
+    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids = None: reaped.append(True))
 
     async def remove_sandboxes(_thread_ids, _delete_files):
         return 0, []
@@ -280,21 +280,21 @@ def test_clear_history_reaps_search_thumbnails_with_a_body(monkeypatch):
     monkeypatch.setattr(
         chat_history,
         "clear_chat_history_with_replay_status",
-        lambda thread_ids=(), operation_id=None, include_chat_generation_runs=False: (
+        lambda thread_ids = (), operation_id = None, include_chat_generation_runs = False: (
             ([], [], [], False) if include_chat_generation_runs else ([], [], False)
         ),
     )
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     asyncio.run(
         chat_history.clear_history(
             request,
-            chat_history.ChatClearRequest(ids=[], operationId="clear-operation-2"),
-            current_subject="test-user",
+            chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-2"),
+            current_subject = "test-user",
         )
     )
 
@@ -314,7 +314,7 @@ def test_project_delete_cancels_research_before_workspace_cleanup(monkeypatch):
     monkeypatch.setattr(
         chat_history,
         "delete_chat_project",
-        lambda _project_id, delete_files=False: project,
+        lambda _project_id, delete_files = False: project,
     )
     monkeypatch.setattr(
         chat_history,
@@ -328,13 +328,13 @@ def test_project_delete_cancels_research_before_workspace_cleanup(monkeypatch):
 
     monkeypatch.setattr(chat_history, "_remove_sandboxes", fail_workspace_cleanup)
 
-    with pytest.raises(OSError, match="workspace is busy"):
+    with pytest.raises(OSError, match = "workspace is busy"):
         asyncio.run(
             chat_history.delete_project(
                 "project-1",
                 SimpleNamespace(),
-                delete_files=True,
-                current_subject="test-user",
+                delete_files = True,
+                current_subject = "test-user",
             )
         )
 
@@ -370,7 +370,7 @@ def test_chat_settings_payload_accepts_fast_mode_presets():
         }
     )
 
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped["inferenceParams"]["fastMode"] is False
     assert dumped["customPresets"][0]["params"]["fastMode"] is True
 
@@ -388,7 +388,7 @@ def test_chat_settings_payload_carries_per_model_params():
         }
     )
 
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped["rememberParamsPerModel"] is True
     assert dumped["inferenceParamsByModel"] == {
         "unsloth/Qwen3.5-9B-GGUF": {"temperature": 0.2, "maxTokens": 4096},
@@ -457,7 +457,7 @@ def test_chat_settings_payload_accepts_preset_load_config():
         }
     )
 
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped["customPresets"][0]["loadConfig"]["customContextLength"] == 256
     assert dumped["customPresets"][0]["loadConfig"]["kvCacheDtype"] == "q8_0"
 
@@ -478,7 +478,7 @@ def test_chat_settings_payload_accepts_preset_batch_sizes():
             ],
         }
     )
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped["customPresets"][0]["loadConfig"]["nBatch"] == 4096
     assert dumped["customPresets"][0]["loadConfig"]["nUbatch"] == 1024
 
@@ -521,7 +521,7 @@ def test_chat_settings_payload_accepts_preset_server_tuning_and_vision():
             "activePresetSource": "custom",
         }
     )
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     load = dumped["customPresets"][0]["loadConfig"]
     assert load["loadMode"] is None
     assert load["disableVision"] is False
@@ -565,7 +565,7 @@ def test_chat_preset_load_config_covers_frontend_persisted_fields():
     if not os.path.exists(preset_ts):
         pytest.skip("frontend preset-load-config.ts not present")
 
-    with open(preset_ts, encoding="utf-8") as fh:
+    with open(preset_ts, encoding = "utf-8") as fh:
         block = re.search(
             r"export type PresetLoadConfig = Pick<\s*PerModelConfig,\s*((?:.|\n)*?)\s*>;",
             fh.read(),
@@ -595,7 +595,7 @@ def test_chat_settings_payload_accepts_mlx_kv_bits():
             ],
         }
     )
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped["customPresets"][0]["loadConfig"]["mlxKvBits"] == 8
 
     for width in (4, None):
@@ -612,7 +612,7 @@ def test_chat_settings_payload_accepts_nudge_tool_calls():
     payload = chat_history.ChatSettingsPayload.model_validate(
         {"autoHealToolCalls": True, "nudgeToolCalls": False}
     )
-    dumped = payload.model_dump(exclude_unset=True)
+    dumped = payload.model_dump(exclude_unset = True)
     assert dumped == {"autoHealToolCalls": True, "nudgeToolCalls": False}
 
 
@@ -633,7 +633,7 @@ def test_chat_inference_settings_covers_frontend_persisted_fields():
     if not os.path.exists(runtime_ts):
         pytest.skip("frontend runtime.ts not present")
 
-    with open(runtime_ts, encoding="utf-8") as fh:
+    with open(runtime_ts, encoding = "utf-8") as fh:
         block = re.search(r"interface InferenceParams \{(.*?)\n\}", fh.read(), re.DOTALL)
     assert block, "InferenceParams interface not found in runtime.ts"
     persisted = set(re.findall(r"^\s*(\w+)\??:", block.group(1), re.M)) - {"checkpoint"}
@@ -657,11 +657,11 @@ def test_get_import_ledger_round_trips_through_storage(monkeypatch):
 
     monkeypatch.setattr(chat_history, "list_chat_legacy_imports", fake_list)
 
-    response = chat_history.get_import_ledger(current_subject="test-user")
+    response = chat_history.get_import_ledger(current_subject = "test-user")
     assert response.threadIds == []
 
     seen.extend(["legacy-a", "legacy-b"])
-    response = chat_history.get_import_ledger(current_subject="test-user")
+    response = chat_history.get_import_ledger(current_subject = "test-user")
     assert response.threadIds == ["legacy-a", "legacy-b"]
 
 
@@ -676,10 +676,10 @@ def test_record_import_ledger_returns_accepted_and_inserted(monkeypatch):
     monkeypatch.setattr(chat_history, "upsert_chat_legacy_imports", fake_upsert)
 
     response = chat_history.record_import_ledger(
-        payload=chat_history.ChatImportLedgerRecordRequest(
-            threadIds=["a", "b", "c"],
+        payload = chat_history.ChatImportLedgerRecordRequest(
+            threadIds = ["a", "b", "c"],
         ),
-        current_subject="test-user",
+        current_subject = "test-user",
     )
     assert response.accepted == 3
     assert response.inserted == 1
@@ -688,10 +688,9 @@ def test_record_import_ledger_returns_accepted_and_inserted(monkeypatch):
 
 def test_record_import_ledger_rejects_oversize_payload():
     from pydantic import ValidationError
-
     with pytest.raises(ValidationError):
         chat_history.ChatImportLedgerRecordRequest(
-            threadIds=[f"id-{i}" for i in range(10_001)],
+            threadIds = [f"id-{i}" for i in range(10_001)],
         )
 
 
@@ -704,13 +703,13 @@ def test_fork_thread_404_when_source_missing(monkeypatch):
     monkeypatch.setattr(chat_history, "get_chat_thread", lambda _id: None)
     with pytest.raises(HTTPException) as exc:
         chat_history.fork_thread(
-            thread_id="missing",
-            payload=chat_history.ChatForkRequest(
-                messageId="m1",
-                newThreadId="new",
-                createdAt=1,
+            thread_id = "missing",
+            payload = chat_history.ChatForkRequest(
+                messageId = "m1",
+                newThreadId = "new",
+                createdAt = 1,
             ),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
     assert exc.value.status_code == 404
 
@@ -720,13 +719,13 @@ def test_fork_thread_404_when_branch_message_missing(monkeypatch):
     monkeypatch.setattr(chat_history, "get_chat_message", lambda _t, _m: None)
     with pytest.raises(HTTPException) as exc:
         chat_history.fork_thread(
-            thread_id="src",
-            payload=chat_history.ChatForkRequest(
-                messageId="missing",
-                newThreadId="new",
-                createdAt=1,
+            thread_id = "src",
+            payload = chat_history.ChatForkRequest(
+                messageId = "missing",
+                newThreadId = "new",
+                createdAt = 1,
             ),
-            current_subject="test-user",
+            current_subject = "test-user",
         )
     assert exc.value.status_code == 404
 
@@ -747,9 +746,9 @@ def test_fork_thread_resolves_the_tip_when_no_message_is_given(same_timestamp):
         message.update({"createdAt": created_at, "parentId": parent_id, "role": role})
         studio_db.upsert_chat_message(message)
     response = chat_history.fork_thread(
-        thread_id="src",
-        payload=chat_history.ChatForkRequest(newThreadId="new", createdAt=4),
-        current_subject="test-user",
+        thread_id = "src",
+        payload = chat_history.ChatForkRequest(newThreadId = "new", createdAt = 4),
+        current_subject = "test-user",
     )
     assert response.thread.forkedFromMessageId == "a-reply"
     assert len(response.messages) == 3
@@ -764,9 +763,9 @@ def test_fork_thread_404_when_the_thread_has_no_messages():
     )
     with pytest.raises(HTTPException) as exc:
         chat_history.fork_thread(
-            thread_id="src",
-            payload=chat_history.ChatForkRequest(newThreadId="new", createdAt=1),
-            current_subject="test-user",
+            thread_id = "src",
+            payload = chat_history.ChatForkRequest(newThreadId = "new", createdAt = 1),
+            current_subject = "test-user",
         )
     assert exc.value.status_code == 404
     assert studio_db.get_chat_thread("new") is None
@@ -784,12 +783,12 @@ def test_fork_thread_refuses_before_it_resolves_the_tip(monkeypatch):
         raise AssertionError("the tip was read before the generation check")
 
     monkeypatch.setattr(chat_history, "list_chat_messages", _never)
-    with active_generations.ActiveGeneration(threading.Event(), thread_id="src"):
+    with active_generations.ActiveGeneration(threading.Event(), thread_id = "src"):
         with pytest.raises(HTTPException) as exc:
             chat_history.fork_thread(
-                thread_id="src",
-                payload=chat_history.ChatForkRequest(newThreadId="new", createdAt=1),
-                current_subject="test-user",
+                thread_id = "src",
+                payload = chat_history.ChatForkRequest(newThreadId = "new", createdAt = 1),
+                current_subject = "test-user",
             )
     assert exc.value.status_code == 409
 
@@ -805,16 +804,16 @@ def test_fork_thread_409_while_the_chat_is_generating(monkeypatch):
     from state import active_generations
 
     monkeypatch.setattr(chat_history, "get_chat_thread", lambda _id: {"id": _id, "title": "T"})
-    with active_generations.ActiveGeneration(threading.Event(), thread_id="src"):
+    with active_generations.ActiveGeneration(threading.Event(), thread_id = "src"):
         with pytest.raises(HTTPException) as exc:
             chat_history.fork_thread(
-                thread_id="src",
-                payload=chat_history.ChatForkRequest(
-                    messageId="m1",
-                    newThreadId="new",
-                    createdAt=1,
+                thread_id = "src",
+                payload = chat_history.ChatForkRequest(
+                    messageId = "m1",
+                    newThreadId = "new",
+                    createdAt = 1,
                 ),
-                current_subject="test-user",
+                current_subject = "test-user",
             )
     assert exc.value.status_code == 409
     assert "still generating" in str(exc.value.detail)
@@ -828,16 +827,16 @@ def test_fork_thread_allows_a_fork_of_another_generating_chat(monkeypatch):
 
     monkeypatch.setattr(chat_history, "get_chat_thread", lambda _id: {"id": _id, "title": "T"})
     monkeypatch.setattr(chat_history, "get_chat_message", lambda _t, _m: None)
-    with active_generations.ActiveGeneration(threading.Event(), thread_id="other"):
+    with active_generations.ActiveGeneration(threading.Event(), thread_id = "other"):
         with pytest.raises(HTTPException) as exc:
             chat_history.fork_thread(
-                thread_id="src",
-                payload=chat_history.ChatForkRequest(
-                    messageId="missing",
-                    newThreadId="new",
-                    createdAt=1,
+                thread_id = "src",
+                payload = chat_history.ChatForkRequest(
+                    messageId = "missing",
+                    newThreadId = "new",
+                    createdAt = 1,
                 ),
-                current_subject="test-user",
+                current_subject = "test-user",
             )
     # Past the generation gate, refused later for the missing branch message.
     assert exc.value.status_code == 404
@@ -893,13 +892,13 @@ def test_fork_thread_happy_path(monkeypatch):
         ],
     )
     response = chat_history.fork_thread(
-        thread_id="src",
-        payload=chat_history.ChatForkRequest(
-            messageId="m1",
-            newThreadId="new",
-            createdAt=2,
+        thread_id = "src",
+        payload = chat_history.ChatForkRequest(
+            messageId = "m1",
+            newThreadId = "new",
+            createdAt = 2,
         ),
-        current_subject="test-user",
+        current_subject = "test-user",
     )
     assert response.thread.id == "new"
     assert response.thread.title == "Original (1)"
@@ -949,13 +948,13 @@ def test_fork_thread_warns_when_parent_had_container(monkeypatch):
     )
     monkeypatch.setattr(chat_history, "list_chat_messages", lambda _id: [])
     response = chat_history.fork_thread(
-        thread_id="src",
-        payload=chat_history.ChatForkRequest(
-            messageId="m1",
-            newThreadId="new",
-            createdAt=2,
+        thread_id = "src",
+        payload = chat_history.ChatForkRequest(
+            messageId = "m1",
+            newThreadId = "new",
+            createdAt = 2,
         ),
-        current_subject="test-user",
+        current_subject = "test-user",
     )
     assert response.containerSnapshotWarning is not None
     assert "fresh" in response.containerSnapshotWarning.lower()
@@ -964,9 +963,9 @@ def test_fork_thread_warns_when_parent_had_container(monkeypatch):
 def test_get_fork_count(monkeypatch):
     monkeypatch.setattr(chat_history, "count_forks_for_message", lambda _t, _m: 3)
     response = chat_history.get_fork_count(
-        thread_id="t",
-        message_id="m",
-        current_subject="test-user",
+        thread_id = "t",
+        message_id = "m",
+        current_subject = "test-user",
     )
     assert response.count == 3
 
@@ -974,8 +973,8 @@ def test_get_fork_count(monkeypatch):
 def test_get_thread_fork_counts(monkeypatch):
     monkeypatch.setattr(chat_history, "fork_counts_for_thread", lambda _t: {"m1": 2, "m2": 1})
     response = chat_history.get_thread_fork_counts(
-        thread_id="t",
-        current_subject="test-user",
+        thread_id = "t",
+        current_subject = "test-user",
     )
     assert response.counts == {"m1": 2, "m2": 1}
 
@@ -1012,7 +1011,7 @@ def test_a_clear_does_not_reap_an_image_registered_while_it_was_running(tmp_path
     monkeypatch.setattr(search_images, "_registry", {})
     monkeypatch.setattr(search_images, "_cleared_unservable", set())
     monkeypatch.setattr(search_images, "_cache_dir", lambda: tmp_path / "thumbs")
-    (tmp_path / "thumbs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "thumbs").mkdir(parents = True, exist_ok = True)
 
     old = search_images.register_images(
         [
@@ -1050,15 +1049,15 @@ def test_a_clear_does_not_reap_an_image_registered_while_it_was_running(tmp_path
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     studio_db.upsert_chat_thread(_clear_thread_row("before-clear"))
     asyncio.run(
         chat_history.clear_history(
             request,
-            chat_history.ChatClearRequest(ids=[], operationId="clear-operation-race"),
-            current_subject="test-user",
+            chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-race"),
+            current_subject = "test-user",
         )
     )
 
@@ -1090,7 +1089,7 @@ def test_replayed_clear_keeps_the_thumbnails_of_a_chat_it_did_not_delete(tmp_pat
     monkeypatch.setattr(studio_db, "_schema_ready", set())
 
     reaped: list[str] = []
-    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids=None: reaped.append("reaped"))
+    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids = None: reaped.append("reaped"))
 
     async def remove_sandboxes(_thread_ids, _delete_files):
         return 0, []
@@ -1098,15 +1097,15 @@ def test_replayed_clear_keeps_the_thumbnails_of_a_chat_it_did_not_delete(tmp_pat
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     def clear():
         return asyncio.run(
             chat_history.clear_history(
                 request,
-                chat_history.ChatClearRequest(ids=[], operationId="clear-operation-retry"),
-                current_subject="test-user",
+                chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-retry"),
+                current_subject = "test-user",
             )
         )
 
@@ -1146,7 +1145,7 @@ def test_the_replay_bit_comes_from_the_clear_transaction(monkeypatch, tmp_path):
     reaps: list[str] = []
     reap_lock = threading.Lock()
 
-    def record_reap(only_ids=None):
+    def record_reap(only_ids = None):
         with reap_lock:
             reaps.append("reaped")
 
@@ -1158,8 +1157,8 @@ def test_the_replay_bit_comes_from_the_clear_transaction(monkeypatch, tmp_path):
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     studio_db.upsert_chat_thread(_clear_thread_row("before-clear"))
 
@@ -1170,22 +1169,22 @@ def test_the_replay_bit_comes_from_the_clear_transaction(monkeypatch, tmp_path):
 
     def clear():
         try:
-            start.wait(timeout=10)
+            start.wait(timeout = 10)
             asyncio.run(
                 chat_history.clear_history(
                     request,
-                    chat_history.ChatClearRequest(ids=[], operationId="clear-operation-concurrent"),
-                    current_subject="test-user",
+                    chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-concurrent"),
+                    current_subject = "test-user",
                 )
             )
         except BaseException as exc:  # noqa: BLE001 -- re-raised on the main thread
             failures.append(exc)
 
-    threads = [threading.Thread(target=clear) for _ in range(2)]
+    threads = [threading.Thread(target = clear) for _ in range(2)]
     for thread in threads:
         thread.start()
     for thread in threads:
-        thread.join(timeout=30)
+        thread.join(timeout = 30)
     if failures:
         raise failures[0]
 
@@ -1235,10 +1234,10 @@ def test_a_chat_created_in_the_gap_after_the_clear_keeps_its_images(monkeypatch,
     monkeypatch.setattr(studio_db, "_schema_ready", set())
     monkeypatch.setattr(search_images, "_registry", {})
     monkeypatch.setattr(search_images, "_cache_dir", lambda: tmp_path / "thumbs")
-    (tmp_path / "thumbs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "thumbs").mkdir(parents = True, exist_ok = True)
 
     reaped: list = []
-    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids=None: reaped.append(only_ids))
+    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids = None: reaped.append(only_ids))
 
     async def remove_sandboxes(_thread_ids, _delete_files):
         return 0, []
@@ -1246,7 +1245,7 @@ def test_a_chat_created_in_the_gap_after_the_clear_keeps_its_images(monkeypatch,
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
 
     # The other tab's image, registered in the gap. Straight into the registry: this is about
     # WHEN the id becomes visible to the snapshot, not about how it got there.
@@ -1271,14 +1270,14 @@ def test_a_chat_created_in_the_gap_after_the_clear_keeps_its_images(monkeypatch,
         return result
 
     monkeypatch.setattr(starlette.concurrency, "run_in_threadpool", interleaving_run_in_threadpool)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     studio_db.upsert_chat_thread(_clear_thread_row("before-clear"))
     asyncio.run(
         chat_history.clear_history(
             request,
-            chat_history.ChatClearRequest(ids=[], operationId="clear-operation-gap"),
-            current_subject="test-user",
+            chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-gap"),
+            current_subject = "test-user",
         )
     )
 
@@ -1328,7 +1327,7 @@ def test_a_replay_finishes_a_reap_the_original_clear_died_before_running(monkeyp
     monkeypatch.setattr(studio_db, "_schema_ready", set())
     monkeypatch.setattr(search_images, "_registry", {})
     monkeypatch.setattr(search_images, "_cache_dir", lambda: tmp_path / "thumbs")
-    (tmp_path / "thumbs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "thumbs").mkdir(parents = True, exist_ok = True)
 
     doomed_image_id = "aaaabbbbcccc"
     search_images._registry[doomed_image_id] = {
@@ -1340,7 +1339,7 @@ def test_a_replay_finishes_a_reap_the_original_clear_died_before_running(monkeyp
 
     reaps: list = []
 
-    def reap(only_ids=None):
+    def reap(only_ids = None):
         reaps.append(only_ids)
         if len(reaps) == 1:
             raise RuntimeError("process died before the reap finished")
@@ -1353,15 +1352,15 @@ def test_a_replay_finishes_a_reap_the_original_clear_died_before_running(monkeyp
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     def clear():
         return asyncio.run(
             chat_history.clear_history(
                 request,
-                chat_history.ChatClearRequest(ids=[], operationId="clear-operation-crash"),
-                current_subject="test-user",
+                chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-crash"),
+                current_subject = "test-user",
             )
         )
 
@@ -1404,10 +1403,10 @@ def test_a_plain_replay_with_nothing_outstanding_still_reaps_nothing(monkeypatch
     monkeypatch.setattr(studio_db, "_schema_ready", set())
     monkeypatch.setattr(search_images, "_registry", {})
     monkeypatch.setattr(search_images, "_cache_dir", lambda: tmp_path / "thumbs")
-    (tmp_path / "thumbs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "thumbs").mkdir(parents = True, exist_ok = True)
 
     reaps: list = []
-    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids=None: reaps.append(only_ids))
+    monkeypatch.setattr(search_images, "clear_cache", lambda only_ids = None: reaps.append(only_ids))
 
     async def remove_sandboxes(_thread_ids, _delete_files):
         return 0, []
@@ -1415,15 +1414,15 @@ def test_a_plain_replay_with_nothing_outstanding_still_reaps_nothing(monkeypatch
     monkeypatch.setattr(chat_history, "_remove_sandboxes", remove_sandboxes)
     monkeypatch.setattr(chat_history, "_cancel_active_generations", lambda _ids: None)
     monkeypatch.setattr(chat_history, "_cancel_research_runs", lambda _request, _ids: None)
-    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff=None: None)
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    monkeypatch.setattr(chat_history, "_remove_thread_rag_data", lambda _ids, cutoff = None: None)
+    request = SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace()))
 
     def clear():
         return asyncio.run(
             chat_history.clear_history(
                 request,
-                chat_history.ChatClearRequest(ids=[], operationId="clear-operation-plain"),
-                current_subject="test-user",
+                chat_history.ChatClearRequest(ids = [], operationId = "clear-operation-plain"),
+                current_subject = "test-user",
             )
         )
 
@@ -1470,10 +1469,10 @@ def test_the_two_conflicts_are_distinguishable_on_the_wire(monkeypatch, error, k
     monkeypatch.setattr(chat_history, "upsert_chat_message", reject)
 
     message = chat_history.ChatMessage(
-        id="m1", threadId="t1", role="assistant", content=[], createdAt=1
+        id = "m1", threadId = "t1", role = "assistant", content = [], createdAt = 1
     )
     with pytest.raises(HTTPException) as exc_info:
-        chat_history.save_thread_message("t1", "m1", message, current_subject="u")
+        chat_history.save_thread_message("t1", "m1", message, current_subject = "u")
 
     assert exc_info.value.status_code == 409
     assert _conflict_kind(exc_info) == kind
@@ -1487,14 +1486,14 @@ def test_compare_and_set_rejects_a_non_finite_number_renderably(monkeypatch):
     from fastapi.testclient import TestClient
 
     app = FastAPI()
-    app.include_router(chat_history.router, prefix="/api/chat")
+    app.include_router(chat_history.router, prefix = "/api/chat")
     app.dependency_overrides[chat_history.get_current_subject] = lambda: "admin"
     client = TestClient(app)
 
     response = client.post(
         "/api/chat/settings/compare-and-set",
-        content='{"expected": {"inferenceParams": {"temperature": NaN}}, "patch": {}}',
-        headers={"Content-Type": "application/json"},
+        content = '{"expected": {"inferenceParams": {"temperature": NaN}}, "patch": {}}',
+        headers = {"Content-Type": "application/json"},
     )
 
     assert response.status_code == 400
@@ -1530,9 +1529,9 @@ def test_fork_route_numbers_the_title_and_reports_the_boundary(tmp_path, monkeyp
     titles = []
     for i in range(2):
         response = chat_history.fork_thread(
-            thread_id="src",
-            payload=chat_history.ChatForkRequest(newThreadId=f"fork-{i}", createdAt=10 + i),
-            current_subject="test-user",
+            thread_id = "src",
+            payload = chat_history.ChatForkRequest(newThreadId = f"fork-{i}", createdAt = 10 + i),
+            current_subject = "test-user",
         )
         titles.append(response.thread.title)
 
@@ -1540,9 +1539,9 @@ def test_fork_route_numbers_the_title_and_reports_the_boundary(tmp_path, monkeyp
     assert not any(t.startswith("fork") for t in titles)
 
     forked = chat_history.fork_thread(
-        thread_id="src",
-        payload=chat_history.ChatForkRequest(newThreadId="fork-x", createdAt=20),
-        current_subject="test-user",
+        thread_id = "src",
+        payload = chat_history.ChatForkRequest(newThreadId = "fork-x", createdAt = 20),
+        current_subject = "test-user",
     )
     assert forked.thread.title == "Research notes (3)"
     # The anchor is this fork's own last inherited message, so the divider lands under it.
@@ -1582,9 +1581,9 @@ def test_fork_title_comes_from_the_row_not_the_route_s_earlier_read(tmp_path, mo
     )
 
     response = chat_history.fork_thread(
-        thread_id="src",
-        payload=chat_history.ChatForkRequest(newThreadId="fork-1", createdAt=2),
-        current_subject="test-user",
+        thread_id = "src",
+        payload = chat_history.ChatForkRequest(newThreadId = "fork-1", createdAt = 2),
+        current_subject = "test-user",
     )
     assert response.thread.title == "Renamed (1)"
     assert "Stale" not in response.thread.title

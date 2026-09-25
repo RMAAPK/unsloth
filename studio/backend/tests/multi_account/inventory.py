@@ -15,7 +15,7 @@ from fastapi import APIRouter
 import routes
 
 
-@dataclass(frozen=True)
+@dataclass(frozen = True)
 class RouteCase:
     module: str
     path: str
@@ -61,7 +61,7 @@ def collect_routes() -> tuple[RouteCase, ...]:
     modules.extend(
         importlib.import_module(info.name)
         for info in sorted(
-            pkgutil.walk_packages(routes.__path__, prefix="routes."), key=lambda info: info.name
+            pkgutil.walk_packages(routes.__path__, prefix = "routes."), key = lambda info: info.name
         )
     )
     seen_routers = set()
@@ -123,11 +123,11 @@ def render_inventory() -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True)
+    parser = argparse.ArgumentParser(description = __doc__)
+    parser.add_argument("--output", type = Path, required = True)
     args = parser.parse_args()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(render_inventory(), encoding="utf-8")
+    args.output.parent.mkdir(parents = True, exist_ok = True)
+    args.output.write_text(render_inventory(), encoding = "utf-8")
 
 
 if __name__ == "__main__":

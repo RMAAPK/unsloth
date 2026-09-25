@@ -97,16 +97,15 @@ def _skip_reason() -> str | None:
     return None
 
 
-pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason=_skip_reason() or "")
+pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason = _skip_reason() or "")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def browser():
     from playwright.sync_api import sync_playwright
-
     with sync_playwright() as p:
         try:
-            b = p.chromium.launch(args=["--no-sandbox"])
+            b = p.chromium.launch(args = ["--no-sandbox"])
         except Exception as exc:  # noqa: BLE001
             pytest.skip(f"chromium could not be launched: {exc}")
         yield b
@@ -118,10 +117,10 @@ def _page(
     mode: str,
     turns: int = TURNS,
 ):
-    page = browser.new_page(viewport={"width": 900, "height": 600})
+    page = browser.new_page(viewport = {"width": 900, "height": 600})
     page.set_content("<!doctype html><meta charset=utf-8><body></body>")
-    page.add_script_tag(content=_DOM_JS.read_text(encoding="utf-8"))
-    page.add_script_tag(content=_FIXTURE_JS.read_text(encoding="utf-8"))
+    page.add_script_tag(content = _DOM_JS.read_text(encoding = "utf-8"))
+    page.add_script_tag(content = _FIXTURE_JS.read_text(encoding = "utf-8"))
     built = page.evaluate(
         "(o) => window.__fixture.build(o)",
         {"mode": mode, "turns": turns, "windowSize": WINDOW},
@@ -203,10 +202,10 @@ def test_full_mount_is_admitted_in_full_mode(browser):
         r = wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_FULL,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_FULL,
+            timeout_s = 20,
+            log = log,
         )
     finally:
         page.close()
@@ -232,10 +231,10 @@ def test_a_virtualised_thread_is_admitted_in_windowed_mode(browser):
         r = wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_WINDOWED,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_WINDOWED,
+            timeout_s = 20,
+            log = log,
         )
     finally:
         page.close()
@@ -269,10 +268,10 @@ def test_the_ordinals_are_accepted_on_the_row_wrapper_or_on_the_message(browser,
         r = wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_WINDOWED,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_WINDOWED,
+            timeout_s = 20,
+            log = log,
         )
     finally:
         page.close()
@@ -289,17 +288,17 @@ def _completeness(browser, mode: str, **kwargs) -> tuple[dict, list[str]]:
         wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_WINDOWED,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_WINDOWED,
+            timeout_s = 20,
+            log = log,
         )
         out = probe_thread_completeness(
             page,
-            first_marker=turn_marker(0, 0),
-            expected_messages=MESSAGES,
-            timeout_s=kwargs.pop("timeout_s", 15),
-            log=log,
+            first_marker = turn_marker(0, 0),
+            expected_messages = MESSAGES,
+            timeout_s = kwargs.pop("timeout_s", 15),
+            log = log,
             **kwargs,
         )
     finally:
@@ -329,7 +328,7 @@ def test_a_virtualised_thread_covers_every_ordinal_when_the_sweep_is_continuous(
     a window overlapping the last, so the union is everything the thread can show, and it is all
     eighteen messages.
     """
-    out, _ = _completeness(browser, "windowed", step_px=ROW_PX * 2)
+    out, _ = _completeness(browser, "windowed", step_px = ROW_PX * 2)
     assert out["head_reached"] is True, out
     assert out["sweep_continuous"] is True
     assert out["ordinal_coverage_complete"] is True, out
@@ -378,17 +377,17 @@ def test_coverage_does_not_apply_to_an_arm_that_publishes_no_ordinals(browser):
         wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_FULL,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_FULL,
+            timeout_s = 20,
+            log = log,
         )
         out = probe_thread_completeness(
             page,
-            first_marker=turn_marker(0, 0),
-            expected_messages=MESSAGES,
-            timeout_s=10,
-            log=log,
+            first_marker = turn_marker(0, 0),
+            expected_messages = MESSAGES,
+            timeout_s = 10,
+            log = log,
         )
     finally:
         page.close()
@@ -409,9 +408,9 @@ def test_coverage_is_not_measured_when_the_gesture_never_reached_the_top(browser
     out, got = _completeness(
         browser,
         "windowed",
-        steps=1,
-        step_px=ROW_PX * 2,
-        timeout_s=2,
+        steps = 1,
+        step_px = ROW_PX * 2,
+        timeout_s = 2,
     )
     assert out["head_reached"] is None, out
     assert out["reached_top"] is False
@@ -431,16 +430,16 @@ def test_windowed_mode_also_admits_a_thread_short_enough_to_mount_whole(browser)
     full-mount condition, so nothing half-built can reach it -- the test below proves that
     directly.
     """
-    page = _page(browser, "full", turns=2)
+    page = _page(browser, "full", turns = 2)
     got, log = _lines()
     try:
         r = wait_for_thread_ready(
             page,
             4,
-            marker=turn_marker(1, 1),
-            mode=MODE_WINDOWED,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(1, 1),
+            mode = MODE_WINDOWED,
+            timeout_s = 20,
+            log = log,
         )
     finally:
         page.close()
@@ -467,10 +466,10 @@ def test_a_half_mounted_thread_is_refused_in_full_mode(browser):
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_FULL,
-                timeout_s=4,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_FULL,
+                timeout_s = 4,
+                log = log,
             )
     finally:
         page.close()
@@ -498,10 +497,10 @@ def test_a_half_mounted_thread_is_refused_in_windowed_mode_too(browser):
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_WINDOWED,
-                timeout_s=4,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_WINDOWED,
+                timeout_s = 4,
+                log = log,
             )
     finally:
         page.close()
@@ -521,10 +520,10 @@ def test_a_window_that_publishes_no_total_is_refused(browser):
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_WINDOWED,
-                timeout_s=4,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_WINDOWED,
+                timeout_s = 4,
+                log = log,
             )
     finally:
         page.close()
@@ -544,10 +543,10 @@ def test_a_window_over_the_wrong_end_of_the_thread_is_refused(browser):
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_WINDOWED,
-                timeout_s=4,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_WINDOWED,
+                timeout_s = 4,
+                log = log,
             )
     finally:
         page.close()
@@ -566,10 +565,10 @@ def _refused(browser, mode: str) -> dict:
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_WINDOWED,
-                timeout_s=4,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_WINDOWED,
+                timeout_s = 4,
+                log = log,
             )
     finally:
         page.close()
@@ -650,18 +649,18 @@ def test_a_thread_that_lost_its_head_passes_readiness_and_fails_completeness(bro
         r = wait_for_thread_ready(
             page,
             MESSAGES,
-            marker=turn_marker(TURNS - 1, TURNS - 1),
-            mode=MODE_WINDOWED,
-            timeout_s=20,
-            log=log,
+            marker = turn_marker(TURNS - 1, TURNS - 1),
+            mode = MODE_WINDOWED,
+            timeout_s = 20,
+            log = log,
         )
         assert r.ready
         out = probe_thread_completeness(
             page,
-            first_marker=turn_marker(0, 0),
-            expected_messages=MESSAGES,
-            timeout_s=6,
-            log=log,
+            first_marker = turn_marker(0, 0),
+            expected_messages = MESSAGES,
+            timeout_s = 6,
+            log = log,
         )
     finally:
         page.close()
@@ -728,17 +727,17 @@ def test_evaluate_refuses_ordinals_that_are_not_positions():
     """
     good = _windowed_probe()
     assert evaluate(good, good, 18, MODE_WINDOWED)["posinset_ordinals_valid"] is True
-    zeros = _windowed_probe(posinset_distinct=1, min_posinset=0, max_posinset=0)
+    zeros = _windowed_probe(posinset_distinct = 1, min_posinset = 0, max_posinset = 0)
     assert evaluate(zeros, zeros, 18, MODE_WINDOWED)["posinset_ordinals_valid"] is False
-    duplicates = _windowed_probe(posinset_distinct=1, min_posinset=18)
+    duplicates = _windowed_probe(posinset_distinct = 1, min_posinset = 18)
     assert evaluate(duplicates, duplicates, 18, MODE_WINDOWED)["posinset_ordinals_valid"] is False
-    from_one = _windowed_probe(min_posinset=1, max_posinset=6)
+    from_one = _windowed_probe(min_posinset = 1, max_posinset = 6)
     conditions = evaluate(from_one, from_one, 18, MODE_WINDOWED)
     assert conditions["posinset_ordinals_valid"] is True
     assert conditions["posinset_reaches_end"] is False
     # PAST THE END OF THE SET THE SAME ROWS DECLARE. 19 of 18 is not a position either, and it is what
     # an off-by-one in index-to-ordinal arithmetic produces.
-    over = _windowed_probe(max_posinset=19)
+    over = _windowed_probe(max_posinset = 19)
     assert evaluate(over, over, 18, MODE_WINDOWED)["posinset_ordinals_valid"] is False
     # And every one of them is NOT APPLICABLE in full mode, where nothing publishes ordinals.
     assert evaluate(zeros, zeros, 18, MODE_FULL)["posinset_ordinals_valid"] is None
@@ -753,22 +752,22 @@ def test_evaluate_does_not_waive_malformed_ordinals_for_a_fully_mounted_thread()
     everything must not be a way to skip the check.
     """
     silent = _windowed_probe(
-        mounted=18,
-        setsize=None,
-        posinset_count=0,
-        posinset_distinct=0,
-        min_posinset=None,
-        max_posinset=None,
+        mounted = 18,
+        setsize = None,
+        posinset_count = 0,
+        posinset_distinct = 0,
+        min_posinset = None,
+        max_posinset = None,
     )
     conditions = evaluate(silent, silent, 18, MODE_WINDOWED)
     assert conditions["posinset_ordinals_valid"] is True
     assert conditions["posinset_reaches_end"] is True
     junk = _windowed_probe(
-        mounted=18,
-        posinset_count=18,
-        posinset_distinct=1,
-        min_posinset=0,
-        max_posinset=0,
+        mounted = 18,
+        posinset_count = 18,
+        posinset_distinct = 1,
+        min_posinset = 0,
+        max_posinset = 0,
     )
     conditions = evaluate(junk, junk, 18, MODE_WINDOWED)
     assert conditions["posinset_ordinals_valid"] is False
@@ -797,7 +796,7 @@ def test_ordinal_coverage_never_reports_a_gap_in_the_gesture_as_data_loss():
     # And it is the kind of None that is NOT a pass: the ordinals apply to this arm and the sweep did
     # not inspect them. `not_applicable` is an arm publishing no ordinals at all.
     assert got_coarse["ordinal_coverage_state"] == COVERAGE_UNMEASURED
-    continuous = dict(coarse, sweep_continuous=True)
+    continuous = dict(coarse, sweep_continuous = True)
     got = ordinal_coverage(continuous, 18)
     assert got["ordinal_coverage_complete"] is False
     assert got["ordinal_coverage_state"] == COVERAGE_INCOMPLETE
@@ -864,8 +863,8 @@ def test_ordinal_coverage_separates_a_question_that_does_not_apply_from_one_it_c
         "sweep_continuous": False,
         "traversal_stops": 2,
     }
-    applies = ordinal_coverage(dict(walked, ordinals_seen=[1, 2, 3, 16, 17, 18]), 18)
-    does_not = ordinal_coverage(dict(walked, ordinals_seen=[]), 18)
+    applies = ordinal_coverage(dict(walked, ordinals_seen = [1, 2, 3, 16, 17, 18]), 18)
+    does_not = ordinal_coverage(dict(walked, ordinals_seen = []), 18)
     assert applies["ordinal_coverage_complete"] is does_not["ordinal_coverage_complete"] is None
     assert applies["ordinal_coverage_state"] == COVERAGE_UNMEASURED
     assert does_not["ordinal_coverage_state"] == COVERAGE_NOT_APPLICABLE
@@ -877,7 +876,7 @@ def test_evaluate_cannot_settle_on_a_single_sample():
     probe = {"probe_attempted": True, "mounted": 18, "elements": 100, "scroll_height": 10}
     assert evaluate(probe, None, 18, MODE_FULL)["settled"] is False
     assert evaluate(probe, probe, 18, MODE_FULL)["settled"] is True
-    grew = dict(probe, elements=101)
+    grew = dict(probe, elements = 101)
     assert evaluate(grew, probe, 18, MODE_FULL)["settled"] is False
 
 
@@ -912,10 +911,10 @@ def test_a_windowed_thread_with_no_viewport_is_refused(browser):
             wait_for_thread_ready(
                 page,
                 MESSAGES,
-                marker=turn_marker(TURNS - 1, TURNS - 1),
-                mode=MODE_WINDOWED,
-                timeout_s=3,
-                log=log,
+                marker = turn_marker(TURNS - 1, TURNS - 1),
+                mode = MODE_WINDOWED,
+                timeout_s = 3,
+                log = log,
             )
     finally:
         page.close()

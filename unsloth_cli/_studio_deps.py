@@ -167,11 +167,11 @@ def _venv_site_packages(root: Path) -> List[Path]:
         try:
             output = subprocess.check_output(
                 [str(executable), "-I", "-c", probe],
-                stderr=subprocess.DEVNULL,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=5,
+                stderr = subprocess.DEVNULL,
+                text = True,
+                encoding = "utf-8",
+                errors = "replace",
+                timeout = 5,
             )
             values = json.loads(output)
         except (OSError, subprocess.SubprocessError, TypeError, ValueError, json.JSONDecodeError):
@@ -185,7 +185,7 @@ def _venv_site_packages(root: Path) -> List[Path]:
         return [windows_site]
 
     try:
-        config = (root / "pyvenv.cfg").read_text(encoding="utf-8", errors="replace")
+        config = (root / "pyvenv.cfg").read_text(encoding = "utf-8", errors = "replace")
     except OSError:
         config = ""
     match = re.search(r"(?im)^\s*version\s*=\s*(\d+\.\d+)", config)
@@ -229,7 +229,7 @@ def _distributions_in(root: Path) -> Optional[tuple[Dict[str, str], set[str]]]:
 
     found: Dict[str, str] = {}
     conflicts: set[str] = set()
-    for dist in Distribution.discover(context=DistributionFinder.Context(path=paths)):
+    for dist in Distribution.discover(context = DistributionFinder.Context(path = paths)):
         path = getattr(dist, "_path", None)
         stem = os.path.basename(os.fspath(path)) if path is not None else ""
         try:
@@ -275,11 +275,11 @@ def _requirements_root_in(root: Path) -> Optional[Path]:
                 json.loads(
                     subprocess.check_output(
                         [str(executable), "-I", "-c", probe],
-                        stderr=subprocess.DEVNULL,
-                        text=True,
-                        encoding="utf-8",
-                        errors="replace",
-                        timeout=5,
+                        stderr = subprocess.DEVNULL,
+                        text = True,
+                        encoding = "utf-8",
+                        errors = "replace",
+                        timeout = 5,
                     )
                 )
             )
@@ -355,10 +355,10 @@ def install_state(extra_roots: Sequence[Path] = (), deep: bool = False) -> dict:
         # Off for `desktop-capabilities`: the Tauri preflight times it out at 10s and a probe that
         # overruns repairs a healthy venv. `verify-install` is untimed, so it opts in.
         deep_kwargs = {"deep": True} if (deep and _verify_install_supports(module, "deep")) else {}
-        state = module.verify_install(root=root, **deep_kwargs)
+        state = module.verify_install(root = root, **deep_kwargs)
         if foreign and not state["deps_ok"]:
             # The manifest came from another venv but the dependency walk ran here, so it says nothing about that venv.
-            state = dict(state, deps_ok=True, missing=[])
+            state = dict(state, deps_ok = True, missing = [])
             state["ok"] = state["manifest_ok"]
             state["reason"] = None if state["ok"] else state["reason"]
         return state
@@ -707,15 +707,15 @@ def studio_backend_imports(feature: str = "This command", *, studio_only: bool =
             raise
         typer.echo(
             f"Error: {feature} needs {needed or 'a dependency'}, which is not installed.",
-            err=True,
+            err = True,
         )
         others = [name for name in studio_missing if _canonical(name) != wanted]
         if others:
-            typer.echo(f"  also missing: {', '.join(others)}", err=True)
-        typer.echo("", err=True)
+            typer.echo(f"  also missing: {', '.join(others)}", err = True)
+        typer.echo("", err = True)
         if not from_studio:
-            typer.echo(f"  Install it:      pip install {needed}", err=True)
+            typer.echo(f"  Install it:      pip install {needed}", err = True)
         if from_studio or others:
-            typer.echo("  Unsloth install:  unsloth studio update", err=True)
-            typer.echo('  Plain pip:       pip install "unsloth[studio]"', err=True)
-        raise typer.Exit(code=1) from None
+            typer.echo("  Unsloth install:  unsloth studio update", err = True)
+            typer.echo('  Plain pip:       pip install "unsloth[studio]"', err = True)
+        raise typer.Exit(code = 1) from None

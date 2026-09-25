@@ -18,12 +18,12 @@ def _shared_setup_1(monkeypatch, tmp_path):
     monkeypatch.setattr(studio_db, "_schema_ready", set())
 
     studio_db.create_run(
-        id="r",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=10,
+        id = "r",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 10,
     )
     studio_db.update_run_output_dir("r", "/out/x")
     return studio_db
@@ -56,12 +56,11 @@ resume = _load_resume_module()
 
 def test_resume_request_accepts_sanitized_null_target_modules():
     from models.training import TrainingStartRequest
-
     request = TrainingStartRequest(
-        model_name="unsloth/Qwen3-0.6B",
-        training_type="Full Finetuning",
-        format_type="alpaca",
-        target_modules=None,
+        model_name = "unsloth/Qwen3-0.6B",
+        training_type = "Full Finetuning",
+        format_type = "alpaca",
+        target_modules = None,
     )
 
     assert request.target_modules == []
@@ -69,9 +68,9 @@ def test_resume_request_accepts_sanitized_null_target_modules():
 
 def _write_checkpoint(out: Path, step: int) -> Path:
     checkpoint = out / f"checkpoint-{step}"
-    checkpoint.mkdir(parents=True, exist_ok=True)
+    checkpoint.mkdir(parents = True, exist_ok = True)
     (checkpoint / "trainer_state.json").write_text(
-        json.dumps({"global_step": step}), encoding="utf-8"
+        json.dumps({"global_step": step}), encoding = "utf-8"
     )
     torch.save({"weight": torch.ones(1)}, checkpoint / "adapter_model.bin")
     torch.save({"state": {0: torch.ones(1)}}, checkpoint / "optimizer.pt")
@@ -101,13 +100,13 @@ def test_can_resume_run_allows_checkpointed_non_s3_run(monkeypatch):
 def test_can_resume_run_allows_errored_run_with_checkpoint(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
-    assert resume.can_resume_run(_stopped_run(status="error")) is True
+    assert resume.can_resume_run(_stopped_run(status = "error")) is True
 
 
 def test_can_resume_run_rejects_errored_run_without_checkpoint(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: False)
 
-    assert resume.can_resume_run(_stopped_run(status="error")) is False
+    assert resume.can_resume_run(_stopped_run(status = "error")) is False
 
 
 def test_can_resume_run_allows_errored_run_at_final_step(monkeypatch):
@@ -115,7 +114,7 @@ def test_can_resume_run_allows_errored_run_at_final_step(monkeypatch):
     # final-save path from the checkpoint.
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
-    run = _stopped_run(status="error", final_step=10, total_steps=10)
+    run = _stopped_run(status = "error", final_step = 10, total_steps = 10)
 
     assert resume.can_resume_run(run) is True
 
@@ -123,7 +122,7 @@ def test_can_resume_run_allows_errored_run_at_final_step(monkeypatch):
 def test_can_resume_run_rejects_stopped_run_at_final_step(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
-    run = _stopped_run(final_step=10, total_steps=10)
+    run = _stopped_run(final_step = 10, total_steps = 10)
 
     assert resume.can_resume_run(run) is False
 
@@ -132,7 +131,7 @@ def test_can_resume_run_rejects_s3_dataset_source(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
     run = _stopped_run(
-        config_json=json.dumps(
+        config_json = json.dumps(
             {
                 "dataset_source": "s3",
                 "s3_dataset": {
@@ -151,7 +150,7 @@ def test_can_resume_run_rejects_s3_dataset_source(monkeypatch):
 def test_can_resume_run_rejects_s3_metadata_marker(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
-    run = _stopped_run(config_json=json.dumps({"s3_dataset": {"bucket": "training-data"}}))
+    run = _stopped_run(config_json = json.dumps({"s3_dataset": {"bucket": "training-data"}}))
 
     assert resume.can_resume_run(run) is False
 
@@ -161,12 +160,12 @@ def test_list_runs_includes_config_json_for_resume_policy(monkeypatch, tmp_path)
     config_json = json.dumps({"dataset_source": "s3", "s3_dataset": {"bucket": "training-data"}})
 
     studio_db.create_run(
-        id="run-s3",
-        model_name="unsloth/test-model",
-        dataset_name="s3://training-data",
-        config_json=config_json,
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=10,
+        id = "run-s3",
+        model_name = "unsloth/test-model",
+        dataset_name = "s3://training-data",
+        config_json = config_json,
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 10,
     )
 
     result = studio_db.list_runs()
@@ -181,12 +180,12 @@ def test_crashed_run_with_persisted_output_dir_is_resumable(monkeypatch, tmp_pat
     _write_checkpoint(out, 10)
 
     studio_db.create_run(
-        id="run-crash",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=20,
+        id = "run-crash",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 20,
     )
     studio_db.update_run_output_dir("run-crash", str(out))
     conn = studio_db.get_connection()
@@ -206,7 +205,7 @@ def test_checkpoint_discovery_skips_malformed_newest(monkeypatch, tmp_path):
     (_write_checkpoint(out, 8) / "scheduler.pt").unlink()
     malformed = out / "checkpoint-10"
     malformed.mkdir()
-    (malformed / "trainer_state.json").write_text(json.dumps({"global_step": 10}), encoding="utf-8")
+    (malformed / "trainer_state.json").write_text(json.dumps({"global_step": 10}), encoding = "utf-8")
     (malformed / "adapter_model.bin").write_bytes(b"not a torch archive")
     (malformed / "optimizer.pt").write_bytes(b"not a torch archive")
 
@@ -216,15 +215,15 @@ def test_checkpoint_discovery_skips_malformed_newest(monkeypatch, tmp_path):
 def test_completed_run_keeps_output_dir_and_rejects_stale_cancel(monkeypatch, tmp_path):
     studio_db = _shared_setup_1(monkeypatch, tmp_path)
     studio_db.finish_run(
-        id="r",
-        status="completed",
-        ended_at="t",
-        final_step=2,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir="/out/x",
-        error_message=None,
+        id = "r",
+        status = "completed",
+        ended_at = "t",
+        final_step = 2,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = "/out/x",
+        error_message = None,
     )
 
     assert studio_db.get_run("r")["output_dir"] == "/out/x"
@@ -236,16 +235,16 @@ def test_completed_run_keeps_output_dir_and_rejects_stale_cancel(monkeypatch, tm
 def test_finish_run_clears_output_dir_for_stop_without_save(monkeypatch, tmp_path):
     studio_db = _shared_setup_1(monkeypatch, tmp_path)
     studio_db.finish_run(
-        id="r",
-        status="stopped",
-        ended_at="t",
-        final_step=2,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir=None,
-        error_message=None,
-        clear_output_dir=True,
+        id = "r",
+        status = "stopped",
+        ended_at = "t",
+        final_step = 2,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = None,
+        error_message = None,
+        clear_output_dir = True,
     )
 
     assert studio_db.get_run("r")["output_dir"] is None
@@ -264,16 +263,16 @@ def test_finish_run_clears_output_dir_for_stop_without_save(monkeypatch, tmp_pat
 def test_finish_run_clears_output_dir_on_cancel_error_finalize(monkeypatch, tmp_path):
     studio_db = _shared_setup_1(monkeypatch, tmp_path)
     studio_db.finish_run(
-        id="r",
-        status="stopped",
-        ended_at="t",
-        final_step=2,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir="/out/x",
-        error_message="worker failed during cancel",
-        clear_output_dir=True,
+        id = "r",
+        status = "stopped",
+        ended_at = "t",
+        final_step = 2,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = "/out/x",
+        error_message = "worker failed during cancel",
+        clear_output_dir = True,
     )
 
     assert studio_db.get_run("r")["output_dir"] is None
@@ -282,15 +281,15 @@ def test_finish_run_clears_output_dir_on_cancel_error_finalize(monkeypatch, tmp_
 def test_finish_run_preserves_output_dir_for_interrupted_stop_and_save(monkeypatch, tmp_path):
     studio_db = _shared_setup_1(monkeypatch, tmp_path)
     studio_db.finish_run(
-        id="r",
-        status="stopped",
-        ended_at="t",
-        final_step=2,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir=None,
-        error_message=None,
+        id = "r",
+        status = "stopped",
+        ended_at = "t",
+        final_step = 2,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = None,
+        error_message = None,
     )
 
     assert studio_db.get_run("r")["output_dir"] == "/out/x"
@@ -303,57 +302,57 @@ def test_resumed_errored_run_is_not_offered_again(monkeypatch, tmp_path):
     _write_checkpoint(out, 10)
 
     studio_db.create_run(
-        id="run-old",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=20,
+        id = "run-old",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 20,
     )
     studio_db.update_run_output_dir("run-old", str(out))
     studio_db.finish_run(
-        id="run-old",
-        status="error",
-        ended_at="2026-01-01T00:05:00Z",
-        final_step=10,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir=None,
-        error_message="killed",
+        id = "run-old",
+        status = "error",
+        ended_at = "2026-01-01T00:05:00Z",
+        final_step = 10,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = None,
+        error_message = "killed",
     )
     studio_db.create_run(
-        id="run-new",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-02T00:00:00Z",
-        total_steps=20,
-        output_dir=str(out),
-        resumed_from_run_id="run-old",
+        id = "run-new",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-02T00:00:00Z",
+        total_steps = 20,
+        output_dir = str(out),
+        resumed_from_run_id = "run-old",
     )
-    with pytest.raises(RuntimeError, match="no longer available"):
+    with pytest.raises(RuntimeError, match = "no longer available"):
         studio_db.create_run(
-            id="run-duplicate",
-            model_name="m",
-            dataset_name="d",
-            config_json="{}",
-            started_at="2026-01-02T00:00:01Z",
-            total_steps=20,
-            output_dir=str(out),
-            resumed_from_run_id="run-old",
+            id = "run-duplicate",
+            model_name = "m",
+            dataset_name = "d",
+            config_json = "{}",
+            started_at = "2026-01-02T00:00:01Z",
+            total_steps = 20,
+            output_dir = str(out),
+            resumed_from_run_id = "run-old",
         )
     assert studio_db.get_run("run-duplicate") is None
     studio_db.finish_run(
-        id="run-new",
-        status="error",
-        ended_at="2026-01-02T00:05:00Z",
-        final_step=15,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir=None,
-        error_message="killed again",
+        id = "run-new",
+        status = "error",
+        ended_at = "2026-01-02T00:05:00Z",
+        final_step = 15,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = None,
+        error_message = "killed again",
     )
 
     old_run = studio_db.get_run("run-old")
@@ -372,34 +371,34 @@ def test_running_continuation_blocks_older_resume(monkeypatch, tmp_path):
     _write_checkpoint(out, 10)
 
     studio_db.create_run(
-        id="run-old",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=20,
+        id = "run-old",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 20,
     )
     studio_db.update_run_output_dir("run-old", str(out))
     studio_db.finish_run(
-        id="run-old",
-        status="error",
-        ended_at="2026-01-01T00:05:00Z",
-        final_step=10,
-        final_loss=None,
-        duration_seconds=1,
-        loss_sparkline="[]",
-        output_dir=None,
-        error_message="killed",
+        id = "run-old",
+        status = "error",
+        ended_at = "2026-01-01T00:05:00Z",
+        final_step = 10,
+        final_loss = None,
+        duration_seconds = 1,
+        loss_sparkline = "[]",
+        output_dir = None,
+        error_message = "killed",
     )
     studio_db.create_run(
-        id="run-new",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-02T00:00:00Z",
-        total_steps=20,
-        output_dir=str(out),
-        resumed_from_run_id="run-old",
+        id = "run-new",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-02T00:00:00Z",
+        total_steps = 20,
+        output_dir = str(out),
+        resumed_from_run_id = "run-old",
     )
 
     old_run = studio_db.get_run("run-old")
@@ -416,12 +415,12 @@ def test_stop_save_checkpoint_failure_keeps_error_status(monkeypatch, tmp_path):
     studio_db = _shared_setup_2(monkeypatch, tmp_path)
 
     studio_db.create_run(
-        id="run-failed-save",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=10,
+        id = "run-failed-save",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 10,
     )
     backend = TrainingBackend()
     backend.current_job_id = "run-failed-save"
@@ -443,7 +442,7 @@ def test_stop_save_checkpoint_failure_keeps_error_status(monkeypatch, tmp_path):
 def test_can_resume_run_rejects_resume_blocked_run(monkeypatch):
     monkeypatch.setattr(resume, "has_resume_state", lambda _path: True)
 
-    assert resume.can_resume_run(_stopped_run(status="error", resume_blocked=1)) is False
+    assert resume.can_resume_run(_stopped_run(status = "error", resume_blocked = 1)) is False
 
 
 def test_stop_save_checkpoint_failure_with_stale_checkpoint_is_not_resumable(monkeypatch, tmp_path):
@@ -457,12 +456,12 @@ def test_stop_save_checkpoint_failure_with_stale_checkpoint_is_not_resumable(mon
     _write_checkpoint(out, 10)
 
     studio_db.create_run(
-        id="run-stale-ckpt",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=20,
+        id = "run-stale-ckpt",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 20,
     )
     studio_db.update_run_output_dir("run-stale-ckpt", str(out))
     backend = TrainingBackend()
@@ -492,12 +491,12 @@ def test_user_stop_error_without_checkpoint_ack_is_blocked(monkeypatch, tmp_path
     studio_db = _shared_setup_2(monkeypatch, tmp_path)
 
     studio_db.create_run(
-        id="run-user-stop",
-        model_name="m",
-        dataset_name="d",
-        config_json="{}",
-        started_at="2026-01-01T00:00:00Z",
-        total_steps=10,
+        id = "run-user-stop",
+        model_name = "m",
+        dataset_name = "d",
+        config_json = "{}",
+        started_at = "2026-01-01T00:00:00Z",
+        total_steps = 10,
     )
     backend = TrainingBackend()
     backend.current_job_id = "run-user-stop"

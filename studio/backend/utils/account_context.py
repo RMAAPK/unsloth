@@ -18,7 +18,7 @@ ROLE_USER = "user"
 T = TypeVar("T")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class AccountContext:
     """The acting account. ``account_id`` is the storage key; ``username`` is not."""
 
@@ -33,7 +33,7 @@ class AccountContext:
 
 OWNER = AccountContext(OWNER_ACCOUNT_ID, OWNER_USERNAME, ROLE_OWNER)
 
-_current: ContextVar[AccountContext] = ContextVar("unsloth_account", default=OWNER)
+_current: ContextVar[AccountContext] = ContextVar("unsloth_account", default = OWNER)
 
 
 def current_account() -> AccountContext:
@@ -91,8 +91,8 @@ def account_thread(
     """A thread pinned to one account, captured at creation rather than at start."""
     bound = account or current_account()
     return threading.Thread(
-        target=run_as,
-        args=(bound, target, *args),
-        kwargs=kwargs or {},
+        target = run_as,
+        args = (bound, target, *args),
+        kwargs = kwargs or {},
         **thread_kwargs,
     )

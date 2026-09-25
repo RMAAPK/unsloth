@@ -37,7 +37,7 @@ def _now() -> str:
 
 
 def _deadline() -> str:
-    return (datetime.now(timezone.utc) + timedelta(seconds=_LEASE_SECONDS)).isoformat()
+    return (datetime.now(timezone.utc) + timedelta(seconds = _LEASE_SECONDS)).isoformat()
 
 
 def claim(conn, kind: str, job_id: str) -> bool:
@@ -79,7 +79,7 @@ def activate(kind: str, job_id: str) -> None:
         _active.add((current_account(), kind, job_id))
         if _thread is None or not _thread.is_alive():
             try:
-                _thread = account_thread(target=_heartbeat, account=OWNER, daemon=True)
+                _thread = account_thread(target = _heartbeat, account = OWNER, daemon = True)
                 _thread.start()
             except Exception:
                 _thread = None
@@ -105,7 +105,7 @@ def release(kind: str, job_id: str) -> None:
         finally:
             conn.close()
     except Exception:
-        logger.warning("failed to release RAG job lease", exc_info=True)
+        logger.warning("failed to release RAG job lease", exc_info = True)
 
 
 def _heartbeat() -> None:
@@ -143,4 +143,4 @@ def _renew_account(active) -> None:
         finally:
             conn.close()
     except Exception:
-        logger.warning("failed to renew RAG job leases", exc_info=True)
+        logger.warning("failed to renew RAG job leases", exc_info = True)

@@ -42,10 +42,10 @@ def runner(tmp_path, monkeypatch):
     return mod
 
 
-def _nbconvert_stub(cmd, env=None):
+def _nbconvert_stub(cmd, env = None):
     out_dir = cmd[cmd.index("--output-dir") + 1]
     name = cmd[cmd.index("--output") + 1]
-    with open(os.path.join(out_dir, name), "w", encoding="utf-8") as f:
+    with open(os.path.join(out_dir, name), "w", encoding = "utf-8") as f:
         json.dump(NOTEBOOK, f)
     return 0
 
@@ -65,7 +65,7 @@ def _mode(path):
 @pytest.fixture()
 def notebook(tmp_path):
     src = tmp_path / "in.ipynb"
-    src.write_text(json.dumps(NOTEBOOK), encoding="utf-8")
+    src.write_text(json.dumps(NOTEBOOK), encoding = "utf-8")
     return src
 
 
@@ -79,12 +79,12 @@ def test_a_new_output_is_not_published_as_0600(runner, monkeypatch, tmp_path, no
         f"published mode {oct(_mode(out))}; the mkstemp 0600 survives os.replace, "
         "so a root container publishes an output the host user cannot read"
     )
-    assert json.loads(out.read_text(encoding="utf-8"))["cells"], "the result must survive"
+    assert json.loads(out.read_text(encoding = "utf-8"))["cells"], "the result must survive"
 
 
 def test_an_existing_outputs_mode_is_preserved(runner, monkeypatch, tmp_path, notebook):
     out = tmp_path / "out.ipynb"
-    out.write_text("{}", encoding="utf-8")
+    out.write_text("{}", encoding = "utf-8")
     os.chmod(out, 0o664)
     _run(runner, monkeypatch, notebook, out)
     assert (
@@ -94,11 +94,11 @@ def test_an_existing_outputs_mode_is_preserved(runner, monkeypatch, tmp_path, no
 
 @pytest.mark.skipif(
     os.name != "posix" or os.geteuid() != 0,
-    reason="chown to another uid needs POSIX and root",
+    reason = "chown to another uid needs POSIX and root",
 )
 def test_an_existing_outputs_ownership_is_preserved(runner, monkeypatch, tmp_path, notebook):
     out = tmp_path / "out.ipynb"
-    out.write_text("{}", encoding="utf-8")
+    out.write_text("{}", encoding = "utf-8")
     os.chown(out, 1000, 1000)
     _run(runner, monkeypatch, notebook, out)
     st = os.stat(out)
@@ -146,7 +146,7 @@ def test_the_ancestor_is_the_nearest_one_that_exists(runner, monkeypatch, tmp_pa
 
 @pytest.mark.skipif(
     os.name != "posix" or os.geteuid() != 0,
-    reason="chown to another uid needs POSIX and root",
+    reason = "chown to another uid needs POSIX and root",
 )
 def test_the_output_in_a_created_directory_is_not_root_owned(
     runner, monkeypatch, tmp_path, notebook
@@ -192,13 +192,13 @@ def test_a_busy_destination_still_gets_the_executed_notebook(
     runner, monkeypatch, tmp_path, notebook
 ):
     out = tmp_path / "out.ipynb"
-    out.write_text("{}", encoding="utf-8")
+    out.write_text("{}", encoding = "utf-8")
     os.chmod(out, 0o664)
     monkeypatch.setattr(runner.os, "replace", _replace_raising(errno.EBUSY))
 
     _run(runner, monkeypatch, notebook, out)
 
-    assert json.loads(out.read_text(encoding="utf-8"))["cells"], (
+    assert json.loads(out.read_text(encoding = "utf-8"))["cells"], (
         "the rename cannot work on a single-file bind mount, but the file itself "
         "is writable, so the finished notebook must still reach the user"
     )
@@ -216,7 +216,7 @@ def test_an_unpublishable_result_is_kept_and_its_location_printed(
 
     def _no_open(
         path,
-        mode="r",
+        mode = "r",
         *args,
         **kwargs,
     ):
@@ -234,5 +234,5 @@ def test_an_unpublishable_result_is_kept_and_its_location_printed(
 
     staged = [p for p in tmp_path.iterdir() if p.name.startswith(".unsloth-run-out-")]
     assert len(staged) == 1, "an executed notebook that cannot be published must be kept"
-    assert json.loads(staged[0].read_text(encoding="utf-8"))["cells"]
+    assert json.loads(staged[0].read_text(encoding = "utf-8"))["cells"]
     assert str(staged[0]) in capsys.readouterr().err

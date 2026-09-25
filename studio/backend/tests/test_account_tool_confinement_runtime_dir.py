@@ -35,11 +35,11 @@ def test_landlock_rules_exclude_the_per_user_runtime_dir(tmp_path):
         assert any(tool_confinement._contains(p, resolv) for p, _ in rules)
 
 
-@pytest.mark.skipif(not LANDLOCK, reason="Landlock not available on this kernel")
+@pytest.mark.skipif(not LANDLOCK, reason = "Landlock not available on this kernel")
 def test_managed_child_cannot_read_the_per_user_runtime_dir(tmp_path):
     runtime = _runtime_dir()
     if not os.path.isdir(runtime):
         pytest.skip("no per-user runtime dir on this host")
     run_as(BOB, tools._get_workdir, "chat")
-    out = run_as(BOB, tools._bash_exec, f"ls -a {runtime}; echo rc=$?", session_id="chat")
+    out = run_as(BOB, tools._bash_exec, f"ls -a {runtime}; echo rc=$?", session_id = "chat")
     assert "rc=0" not in out, out

@@ -63,10 +63,10 @@ def profile_imports(python: str, top: int = 15) -> dict:
     """Cumulative and self import cost for the backend's module graph. Run in a subprocess with -X importtime: the numbers are only meaningful for a cold interpreter, and importing in-process would measure a warm sys.modules."""
     proc = subprocess.run(
         [python, "-X", "importtime", "-c", "import sys; sys.path.insert(0, '.'); import main"],
-        cwd=BACKEND,
-        capture_output=True,
-        text=True,
-        timeout=900,
+        cwd = BACKEND,
+        capture_output = True,
+        text = True,
+        timeout = 900,
     )
     rows = []
     for line in proc.stderr.splitlines():
@@ -83,7 +83,7 @@ def profile_imports(python: str, top: int = 15) -> dict:
             "partial_rows": len(rows),
         }
 
-    by_cum = sorted(rows, key=lambda r: -r[1])
+    by_cum = sorted(rows, key = lambda r: -r[1])
     # Total comes from the `main` row, not by_cum[0]: -X importtime also prints the interpreter's own startup graph (`site`), which can outrank a trivial main.
     main_row = next((r for r in reversed(rows) if r[2] == "main"), None)
     if main_row is None:
@@ -104,7 +104,7 @@ def profile_imports(python: str, top: int = 15) -> dict:
             {"module": n, "seconds": round(c / 1e6, 3)} for _s, c, n in by_cum[:top]
         ],
         "self_by_package_ms": {
-            k: round(v / 1000) for k, v in sorted(self_by_pkg.items(), key=lambda x: -x[1])[:top]
+            k: round(v / 1000) for k, v in sorted(self_by_pkg.items(), key = lambda x: -x[1])[:top]
         },
     }
 
@@ -117,9 +117,9 @@ def _terminate_tree(proc: subprocess.Popen) -> None:
         try:
             killed = subprocess.run(
                 ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
-                capture_output=True,
-                timeout=30,
-                check=False,
+                capture_output = True,
+                timeout = 30,
+                check = False,
             )
             if killed.returncode == 0:
                 return
@@ -141,11 +141,11 @@ def profile_launch(
     t0 = time.perf_counter()
     proc = subprocess.Popen(
         [bin_path, "studio", "--api-only", "-H", "127.0.0.1", "-p", str(port)],
-        cwd=REPO_ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
+        cwd = REPO_ROOT,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+        text = True,
+        bufsize = 1,
     )
 
     def _drain() -> None:
@@ -155,7 +155,7 @@ def profile_launch(
                 first_byte.append(time.perf_counter() - t0)
             log_lines.append(line.rstrip("\n"))
 
-    reader = threading.Thread(target=_drain, daemon=True)
+    reader = threading.Thread(target = _drain, daemon = True)
     reader.start()
 
     t_healthz = None
@@ -170,7 +170,7 @@ def profile_launch(
                     f"http://127.0.0.1:{port}/healthz",
                 ):
                     try:
-                        with urllib.request.urlopen(url, timeout=2) as r:
+                        with urllib.request.urlopen(url, timeout = 2) as r:
                             if r.status == 200:
                                 t_healthz = time.perf_counter() - t0
                                 break
@@ -183,11 +183,11 @@ def profile_launch(
         _terminate_tree(proc)
         try:
             # Safe: the reader drains the pipe, so the child cannot block on write().
-            proc.wait(timeout=30)
+            proc.wait(timeout = 30)
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait()
-        reader.join(timeout=10)
+        reader.join(timeout = 10)
 
     t_first_byte = first_byte[0] if first_byte else None
     lifespan_ms = None
@@ -211,9 +211,9 @@ def python_version_of(python: str) -> str:
     try:
         proc = subprocess.run(
             [python, "-c", "import platform; print(platform.python_version())"],
-            capture_output=True,
-            text=True,
-            timeout=60,
+            capture_output = True,
+            text = True,
+            timeout = 60,
         )
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip()
@@ -236,31 +236,31 @@ def find_bin() -> str | None:
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        description = __doc__, formatter_class = argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument(
         "--repeats",
-        type=int,
-        default=1,
-        help="launch repeats; the median is reported (imports are measured once)",
+        type = int,
+        default = 1,
+        help = "launch repeats; the median is reported (imports are measured once)",
     )
     ap.add_argument(
         "--python",
-        default=sys.executable,
-        help="interpreter used for the import profile (default: this one)",
+        default = sys.executable,
+        help = "interpreter used for the import profile (default: this one)",
     )
-    ap.add_argument("--bin", help="path to the unsloth CLI (default: autodetect)")
+    ap.add_argument("--bin", help = "path to the unsloth CLI (default: autodetect)")
     ap.add_argument(
         "--import-only",
-        action="store_true",
-        help="skip the server phases (no install needed beyond the deps)",
+        action = "store_true",
+        help = "skip the server phases (no install needed beyond the deps)",
     )
     ap.add_argument(
         "--max-healthz-seconds",
-        type=float,
-        help="fail if the median time to a healthy port exceeds this",
+        type = float,
+        help = "fail if the median time to a healthy port exceeds this",
     )
-    ap.add_argument("--json", help="write the full report here")
+    ap.add_argument("--json", help = "write the full report here")
     a = ap.parse_args(argv)
     # range(0) launches nothing, leaving the budget check with nothing to fail on.
     if a.repeats < 1:
@@ -323,7 +323,7 @@ def main(argv: list[str]) -> int:
                 )
 
     if a.json:
-        Path(a.json).write_text(json.dumps(report, indent=2), encoding="utf-8")
+        Path(a.json).write_text(json.dumps(report, indent = 2), encoding = "utf-8")
         print(f"\nwrote {a.json}")
 
     if a.max_healthz_seconds is not None:

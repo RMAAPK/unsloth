@@ -61,10 +61,10 @@ def _build_packed_training_setup(tmp_path, device):
 
     try:
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name="hf-internal-testing/tiny-random-LlamaForCausalLM",
-            max_seq_length=64,
-            load_in_4bit=False,
-            dtype=dtype,
+            model_name = "hf-internal-testing/tiny-random-LlamaForCausalLM",
+            max_seq_length = 64,
+            load_in_4bit = False,
+            dtype = dtype,
         )
     except OSError as exc:  # pragma: no cover - offline CI
         pytest.skip(f"Requires access to tiny llama checkpoint: {exc}")
@@ -83,25 +83,25 @@ def _build_packed_training_setup(tmp_path, device):
     )
 
     training_args = SFTConfig(
-        per_device_train_batch_size=1,
-        per_device_eval_batch_size=1,
-        gradient_accumulation_steps=1,
-        dataset_text_field="text",
-        max_length=64,
-        logging_steps=1,
-        max_steps=1,
-        fp16=dtype == torch.float16,
-        bf16=dtype == torch.bfloat16,
-        dataset_num_proc=1,
-        output_dir=str(tmp_path),
-        packing=True,
+        per_device_train_batch_size = 1,
+        per_device_eval_batch_size = 1,
+        gradient_accumulation_steps = 1,
+        dataset_text_field = "text",
+        max_length = 64,
+        logging_steps = 1,
+        max_steps = 1,
+        fp16 = dtype == torch.float16,
+        bf16 = dtype == torch.bfloat16,
+        dataset_num_proc = 1,
+        output_dir = str(tmp_path),
+        packing = True,
     )
 
     trainer = SFTTrainer(
-        model=model,
-        processing_class=tokenizer,
-        train_dataset=dataset,
-        args=training_args,
+        model = model,
+        processing_class = tokenizer,
+        train_dataset = dataset,
+        args = training_args,
     )
 
     enable_sample_packing(model, trainer)
@@ -136,10 +136,10 @@ def _trim_batch_to_total_tokens(data, total_tokens):
 
 
 def test_mask_packed_sequence_boundaries_marks_single_row():
-    shift_labels = torch.arange(6, dtype=torch.long).view(1, 6)
+    shift_labels = torch.arange(6, dtype = torch.long).view(1, 6)
     changed = mask_packed_sequence_boundaries(
         shift_labels,
-        torch.tensor([2, 1, 3], dtype=torch.int32),
+        torch.tensor([2, 1, 3], dtype = torch.int32),
     )
     assert changed is True
     flat = shift_labels.view(-1)
@@ -150,8 +150,8 @@ def test_mask_packed_sequence_boundaries_marks_single_row():
 
 
 def test_mask_packed_sequence_boundaries_across_multiple_rows():
-    shift_labels = torch.arange(10, dtype=torch.long).view(2, 5)
-    lengths = torch.tensor([3, 2, 4, 1], dtype=torch.int32)
+    shift_labels = torch.arange(10, dtype = torch.long).view(2, 5)
+    lengths = torch.tensor([3, 2, 4, 1], dtype = torch.int32)
     changed = mask_packed_sequence_boundaries(shift_labels, lengths)
     assert changed is True
     flat = shift_labels.view(-1)
@@ -170,7 +170,7 @@ def test_configure_sample_packing():
 
 
 def test_configure_padding_free():
-    config = SimpleNamespace(remove_unused_columns=True)
+    config = SimpleNamespace(remove_unused_columns = True)
     configure_padding_free(config)
 
     assert config.padding_free is True
@@ -182,28 +182,28 @@ def test_configure_padding_free():
 
 def _hybrid_config_model():
     # Qwen3.5 / Qwen3-Next style: explicit linear_attention layer schedule.
-    return SimpleNamespace(config=_FakeConfig(layer_types=["linear_attention", "full_attention"]))
+    return SimpleNamespace(config = _FakeConfig(layer_types = ["linear_attention", "full_attention"]))
 
 
 def _gemma3_model():
     # Has layer_types but no linear_attention -> must NOT be flagged as hybrid.
     return SimpleNamespace(
-        config=_FakeConfig(
-            model_type="gemma3", layer_types=["sliding_attention", "full_attention"]
+        config = _FakeConfig(
+            model_type = "gemma3", layer_types = ["sliding_attention", "full_attention"]
         ),
     )
 
 
 def _dense_qwen3_model():
     return SimpleNamespace(
-        config=_FakeConfig(model_type="qwen3", architectures=["Qwen3ForCausalLM"])
+        config = _FakeConfig(model_type = "qwen3", architectures = ["Qwen3ForCausalLM"])
     )
 
 
 class _FakeGatedDeltaNet(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1d = torch.nn.Conv1d(4, 4, 3, groups=4)
+        self.conv1d = torch.nn.Conv1d(4, 4, 3, groups = 4)
         self.A_log = torch.nn.Parameter(torch.zeros(4))
 
     def forward(self, hidden_states, **kwargs):
@@ -242,24 +242,24 @@ def test_varlen_from_position_ids():
 
 
 def test_seq_idx_from_cu_seqlens_handles_trailing_pad():
-    cu = torch.tensor([0, 2, 5], dtype=torch.int32)
-    boundaries, seq_idx = packing_module._seq_idx_from_cu_seqlens(cu, total=8)  # pad_to_multiple_of
+    cu = torch.tensor([0, 2, 5], dtype = torch.int32)
+    boundaries, seq_idx = packing_module._seq_idx_from_cu_seqlens(cu, total = 8)  # pad_to_multiple_of
     assert boundaries.tolist() == [0, 2, 5, 8]
     assert seq_idx.tolist() == [[0, 0, 1, 1, 1, 2, 2, 2]]
-    boundaries2, _ = packing_module._seq_idx_from_cu_seqlens(cu, total=5)  # exact fit
+    boundaries2, _ = packing_module._seq_idx_from_cu_seqlens(cu, total = 5)  # exact fit
     assert boundaries2.tolist() == [0, 2, 5]
     assert (
-        packing_module._seq_idx_from_cu_seqlens(torch.tensor([1, 2], dtype=torch.int32), total=2)
+        packing_module._seq_idx_from_cu_seqlens(torch.tensor([1, 2], dtype = torch.int32), total = 2)
         is None
     )
-    assert packing_module._seq_idx_from_cu_seqlens(cu, total=3) is None  # boundaries exceed total
+    assert packing_module._seq_idx_from_cu_seqlens(cu, total = 3) is None  # boundaries exceed total
 
 
 def test_hybrid_varlen_metadata_prefers_packed_seq_lengths():
     # A competing position_ids would segment [0, 3, 6]; packed_seq_lengths must win.
     kwargs = {
-        "input_ids": torch.zeros(1, 6, dtype=torch.long),
-        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype=torch.int32),
+        "input_ids": torch.zeros(1, 6, dtype = torch.long),
+        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype = torch.int32),
         "position_ids": torch.tensor([[0, 1, 2, 0, 1, 2]]),
     }
     cu, seq_idx = packing_module._hybrid_varlen_metadata(kwargs)
@@ -269,8 +269,8 @@ def test_hybrid_varlen_metadata_prefers_packed_seq_lengths():
 
 def test_hybrid_varlen_metadata_suppressed_when_cached():
     base = {
-        "input_ids": torch.zeros(1, 6, dtype=torch.long),
-        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype=torch.int32),
+        "input_ids": torch.zeros(1, 6, dtype = torch.long),
+        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype = torch.int32),
     }
     assert packing_module._hybrid_varlen_metadata({**base, "use_cache": True}) is None
     assert packing_module._hybrid_varlen_metadata({**base, "past_key_values": object()}) is None
@@ -278,7 +278,7 @@ def test_hybrid_varlen_metadata_suppressed_when_cached():
 
 def test_hybrid_varlen_metadata_none_for_plain_batch():
     kwargs = {
-        "input_ids": torch.zeros(1, 4, dtype=torch.long),
+        "input_ids": torch.zeros(1, 4, dtype = torch.long),
         "position_ids": torch.tensor([[0, 1, 2, 3]]),
     }
     assert packing_module._hybrid_varlen_metadata(kwargs) is None
@@ -287,10 +287,10 @@ def test_hybrid_varlen_metadata_none_for_plain_batch():
 def _make_fake_kernels():
     def causal_conv1d_fn(
         x,
-        weight=None,
-        bias=None,
-        activation=None,
-        seq_idx=None,
+        weight = None,
+        bias = None,
+        activation = None,
+        seq_idx = None,
     ):
         causal_conv1d_fn.calls.append(seq_idx)
         return x
@@ -299,9 +299,9 @@ def _make_fake_kernels():
 
     def chunk_gated_delta_rule(
         q,
-        k=None,
-        v=None,
-        cu_seqlens=None,
+        k = None,
+        v = None,
+        cu_seqlens = None,
         **kw,
     ):
         chunk_gated_delta_rule.calls.append(cu_seqlens)
@@ -314,7 +314,7 @@ def _make_fake_kernels():
 class _ShimGatedDeltaNet(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1d = torch.nn.Conv1d(4, 4, 3, groups=4)
+        self.conv1d = torch.nn.Conv1d(4, 4, 3, groups = 4)
         self.causal_conv1d_fn, self.chunk_gated_delta_rule = _make_fake_kernels()
 
     def forward(self, hidden_states, **kwargs):
@@ -324,22 +324,22 @@ class _ShimGatedDeltaNet(torch.nn.Module):
 class _ShimHybridModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.config = SimpleNamespace(layer_types=["linear_attention", "full_attention"])
+        self.config = SimpleNamespace(layer_types = ["linear_attention", "full_attention"])
         self.linear_attn = _ShimGatedDeltaNet()
 
     def forward(
         self,
-        input_ids=None,
-        position_ids=None,
-        packed_seq_lengths=None,
-        use_cache=None,
+        input_ids = None,
+        position_ids = None,
+        packed_seq_lengths = None,
+        use_cache = None,
         **kwargs,
     ):
         return self.linear_attn(input_ids.float())
 
 
 def test_patch_hybrid_varlen_flag_off(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_EXPERIMENTAL_HYBRID_PACKING", raising=False)
+    monkeypatch.delenv("UNSLOTH_EXPERIMENTAL_HYBRID_PACKING", raising = False)
     model = _ShimHybridModel()
     assert patch_hybrid_linear_attention_varlen(model) is False
     assert not getattr(model, "_unsloth_varlen_forward_wrapped", False)
@@ -361,11 +361,11 @@ def test_patch_hybrid_varlen_active_and_idempotent(monkeypatch):
     conv_orig.calls.clear()
     scan_orig.calls.clear()
     packing_module._HYBRID_WARNED.clear()
-    ids = torch.zeros(1, 6, dtype=torch.long)
+    ids = torch.zeros(1, 6, dtype = torch.long)
     model(
-        input_ids=ids,
-        packed_seq_lengths=torch.tensor([2, 1, 3], dtype=torch.int32),
-        use_cache=False,
+        input_ids = ids,
+        packed_seq_lengths = torch.tensor([2, 1, 3], dtype = torch.int32),
+        use_cache = False,
     )
     assert conv_orig.calls[-1] is not None  # seq_idx injected
     assert scan_orig.calls[-1].tolist() == [0, 2, 3, 6]  # cu_seqlens injected
@@ -374,7 +374,7 @@ def test_patch_hybrid_varlen_active_and_idempotent(monkeypatch):
     conv_orig.calls.clear()
     scan_orig.calls.clear()
     model(
-        input_ids=ids, packed_seq_lengths=torch.tensor([2, 1, 3], dtype=torch.int32), use_cache=True
+        input_ids = ids, packed_seq_lengths = torch.tensor([2, 1, 3], dtype = torch.int32), use_cache = True
     )
     assert conv_orig.calls[-1] is None  # cached forward -> no injection
     assert scan_orig.calls[-1] is None
@@ -386,7 +386,7 @@ def test_patch_hybrid_varlen_torch_fallback_fail_closed(monkeypatch):
 
     def torch_chunk_gated_delta_rule(
         q,
-        cu_seqlens=None,
+        cu_seqlens = None,
         **kw,
     ):
         return q
@@ -412,7 +412,7 @@ def _hybrid_model_with_gdn(gdn_forward):
     class _GatedDeltaNet(torch.nn.Module):
         def __init__(self):
             super().__init__()
-            self.conv1d = torch.nn.Conv1d(4, 4, 3, groups=4)
+            self.conv1d = torch.nn.Conv1d(4, 4, 3, groups = 4)
             self.causal_conv1d_fn, self.chunk_gated_delta_rule = _make_fake_kernels()
 
         forward = gdn_forward
@@ -420,14 +420,14 @@ def _hybrid_model_with_gdn(gdn_forward):
     class _Model(torch.nn.Module):
         def __init__(self):
             super().__init__()
-            self.config = SimpleNamespace(layer_types=["linear_attention", "full_attention"])
+            self.config = SimpleNamespace(layer_types = ["linear_attention", "full_attention"])
             self.linear_attn = _GatedDeltaNet()
 
         def forward(
             self,
-            input_ids=None,
-            packed_seq_lengths=None,
-            use_cache=None,
+            input_ids = None,
+            packed_seq_lengths = None,
+            use_cache = None,
             **kwargs,
         ):
             return self.linear_attn(input_ids.float())
@@ -441,11 +441,11 @@ def test_patch_hybrid_varlen_no_dispatch_aborts(monkeypatch):
     monkeypatch.setenv("UNSLOTH_EXPERIMENTAL_HYBRID_PACKING", "1")
     model = _hybrid_model_with_gdn(lambda self, hidden_states, **kw: hidden_states)
     assert patch_hybrid_linear_attention_varlen(model) is True
-    with pytest.raises(RuntimeError, match="both invoked"):
+    with pytest.raises(RuntimeError, match = "both invoked"):
         model(
-            input_ids=torch.zeros(1, 6),
-            packed_seq_lengths=torch.tensor([2, 1, 3], dtype=torch.int32),
-            use_cache=False,
+            input_ids = torch.zeros(1, 6),
+            packed_seq_lengths = torch.tensor([2, 1, 3], dtype = torch.int32),
+            use_cache = False,
         )
 
 
@@ -456,22 +456,22 @@ def test_patch_hybrid_varlen_partial_dispatch_aborts(monkeypatch):
         lambda self, hidden_states, **kw: self.causal_conv1d_fn(hidden_states)
     )
     assert patch_hybrid_linear_attention_varlen(conv_only) is True
-    with pytest.raises(RuntimeError, match="both invoked"):
+    with pytest.raises(RuntimeError, match = "both invoked"):
         conv_only(
-            input_ids=torch.zeros(1, 6),
-            packed_seq_lengths=torch.tensor([2, 1, 3], dtype=torch.int32),
-            use_cache=False,
+            input_ids = torch.zeros(1, 6),
+            packed_seq_lengths = torch.tensor([2, 1, 3], dtype = torch.int32),
+            use_cache = False,
         )
 
     scan_only = _hybrid_model_with_gdn(
         lambda self, hidden_states, **kw: self.chunk_gated_delta_rule(hidden_states)
     )
     assert patch_hybrid_linear_attention_varlen(scan_only) is True
-    with pytest.raises(RuntimeError, match="both invoked"):
+    with pytest.raises(RuntimeError, match = "both invoked"):
         scan_only(
-            input_ids=torch.zeros(1, 6),
-            packed_seq_lengths=torch.tensor([2, 1, 3], dtype=torch.int32),
-            use_cache=False,
+            input_ids = torch.zeros(1, 6),
+            packed_seq_lengths = torch.tensor([2, 1, 3], dtype = torch.int32),
+            use_cache = False,
         )
 
 
@@ -487,8 +487,8 @@ def test_varlen_from_position_ids_mrope_3d():
 def test_hybrid_varlen_metadata_trailing_pad():
     # packed_seq_lengths sum to 6 but the flattened input is 8 (pad_to_multiple_of).
     kwargs = {
-        "input_ids": torch.zeros(1, 8, dtype=torch.long),
-        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype=torch.int32),
+        "input_ids": torch.zeros(1, 8, dtype = torch.long),
+        "packed_seq_lengths": torch.tensor([2, 1, 3], dtype = torch.int32),
     }
     cu, seq_idx = packing_module._hybrid_varlen_metadata(kwargs)
     assert cu.tolist() == [0, 2, 3, 6, 8]
@@ -502,28 +502,28 @@ def _patch_fake_sft_trainer():
             self.args = args[1] if len(args) >= 2 else kwargs["args"]
             self.data_collator = args[2] if len(args) >= 3 else kwargs.get("data_collator")
 
-    trainer_module._patch_sft_trainer_auto_packing(SimpleNamespace(SFTTrainer=FakeSFTTrainer))
+    trainer_module._patch_sft_trainer_auto_packing(SimpleNamespace(SFTTrainer = FakeSFTTrainer))
     return FakeSFTTrainer
 
 
 def _vlm_model():
     return SimpleNamespace(
-        config=_FakeConfig(
-            architectures=["Gemma4ForConditionalGeneration"],
-            model_type="gemma4",
-            vision_config=SimpleNamespace(),
+        config = _FakeConfig(
+            architectures = ["Gemma4ForConditionalGeneration"],
+            model_type = "gemma4",
+            vision_config = SimpleNamespace(),
         ),
-        max_seq_length=16,
+        max_seq_length = 16,
     )
 
 
 def _text_model():
     return SimpleNamespace(
-        config=_FakeConfig(
-            architectures=["LlamaForCausalLM"],
-            model_type="llama",
+        config = _FakeConfig(
+            architectures = ["LlamaForCausalLM"],
+            model_type = "llama",
         ),
-        max_seq_length=16,
+        max_seq_length = 16,
     )
 
 
@@ -544,13 +544,13 @@ class _CharacterTokenizer:
 
 def test_vlm_text_dataset_allows_explicit_packing():
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
 
     trainer = fake_trainer(
-        model=_vlm_model(),
-        args=config,
-        processing_class=object(),
-        train_dataset=Dataset.from_dict({"text": ["text-only CPT sample"]}),
+        model = _vlm_model(),
+        args = config,
+        processing_class = object(),
+        train_dataset = Dataset.from_dict({"text": ["text-only CPT sample"]}),
     )
 
     assert config.packing is True
@@ -560,7 +560,7 @@ def test_vlm_text_dataset_allows_explicit_packing():
 
 def test_vlm_without_processing_class_still_disables_packing():
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
 
     fake_trainer(
         _vlm_model(),
@@ -585,14 +585,14 @@ def test_encoder_decoder_disables_packing(model_type, architecture):
     # Text-only encoder-decoder models are not VLMs, but their bidirectional encoder attends across concatenated samples
     # once padding-free drops attention_mask.
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     model = SimpleNamespace(
-        config=_FakeConfig(
-            model_type=model_type,
-            architectures=[architecture],
-            is_encoder_decoder=True,
+        config = _FakeConfig(
+            model_type = model_type,
+            architectures = [architecture],
+            is_encoder_decoder = True,
         ),
-        max_seq_length=16,
+        max_seq_length = 16,
     )
 
     trainer = fake_trainer(model, config, None, Dataset.from_dict({"text": ["text-only sample"]}))
@@ -604,14 +604,14 @@ def test_encoder_decoder_disables_packing(model_type, architecture):
 def test_decoder_only_conditional_generation_keeps_packing():
     # CSM is decoder-only despite the ForConditionalGeneration name -> packing stays on.
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     model = SimpleNamespace(
-        config=_FakeConfig(
-            model_type="csm",
-            architectures=["CsmForConditionalGeneration"],
-            is_encoder_decoder=False,
+        config = _FakeConfig(
+            model_type = "csm",
+            architectures = ["CsmForConditionalGeneration"],
+            is_encoder_decoder = False,
         ),
-        max_seq_length=16,
+        max_seq_length = 16,
     )
 
     trainer = fake_trainer(model, config, None, Dataset.from_dict({"text": ["text-only sample"]}))
@@ -623,12 +623,12 @@ def test_decoder_only_conditional_generation_keeps_packing():
 
 def _hybrid_trainer_model():
     return SimpleNamespace(
-        config=_FakeConfig(
-            model_type="qwen3_next",
-            architectures=["Qwen3NextForCausalLM"],
-            layer_types=["linear_attention", "full_attention"],
+        config = _FakeConfig(
+            model_type = "qwen3_next",
+            architectures = ["Qwen3NextForCausalLM"],
+            layer_types = ["linear_attention", "full_attention"],
         ),
-        max_seq_length=16,
+        max_seq_length = 16,
     )
 
 
@@ -637,7 +637,7 @@ def test_hybrid_varlen_active_enables_packing(monkeypatch):
     monkeypatch.setattr(trainer_module, "_chunked_loss_bypasses_forward", lambda config: False)
     monkeypatch.setattr(trainer_module, "patch_hybrid_linear_attention_varlen", lambda model: True)
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     fake_trainer(_hybrid_trainer_model(), config, None, Dataset.from_dict({"text": ["x"]}))
     assert config.packing is True
     assert config.padding_free is True
@@ -648,7 +648,7 @@ def test_hybrid_chunked_loss_stays_on_padded_path(monkeypatch):
     monkeypatch.setattr(trainer_module, "_chunked_loss_bypasses_forward", lambda config: True)
     monkeypatch.setattr(trainer_module, "patch_hybrid_linear_attention_varlen", lambda model: True)
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     fake_trainer(_hybrid_trainer_model(), config, None, Dataset.from_dict({"text": ["x"]}))
     assert config.packing is False
     assert config.padding_free is False
@@ -661,14 +661,14 @@ def test_string_hybrid_model_disables_packing(monkeypatch):
         trainer_module,
         "_resolve_string_model_config",
         lambda name, cfg: _FakeConfig(
-            model_type="qwen3_next",
-            architectures=["Qwen3NextForCausalLM"],
-            layer_types=["linear_attention", "full_attention"],
+            model_type = "qwen3_next",
+            architectures = ["Qwen3NextForCausalLM"],
+            layer_types = ["linear_attention", "full_attention"],
         ),
     )
     monkeypatch.setattr(trainer_module, "patch_hybrid_linear_attention_varlen", lambda model: True)
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     fake_trainer("Qwen/Qwen3-Next-80B-A3B", config, None, Dataset.from_dict({"text": ["x"]}))
     assert config.packing is False
     assert config.padding_free is False
@@ -676,7 +676,7 @@ def test_string_hybrid_model_disables_packing(monkeypatch):
 
 def test_vlm_vision_dataset_still_disables_packing():
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
 
     fake_trainer(
         _vlm_model(),
@@ -697,13 +697,13 @@ def test_vlm_vision_dataset_still_disables_packing():
 )
 def test_vlm_preprocessed_vision_dataset_disables_packing(vision_column):
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
 
     fake_trainer(
-        model=_vlm_model(),
-        args=config,
-        processing_class=object(),
-        train_dataset=Dataset.from_dict({"input_ids": [[1]], vision_column: [None]}),
+        model = _vlm_model(),
+        args = config,
+        processing_class = object(),
+        train_dataset = Dataset.from_dict({"input_ids": [[1]], vision_column: [None]}),
     )
 
     assert config.packing is False
@@ -713,17 +713,17 @@ def test_vlm_preprocessed_vision_dataset_disables_packing(vision_column):
 @pytest.mark.parametrize("dict_eval", (False, True))
 def test_vlm_vision_eval_dataset_disables_packing(dict_eval):
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     eval_dataset = Dataset.from_dict({"input_ids": [[1]], "pixel_values": [None]})
     if dict_eval:
         eval_dataset = {"vision": eval_dataset}
 
     fake_trainer(
-        model=_vlm_model(),
-        args=config,
-        processing_class=object(),
-        train_dataset=Dataset.from_dict({"text": ["text-only training sample"]}),
-        eval_dataset=eval_dataset,
+        model = _vlm_model(),
+        args = config,
+        processing_class = object(),
+        train_dataset = Dataset.from_dict({"text": ["text-only training sample"]}),
+        eval_dataset = eval_dataset,
     )
 
     assert config.packing is False
@@ -732,17 +732,17 @@ def test_vlm_vision_eval_dataset_disables_packing(dict_eval):
 
 def test_vlm_streaming_vision_dataset_without_metadata_disables_packing():
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     dataset = IterableDataset.from_generator(
         lambda: iter([{"images": [None], "text": "multimodal sample"}])
     )
     assert dataset.column_names is None
 
     fake_trainer(
-        model=_vlm_model(),
-        args=config,
-        processing_class=object(),
-        train_dataset=dataset,
+        model = _vlm_model(),
+        args = config,
+        processing_class = object(),
+        train_dataset = dataset,
     )
 
     assert config.packing is False
@@ -760,15 +760,15 @@ def test_stateful_stream_is_not_consumed_during_detection(data_collator):
             return (row for row in self.rows)
 
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     dataset = StatefulDataset()
 
     fake_trainer(
-        model=_vlm_model(),
-        args=config,
-        processing_class=object(),
-        data_collator=data_collator,
-        train_dataset=dataset,
+        model = _vlm_model(),
+        args = config,
+        processing_class = object(),
+        data_collator = data_collator,
+        train_dataset = dataset,
     )
 
     assert config.packing is False
@@ -785,14 +785,14 @@ def test_text_model_stream_without_metadata_keeps_packing():
             return (row for row in self.rows)
 
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
     dataset = StatefulDataset()
 
     trainer = fake_trainer(
-        model=_text_model(),
-        args=config,
-        processing_class=object(),
-        train_dataset=dataset,
+        model = _text_model(),
+        args = config,
+        processing_class = object(),
+        train_dataset = dataset,
     )
 
     assert config.packing is True
@@ -827,15 +827,15 @@ def _fake_sft_self():
         "the patched one. `import unsloth` reports the cause as a warning "
         "('Could not build the patched trl.trainer.sft_trainer'), not an error."
     )
-    return SimpleNamespace(model=None)
+    return SimpleNamespace(model = None)
 
 
 def test_bfd_packing_truncates_before_packing(monkeypatch):
     args = SimpleNamespace(
-        dataset_num_proc=1,
-        dataset_text_field="text",
-        max_length=4,
-        packing_strategy="bfd",
+        dataset_num_proc = 1,
+        dataset_text_field = "text",
+        max_length = 4,
+        packing_strategy = "bfd",
     )
     trainer = _fake_sft_self()
     dataset = Dataset.from_dict({"prompt": ["abc"], "completion": ["defghij"]})
@@ -860,10 +860,10 @@ def test_bfd_packing_truncates_before_packing(monkeypatch):
 
 def test_wrapped_strategy_without_packing_still_truncates():
     args = SimpleNamespace(
-        dataset_num_proc=1,
-        dataset_text_field="text",
-        max_length=4,
-        packing_strategy="wrapped",
+        dataset_num_proc = 1,
+        dataset_text_field = "text",
+        max_length = 4,
+        packing_strategy = "wrapped",
     )
     trainer = _fake_sft_self()
     dataset = Dataset.from_dict({"text": ["abcdefghi"]})
@@ -899,7 +899,7 @@ def test_wrapped_packing_preserves_overlength_tokens(monkeypatch, legacy_api):
     def legacy_pack_dataset(
         dataset,
         seq_length,
-        map_kwargs=None,
+        map_kwargs = None,
     ):
         return pack_dataset(dataset, seq_length, "wrapped", map_kwargs)
 
@@ -932,8 +932,8 @@ class _DummyModel(torch.nn.Module):
         super().__init__()
         self.max_seq_length = 16
         self.child = _DummyChild()
-        self.config = SimpleNamespace(_attn_implementation="sdpa")
-        self.generation_config = SimpleNamespace(attn_implementation="sdpa")
+        self.config = SimpleNamespace(_attn_implementation = "sdpa")
+        self.generation_config = SimpleNamespace(attn_implementation = "sdpa")
 
 
 def _build_trl_language_modeling_collator():
@@ -969,7 +969,7 @@ def _build_trl_language_modeling_collator():
 
 class _DummyTrainer:
     def __init__(self):
-        self.args = SimpleNamespace(remove_unused_columns=True)
+        self.args = SimpleNamespace(remove_unused_columns = True)
         self.data_collator = _build_trl_language_modeling_collator()
 
 
@@ -982,7 +982,7 @@ class _PaddingFreeCollator:
     def torch_call(self, examples):
         self.calls += 1
         return {
-            "input_ids": torch.tensor([[0]], dtype=torch.long),
+            "input_ids": torch.tensor([[0]], dtype = torch.long),
             "examples_seen": self.calls,
         }
 
@@ -1015,10 +1015,10 @@ def test_enable_sample_packing():
     batch = collator.torch_call(examples)
 
     assert "packed_seq_lengths" in batch
-    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype=torch.int32))
+    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype = torch.int32))
 
     assert batch["input_ids"].shape == (1, 6)
-    expected_positions = torch.tensor([0, 1, 0, 0, 1, 2], dtype=torch.long)
+    expected_positions = torch.tensor([0, 1, 0, 0, 1, 2], dtype = torch.long)
     assert torch.equal(batch["position_ids"].view(-1)[:6], expected_positions)
 
 
@@ -1031,11 +1031,11 @@ def test_enable_sample_packing_only_requires_torch_call():
 
     class _MinimalCollator:
         def torch_call(self, examples):
-            return {"input_ids": torch.tensor([[0, 1, 2, 3, 4, 5]], dtype=torch.long)}
+            return {"input_ids": torch.tensor([[0, 1, 2, 3, 4, 5]], dtype = torch.long)}
 
     trainer = SimpleNamespace(
-        args=SimpleNamespace(remove_unused_columns=True),
-        data_collator=_MinimalCollator(),
+        args = SimpleNamespace(remove_unused_columns = True),
+        data_collator = _MinimalCollator(),
     )
 
     enable_sample_packing(_DummyModel(), trainer)
@@ -1050,12 +1050,12 @@ def test_enable_sample_packing_only_requires_torch_call():
             {"input_ids": [3, 4, 5], "seq_lengths": [3]},
         ]
     )
-    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype=torch.int32))
+    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype = torch.int32))
 
 
 # has_real_accelerator(), not has_real_cuda(): the body below picks xpu when cuda is absent
 # and _build_packed_training_setup has an xpu dtype arm, so this is real XPU coverage.
-@pytest.mark.skipif(not has_real_accelerator(), reason="builds a real 4bit model on an accelerator")
+@pytest.mark.skipif(not has_real_accelerator(), reason = "builds a real 4bit model on an accelerator")
 def test_enable_sample_packing_trl_collator(tmp_path):
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -1083,9 +1083,9 @@ def test_enable_sample_packing_trl_collator(tmp_path):
     batch = trainer.data_collator.torch_call(examples)
 
     assert batch["input_ids"].shape == (1, 6)
-    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype=torch.int32))
+    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([2, 1, 3], dtype = torch.int32))
 
-    expected_positions = torch.tensor([0, 1, 0, 0, 1, 2], dtype=torch.long)
+    expected_positions = torch.tensor([0, 1, 0, 0, 1, 2], dtype = torch.long)
     assert torch.equal(batch["position_ids"].view(-1)[:6], expected_positions)
 
     if hasattr(trainer, "accelerator"):
@@ -1095,8 +1095,8 @@ def test_enable_sample_packing_trl_collator(tmp_path):
 def test_enable_padding_free_metadata():
     model = _DummyModel()
     trainer = SimpleNamespace(
-        args=SimpleNamespace(remove_unused_columns=True),
-        data_collator=_PaddingFreeCollator(),
+        args = SimpleNamespace(remove_unused_columns = True),
+        data_collator = _PaddingFreeCollator(),
     )
 
     enable_padding_free_metadata(model, trainer)
@@ -1113,13 +1113,13 @@ def test_enable_padding_free_metadata():
         {"input_ids": [3, 4]},
     ]
     batch = collator.torch_call(examples)
-    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([3, 2], dtype=torch.int32))
+    assert torch.equal(batch["packed_seq_lengths"], torch.tensor([3, 2], dtype = torch.int32))
     assert trainer.args.remove_unused_columns is False
 
 
 # has_real_accelerator(), not has_real_cuda(): the body below picks xpu when cuda is absent
 # and _build_packed_training_setup has an xpu dtype arm, so this is real XPU coverage.
-@pytest.mark.skipif(not has_real_accelerator(), reason="builds a real 4bit model on an accelerator")
+@pytest.mark.skipif(not has_real_accelerator(), reason = "builds a real 4bit model on an accelerator")
 def test_packing_sdpa(tmp_path):
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -1140,7 +1140,7 @@ def test_packing_sdpa(tmp_path):
     assert "position_ids" in batch
     flat_positions = batch["position_ids"].reshape(-1)[:packed_tokens]
     expected_positions = torch.cat(
-        [torch.arange(length, dtype=torch.long) for length in batch["packed_seq_lengths"].tolist()]
+        [torch.arange(length, dtype = torch.long) for length in batch["packed_seq_lengths"].tolist()]
     )
     assert torch.equal(flat_positions.cpu(), expected_positions)
     inputs = _trim_batch_to_total_tokens(batch, packed_tokens)
@@ -1160,19 +1160,19 @@ def test_packing_sdpa(tmp_path):
         dtype,
         device,
         *,
-        sliding_window=None,
+        sliding_window = None,
     ):
         mask_calls.append(tuple(seq_info[0].tolist()))
         return original_mask(
             seq_info,
-            dtype=dtype,
-            device=device,
-            sliding_window=sliding_window,
+            dtype = dtype,
+            device = device,
+            sliding_window = sliding_window,
         )
 
     def _capture_loss(*, logits, labels, **loss_kwargs):
         captured_loss_labels["labels"] = labels.detach().to("cpu")
-        return torch.zeros((), device=logits.device, dtype=logits.dtype)
+        return torch.zeros((), device = logits.device, dtype = logits.dtype)
 
     with ExitStack() as stack:
         stack.enter_context(patch.object(attention_dispatch_utils, "HAS_FLASH_ATTENTION", False))
@@ -1181,14 +1181,14 @@ def test_packing_sdpa(tmp_path):
             patch.object(
                 attention_dispatch_utils,
                 "build_sdpa_packed_attention_mask",
-                side_effect=_capture_mask,
+                side_effect = _capture_mask,
             )
         )
         stack.enter_context(
             patch.object(
                 llama_mod,
                 "fast_cross_entropy_loss",
-                side_effect=_capture_loss,
+                side_effect = _capture_loss,
             )
         )
         with torch.no_grad():
@@ -1199,7 +1199,7 @@ def test_packing_sdpa(tmp_path):
     assert "labels" in captured_loss_labels
     flat_loss_labels = captured_loss_labels["labels"].reshape(-1)
     boundaries = (
-        torch.cumsum(batch["packed_seq_lengths"].to(device="cpu", dtype=torch.long), dim=0) - 1
+        torch.cumsum(batch["packed_seq_lengths"].to(device = "cpu", dtype = torch.long), dim = 0) - 1
     )
     for idx in boundaries.tolist():
         assert flat_loss_labels[idx].item() == -100
@@ -1274,9 +1274,9 @@ def test_require_replace_raises_on_missing_anchor():
 
     assert _require_replace("abc", "b", "B") == "aBc"
     with pytest.raises(RuntimeError):
-        _require_replace("abc", "z", "Z", where="unit test")
+        _require_replace("abc", "z", "Z", where = "unit test")
     # an optional edit warns once and returns the source unchanged (no dangling ref)
-    assert _require_replace("abc", "z", "Z", required=False, where="optional") == "abc"
+    assert _require_replace("abc", "z", "Z", required = False, where = "optional") == "abc"
 
 
 def test_require_replace_survives_a_trailing_comment_on_the_anchor():
@@ -1307,7 +1307,7 @@ def test_require_replace_survives_a_trailing_comment_on_the_anchor():
             "dataset = pack_dataset(\n    a,\n    c,\n)",
             anchor,
             replacement,
-            where="changed argument",
+            where = "changed argument",
         )
 
     # A `#` inside a string literal is not a comment and must still match exactly.
@@ -1324,12 +1324,12 @@ def test_resolve_string_model_config_forwards_token(monkeypatch):
         @staticmethod
         def from_pretrained(name, **kwargs):
             captured.update(kwargs)
-            return SimpleNamespace(is_encoder_decoder=False)
+            return SimpleNamespace(is_encoder_decoder = False)
 
     monkeypatch.setattr(transformers, "AutoConfig", _FakeAutoConfig)
 
     config_arg = SimpleNamespace(
-        model_init_kwargs={
+        model_init_kwargs = {
             "token": "hf_secret",
             "trust_remote_code": True,
             "cache_dir": "/tmp/cache",
@@ -1354,19 +1354,19 @@ def test_resolve_string_model_config_merges_top_level_trust_remote_code(monkeypa
         @staticmethod
         def from_pretrained(name, **kwargs):
             captured.update(kwargs)
-            return SimpleNamespace(is_encoder_decoder=False)
+            return SimpleNamespace(is_encoder_decoder = False)
 
     monkeypatch.setattr(transformers, "AutoConfig", _FakeAutoConfig)
 
     # SFTConfig(trust_remote_code=True) with no model_init_kwargs entry is honored
-    config_arg = SimpleNamespace(model_init_kwargs={}, trust_remote_code=True)
+    config_arg = SimpleNamespace(model_init_kwargs = {}, trust_remote_code = True)
     trainer_module._resolve_string_model_config("org/remote-hybrid", config_arg)
     assert captured.get("trust_remote_code") is True
 
     # model_init_kwargs wins over the top-level flag (mirrors TRL's setdefault)
     captured.clear()
     config_arg = SimpleNamespace(
-        model_init_kwargs={"trust_remote_code": False}, trust_remote_code=True
+        model_init_kwargs = {"trust_remote_code": False}, trust_remote_code = True
     )
     trainer_module._resolve_string_model_config("org/remote-hybrid", config_arg)
     assert captured.get("trust_remote_code") is False
@@ -1374,8 +1374,8 @@ def test_resolve_string_model_config_merges_top_level_trust_remote_code(monkeypa
 
 def _warn_text_model():
     return SimpleNamespace(
-        config=_FakeConfig(architectures=["LlamaForCausalLM"], model_type="llama"),
-        max_seq_length=16,
+        config = _FakeConfig(architectures = ["LlamaForCausalLM"], model_type = "llama"),
+        max_seq_length = 16,
     )
 
 
@@ -1386,18 +1386,18 @@ def test_packing_skip_warning_is_accurate(monkeypatch, caplog):
     monkeypatch.setenv("UNSLOTH_RETURN_LOGITS", "1")
     fake_trainer = _patch_fake_sft_trainer()
     config = SimpleNamespace(
-        packing=True,
-        padding_free=None,
-        remove_unused_columns=True,
-        max_seq_length=4096,
-        max_length=512,
+        packing = True,
+        padding_free = None,
+        remove_unused_columns = True,
+        max_seq_length = 4096,
+        max_length = 512,
     )
 
-    with caplog.at_level(logging.WARNING, logger="unsloth.trainer"):
+    with caplog.at_level(logging.WARNING, logger = "unsloth.trainer"):
         fake_trainer(
-            model=_warn_text_model(),
-            args=config,
-            train_dataset=Dataset.from_dict({"text": ["sample"]}),
+            model = _warn_text_model(),
+            args = config,
+            train_dataset = Dataset.from_dict({"text": ["sample"]}),
         )
 
     messages = [r.message for r in caplog.records if "packing=True ignored" in r.message]
@@ -1412,16 +1412,16 @@ def test_packing_skip_warning_is_accurate(monkeypatch, caplog):
 def test_packing_skip_warning_keeps_custom_collator_reason(monkeypatch, caplog):
     # A passed collator must still be named as the cause; the env-var fallback is only for the case where nothing else
     # blocks packing.
-    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising=False)
+    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising = False)
     fake_trainer = _patch_fake_sft_trainer()
-    config = SimpleNamespace(packing=True, padding_free=None, remove_unused_columns=True)
+    config = SimpleNamespace(packing = True, padding_free = None, remove_unused_columns = True)
 
-    with caplog.at_level(logging.WARNING, logger="unsloth.trainer"):
+    with caplog.at_level(logging.WARNING, logger = "unsloth.trainer"):
         fake_trainer(
-            model=_warn_text_model(),
-            args=config,
-            data_collator=lambda features: features,
-            train_dataset=Dataset.from_dict({"text": ["sample"]}),
+            model = _warn_text_model(),
+            args = config,
+            data_collator = lambda features: features,
+            train_dataset = Dataset.from_dict({"text": ["sample"]}),
         )
 
     messages = [r.message for r in caplog.records if "packing=True ignored" in r.message]
@@ -1434,8 +1434,8 @@ def test_packing_skip_warning_keeps_custom_collator_reason(monkeypatch, caplog):
 # mask_packed_sequence_boundaries needs shifted labels, so fused-CE paths (which shift
 # internally) call mask_packed_boundary_labels, the pre-shift equivalent.
 def test_mask_packed_boundary_labels_masks_next_document_first_token():
-    labels = torch.arange(6, dtype=torch.long).view(1, 6)
-    out = mask_packed_boundary_labels(labels, torch.tensor([2, 1, 3], dtype=torch.int32))
+    labels = torch.arange(6, dtype = torch.long).view(1, 6)
+    out = mask_packed_boundary_labels(labels, torch.tensor([2, 1, 3], dtype = torch.int32))
     # Docs start at 0, 2, 3; masking their first token stops the previous doc predicting it. Slot 0 is the
     # out-of-range redirect: harmless, the shift discards labels[0].
     assert out.reshape(-1).tolist() == [-100, 1, -100, -100, 4, 5]
@@ -1446,8 +1446,8 @@ def test_mask_packed_boundary_labels_masks_next_document_first_token():
 
 def test_mask_packed_boundary_labels_matches_the_shifted_guard():
     """The two entry points must mask exactly the same CE targets."""
-    labels = torch.arange(100, 112, dtype=torch.long).view(1, 12)
-    lengths = torch.tensor([5, 4, 3], dtype=torch.int32)
+    labels = torch.arange(100, 112, dtype = torch.long).view(1, 12)
+    lengths = torch.tensor([5, 4, 3], dtype = torch.int32)
 
     # Route A: shift, then the in-place guard.
     shift_a = torch.empty_like(labels)
@@ -1466,9 +1466,9 @@ def test_mask_packed_boundary_labels_matches_the_shifted_guard():
 
 def test_mask_packed_boundary_labels_is_idempotent_on_trl_masked_labels():
     """TRL already sets labels[position_ids == 0] = -100, so the guard is a no-op on it."""
-    lengths = torch.tensor([2, 1, 3], dtype=torch.int32)
-    labels = torch.arange(6, dtype=torch.long).view(1, 6)
-    position_ids = torch.tensor([[0, 1, 0, 0, 1, 2]], dtype=torch.long)
+    lengths = torch.tensor([2, 1, 3], dtype = torch.int32)
+    labels = torch.arange(6, dtype = torch.long).view(1, 6)
+    position_ids = torch.tensor([[0, 1, 0, 0, 1, 2]], dtype = torch.long)
     trl_labels = labels.clone()
     trl_labels[position_ids == 0] = -100
 
@@ -1479,22 +1479,22 @@ def test_mask_packed_boundary_labels_is_idempotent_on_trl_masked_labels():
 
 
 def test_mask_packed_boundary_labels_is_a_noop_without_packing():
-    labels = torch.arange(6, dtype=torch.long).view(1, 6)
+    labels = torch.arange(6, dtype = torch.long).view(1, 6)
     assert mask_packed_boundary_labels(labels, None) is labels
-    assert mask_packed_boundary_labels(labels, torch.tensor([], dtype=torch.int32)) is labels
+    assert mask_packed_boundary_labels(labels, torch.tensor([], dtype = torch.int32)) is labels
     assert mask_packed_boundary_labels(None, torch.tensor([2, 4])) is None
 
 
 def test_mask_packed_boundary_labels_tolerates_pad_to_multiple_of():
     # Trailing pad beyond sum(seq_lengths) stays -100, and no index goes OOB.
-    labels = torch.tensor([[10, 11, 12, 13, -100, -100]], dtype=torch.long)
-    out = mask_packed_boundary_labels(labels, torch.tensor([2, 2], dtype=torch.int32))
+    labels = torch.tensor([[10, 11, 12, 13, -100, -100]], dtype = torch.long)
+    out = mask_packed_boundary_labels(labels, torch.tensor([2, 2], dtype = torch.int32))
     assert out.reshape(-1).tolist() == [10, 11, -100, 13, -100, -100]
 
 
 def test_mask_packed_boundary_labels_lengths_covering_whole_row():
     # cumsum == numel: the redirect must not corrupt a real target.
-    labels = torch.arange(4, dtype=torch.long).view(1, 4)
+    labels = torch.arange(4, dtype = torch.long).view(1, 4)
     out = mask_packed_boundary_labels(labels, [2, 2])
     assert out.reshape(-1).tolist() == [-100, 1, -100, 3]
 
@@ -1510,37 +1510,36 @@ class _StubInner(torch.nn.Module):
 
     def forward(self, **kwargs):
         from transformers.modeling_outputs import BaseModelOutputWithPast
-
         return BaseModelOutputWithPast(
-            last_hidden_state=self.hidden,
-            past_key_values=None,
-            hidden_states=None,
-            attentions=None,
+            last_hidden_state = self.hidden,
+            past_key_values = None,
+            hidden_states = None,
+            attentions = None,
         )
 
 
 def _make_stub_causal_lm(
-    hidden_size=8,
-    vocab=16,
-    seq=8,
+    hidden_size = 8,
+    vocab = 16,
+    seq = 8,
 ):
     hidden = torch.zeros(1, seq, hidden_size)
     model = _StubInner(hidden)
-    lm_head = torch.nn.Linear(hidden_size, vocab, bias=False)
+    lm_head = torch.nn.Linear(hidden_size, vocab, bias = False)
     stub = SimpleNamespace(
-        model=model,
-        lm_head=lm_head,
+        model = model,
+        lm_head = lm_head,
         # Mistral's `elif self.training:` mask branch is only reached without xformers, so omitting this passes locally
         # but AttributeErrors on CI.
-        training=True,
-        config=SimpleNamespace(
-            output_attentions=False,
-            output_hidden_states=False,
-            use_return_dict=True,
-            model_type="llama",
-            final_logit_softcapping=0,
-            logit_scale=0,
-            torch_dtype=torch.float32,
+        training = True,
+        config = SimpleNamespace(
+            output_attentions = False,
+            output_hidden_states = False,
+            use_return_dict = True,
+            model_type = "llama",
+            final_logit_softcapping = 0,
+            logit_scale = 0,
+            torch_dtype = torch.float32,
         ),
     )
     return stub
@@ -1553,29 +1552,29 @@ def test_fused_ce_branch_masks_packed_boundaries(monkeypatch, module_name):
 
     mod = importlib.import_module(f"unsloth.models.{module_name}")
     seq = 8
-    stub = _make_stub_causal_lm(seq=seq)
+    stub = _make_stub_causal_lm(seq = seq)
 
     seen = {}
 
     def _fake_fused(**kwargs):
         seen["labels"] = kwargs["labels"].clone()
-        return torch.zeros((), requires_grad=False)
+        return torch.zeros((), requires_grad = False)
 
     monkeypatch.setattr(mod, "unsloth_fused_ce_loss", _fake_fused)
-    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising=False)
-    monkeypatch.delenv("UNSLOTH_RETURN_HIDDEN_STATES", raising=False)
+    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising = False)
+    monkeypatch.delenv("UNSLOTH_RETURN_HIDDEN_STATES", raising = False)
 
     if module_name == "llama":
         forward = mod.CausalLM_fast_forward(lambda *a, **k: None)
     else:
         forward = mod.MistralForCausalLM_fast_forward
 
-    labels = torch.arange(seq, dtype=torch.long).view(1, seq)
+    labels = torch.arange(seq, dtype = torch.long).view(1, seq)
     forward(
         stub,
-        input_ids=torch.zeros(1, seq, dtype=torch.long),
-        labels=labels,
-        packed_seq_lengths=torch.tensor([3, 5], dtype=torch.int32),
+        input_ids = torch.zeros(1, seq, dtype = torch.long),
+        labels = labels,
+        packed_seq_lengths = torch.tensor([3, 5], dtype = torch.int32),
     )
 
     got = seen["labels"].reshape(-1).tolist()
@@ -1597,8 +1596,8 @@ class _UnmaskedPackingCollator:
     def torch_call(self, examples):
         ids = [i for ex in examples for i in ex["input_ids"]]
         return {
-            "input_ids": torch.tensor([ids], dtype=torch.long),
-            "labels": torch.tensor([ids], dtype=torch.long),
+            "input_ids": torch.tensor([ids], dtype = torch.long),
+            "labels": torch.tensor([ids], dtype = torch.long),
         }
 
 
@@ -1613,10 +1612,10 @@ def _zoo_num_items_in_batch(batch):
 
 @pytest.mark.parametrize("wrapper", [enable_sample_packing, enable_padding_free_metadata])
 def test_collator_keeps_boundary_targets_for_the_num_items_deduction(wrapper):
-    model = SimpleNamespace(max_seq_length=16, children=lambda: [])
+    model = SimpleNamespace(max_seq_length = 16, children = lambda: [])
     trainer = SimpleNamespace(
-        args=SimpleNamespace(remove_unused_columns=True),
-        data_collator=_UnmaskedPackingCollator(),
+        args = SimpleNamespace(remove_unused_columns = True),
+        data_collator = _UnmaskedPackingCollator(),
     )
     wrapper(model, trainer)
 
@@ -1633,8 +1632,8 @@ def test_collator_keeps_boundary_targets_for_the_num_items_deduction(wrapper):
 
 # 4. idempotence, discriminating (an identity helper must not pass)
 def test_guard_is_idempotent_and_actually_masks():
-    lengths = torch.tensor([2, 1, 3], dtype=torch.int32)
-    labels = torch.arange(6, dtype=torch.long).view(1, 6)
+    lengths = torch.tensor([2, 1, 3], dtype = torch.int32)
+    labels = torch.arange(6, dtype = torch.long).view(1, 6)
     once = mask_packed_boundary_labels(labels, lengths)
     twice = mask_packed_boundary_labels(once, lengths)
     assert torch.equal(twice, once)

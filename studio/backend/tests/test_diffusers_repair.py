@@ -35,10 +35,10 @@ class _Dist:
         return json.dumps(self._direct_url)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _reset(monkeypatch):
-    monkeypatch.delenv(dr.DISABLE_ENV_VAR, raising=False)
-    monkeypatch.delenv("UNSLOTH_DIFFUSERS_MAIN", raising=False)
+    monkeypatch.delenv(dr.DISABLE_ENV_VAR, raising = False)
+    monkeypatch.delenv("UNSLOTH_DIFFUSERS_MAIN", raising = False)
     monkeypatch.setattr(dr, "_peer_holds_pass", lambda: False)
     monkeypatch.setattr(dr, "_installer_would_skip", lambda: False)
     monkeypatch.setattr(dr, "_loaded_replaceable_modules", lambda: [])
@@ -46,7 +46,6 @@ def _reset(monkeypatch):
 
 def _installed_diffusers(monkeypatch, direct_url):
     import importlib.metadata
-
     monkeypatch.setattr(importlib.metadata, "distribution", lambda name: _Dist(direct_url))
 
 
@@ -74,7 +73,7 @@ class _Proc:
     def __init__(self, returncode):
         self.pid, self.returncode = 0, returncode
 
-    def communicate(self, timeout=None):
+    def communicate(self, timeout = None):
         return "installer output", None
 
     def poll(self):
@@ -107,7 +106,7 @@ def test_nothing_to_do_and_failure_do_not_report_an_install(monkeypatch):
     _installed_diffusers(monkeypatch, None)
     for code, says_retry in ((dr._NOTHING_TO_DO, False), (2, True)):
         lines = []
-        monkeypatch.setattr(dr.subprocess, "Popen", lambda argv, code=code, **kw: _Proc(code))
+        monkeypatch.setattr(dr.subprocess, "Popen", lambda argv, code = code, **kw: _Proc(code))
         assert dr.repair_diffusers_before_imports(lines.append) is False
         assert any("unsloth studio update" in line for line in lines) is says_retry
 
@@ -115,7 +114,7 @@ def test_nothing_to_do_and_failure_do_not_report_an_install(monkeypatch):
 def _slow_installer(
     monkeypatch,
     tmp_path,
-    timeout_s=3,
+    timeout_s = 3,
 ):
     """An installer that outlives the budget, with a child standing in for uv."""
     pid_file = tmp_path / "child.pid"
@@ -125,7 +124,7 @@ def _slow_installer(
         "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
         f"pathlib.Path({str(pid_file)!r}).write_text(str(child.pid))\n"
         "time.sleep(60)\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     monkeypatch.setattr(dr, "_INSTALLER", installer)
     monkeypatch.setattr(dr, "_REPAIR_TIMEOUT_S", timeout_s)
@@ -169,7 +168,7 @@ def _assert_child_stopped(pid_file):
     pytest.fail("the installer's child outlived the timed-out repair")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process tree")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX process tree")
 def test_a_timed_out_repair_stops_the_installers_children_and_records_it(monkeypatch, tmp_path):
     """Stop uv children before app imports and record the timeout to prevent repeated retries."""
     pid_file, started = _slow_installer(monkeypatch, tmp_path)
@@ -183,43 +182,43 @@ def test_a_timed_out_repair_stops_the_installers_children_and_records_it(monkeyp
     _assert_child_stopped(pid_file)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process tree")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX process tree")
 def test_a_peer_that_started_during_a_slow_prefetch_stops_startup(monkeypatch, tmp_path):
     """The prefetch holds no lock, so a pass can begin under it; importing then mixes versions."""
-    pid_file, started = _slow_installer(monkeypatch, tmp_path, timeout_s=2)
+    pid_file, started = _slow_installer(monkeypatch, tmp_path, timeout_s = 2)
     recorded = []
     monkeypatch.setattr(dr, "_record_failure", lambda: recorded.append(True))
     monkeypatch.setattr(dr, "_peer_holds_pass", lambda: True)
-    with pytest.raises(dr.PeerInstallInProgress, match="Start Unsloth Studio again"):
+    with pytest.raises(dr.PeerInstallInProgress, match = "Start Unsloth Studio again"):
         dr._run_repair(lambda _line: None)
     assert started == ["--prefetch-diffusers-main"]
     assert recorded == [], "the peer's manifest is not ours to mark"
     _assert_child_stopped(pid_file)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process tree")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX process tree")
 def test_our_own_install_stopped_at_the_deadline_stops_startup(monkeypatch, tmp_path):
     """Stopped mid-install, packages may be half replaced: never import them, never record."""
-    pid_file, started = _slow_installer(monkeypatch, tmp_path, timeout_s=2)
+    pid_file, started = _slow_installer(monkeypatch, tmp_path, timeout_s = 2)
     recorded = []
     monkeypatch.setattr(dr, "_record_failure", lambda: recorded.append(True))
-    with pytest.raises(dr.InstallInterrupted, match="Start Unsloth Studio again"):
-        dr._run_repair(lambda _line: None, prefetch=False)
+    with pytest.raises(dr.InstallInterrupted, match = "Start Unsloth Studio again"):
+        dr._run_repair(lambda _line: None, prefetch = False)
     assert started == ["--repair-diffusers-main"]
     assert recorded == [], "the next start has to retry, not skip, a half-finished install"
     _assert_child_stopped(pid_file)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX process tree")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX process tree")
 def test_a_peer_still_in_the_pass_at_the_deadline_stops_startup_in_time(monkeypatch, tmp_path):
     """Abort at timeout if a peer is still installing, without changing its manifest."""
-    pid_file, _started = _slow_installer(monkeypatch, tmp_path, timeout_s=2)
+    pid_file, _started = _slow_installer(monkeypatch, tmp_path, timeout_s = 2)
     recorded = []
     monkeypatch.setattr(dr, "_record_failure", lambda: recorded.append(True))
     monkeypatch.setattr(dr, "_peer_holds_pass", lambda: True)
     started = time.monotonic()
-    with pytest.raises(dr.PeerInstallInProgress, match="Start Unsloth Studio again"):
-        dr._run_repair(lambda _line: None, prefetch=False)
+    with pytest.raises(dr.PeerInstallInProgress, match = "Start Unsloth Studio again"):
+        dr._run_repair(lambda _line: None, prefetch = False)
     assert time.monotonic() - started < 2 + 40
     assert recorded == []
     _assert_child_stopped(pid_file)
@@ -242,7 +241,7 @@ def test_run_server_exits_with_the_message_when_the_environment_is_unsafe(
 
     monkeypatch.setattr(dr, "repair_diffusers_before_imports", blocked)
     with pytest.raises(SystemExit) as excinfo:
-        run._repair_pinned_diffusers(silent=True)
+        run._repair_pinned_diffusers(silent = True)
     assert excinfo.value.code == 1
     assert message in capsys.readouterr().err, "shown even under --silent"
 
@@ -255,7 +254,7 @@ def test_an_embedding_host_that_imported_the_packages_is_not_repaired_under_them
     _installed_diffusers(monkeypatch, None)
     monkeypatch.setattr(dr, "_loaded_replaceable_modules", _REAL_LOADED_REPLACEABLE)
     for name in ("huggingface_hub", "diffusers"):
-        monkeypatch.delitem(sys.modules, name, raising=False)
+        monkeypatch.delitem(sys.modules, name, raising = False)
     monkeypatch.setitem(sys.modules, loaded, object())
     monkeypatch.setattr(dr.subprocess, "Popen", lambda *a, **k: pytest.fail("started a repair"))
     lines = []
@@ -270,7 +269,7 @@ def test_any_other_repair_error_lets_startup_continue(monkeypatch, capsys):
         raise OSError("disk full")
 
     monkeypatch.setattr(dr, "repair_diffusers_before_imports", broken)
-    run._repair_pinned_diffusers(silent=False)
+    run._repair_pinned_diffusers(silent = False)
     assert "diffusers self-heal skipped: disk full" in capsys.readouterr().out
 
 
@@ -278,10 +277,10 @@ def test_a_recorded_failure_uses_the_key_the_installer_reads(monkeypatch):
     import types
 
     recorded = {}
-    fake = types.SimpleNamespace(update_manifest=lambda **extra: recorded.update(extra))
+    fake = types.SimpleNamespace(update_manifest = lambda **extra: recorded.update(extra))
     monkeypatch.setitem(sys.modules, "studio.install_manifest", fake)
     dr._record_failure()
-    source = dr._INSTALLER.read_text(encoding="utf-8")
+    source = dr._INSTALLER.read_text(encoding = "utf-8")
     assert recorded == {"diffusers_main_repair": "failed"}
     assert '_DIFFUSERS_MAIN_REPAIR_KEY = "diffusers_main_repair"' in source
 
@@ -292,7 +291,7 @@ def _peer_pass(monkeypatch, *uncontended):
 
     monkeypatch.setattr(dr, "_peer_holds_pass", _REAL_PEER_HOLDS_PASS)
     held = iter(uncontended)
-    fake = types.SimpleNamespace(pass_lock=lambda: contextlib.nullcontext(next(held)))
+    fake = types.SimpleNamespace(pass_lock = lambda: contextlib.nullcontext(next(held)))
     monkeypatch.setitem(sys.modules, "studio.install_manifest", fake)
 
 
@@ -313,7 +312,7 @@ def _manifest(monkeypatch, manifest):
     import types
 
     monkeypatch.setattr(dr, "_installer_would_skip", _REAL_INSTALLER_WOULD_SKIP)
-    fake = types.SimpleNamespace(read_manifest=lambda: manifest)
+    fake = types.SimpleNamespace(read_manifest = lambda: manifest)
     monkeypatch.setitem(sys.modules, "studio.install_manifest", fake)
 
 
@@ -348,7 +347,7 @@ def test_a_skipped_start_still_waits_out_a_peers_pass(monkeypatch):
 
 
 def test_the_python_floor_matches_the_installer():
-    source = dr._INSTALLER.read_text(encoding="utf-8")
+    source = dr._INSTALLER.read_text(encoding = "utf-8")
     assert f"DIFFUSERS_MAIN_MIN_PYTHON = {dr._MAIN_MIN_PYTHON!r}" in source
 
 
@@ -387,7 +386,7 @@ def test_run_server_repairs_before_it_imports_the_app():
     """Check import ordering in the AST to avoid starting the full backend."""
     import ast
 
-    tree = ast.parse((_BACKEND / "run.py").read_text(encoding="utf-8"))
+    tree = ast.parse((_BACKEND / "run.py").read_text(encoding = "utf-8"))
     run_server = next(
         node
         for node in ast.walk(tree)
@@ -405,7 +404,7 @@ def test_run_server_repairs_before_it_imports_the_app():
         if isinstance(node, ast.ImportFrom) and node.module == "main"
     )
     assert repair < app_import
-    main_source = (_BACKEND / "main.py").read_text(encoding="utf-8")
+    main_source = (_BACKEND / "main.py").read_text(encoding = "utf-8")
     assert "diffusers_repair" not in main_source, "the app itself must never install under itself"
 
 
@@ -425,16 +424,16 @@ def test_the_repair_path_imports_nothing_it_can_replace():
     )
     result = subprocess.run(
         [sys.executable, "-c", code],
-        cwd=_BACKEND,
-        capture_output=True,
-        text=True,
-        timeout=120,
+        cwd = _BACKEND,
+        capture_output = True,
+        text = True,
+        timeout = 120,
     )
     assert result.returncode == 0, result.stderr
     assert "LOADED=\n" in result.stdout, result.stdout
 
 
 def test_the_installer_exposes_the_repair_flag():
-    source = dr._INSTALLER.read_text(encoding="utf-8")
+    source = dr._INSTALLER.read_text(encoding = "utf-8")
     assert '["--repair-diffusers-main"]' in source
     assert '["--prefetch-diffusers-main"]' in source

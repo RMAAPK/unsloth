@@ -215,7 +215,7 @@ def _rehearsal_strip(m, pat, text, spans, enabled_tool_names) -> str:
 def apply_tool_strip_patterns(
     text: str,
     patterns,
-    enabled_tool_names=None,
+    enabled_tool_names = None,
 ) -> str:
     """Apply strip ``patterns`` to ``text``. A bare rehearsal ``name[ARGS]{..}`` pattern
     strips only a markerless-promotable name outside markdown code, keeping parse/strip
@@ -478,7 +478,7 @@ def _in_code(spans, pos: int) -> bool:
 def _iter_bracket_spans(
     text: str,
     start: int = 0,
-    enabled_tool_names=None,
+    enabled_tool_names = None,
 ):
     """Yield ``(span_start, span_end, kind, match)`` for each balanced bracket-tag call from ``start``
     on, in document order; ``span_end`` exclusive. ``kind`` is ``"array"`` ([TOOL_CALLS] [..]),
@@ -518,7 +518,7 @@ def _iter_bracket_spans(
         live = [(kind, m) for kind, m in nexts.items() if m is not None]
         if not live:
             return
-        kind, m = min(live, key=lambda km: km[1].start())
+        kind, m = min(live, key = lambda km: km[1].start())
         last_close = last_array_close if kind == "array" else last_brace_close
         if m.end() > last_close:
             # Keep other formats live, but skip a balanced scan to EOF per doomed opener.
@@ -724,9 +724,9 @@ def _inside_open_parameter(
     content: str,
     pos: int,
     *,
-    param_start_re=None,
-    param_closers=(_PARAM_CLOSE_TAG,),
-    func_closers=(_FUNC_CLOSE_TAG,),
+    param_start_re = None,
+    param_closers = (_PARAM_CLOSE_TAG,),
+    func_closers = (_FUNC_CLOSE_TAG,),
 ) -> bool:
     """Return True when ``pos`` falls inside an unclosed parameter value.
 
@@ -833,7 +833,7 @@ def _marker_coverage(content: str, markers) -> list[tuple[int, int]]:
             if inside_braces:
                 continue
             events.append((cm.start(), 1, kind, cm.end()))
-    events.sort(key=lambda e: (e[0], e[1]))
+    events.sort(key = lambda e: (e[0], e[1]))
     waiting = {"json": [], "gemma": []}
     close_end_for: dict[int, int] = {}
     for _pos, order, kind, payload in events:
@@ -871,13 +871,13 @@ def _build_markers(content: str):
             continue
         brace_start = m.end() - 1
         brace_end = (
-            _balanced_brace_end(content, brace_start, gemma_quotes=gemma)
+            _balanced_brace_end(content, brace_start, gemma_quotes = gemma)
             if last_brace is None or brace_start < last_brace
             else None
         )
         # Keep the ``-1`` sentinel: ``marker_coverage`` consumers test ``brace_end < 0``.
         markers.append((m.start(), -1 if brace_end is None else brace_end, kind, m))
-    markers.sort(key=lambda c: c[0])
+    markers.sort(key = lambda c: c[0])
     return markers
 
 
@@ -893,7 +893,7 @@ def parse_tool_calls_from_text(
     *,
     id_offset: int = 0,
     allow_incomplete: bool = True,
-    enabled_tool_names=None,
+    enabled_tool_names = None,
     with_spans: bool = False,
 ):
     """Parse OpenAI-format tool calls from model text.
@@ -933,7 +933,6 @@ def parse_tool_calls_from_text(
     # defined there because the Gemma and bare-JSON scanners live there.
     try:
         from core.inference.tool_call_parser import _blocked_markerless_body_spans
-
         _blocked_spans = _blocked_markerless_body_spans(content, enabled_tool_names)
     except Exception:  # noqa: BLE001 -- no spans just means the old, unmasked behaviour
         _blocked_spans = []
@@ -1067,7 +1066,7 @@ def parse_tool_calls_from_text(
             span_end += wrap_close.end()
         parsed_items.append((span_start, span_end, func_name, json.dumps(arguments)))
 
-    parsed_items.sort(key=lambda item: item[0])
+    parsed_items.sort(key = lambda item: item[0])
     for start, span_end, name, arguments in parsed_items:
         tool_calls.append(
             {
@@ -1082,7 +1081,7 @@ def parse_tool_calls_from_text(
     # Mistral call and a rehearsal in one message both parse.
     if not tool_calls:
         for start, end, kind, m in _iter_bracket_spans(
-            content, enabled_tool_names=enabled_tool_names
+            content, enabled_tool_names = enabled_tool_names
         ):
             if _in_think(start) or _in_blocked(start):
                 continue
@@ -1156,7 +1155,7 @@ def parse_tool_calls_from_text(
     return tool_calls
 
 
-def _strip_bracket_tag_calls(text: str, enabled_tool_names=None) -> str:
+def _strip_bracket_tag_calls(text: str, enabled_tool_names = None) -> str:
     """Strip complete [TOOL_CALLS] arrays / name / bare name[ARGS]{..} calls with one
     balanced forward scan, so nested JSON args are removed whole (a fixed-depth regex
     left two-level args behind). Truncated tails go to the caller's catch-all. Linear.
@@ -1166,7 +1165,7 @@ def _strip_bracket_tag_calls(text: str, enabled_tool_names=None) -> str:
         return text
     out: list[str] = []
     cursor = 0
-    for start, end, _kind, _m in _iter_bracket_spans(text, enabled_tool_names=enabled_tool_names):
+    for start, end, _kind, _m in _iter_bracket_spans(text, enabled_tool_names = enabled_tool_names):
         out.append(text[cursor:start])
         cursor = end
     out.append(text[cursor:])
@@ -1258,7 +1257,7 @@ def _strip_gemma_native_spans(text: str, *, final: bool) -> str:
         start = match.start()
         if start < cursor:
             continue
-        brace_end = _balanced_brace_end(text, match.end() - 1, gemma_quotes=True)
+        brace_end = _balanced_brace_end(text, match.end() - 1, gemma_quotes = True)
         if brace_end is None:
             # Unbalanced: nothing completes from here on, so stop either way (rescanning would be quadratic).
             if final:
@@ -1288,7 +1287,7 @@ def _gemma_span_ranges(text: str) -> list:
         start = match.start()
         if start < cursor:
             continue
-        brace_end = _balanced_brace_end(text, match.end() - 1, gemma_quotes=True)
+        brace_end = _balanced_brace_end(text, match.end() - 1, gemma_quotes = True)
         if brace_end is None:
             break
         close = _TC_GEMMA_END_TAG_RE.search(text, brace_end + 1)
@@ -1346,22 +1345,22 @@ def _strip_markup_segment(
     text: str,
     *,
     final: bool,
-    enabled_tool_names=None,
+    enabled_tool_names = None,
 ) -> str:
     # Bracket-tag balanced scan first, then the quote-aware Gemma passes so a literal marker in an
     # argument cannot truncate a block, then the regex sweeps.
-    text = _strip_bracket_tag_calls(text, enabled_tool_names=enabled_tool_names)
+    text = _strip_bracket_tag_calls(text, enabled_tool_names = enabled_tool_names)
     text = _strip_closed_blocks_outside_gemma(text)
-    text = _strip_gemma_native_spans(text, final=final)
+    text = _strip_gemma_native_spans(text, final = final)
     patterns = _TOOL_ALL_PATS if final else _TOOL_CLOSED_PATS
-    return apply_tool_strip_patterns(text, patterns, enabled_tool_names=enabled_tool_names)
+    return apply_tool_strip_patterns(text, patterns, enabled_tool_names = enabled_tool_names)
 
 
 def strip_tool_call_markup(
     text: str,
     *,
     final: bool = False,
-    enabled_tool_names=None,
+    enabled_tool_names = None,
 ) -> str:
     """Strip tool-call XML markup from text.
 
@@ -1377,7 +1376,7 @@ def strip_tool_call_markup(
     result = strip_outside_think(
         text,
         lambda seg, is_last: _strip_markup_segment(
-            seg, final=final and is_last, enabled_tool_names=enabled_tool_names
+            seg, final = final and is_last, enabled_tool_names = enabled_tool_names
         ),
     )
     return result.strip() if final else result

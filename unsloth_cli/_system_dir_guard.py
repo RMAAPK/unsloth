@@ -29,8 +29,8 @@ WORK_DIR_NAME = ".unsloth"
 
 def windows_root(
     environ,
-    pathmod=_os.path,
-    isdir=None,
+    pathmod = _os.path,
+    isdir = None,
 ):
     """Where Windows is installed, for messages."""
     return windows_roots(environ, pathmod, isdir)[0]
@@ -38,8 +38,8 @@ def windows_root(
 
 def windows_roots(
     environ,
-    pathmod=_os.path,
-    isdir=None,
+    pathmod = _os.path,
+    isdir = None,
 ):
     """Every real Windows directory.
 
@@ -80,7 +80,7 @@ def _normalize(path, pathmod):
     return pathmod.normcase(pathmod.normpath(_strip_extended_prefix(path)))
 
 
-def system_dirs(windir, pathmod=_os.path):
+def system_dirs(windir, pathmod = _os.path):
     """The Windows folders Unsloth refuses to run from."""
     # SysWOW64 too: a 32-bit elevated shell opens there, same unwritable folder.
     return [_normalize(pathmod.join(windir, name), pathmod) for name in ("System32", "SysWOW64")]
@@ -89,8 +89,8 @@ def system_dirs(windir, pathmod=_os.path):
 def is_system_dir(
     cwd,
     windir,
-    pathmod=_os.path,
-    sep=_os.sep,
+    pathmod = _os.path,
+    sep = _os.sep,
 ):
     """True for a system folder itself or anything under it.
 
@@ -155,10 +155,10 @@ def _outside_windows(candidate, windirs, pathmod, sep):
 def safe_user_dir(
     environ,
     windir,
-    pathmod=_os.path,
-    sep=_os.sep,
-    expanduser=None,
-    allow_public=False,
+    pathmod = _os.path,
+    sep = _os.sep,
+    expanduser = None,
+    allow_public = False,
 ):
     """First home outside the Windows tree, or None.
 
@@ -386,10 +386,10 @@ _PATH_LIST_ENV = (
 def pin_relative_overrides(
     environ,
     cwd,
-    pathmod=_os.path,
-    abspath=None,
-    expandvars=None,
-    expanduser=None,
+    pathmod = _os.path,
+    abspath = None,
+    expandvars = None,
+    expanduser = None,
 ):
     """Rewrite relative path overrides so they keep naming the same folder.
 
@@ -477,11 +477,11 @@ def _names_a_path(name, value):
 
 def pin_relative_sys_path(
     cwd,
-    pathmod=_os.path,
-    syspath=None,
-    abspath=None,
-    exists=None,
-    expanduser=None,
+    pathmod = _os.path,
+    syspath = None,
+    abspath = None,
+    exists = None,
+    expanduser = None,
 ):
     """Anchor the relative import roots this interpreter already carries.
 
@@ -497,7 +497,6 @@ def pin_relative_sys_path(
     """
     if syspath is None:
         import sys as _sys
-
         syspath = _sys.path
     if exists is None:
         exists = _os.path.exists
@@ -529,7 +528,7 @@ def _anchor_list_entry(
     pathmod,
     abspath,
     expandvars,
-    expanduser=None,
+    expanduser = None,
 ):
     r"""One entry of a path list, anchored, or left as written.
 
@@ -566,9 +565,9 @@ def _anchor(
     value,
     cwd,
     pathmod,
-    abspath=None,
-    expandvars=None,
-    expanduser=None,
+    abspath = None,
+    expandvars = None,
+    expanduser = None,
 ):
     """The value rewritten to name the same folder from anywhere, or None.
 
@@ -610,11 +609,11 @@ def _anchor(
 def relocation_target(
     environ,
     windir,
-    pathmod=_os.path,
-    sep=_os.sep,
-    expanduser=None,
-    makedirs=_os.makedirs,
-    home_isdir=None,
+    pathmod = _os.path,
+    sep = _os.sep,
+    expanduser = None,
+    makedirs = _os.makedirs,
+    home_isdir = None,
 ):
     """Where a desktop-managed command should run instead, or None."""
     home = safe_user_dir(environ, windir, pathmod, sep, expanduser)
@@ -628,7 +627,7 @@ def relocation_target(
         return None
     work_dir = pathmod.join(home, WORK_DIR_NAME)
     try:
-        makedirs(work_dir, exist_ok=True)
+        makedirs(work_dir, exist_ok = True)
     except OSError:
         # An unwritable home is a broken profile and Unsloth must write there anyway, so stop now.
         return None
@@ -640,13 +639,13 @@ def blocked_message(
     argv,
     environ,
     windir,
-    pathmod=_os.path,
-    sep=_os.sep,
-    expanduser=None,
+    pathmod = _os.path,
+    sep = _os.sep,
+    expanduser = None,
 ):
     """The error shown to someone who ran Unsloth from a system folder by hand."""
     # allow_public here only: relocating to C:\Users\Public would share one account's state with every other account.
-    home = safe_user_dir(environ, windir, pathmod, sep, expanduser, allow_public=True)
+    home = safe_user_dir(environ, windir, pathmod, sep, expanduser, allow_public = True)
     if home:
         # Quote it, or C:\Users\Jane Doe reaches Set-Location as two arguments. PowerShell single
         # quotes are verbatim; cmd needs double quotes once extensions are off.
@@ -677,19 +676,19 @@ def check_working_directory(
     argv,
     environ,
     platform,
-    getcwd=_os.getcwd,
-    chdir=_os.chdir,
-    pathmod=_os.path,
-    sep=_os.sep,
-    expanduser=None,
-    makedirs=_os.makedirs,
-    isdir=None,
-    abspath=None,
-    home_isdir=None,
-    exists=None,
-    syspath=None,
-    expandvars=None,
-    relocate=True,
+    getcwd = _os.getcwd,
+    chdir = _os.chdir,
+    pathmod = _os.path,
+    sep = _os.sep,
+    expanduser = None,
+    makedirs = _os.makedirs,
+    isdir = None,
+    abspath = None,
+    home_isdir = None,
+    exists = None,
+    syspath = None,
+    expandvars = None,
+    relocate = True,
 ):
     """Decide what to do about the current working directory.
 
@@ -732,7 +731,6 @@ def check_working_directory(
         # Resolved here rather than inside the pinning, or the console script (which passes nothing)
         # would rewrite the real sys.path with no snapshot to restore.
         import sys as _sys
-
         syspath = _sys.path
     syspath_before = list(syspath)
     if target is not None:

@@ -37,7 +37,7 @@ DRIVERS = (
 
 
 def _step() -> str:
-    document = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    document = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
     for job in document["jobs"].values():
         for step in job.get("steps", []):
             if step.get("name") == "Browser simulations":

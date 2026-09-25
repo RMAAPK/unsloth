@@ -209,7 +209,7 @@ def _harness_source() -> str:
 
 def _run(script: str) -> dict:
     require_node(SOURCES)
-    return run_harness(TEMP, _harness_source(), script, sources=SOURCES)
+    return run_harness(TEMP, _harness_source(), script, sources = SOURCES)
 
 
 def _count_script(seed_patch: str) -> str:
@@ -247,16 +247,16 @@ WITH_PROMPT = (
     ("seed_patch", "constant", "prompt"),
     [
         # Canvas on, tool-capable: the request appends the render_html wording to the prompt.
-        pytest.param(WITH_PROMPT, "CANVAS_TOOL_INSTRUCTION", SYSTEM_PROMPT, id="render_html"),
+        pytest.param(WITH_PROMPT, "CANVAS_TOOL_INSTRUCTION", SYSTEM_PROMPT, id = "render_html"),
         # No tool support: the fenced-HTML fallback, and with no prompt to append to it leads.
         pytest.param(
             "{ artifactsEnabled: true, supportsTools: false }",
             "CANVAS_FALLBACK_INSTRUCTION",
             "",
-            id="fenced_html_fallback",
+            id = "fenced_html_fallback",
         ),
         # The pill is off by default; the count must not invent a prompt.
-        pytest.param("{ artifactsEnabled: false, supportsTools: true }", None, "", id="canvas_off"),
+        pytest.param("{ artifactsEnabled: false, supportsTools: true }", None, "", id = "canvas_off"),
     ],
 )
 def test_the_recount_prices_the_canvas_instruction(seed_patch, constant, prompt):
@@ -287,32 +287,32 @@ def test_the_request_path_sends_the_same_constants():
     ("seed_patch", "expected"),
     [
         # No reasoning support: send nothing, and llama-server keeps its own defaults.
-        pytest.param("{ supportsReasoning: false }", {}, id="no_reasoning_support"),
+        pytest.param("{ supportsReasoning: false }", {}, id = "no_reasoning_support"),
         # Qwen3-style gate off: the template prefills an empty thinking block for this flag.
         pytest.param(
             '{ supportsReasoning: true, reasoningStyle: "enable_thinking", reasoningEnabled: false }',
             {"enable_thinking": False},
-            id="thinking_turned_off",
+            id = "thinking_turned_off",
         ),
         # gpt-oss-style: the effort level is rendered into the prompt.
         pytest.param(
             '{ supportsReasoning: true, reasoningStyle: "reasoning_effort", reasoningEnabled: true,'
             ' reasoningEffort: "low" }',
             {"reasoning_effort": "low"},
-            id="effort_level",
+            id = "effort_level",
         ),
         # GLM-style: gate plus a level, clamped to this template's levels as the request build is.
         pytest.param(
             '{ supportsReasoning: true, reasoningStyle: "enable_thinking_effort",'
             ' reasoningEnabled: true, reasoningEffort: "high", reasoningEffortLevels: ["max"] }',
             {"enable_thinking": True, "reasoning_effort": "max"},
-            id="effort_clamped_to_the_template_levels",
+            id = "effort_clamped_to_the_template_levels",
         ),
         # Independent of the gate: decides whether past <think> blocks stay in the prompt.
         pytest.param(
             "{ supportsPreserveThinking: true, preserveThinking: true }",
             {"preserve_thinking": True},
-            id="preserve_thinking",
+            id = "preserve_thinking",
         ),
     ],
 )
@@ -352,7 +352,7 @@ RAG_ON = (
 @pytest.mark.parametrize(
     ("thread_id", "expected_thread_id"),
     [("undefined", None), ('"thread-a"', "thread-a")],
-    ids=["unpersisted_new_chat", "persisted_thread"],
+    ids = ["unpersisted_new_chat", "persisted_thread"],
 )
 def test_the_rag_scope_a_count_sends_is_never_empty(thread_id, expected_thread_id):
     """The backend keeps search_knowledge_base and its grounding nudge only while rag_scope
@@ -430,7 +430,7 @@ TOOLS_ON_RAG_OFF = (
 @pytest.mark.parametrize(
     ("thread_id", "expected"),
     [("undefined", None), ('"thread-a"', "thread-a")],
-    ids=["unpersisted_new_chat", "persisted_thread"],
+    ids = ["unpersisted_new_chat", "persisted_thread"],
 )
 def test_the_count_sends_the_thread_id_at_top_level_even_with_rag_off(thread_id, expected):
     """`_select_request_tools` reads `payload.thread_id`, not the one inside `rag_scope`.

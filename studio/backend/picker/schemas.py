@@ -24,7 +24,7 @@ def chat_template_byte_length(value: str) -> Optional[int]:
 
 
 class ValidateChatTemplateRequest(BaseModel):
-    template: str = Field(default="")
+    template: str = Field(default = "")
 
     @field_validator("template")
     @classmethod

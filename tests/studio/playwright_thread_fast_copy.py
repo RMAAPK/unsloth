@@ -145,12 +145,12 @@ def build_module() -> str:
             f"{FRONTEND.relative_to(REPO)}/node_modules is missing; "
             f"run `cd {FRONTEND.relative_to(REPO)} && npm ci` first"
         )
-    with tempfile.TemporaryDirectory(prefix="fastcopy-bundle") as out:
+    with tempfile.TemporaryDirectory(prefix = "fastcopy-bundle") as out:
         done = subprocess.run(
             ["node", str(BUNDLER.relative_to(FRONTEND)), out],
-            cwd=FRONTEND,
-            capture_output=True,
-            text=True,
+            cwd = FRONTEND,
+            capture_output = True,
+            text = True,
         )
         built = Path(out) / "fastcopy.js"
         if done.returncode != 0 or not built.is_file():
@@ -158,7 +158,7 @@ def build_module() -> str:
                 f"building {BUNDLER.name} failed ({done.returncode}):\n"
                 f"{done.stdout}\n{done.stderr}"
             )
-        return built.read_text(encoding="utf-8")
+        return built.read_text(encoding = "utf-8")
 
 
 def launch(playwright, engine: str):
@@ -252,7 +252,7 @@ def check(engine: str, candidate: str) -> Tally:
 
         for index, (name, body) in enumerate(CONSTRUCTS.items()):
             page.set_content(PAGE.replace("__BODY__", body))
-            page.add_script_tag(content=candidate)
+            page.add_script_tag(content = candidate)
             sentinel = f"__s{index}__"
             page.evaluate(f"() => {{ {SELECT_ALL} }}")
             # THE SERIALISED DOM, not the computed style. The unit test asserted the computed value came back and
@@ -310,7 +310,7 @@ def check(engine: str, candidate: str) -> Tally:
             page.set_content(
                 PAGE.replace("__BODY__", f'<p id="ep">{IMG_TAG}{IMG_TAG}tail text</p>')
             )
-            page.add_script_tag(content=candidate)
+            page.add_script_tag(content = candidate)
             restore = (
                 "const p = document.getElementById('ep');"
                 " const s = window.getSelection(); " + selection_js + ";"
@@ -334,7 +334,7 @@ def check(engine: str, candidate: str) -> Tally:
                 '<p id="pa">first paragraph</p><p id="pb">second ' + IMG_TAG + " paragraph</p>",
             )
         )
-        page.add_script_tag(content=candidate)
+        page.add_script_tag(content = candidate)
         page.evaluate("""() => {
           const a = document.getElementById('pa').firstChild;
           const b = document.getElementById('pb').firstChild;
@@ -359,7 +359,7 @@ def check(engine: str, candidate: str) -> Tally:
         # ---- selections whose SCOPE is the diverging element itself ----
         for name, (body, target) in INSIDE_SCOPE.items():
             page.set_content(PAGE.replace("__BODY__", body))
-            page.add_script_tag(content=candidate)
+            page.add_script_tag(content = candidate)
             restore = f"window.getSelection().selectAllChildren({target})"
             sentinel = f"__inside_{name.replace(' ', '_')}__"
             page.evaluate(f"() => {{ {restore} }}")
@@ -377,7 +377,7 @@ def check(engine: str, candidate: str) -> Tally:
             if name not in MUST_REFUSE and name not in NO_COPY
         )
         page.set_content(PAGE.replace("__BODY__", safe))
-        page.add_script_tag(content=candidate)
+        page.add_script_tag(content = candidate)
         page.evaluate(f"() => {{ {PARTIALS} }}")
         for index in range(page.evaluate("() => window.__ranges.length")):
             restore = (
@@ -410,12 +410,12 @@ def check(engine: str, candidate: str) -> Tally:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument(
         "engines",
-        nargs="*",
-        default=["chromium", "webkit"],
-        help="browser engines to drive (default: chromium webkit)",
+        nargs = "*",
+        default = ["chromium", "webkit"],
+        help = "browser engines to drive (default: chromium webkit)",
     )
     engines = parser.parse_args().engines
 

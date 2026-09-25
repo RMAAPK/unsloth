@@ -36,10 +36,10 @@ def seed(
     page,
     base,
     *,
-    locale="en",
-    shortcut="enter",
+    locale = "en",
+    shortcut = "enter",
 ):
-    page.goto(base + PAGE, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
+    page.goto(base + PAGE, wait_until = "domcontentloaded", timeout = NAV_TIMEOUT_MS)
     page.evaluate(
         """([locale, shortcut]) => {
             localStorage.setItem("unsloth_locale", locale);
@@ -50,22 +50,22 @@ def seed(
         }""",
         [locale, shortcut],
     )
-    page.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
-    page.get_by_role("button", name="Reset fixture", exact=True).wait_for(
-        state="visible", timeout=60_000
+    page.reload(wait_until = "domcontentloaded", timeout = NAV_TIMEOUT_MS)
+    page.get_by_role("button", name = "Reset fixture", exact = True).wait_for(
+        state = "visible", timeout = 60_000
     )
 
 
 def open_editor(page, more_name, edit_name):
-    page.get_by_role("button", name=more_name, exact=True).click()
-    page.get_by_role("menuitem", name=edit_name, exact=True).click()
+    page.get_by_role("button", name = more_name, exact = True).click()
+    page.get_by_role("menuitem", name = edit_name, exact = True).click()
     editor = page.locator('textarea[aria-label^="Edit queued prompt"]')
     expect(editor).to_be_visible()
     return editor
 
 
 def check_localized(page, base):
-    seed(page, base, locale="ja")
+    seed(page, base, locale = "ja")
     # setLocale loads the catalog lazily; the harness never calls initializeLocale.
     page.evaluate(
         "async () => { const m = await import('/src/i18n/index.ts'); await m.setLocale('ja'); }"
@@ -73,18 +73,18 @@ def check_localized(page, base):
     row = page.locator("[data-queue-item-id]").first
     expect(row).to_contain_text(JA["steer"])
     expect(page.locator('[aria-label^="キューのメッセージ 1"]').first).to_be_visible()
-    page.get_by_role("button", name="キューのメッセージ 1 のその他の操作", exact=True).click()
+    page.get_by_role("button", name = "キューのメッセージ 1 のその他の操作", exact = True).click()
     for name in (JA["edit"], JA["copy"], JA["queueing"]):
-        expect(page.get_by_role("menuitem", name=name, exact=True)).to_be_visible()
+        expect(page.get_by_role("menuitem", name = name, exact = True)).to_be_visible()
     page.keyboard.press("Escape")
-    page.get_by_role("button", name="キューのメッセージ 2 を削除", exact=True).click()
+    page.get_by_role("button", name = "キューのメッセージ 2 を削除", exact = True).click()
     expect(page.locator('div[role="status"][aria-live="polite"]')).to_have_text(JA["removed"])
-    print("PASS: queue view, menu and announcements follow the selected locale", flush=True)
+    print("PASS: queue view, menu and announcements follow the selected locale", flush = True)
 
 
 def check_editor_shortcut(page, base):
     # Default "Enter" sends in the composer, so it saves here; Shift+Enter is a newline.
-    seed(page, base, shortcut="enter")
+    seed(page, base, shortcut = "enter")
     editor = open_editor(page, "More options for queued prompt 1", "Edit message")
     editor.fill("shift-stays-open")
     editor.press("Shift+Enter")
@@ -96,10 +96,10 @@ def check_editor_shortcut(page, base):
     editor.press("Enter")
     expect(editor).to_have_count(0)
     expect(page.locator("[data-queue-item-id]").first).to_contain_text("saved-with-enter")
-    expect(page.get_by_label("Composer submissions", exact=True)).to_have_text("0")
+    expect(page.get_by_label("Composer submissions", exact = True)).to_have_text("0")
 
     # "mod-enter" moves the chord: plain Enter becomes a newline.
-    seed(page, base, shortcut="mod-enter")
+    seed(page, base, shortcut = "mod-enter")
     editor = open_editor(page, "More options for queued prompt 1", "Edit message")
     editor.fill("plain-enter-stays-open")
     editor.press("Enter")
@@ -112,8 +112,8 @@ def check_editor_shortcut(page, base):
     editor.press("ControlOrMeta+Enter")
     expect(editor).to_have_count(0)
     expect(page.locator("[data-queue-item-id]").first).to_contain_text("saved-with-mod-enter")
-    expect(page.get_by_label("Composer submissions", exact=True)).to_have_text("0")
-    print("PASS: the queued-prompt editor follows the send-shortcut preference", flush=True)
+    expect(page.get_by_label("Composer submissions", exact = True)).to_have_text("0")
+    print("PASS: the queued-prompt editor follows the send-shortcut preference", flush = True)
 
 
 def check_escape_during_ime(page, base):
@@ -138,13 +138,13 @@ def check_escape_during_ime(page, base):
     expect(page.locator("[data-queue-item-id]").first).to_have_attribute(
         "aria-label", "Queued prompt 1 of 3: First prompt"
     )
-    print("PASS: Escape keeps the draft while an IME is composing", flush=True)
+    print("PASS: Escape keeps the draft while an IME is composing", flush = True)
 
 
 def check_candidate_confirming_enter(page, base):
     # A candidate-confirming Enter can arrive with isComposing false and no key
     # code 229, so per-event flags alone would save the pre-edit text.
-    seed(page, base, shortcut="enter")
+    seed(page, base, shortcut = "enter")
     editor = open_editor(page, "More options for queued prompt 1", "Edit message")
     editor.fill("composition-in-progress")
     page.evaluate(
@@ -169,7 +169,7 @@ def check_candidate_confirming_enter(page, base):
     editor.press("Enter")
     expect(editor).to_have_count(0)
     expect(page.locator("[data-queue-item-id]").first).to_contain_text("composition-in-progress")
-    print("PASS: a candidate-confirming Enter does not save the edit", flush=True)
+    print("PASS: a candidate-confirming Enter does not save the edit", flush = True)
 
 
 def start_composition(page):
@@ -183,7 +183,7 @@ def start_composition(page):
 
 def check_stuck_composition_recovers(page, base):
     # Some IMEs never send compositionend. The gate must not wedge Enter.
-    seed(page, base, shortcut="enter")
+    seed(page, base, shortcut = "enter")
     editor = open_editor(page, "More options for queued prompt 1", "Edit message")
     editor.fill("recovers-after-timeout")
     start_composition(page)
@@ -204,7 +204,7 @@ def check_stuck_composition_recovers(page, base):
     editor.press("Enter")
     expect(editor).to_have_count(0)
     expect(page.locator("[data-queue-item-id]").nth(1)).to_contain_text("recovers-after-blur")
-    print("PASS: a stuck composition recovers on timeout and on blur", flush=True)
+    print("PASS: a stuck composition recovers on timeout and on blur", flush = True)
 
 
 # Reads the glyph's painted box back into viewBox units, so the check does not
@@ -226,21 +226,21 @@ def check_resume_icon_centred(page, base):
     # The play glyph is not centred in its own viewBox, so the icon shifts it
     # back. Without that the triangle sits right of the button's centre.
     seed(page, base)
-    page.get_by_role("button", name="Simulate paused queue", exact=True).click()
-    page.get_by_role("button", name="More options for queued prompt 1", exact=True).click()
-    page.get_by_role("menuitem", name="Resume queue", exact=True).wait_for()
+    page.get_by_role("button", name = "Simulate paused queue", exact = True).click()
+    page.get_by_role("button", name = "More options for queued prompt 1", exact = True).click()
+    page.get_by_role("menuitem", name = "Resume queue", exact = True).wait_for()
     offset = page.evaluate(GLYPH_GEOMETRY)
     # The raw glyph is 0.15 units off centre, so this tolerance still catches it.
     assert abs(offset["dx"]) < 0.05, offset
     assert abs(offset["dy"]) < 0.05, offset
-    print("PASS: the resume glyph is centred in its icon box", flush=True)
+    print("PASS: the resume glyph is centred in its icon box", flush = True)
 
 
 def check_queue_frame_clips_scrollbar(page, base):
     # Scrollbars are painted outside the scroller's own radius, so a long queue
     # squared off the top corners. The rounding has to clip from outside.
     seed(page, base)
-    page.get_by_role("button", name="Long queue", exact=True).click()
+    page.get_by_role("button", name = "Long queue", exact = True).click()
     layout = page.evaluate(
         """() => {
             const scroller = document.querySelector('[aria-label^="Prompt queue"]');
@@ -268,7 +268,7 @@ def check_queue_frame_clips_scrollbar(page, base):
     # The gutter sits inside the frame, so the rounded clip covers it.
     assert layout["insetRight"] >= layout["frameBorder"] - 0.5, layout
     assert layout["insetTop"] >= layout["frameBorder"] - 0.5, layout
-    print("PASS: the queue frame rounds and clips the scrollbar corner", flush=True)
+    print("PASS: the queue frame rounds and clips the scrollbar corner", flush = True)
 
 
 def parse_px(value):
@@ -283,7 +283,7 @@ def main():
             port = int(os.environ.get("PW_PORT", "5424"))
             server = start_vite(port)
             base = f"http://127.0.0.1:{port}"
-        wait_for_smoke_page(base + PAGE, ENTRY, proc=server)
+        wait_for_smoke_page(base + PAGE, ENTRY, proc = server)
         with sync_playwright() as pw:
             options = {"headless": True}
             if os.environ.get("PW_EXECUTABLE"):
@@ -293,10 +293,10 @@ def main():
             browser = getattr(pw, os.environ.get("PW_ENGINE", "chromium")).launch(**options)
             print(
                 f"Browser: {os.environ.get('PW_CHANNEL', os.environ.get('PW_ENGINE', 'chromium'))} {browser.version}",
-                flush=True,
+                flush = True,
             )
             try:
-                page = browser.new_page(viewport={"width": 1100, "height": 850})
+                page = browser.new_page(viewport = {"width": 1100, "height": 850})
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 check_localized(page, base)

@@ -38,11 +38,11 @@ def _load(name: str, path: Path):
 def test_infer_studio_home_swallows_permission_error(tmp_path, monkeypatch):
     candidate = tmp_path / "fake_root"
     venv = candidate / "unsloth_studio"
-    venv.mkdir(parents=True)
+    venv.mkdir(parents = True)
     monkeypatch.setattr(sys, "prefix", str(venv))
     sys.modules.pop("sr_perm", None)
     mod = _load("sr_perm", STORAGE_ROOTS)
-    with mock.patch.object(Path, "is_file", side_effect=PermissionError("denied")):
+    with mock.patch.object(Path, "is_file", side_effect = PermissionError("denied")):
         # Must NOT raise.
         assert mod._infer_studio_home_from_venv() is None
 
@@ -54,7 +54,7 @@ def test_infer_studio_home_refuses_the_docker_app_dir(tmp_path, monkeypatch):
     volume; inference must decline so the later defaults apply."""
     app = tmp_path / "unsloth-studio-app"
     venv = app / "unsloth_studio"
-    venv.mkdir(parents=True)
+    venv.mkdir(parents = True)
     (app / "share").mkdir()
     (app / "share" / "studio.conf").write_text("")
     home = tmp_path / "unsloth-studio"
@@ -63,7 +63,7 @@ def test_infer_studio_home_refuses_the_docker_app_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "prefix", str(home / "unsloth_studio"))
     sys.modules.pop("sr_app_dir", None)
     mod = _load("sr_app_dir", STORAGE_ROOTS)
-    monkeypatch.delenv("UNSLOTH_STUDIO_APP", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_APP", raising = False)
     assert mod._infer_studio_home_from_venv() == app, "sentinel-gated inference broke"
     monkeypatch.setenv("UNSLOTH_STUDIO_APP", str(app))
     assert mod._infer_studio_home_from_venv() is None
@@ -76,13 +76,13 @@ def test_studio_root_does_not_crash_on_permission_error(tmp_path, monkeypatch):
     """studio_root() falls through to the legacy default on a restricted filesystem."""
     candidate = tmp_path / "fake_root"
     venv = candidate / "unsloth_studio"
-    venv.mkdir(parents=True)
+    venv.mkdir(parents = True)
     monkeypatch.setattr(sys, "prefix", str(venv))
-    monkeypatch.delenv("UNSLOTH_STUDIO_HOME", raising=False)
-    monkeypatch.delenv("STUDIO_HOME", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_HOME", raising = False)
+    monkeypatch.delenv("STUDIO_HOME", raising = False)
     sys.modules.pop("sr_studio_perm", None)
     mod = _load("sr_studio_perm", STORAGE_ROOTS)
-    with mock.patch.object(Path, "is_file", side_effect=OSError("ebusy")):
+    with mock.patch.object(Path, "is_file", side_effect = OSError("ebusy")):
         result = mod.studio_root()
     assert result == Path.home() / ".unsloth" / "studio"
 
@@ -99,7 +99,7 @@ def test_kill_orphan_catches_oserror_from_studio_root():
     """Cleanup must not crash when studio_root() raises. _kill_orphaned_servers
     resolves the install root through the shared _resolved_studio_root_and_is_legacy()
     classifier, which swallows (ImportError, OSError, ValueError) on the probe."""
-    src = LLAMA_CPP.read_text(encoding="utf-8")
+    src = LLAMA_CPP.read_text(encoding = "utf-8")
     # Cleanup delegates to the shared classifier rather than importing studio_root inline.
     assert "LlamaCppBackend._resolved_studio_root_and_is_legacy()" in _method_body(
         src, "_kill_orphaned_servers"
@@ -123,7 +123,7 @@ def _exec_search_roots_block(
     """Run _find_llama_server_binary's search_roots derivation -- plus the shared
     _resolved_studio_root_and_is_legacy() classifier it delegates to -- with a
     controlled studio_root() and resolve(), without importing the heavy module."""
-    src = LLAMA_CPP.read_text(encoding="utf-8")
+    src = LLAMA_CPP.read_text(encoding = "utf-8")
     # Shared root classifier (holds the defensive try/except for studio_root()).
     # End the slice at the next sibling def/decorator at the same indent rather
     # than the literal "@staticmethod" string, so a future docstring mentioning a
@@ -177,7 +177,7 @@ def test_search_roots_keeps_custom_when_resolve_fails(tmp_path):
     home.mkdir()
     custom = tmp_path / "custom_studio"
     custom.mkdir()
-    roots = _exec_search_roots_block(home=home, studio_root_value=custom, resolve_raises=True)
+    roots = _exec_search_roots_block(home = home, studio_root_value = custom, resolve_raises = True)
     # On resolve() failure, the inner except falls back to direct equality;
     # custom != legacy_studio so the custom root must remain in search_roots.
     assert custom / "llama.cpp" in roots, f"custom root dropped on resolve() failure: {roots}"
@@ -193,10 +193,10 @@ def test_search_roots_follow_the_master_root(tmp_path):
     home.mkdir()
     master = tmp_path / "portable"
     roots = _exec_search_roots_block(
-        home=home,
-        studio_root_value=master / "studio",
-        resolve_raises=True,
-        master=master,
+        home = home,
+        studio_root_value = master / "studio",
+        resolve_raises = True,
+        master = master,
     )
     assert roots == [master / "llama.cpp"]
 
@@ -205,6 +205,6 @@ def test_search_roots_default_mode_uses_legacy_only(tmp_path):
     home = tmp_path / "home"
     home.mkdir()
     legacy = home / ".unsloth" / "studio"
-    legacy.mkdir(parents=True)
-    roots = _exec_search_roots_block(home=home, studio_root_value=legacy, resolve_raises=False)
+    legacy.mkdir(parents = True)
+    roots = _exec_search_roots_block(home = home, studio_root_value = legacy, resolve_raises = False)
     assert roots == [home / ".unsloth" / "llama.cpp"]

@@ -249,11 +249,11 @@ def search_knowledge_base_with_sources(
         # Get query embedding using the same model as Unsloth
         effective_model = model_name or "unsloth/bge-small-en-v1.5"
         vectors, _ = embeddings.encode_with_identity(
-            [query], model_name=effective_model, normalize=True
+            [query], model_name = effective_model, normalize = True
         )
 
         # Search Supabase
-        results = bridge.search_documents(vectors[0], limit=top_k or 5)
+        results = bridge.search_documents(vectors[0], limit = top_k or 5)
 
         if results:
             rendered = ""
@@ -268,7 +268,6 @@ def search_knowledge_base_with_sources(
 
     except Exception as e:
         import traceback
-
         traceback.print_exc()
         return f"Supabase RAG Error: {e}", []
 
@@ -278,9 +277,9 @@ def search_knowledge_base_with_sources(
             conn,
             scope,
             query,
-            k=top_k or config.TOP_K_HYBRID,
-            model_name=model_name,
-            mode=mode,
+            k = top_k or config.TOP_K_HYBRID,
+            model_name = model_name,
+            mode = mode,
         )
         hits = retrieval.filter_min_score(hits, min_score)
         rows = store_rows(conn, hits)
@@ -291,7 +290,6 @@ def search_knowledge_base_with_sources(
 
 def store_rows(conn, hits):
     from . import store
-
     return store.chunks_by_id(conn, [h.chunk_id for h in hits])
 
 
@@ -325,9 +323,9 @@ def search_for_autoinject(
             conn,
             scope,
             query,
-            k=k,
-            model_name=model_name,
-            mode=mode,
+            k = k,
+            model_name = model_name,
+            mode = mode,
         )
         strong = (
             hits[:k]
@@ -337,7 +335,7 @@ def search_for_autoinject(
             ][:k]
         )
         if min_dense_score is not None and not strong and hits and mode == "lexical":
-            probe = retrieval.retrieve_dense(conn, scope, query, 1, model_name=model_name)
+            probe = retrieval.retrieve_dense(conn, scope, query, 1, model_name = model_name)
             if (
                 probe
                 and probe[0].dense_score is not None
@@ -413,12 +411,12 @@ def search_knowledge_base(
     model_name: str | None = None,
 ) -> str:
     text, _sources = search_knowledge_base_with_sources(
-        query=query,
-        scope_kb_id=scope_kb_id,
-        scope_thread_id=scope_thread_id,
-        scope_project_id=scope_project_id,
-        top_k=top_k,
-        min_score=min_score,
-        model_name=model_name,
+        query = query,
+        scope_kb_id = scope_kb_id,
+        scope_thread_id = scope_thread_id,
+        scope_project_id = scope_project_id,
+        top_k = top_k,
+        min_score = min_score,
+        model_name = model_name,
     )
     return text

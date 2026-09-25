@@ -63,14 +63,14 @@ def test_the_estimate_does_not_stall_other_requests(monkeypatch, tmp_path):
         # leaves no gap in the list at all.
         before = len(ticks)
         result = await models_routes.get_kv_cache_estimate(
-            repo_id="org/repo",
-            quant="Q4_K_M",
-            n_ctx=4096,
-            cache_type_kv=None,
-            n_parallel=1,
-            speculative_type=None,
-            request=None,
-            current_subject="test-user",
+            repo_id = "org/repo",
+            quant = "Q4_K_M",
+            n_ctx = 4096,
+            cache_type_kv = None,
+            n_parallel = 1,
+            speculative_type = None,
+            request = None,
+            current_subject = "test-user",
         )
         during.append(len(ticks) - before)
         # The answer still has to be the route's, not a coroutine object.

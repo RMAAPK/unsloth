@@ -36,7 +36,7 @@ _tool_policy_default: Optional[bool] = None
 
 # Per-request hard-off so public surfaces refuse tools even under a CLI `--enable-tools`.
 _force_disabled: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "tool_policy_force_disabled", default=False
+    "tool_policy_force_disabled", default = False
 )
 
 
@@ -53,15 +53,15 @@ def require_tool_access(
 
     if not full_access_permitted():
         raise HTTPException(
-            status_code=400,
-            detail="Full access is unavailable while more than one account exists.",
+            status_code = 400,
+            detail = "Full access is unavailable while more than one account exists.",
         )
 
 
 def normalize_tool_permissions(
     permission_mode: Optional[str], bypass_permissions: bool
 ) -> tuple[str, bool]:
-    require_tool_access(permission_mode, bypass_permissions=bypass_permissions)
+    require_tool_access(permission_mode, bypass_permissions = bypass_permissions)
     if permission_mode == "full" or bypass_permissions:
         return "full", True
     if permission_mode is None:

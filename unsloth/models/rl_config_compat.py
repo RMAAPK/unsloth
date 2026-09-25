@@ -217,7 +217,7 @@ def _is_untouched(
     config_class,
     name,
     value,
-    mirrored_from=None,
+    mirrored_from = None,
 ):
     """True if `value` is indistinguishable from `name`'s declared default.
 
@@ -296,8 +296,8 @@ def classify_config_kwarg(config_class, key):
 def filter_config_init_kwargs(
     config_class,
     kwargs,
-    notify=None,
-    mirrored_from=None,
+    notify = None,
+    mirrored_from = None,
 ):
     """Return `kwargs` reduced to what `config_class.__init__` will accept.
 
@@ -340,7 +340,7 @@ def filter_config_init_kwargs(
             if rename_value_is_unset(config_class, renamed, value):
                 continue
             if existing is _MISSING or _is_untouched(
-                config_class, renamed, existing, mirrored_from=mirrored_from
+                config_class, renamed, existing, mirrored_from = mirrored_from
             ):
                 forwarded[renamed] = value
                 # A mirrored parameter carries no record of whether it was passed,

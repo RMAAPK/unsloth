@@ -32,9 +32,9 @@ def _modules_after_importing(statement: str) -> set[str]:
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
-        capture_output=True,
-        text=True,
-        cwd=str(PACKAGE_ROOT),
+        capture_output = True,
+        text = True,
+        cwd = str(PACKAGE_ROOT),
     )
     assert result.returncode == 0, result.stderr
     import json
@@ -48,7 +48,7 @@ def _modules_after_importing(statement: str) -> set[str]:
         "import sys; sys.path.insert(0, 'studio'); import prebuilt_core",
         "import sys; sys.path.insert(0, 'studio'); import install_llama_prebuilt",
     ],
-    ids=["prebuilt_core", "install_llama_prebuilt"],
+    ids = ["prebuilt_core", "install_llama_prebuilt"],
 )
 def test_importing_an_installer_does_not_load_the_download_stack(statement):
     """A marker read, a health check or a `--help` must not pay for filelock."""
@@ -73,7 +73,7 @@ def test_a_missing_filelock_still_answers_with_the_pid_fallback(tmp_path, monkey
 
     monkeypatch.setattr(prebuilt_core, "_FILELOCK_CLASSES", (None, None))
     lock_path = tmp_path / "install.lock"
-    with prebuilt_core.install_lock(lock_path, timeout=5):
+    with prebuilt_core.install_lock(lock_path, timeout = 5):
         # The fallback writes a real file so a crashed holder can be spotted.
         assert lock_path.is_file()
     assert not lock_path.exists()
@@ -85,7 +85,7 @@ def test_the_verdict_is_cached_so_a_missing_filelock_is_not_reimported(monkeypat
     import prebuilt_core
 
     monkeypatch.setattr(prebuilt_core, "_FILELOCK_CLASSES", None)
-    monkeypatch.delitem(sys.modules, "filelock", raising=False)
+    monkeypatch.delitem(sys.modules, "filelock", raising = False)
 
     class CountingBlocker:
         """Refuses filelock and counts how many times it was asked."""
@@ -96,8 +96,8 @@ def test_the_verdict_is_cached_so_a_missing_filelock_is_not_reimported(monkeypat
         def find_spec(
             self,
             name,
-            path=None,
-            target=None,
+            path = None,
+            target = None,
         ):
             if name == "filelock" or name.startswith("filelock."):
                 self.calls += 1

@@ -17,7 +17,7 @@ _TRAINER = _BACKEND / "core/training/trainer.py"
 
 
 def _load_and_format_dataset_body() -> str:
-    text = _TRAINER.read_text(encoding="utf-8")
+    text = _TRAINER.read_text(encoding = "utf-8")
     return text[text.index("    def load_and_format_dataset(") :]
 
 
@@ -46,7 +46,7 @@ def test_the_audio_branches_are_still_covered():
 
 def test_the_import_is_module_level():
     # A local import inside the audio branch would leave the early call a NameError.
-    text = _TRAINER.read_text(encoding="utf-8")
+    text = _TRAINER.read_text(encoding = "utf-8")
     assert "\nfrom utils.datasets.audio_decode import ensure_audio_decoding\n" in text
 
 
@@ -56,7 +56,7 @@ def test_the_early_call_cannot_stop_a_text_run():
     # or not. The audio branches below re-run it and report.
     fn = next(
         node
-        for node in ast.walk(ast.parse(_TRAINER.read_text(encoding="utf-8")))
+        for node in ast.walk(ast.parse(_TRAINER.read_text(encoding = "utf-8")))
         if isinstance(node, ast.FunctionDef) and node.name == "load_and_format_dataset"
     )
     first = next(stmt for stmt in fn.body if _calls_the_shim(stmt))
@@ -124,13 +124,13 @@ def test_a_torchcodec_that_raises_anything_at_import_is_marked_unusable():
             self,
             name,
             path,
-            target=None,
+            target = None,
         ):
             if name == "datasets.features._torchcodec":
                 return importlib.machinery.ModuleSpec(name, _Raising())
             return None
 
-    fake_config = types.SimpleNamespace(TORCHCODEC_AVAILABLE=True)
+    fake_config = types.SimpleNamespace(TORCHCODEC_AVAILABLE = True)
     fake_audio = types.ModuleType("datasets.features.audio")
     fake_audio.Audio = type("Audio", (), {"decode_example": None, "encode_example": None})
     fake_datasets = types.ModuleType("datasets")

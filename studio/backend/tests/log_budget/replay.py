@@ -84,7 +84,7 @@ class Request:
 @dataclass
 class ReplayResult:
     capture: LogCapture
-    sent: list[Request] = field(default_factory=list)
+    sent: list[Request] = field(default_factory = list)
 
     @property
     def emitted(self) -> int:
@@ -147,7 +147,7 @@ def replay(
     monkeypatch.setattr(handlers, "logger", capture)
 
     middleware_by_status: dict[tuple[int, float], object] = {}
-    result = ReplayResult(capture=capture)
+    result = ReplayResult(capture = capture)
 
     # A single middleware object shared by every status, so its dedup map is the real one.
     shared_state = LoggingMiddleware(_app_returning(200))
@@ -169,7 +169,7 @@ def replay(
         result.sent.append(request)
 
     for method, path, status in boot:
-        send_request(Request(method=method, path=path, status=status))
+        send_request(Request(method = method, path = path, status = status))
         clock.advance(0.05)
 
     # Whole-second ticks, so every period in the registry lands on an exact tick and the
@@ -183,10 +183,10 @@ def replay(
             if elapsed + 1e-9 >= next_due[path]:
                 send_request(
                     Request(
-                        method="GET",
-                        path=path,
-                        status=200,
-                        duration_ms=durations.get(path, 0.0) if durations else 0.0,
+                        method = "GET",
+                        path = path,
+                        status = 200,
+                        duration_ms = durations.get(path, 0.0) if durations else 0.0,
                     )
                 )
                 next_due[path] = elapsed + period

@@ -38,8 +38,8 @@ async def stream_replicate(
 
         system_injection = (
             "\n\n[SYSTEM TOOLING ENGINE ENABLED]\n"
-            "You have access to the following server-side tools. To execute a tool, YOU MUST output a RAW JSON object representing the call, and NOTHING ELSE in that block.\n"
-            'Format: {"name": "tool_name", "parameters": {"arg": "val"}}\n'
+            "You have access to the following server-side tools. To execute a tool, YOU MUST output a RAW JSON object wrapped in <tool_call> tags, and NOTHING ELSE in that block.\n"
+            'Format: <tool_call>{"name": "tool_name", "arguments": {"arg": "val"}}</tool_call>\n'
             f"Available Tools: {json.dumps(tool_docs)}\n"
         )
 
@@ -57,6 +57,8 @@ async def stream_replicate(
             kwargs["temperature"] = temperature
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
+        if tools:
+            kwargs["stop"] = "</tool_call>"
 
         # We don't pass kwargs["tools"] = tools to litellm because litellm throws it away for this model anyway,
         # and if it did support it, it might clash with our system prompt injection.

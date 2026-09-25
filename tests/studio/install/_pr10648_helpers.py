@@ -43,17 +43,17 @@ IS_ROOT = hasattr(os, "geteuid") and os.geteuid() == 0
 # an execute bit Windows does not have, so the mode-bit rows are indistinguishable there.
 POSIX_ONLY = pytest.mark.skipif(
     WINDOWS_HOST,
-    reason="mode bits and os.access(X_OK) are POSIX only",
+    reason = "mode bits and os.access(X_OK) are POSIX only",
 )
 # root reads and executes regardless of the bits, so "unreadable" and "not executable"
 # stop being the corruptions those tests apply.
 NOT_ROOT = pytest.mark.skipif(
     IS_ROOT,
-    reason="root bypasses the permission bits this asserts on",
+    reason = "root bypasses the permission bits this asserts on",
 )
 NEEDS_CHOWN = pytest.mark.skipif(
     not hasattr(os, "chown"),
-    reason="os.chown does not exist on this platform",
+    reason = "os.chown does not exist on this platform",
 )
 
 
@@ -82,19 +82,19 @@ def llama_host(host_cls, **overrides):
     system = overrides.pop("system", "Linux")
     machine = overrides.pop("machine", "x86_64")
     defaults = dict(
-        system=system,
-        machine=machine,
-        is_linux=system == "Linux",
-        is_windows=system == "Windows",
-        is_macos=system == "Darwin",
-        is_x86_64=machine.lower() in {"x86_64", "amd64"},
-        is_arm64=machine.lower() in {"arm64", "aarch64"},
-        nvidia_smi=None,
-        driver_cuda_version=None,
-        compute_caps=[],
-        visible_cuda_devices=None,
-        has_physical_nvidia=False,
-        has_usable_nvidia=False,
+        system = system,
+        machine = machine,
+        is_linux = system == "Linux",
+        is_windows = system == "Windows",
+        is_macos = system == "Darwin",
+        is_x86_64 = machine.lower() in {"x86_64", "amd64"},
+        is_arm64 = machine.lower() in {"arm64", "aarch64"},
+        nvidia_smi = None,
+        driver_cuda_version = None,
+        compute_caps = [],
+        visible_cuda_devices = None,
+        has_physical_nvidia = False,
+        has_usable_nvidia = False,
     )
     defaults.update(overrides)
     return host_cls(**defaults)
@@ -104,14 +104,14 @@ def whisper_host(host_cls, **overrides):
     """A simulated whisper.cpp host. A different dataclass from the llama one: it carries
     ``whisper_os``/``whisper_arch``/``archive_ext``/``is_apple_silicon`` and no GPU fields."""
     fields = dict(
-        system="Linux",
-        machine="x64",
-        whisper_os="linux",
-        whisper_arch="x64",
-        archive_ext=".tar.gz",
-        is_windows=False,
-        is_macos=False,
-        is_apple_silicon=False,
+        system = "Linux",
+        machine = "x64",
+        whisper_os = "linux",
+        whisper_arch = "x64",
+        archive_ext = ".tar.gz",
+        is_windows = False,
+        is_macos = False,
+        is_apple_silicon = False,
     )
     fields.update(overrides)
     return host_cls(**fields)
@@ -129,18 +129,18 @@ def whisper_selection_fields(whisper, **overrides) -> dict:
     part of what that suite is saying.
     """
     fields = dict(
-        published_repo=whisper.DEFAULT_PUBLISHED_REPO,
-        release_tag=WHISPER_RELEASE_TAG,
-        upstream_tag="v1.9.1",
-        source_commit="0" * 40,
-        asset=f"whisper-{WHISPER_RELEASE_TAG}-linux-x64-cpu.tar.gz",
-        asset_sha256="c" * 64,
-        backend="cpu",
-        runtime_line=None,
-        coverage={"min_os": None},
-        studio_protocol="inference/multipart-v1",
-        platform_os="linux",
-        platform_arch="x64",
+        published_repo = whisper.DEFAULT_PUBLISHED_REPO,
+        release_tag = WHISPER_RELEASE_TAG,
+        upstream_tag = "v1.9.1",
+        source_commit = "0" * 40,
+        asset = f"whisper-{WHISPER_RELEASE_TAG}-linux-x64-cpu.tar.gz",
+        asset_sha256 = "c" * 64,
+        backend = "cpu",
+        runtime_line = None,
+        coverage = {"min_os": None},
+        studio_protocol = "inference/multipart-v1",
+        platform_os = "linux",
+        platform_arch = "x64",
     )
     fields.update(overrides)
     return fields
@@ -159,8 +159,8 @@ def whisper_install_is_intact(
         whisper._existing_install_is_intact(
             install_dir,
             host,
-            published_repo=whisper.DEFAULT_PUBLISHED_REPO,
-            requested_backend=backend,
+            published_repo = whisper.DEFAULT_PUBLISHED_REPO,
+            requested_backend = backend,
         )
         is not None
     )
@@ -174,8 +174,8 @@ def git(
     """Read-only git against this checkout. Never mutates the working tree."""
     return subprocess.run(
         ["git", "-C", str(PACKAGE_ROOT), *args],
-        capture_output=True,
-        text=text,
-        timeout=timeout,
-        check=False,
+        capture_output = True,
+        text = text,
+        timeout = timeout,
+        check = False,
     )

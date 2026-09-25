@@ -19,14 +19,14 @@ INSTALL_PS1 = REPO_ROOT / "install.ps1"
 
 
 def _extract(pattern: str, source: str) -> str:
-    match = re.search(pattern, source, flags=re.DOTALL | re.MULTILINE)
+    match = re.search(pattern, source, flags = re.DOTALL | re.MULTILINE)
     assert match is not None, f"installer block not found: {pattern}"
     return match.group(0)
 
 
-@pytest.mark.skipif(shutil.which("sh") is None, reason="POSIX shell is unavailable")
+@pytest.mark.skipif(shutil.which("sh") is None, reason = "POSIX shell is unavailable")
 def test_posix_installer_reports_installed_distribution_version():
-    source = INSTALL_SH.read_text(encoding="utf-8")
+    source = INSTALL_SH.read_text(encoding = "utf-8")
     # Two blocks: the probe, whose exit code carries the conflict signal, and the report that acts on it.
     reporter = _extract(
         r"^_installed_package_version_exit=0.*?^fi.*?^fi",
@@ -44,16 +44,16 @@ def test_posix_installer_reports_installed_distribution_version():
                 f"{reporter}"
             ),
         ],
-        check=True,
-        capture_output=True,
-        text=True,
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert result.stdout.strip() == f"pytest {version('pytest')} installed"
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="PowerShell is unavailable")
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason = "PowerShell is unavailable")
 def test_windows_version_reporter_uses_distribution_metadata():
-    source = INSTALL_PS1.read_text(encoding="utf-8")
+    source = INSTALL_PS1.read_text(encoding = "utf-8")
     reporter = _extract(
         r"    \$installedPackageVersion = .*?^    if .*?^    \} else \{.*?^    \}",
         source,
@@ -74,8 +74,8 @@ def test_windows_version_reporter_uses_distribution_metadata():
                 f"{reporter}"
             ),
         ],
-        check=True,
-        capture_output=True,
-        text=True,
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert result.stdout.strip() == f"pytest {version('pytest')} installed"

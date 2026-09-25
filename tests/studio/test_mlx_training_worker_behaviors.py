@@ -15,7 +15,7 @@ def _find_func(tree, name):
 
 
 def test_run_mlx_training_passes_token_to_from_pretrained():
-    tree = ast.parse(WORKER.read_text(encoding="utf-8"))
+    tree = ast.parse(WORKER.read_text(encoding = "utf-8"))
     fn = _find_func(tree, "_run_mlx_training")
     assert fn is not None
     found = False
@@ -37,7 +37,7 @@ def test_run_mlx_training_passes_token_to_from_pretrained():
 
 def test_mlx_dora_decided_before_load_and_merged_into_peft_kwargs():
     """Wiring only: dropping the merge would silently train plain LoRA, and deciding after the load would make an unsupported unsloth-zoo cost a multi-gigabyte download first. One shape is asserted, so an equivalent rewrite is meant to fail here and be re-expressed."""
-    tree = ast.parse(WORKER.read_text(encoding="utf-8"))
+    tree = ast.parse(WORKER.read_text(encoding = "utf-8"))
     fn = _find_func(tree, "_run_mlx_training")
     assert fn is not None
 
@@ -109,7 +109,7 @@ def test_mlx_dora_decided_before_load_and_merged_into_peft_kwargs():
 
 
 def test_wandb_init_strips_secret_keys():
-    src = WORKER.read_text(encoding="utf-8")
+    src = WORKER.read_text(encoding = "utf-8")
     assert "_wandb_sensitive" in src, "expected a sensitive-key set near wandb.init"
     assert '"hf_token"' in src and '"wandb_token"' in src
     assert (
@@ -118,26 +118,26 @@ def test_wandb_init_strips_secret_keys():
 
 
 def test_local_dataset_loader_uses_load_dataset_path():
-    src = WORKER.read_text(encoding="utf-8")
+    src = WORKER.read_text(encoding = "utf-8")
     assert "_resolve_mlx_local_dataset_files" in src
     assert "_mlx_local_dataset_loader_for_files" in src
     assert "data_files = all_files" in src or "data_files=all_files" in src
 
 
 def test_send_aliases_status_message_to_message():
-    src = WORKER.read_text(encoding="utf-8")
+    src = WORKER.read_text(encoding = "utf-8")
     assert 'kwargs["message"] = sm' in src or 'kwargs["message"]=sm' in src
 
 
 def test_slice_uses_inclusive_end_and_handles_zero():
-    src = WORKER.read_text(encoding="utf-8")
+    src = WORKER.read_text(encoding = "utf-8")
     assert "min(end + 1, len(ds))" in src or "min(end+1, len(ds))" in src
     assert "slice_start if slice_start is not None else 0" in src
     assert "slice_end if slice_end is not None else len(ds) - 1" in src
 
 
 def test_poll_stop_returns_on_broken_pipe():
-    tree = ast.parse(WORKER.read_text(encoding="utf-8"))
+    tree = ast.parse(WORKER.read_text(encoding = "utf-8"))
     fn = _find_func(tree, "_start_worker_stop_poller")
     assert fn is not None
     handlers = []
@@ -152,7 +152,7 @@ def test_poll_stop_returns_on_broken_pipe():
 
 
 def test_unsloth_zoo_mlx_imports_have_friendly_error():
-    src = WORKER.read_text(encoding="utf-8")
+    src = WORKER.read_text(encoding = "utf-8")
     assert "from unsloth_zoo.mlx.loader import FastMLXModel" in src
     assert "from unsloth_zoo.mlx.trainer import" in src
     assert "raise ImportError" in src

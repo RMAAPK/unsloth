@@ -11,12 +11,12 @@ from pydantic import ValidationError
 
 
 def _shared_setup_1(monkeypatch, store):
-    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d=None: store.get(k, d))
+    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d = None: store.get(k, d))
     monkeypatch.setattr("storage.studio_db.upsert_app_settings", lambda d: store.update(d))
 
     app = FastAPI()
     app.dependency_overrides[get_current_subject] = lambda: "unsloth"
-    app.include_router(settings_routes.router, prefix="/api/settings")
+    app.include_router(settings_routes.router, prefix = "/api/settings")
     client = TestClient(app)
     return client
 
@@ -57,19 +57,19 @@ def test_unknown_keys_are_ignored():
 @pytest.mark.parametrize(
     "section, field, value",
     [
-        pytest.param("appearance", "theme", "neon", id="invalid_theme_rejected"),
-        pytest.param("appearance", "palette", "neon", id="invalid_palette_rejected"),
+        pytest.param("appearance", "theme", "neon", id = "invalid_theme_rejected"),
+        pytest.param("appearance", "palette", "neon", id = "invalid_palette_rejected"),
         pytest.param(
             "profile",
             "avatarDataUrl",
             "http://example.com/a.png",
-            id="avatar_must_be_image_data_url",
+            id = "avatar_must_be_image_data_url",
         ),
         pytest.param(
             "profile",
             "avatarDataUrl",
             "/Sloth%20emojis/../secret.png",
-            id="bundled_avatar_traversal_rejected",
+            id = "bundled_avatar_traversal_rejected",
         ),
     ],
 )
@@ -292,7 +292,7 @@ def test_personalization_put_round_trips_sidebar_nav_auto(monkeypatch):
     client = _shared_setup_1(monkeypatch, store)
     put = client.put(
         "/api/settings/personalization",
-        json=_sidebar_nav_auto([]),
+        json = _sidebar_nav_auto([]),
     )
     assert put.status_code == 200
     assert put.json()["appearance"]["customization"]["sidebarNavAuto"] == []
@@ -448,13 +448,13 @@ def test_get_read_errors_propagate(monkeypatch):
 
     monkeypatch.setattr("storage.studio_db.get_app_setting", fail)
 
-    with pytest.raises(RuntimeError, match="read failed"):
+    with pytest.raises(RuntimeError, match = "read failed"):
         pers.get_personalization()
 
 
 def test_get_set_roundtrip(monkeypatch):
     store: dict = {}
-    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d=None: store.get(k, d))
+    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d = None: store.get(k, d))
     monkeypatch.setattr("storage.studio_db.upsert_app_settings", lambda d: store.update(d))
 
     assert pers.get_personalization() == {}
@@ -535,7 +535,7 @@ def test_personalization_route_roundtrip_real_shape(monkeypatch):
             },
         },
     }
-    put = client.put("/api/settings/personalization", json=payload)
+    put = client.put("/api/settings/personalization", json = payload)
     assert put.status_code == 200
 
     saved = client.get("/api/settings/personalization")
@@ -559,11 +559,11 @@ def test_personalization_get_flags_legacy_fields(monkeypatch):
             "appearance": {"theme": "dark"},
         }
     }
-    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d=None: store.get(k, d))
+    monkeypatch.setattr("storage.studio_db.get_app_setting", lambda k, d = None: store.get(k, d))
 
     app = FastAPI()
     app.dependency_overrides[get_current_subject] = lambda: "unsloth"
-    app.include_router(settings_routes.router, prefix="/api/settings")
+    app.include_router(settings_routes.router, prefix = "/api/settings")
     body = TestClient(app).get("/api/settings/personalization").json()
     assert body["saved"] is True
     assert body["customizationSaved"] is False
@@ -585,7 +585,7 @@ def test_personalization_legacy_chat_width_presence(monkeypatch):
 
     put = client.put(
         "/api/settings/personalization",
-        json={"appearance": {"customization": {"uiFont": "Arial"}}},
+        json = {"appearance": {"customization": {"uiFont": "Arial"}}},
     )
     assert put.status_code == 200
     assert client.get("/api/settings/personalization").json()["chatWidthSaved"] is False
@@ -593,7 +593,7 @@ def test_personalization_legacy_chat_width_presence(monkeypatch):
 
     put = client.put(
         "/api/settings/personalization",
-        json={"appearance": {"customization": {"chatWidth": "full"}}},
+        json = {"appearance": {"customization": {"chatWidth": "full"}}},
     )
     assert put.status_code == 200
     body = client.get("/api/settings/personalization").json()
@@ -612,7 +612,7 @@ def test_personalization_saved_chat_width_survives_stale_write(monkeypatch, widt
     client = _shared_setup_1(monkeypatch, store)
     put = client.put(
         "/api/settings/personalization",
-        json={"appearance": {"customization": {"uiFont": "Georgia"}}},
+        json = {"appearance": {"customization": {"uiFont": "Georgia"}}},
     )
     assert put.status_code == 200
     body = client.get("/api/settings/personalization").json()
@@ -628,7 +628,7 @@ def test_personalization_put_preserves_absent_fields(monkeypatch):
 
     put = client.put(
         "/api/settings/personalization",
-        json={
+        json = {
             "version": 1,
             "profile": {"displayName": "Mike"},
             "appearance": {"theme": "dark", "language": "en"},
@@ -665,7 +665,7 @@ def test_personalization_put_preserves_existing_fields_on_stale_write(monkeypatc
 
     put = client.put(
         "/api/settings/personalization",
-        json={"version": 1, "profile": {"displayName": "Mike"}, "appearance": {"theme": "dark"}},
+        json = {"version": 1, "profile": {"displayName": "Mike"}, "appearance": {"theme": "dark"}},
     )
     assert put.status_code == 200
 

@@ -17,7 +17,7 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent
 def _load_module(
     module_name: str,
     relative_path: str,
-    monkeypatch=None,
+    monkeypatch = None,
 ):
     path = _BACKEND_DIR / relative_path
     spec = importlib.util.spec_from_file_location(module_name, path)
@@ -71,11 +71,11 @@ def _identity_decorator(*_args, **_kwargs):
 def _install_lightweight_backend_stubs(monkeypatch):
     fastapi = types.ModuleType("fastapi")
     fastapi.APIRouter = lambda: _Router()
-    fastapi.Body = lambda default=None, **_kwargs: default
-    fastapi.Depends = lambda dependency=None, **_kwargs: dependency
-    fastapi.Header = lambda default=None, **_kwargs: default
+    fastapi.Body = lambda default = None, **_kwargs: default
+    fastapi.Depends = lambda dependency = None, **_kwargs: dependency
+    fastapi.Header = lambda default = None, **_kwargs: default
     fastapi.HTTPException = _HTTPException
-    fastapi.Query = lambda default=None, **_kwargs: default
+    fastapi.Query = lambda default = None, **_kwargs: default
     fastapi.Request = object
     monkeypatch.setitem(sys.modules, "fastapi", fastapi)
 
@@ -87,8 +87,8 @@ def _install_lightweight_backend_stubs(monkeypatch):
         sys.modules,
         "structlog",
         types.SimpleNamespace(
-            BoundLogger=_DummyLogger,
-            get_logger=lambda *args, **kwargs: _DummyLogger(),
+            BoundLogger = _DummyLogger,
+            get_logger = lambda *args, **kwargs: _DummyLogger(),
         ),
     )
     loggers = types.ModuleType("loggers")
@@ -137,7 +137,7 @@ def _install_lightweight_backend_stubs(monkeypatch):
     utils_paths.outputs_root = lambda: Path("outputs")
     utils_paths.exports_root = storage_roots.exports_root
     utils_paths.resolve_cached_repo_id_case = lambda value: value
-    utils_paths.resolve_output_dir = lambda value=None: Path(value or "outputs")
+    utils_paths.resolve_output_dir = lambda value = None: Path(value or "outputs")
     utils_paths.resolve_export_dir = storage_roots.resolve_export_dir
     monkeypatch.setitem(sys.modules, "utils", utils_pkg)
     monkeypatch.setitem(sys.modules, "utils.paths", utils_paths)
@@ -240,7 +240,7 @@ def _install_lightweight_backend_stubs(monkeypatch):
 def _install_pydantic_stub(monkeypatch):
     pydantic = types.ModuleType("pydantic")
     pydantic.BaseModel = object
-    pydantic.Field = lambda default=None, **_kwargs: default
+    pydantic.Field = lambda default = None, **_kwargs: default
     pydantic.field_validator = _identity_decorator
     monkeypatch.setitem(sys.modules, "pydantic", pydantic)
 
@@ -252,22 +252,22 @@ def _install_export_backend_stubs(monkeypatch):
     unsloth.FastLanguageModel = object
     unsloth.FastVisionModel = object
     unsloth._IS_MLX = True
-    unsloth.__spec__ = importlib.machinery.ModuleSpec("unsloth", loader=None)
+    unsloth.__spec__ = importlib.machinery.ModuleSpec("unsloth", loader = None)
     monkeypatch.setitem(sys.modules, "unsloth", unsloth)
 
     unsloth_zoo = types.ModuleType("unsloth_zoo")
     unsloth_zoo.__path__ = []
     unsloth_zoo.__spec__ = importlib.machinery.ModuleSpec(
         "unsloth_zoo",
-        loader=None,
-        is_package=True,
+        loader = None,
+        is_package = True,
     )
     llama_cpp = types.ModuleType("unsloth_zoo.llama_cpp")
     llama_cpp.LLAMA_CPP_DEFAULT_DIR = str(Path("/tmp/llama.cpp"))
     llama_cpp._resolve_local_convert_script = lambda *args, **kwargs: None
     llama_cpp.__spec__ = importlib.machinery.ModuleSpec(
         "unsloth_zoo.llama_cpp",
-        loader=None,
+        loader = None,
     )
     monkeypatch.setitem(sys.modules, "unsloth_zoo", unsloth_zoo)
     monkeypatch.setitem(sys.modules, "unsloth_zoo.llama_cpp", llama_cpp)
@@ -289,9 +289,9 @@ def _install_export_backend_stubs(monkeypatch):
     utils_model_config.detect_audio_type = lambda *args, **kwargs: None
 
     utils_paths = sys.modules["utils.paths"]
-    utils_paths.ensure_dir = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
-    utils_paths.resolve_export_write_dir = lambda value=None: Path(value or "exports")
-    utils_paths.resolve_output_dir = lambda value=None: Path(value or "outputs")
+    utils_paths.ensure_dir = lambda path: Path(path).mkdir(parents = True, exist_ok = True)
+    utils_paths.resolve_export_write_dir = lambda value = None: Path(value or "exports")
+    utils_paths.resolve_output_dir = lambda value = None: Path(value or "outputs")
 
 
 def test_gguf_export_keeps_a_gguf_it_could_not_relocate(tmp_path, monkeypatch):
@@ -311,10 +311,10 @@ def test_gguf_export_keeps_a_gguf_it_could_not_relocate(tmp_path, monkeypatch):
 
     class _Model:
         def save_pretrained_gguf(self, model_save_path, tokenizer, quantization_method):
-            Path(model_save_path).mkdir(parents=True, exist_ok=True)
+            Path(model_save_path).mkdir(parents = True, exist_ok = True)
             (Path(model_save_path) / "model.safetensors").write_bytes(b"weights")
             output_dir = Path(f"{model_save_path}_gguf")
-            output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents = True, exist_ok = True)
             (output_dir / "converted.gguf").write_bytes(b"gguf")
 
     backend = export_mod.ExportBackend.__new__(export_mod.ExportBackend)
@@ -376,7 +376,7 @@ def _require_undeletable_dir_support(tmp_path):
         return
     finally:
         probe.chmod(0o700)
-        shutil.rmtree(probe, ignore_errors=True)
+        shutil.rmtree(probe, ignore_errors = True)
     pytest.skip("this platform allows deleting files from a read-only directory")
 
 
@@ -394,7 +394,7 @@ def test_gguf_export_survives_real_owned_temp_cleanup_failure(tmp_path, monkeypa
     class _Model:
         def save_pretrained_gguf(self, model_save_path, tokenizer, quantization_method):
             output_dir = Path(f"{model_save_path}_gguf")
-            output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents = True, exist_ok = True)
             (output_dir / "converted.gguf").write_bytes(b"gguf")
             # A read-only model directory makes the real cleanup fail.
             merged = Path(model_save_path)
@@ -426,7 +426,7 @@ def test_gguf_export_survives_real_owned_temp_cleanup_failure(tmp_path, monkeypa
 
 
 # Both PEFT and non-PEFT exports must preserve an existing checkpoint sibling.
-@pytest.mark.parametrize("merges_into_model_dir", [False, True], ids=["non_peft", "peft"])
+@pytest.mark.parametrize("merges_into_model_dir", [False, True], ids = ["non_peft", "peft"])
 def test_gguf_export_preserves_unowned_paths(tmp_path, monkeypatch, merges_into_model_dir):
     _install_export_backend_stubs(monkeypatch)
     export_mod = _load_module(
@@ -446,10 +446,10 @@ def test_gguf_export_preserves_unowned_paths(tmp_path, monkeypatch, merges_into_
     old_modelfile = checkpoint_gguf / "Modelfile"
     concurrent_dir = save_dir / "user-created"
     concurrent_cwd_gguf = cwd / "unrelated.gguf"
-    notes.write_text("keep", encoding="utf-8")
+    notes.write_text("keep", encoding = "utf-8")
     imatrix.write_bytes(b"imatrix")
     old_gguf.write_bytes(b"old")
-    old_modelfile.write_text("FROM old.Q4_K_M.gguf", encoding="utf-8")
+    old_modelfile.write_text("FROM old.Q4_K_M.gguf", encoding = "utf-8")
     monkeypatch.chdir(cwd)
     monkeypatch.setattr(export_mod, "resolve_export_write_dir", lambda _value: save_dir)
 
@@ -460,11 +460,11 @@ def test_gguf_export_preserves_unowned_paths(tmp_path, monkeypatch, merges_into_
                 merged.mkdir()
                 (merged / "model.safetensors").write_bytes(b"merged")
             output_dir = Path(f"{model_save_path}_gguf")
-            output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents = True, exist_ok = True)
             (output_dir / "new.Q4_K_M.gguf").write_bytes(b"new")
-            (output_dir / "Modelfile").write_text("FROM new.Q4_K_M.gguf", encoding="utf-8")
+            (output_dir / "Modelfile").write_text("FROM new.Q4_K_M.gguf", encoding = "utf-8")
             concurrent_dir.mkdir()
-            (concurrent_dir / "notes.txt").write_text("keep", encoding="utf-8")
+            (concurrent_dir / "notes.txt").write_text("keep", encoding = "utf-8")
             concurrent_cwd_gguf.write_bytes(b"unrelated")
             # Reported files may also appear in the owned-root scan.
             return {
@@ -483,13 +483,13 @@ def test_gguf_export_preserves_unowned_paths(tmp_path, monkeypatch, merges_into_
     assert success is True
     assert output_path == str(save_dir.resolve())
     assert (save_dir / "new.Q4_K_M.gguf").read_bytes() == b"new"
-    assert (save_dir / "Modelfile").read_text(encoding="utf-8") == "FROM new.Q4_K_M.gguf"
+    assert (save_dir / "Modelfile").read_text(encoding = "utf-8") == "FROM new.Q4_K_M.gguf"
     assert not (save_dir / "old.Q4_K_M.gguf").exists()
-    assert notes.read_text(encoding="utf-8") == "keep"
+    assert notes.read_text(encoding = "utf-8") == "keep"
     assert imatrix.read_bytes() == b"imatrix"
     assert old_gguf.read_bytes() == b"old"
-    assert old_modelfile.read_text(encoding="utf-8") == "FROM old.Q4_K_M.gguf"
-    assert (concurrent_dir / "notes.txt").read_text(encoding="utf-8") == "keep"
+    assert old_modelfile.read_text(encoding = "utf-8") == "FROM old.Q4_K_M.gguf"
+    assert (concurrent_dir / "notes.txt").read_text(encoding = "utf-8") == "keep"
     assert concurrent_cwd_gguf.read_bytes() == b"unrelated"
     assert list(save_dir.glob("_tmp_model_*")) == []
 
@@ -507,7 +507,7 @@ def test_gguf_export_relocates_gguf_written_into_the_model_path(tmp_path, monkey
     class _Model:
         def save_pretrained_gguf(self, model_save_path, tokenizer, quantization_method):
             output_dir = Path(model_save_path)
-            output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents = True, exist_ok = True)
             (output_dir / "Qwen3-8B.Q4_K_M.gguf").write_bytes(b"converted")
 
     backend = export_mod.ExportBackend.__new__(export_mod.ExportBackend)
@@ -537,7 +537,7 @@ def test_gguf_export_rejects_symlink_inside_its_owned_temp_tree(tmp_path, monkey
     class _Model:
         def save_pretrained_gguf(self, model_save_path, tokenizer, quantization_method):
             output_dir = Path(f"{model_save_path}_gguf")
-            output_dir.mkdir(parents=True)
+            output_dir.mkdir(parents = True)
             link = output_dir / "converted.gguf"
             try:
                 link.symlink_to(user_owned_gguf)
@@ -574,14 +574,14 @@ def test_gguf_export_relocates_only_reported_files_from_outside_the_owned_root(
     save_dir = tmp_path / "export"
     checkpoint_gguf = tmp_path / "Qwen3-8B_gguf"
     checkpoint_gguf.mkdir()
-    (checkpoint_gguf / "notes.txt").write_text("keep", encoding="utf-8")
+    (checkpoint_gguf / "notes.txt").write_text("keep", encoding = "utf-8")
     (checkpoint_gguf / "old.Q8_0.gguf").write_bytes(b"old")
     monkeypatch.setattr(export_mod, "resolve_export_write_dir", lambda _value: save_dir)
 
     class _Model:
         def save_pretrained_gguf(self, model_save_path, tokenizer, quantization_method):
             (checkpoint_gguf / "new.Q4_K_M.gguf").write_bytes(b"new")
-            (checkpoint_gguf / "Modelfile").write_text("FROM new.Q4_K_M.gguf", encoding="utf-8")
+            (checkpoint_gguf / "Modelfile").write_text("FROM new.Q4_K_M.gguf", encoding = "utf-8")
             return {
                 "gguf_directory": str(checkpoint_gguf),
                 "gguf_files": [str(checkpoint_gguf / "new.Q4_K_M.gguf")],
@@ -598,10 +598,10 @@ def test_gguf_export_relocates_only_reported_files_from_outside_the_owned_root(
     assert success is True, message
     assert output_path == str(save_dir.resolve())
     assert (save_dir / "new.Q4_K_M.gguf").read_bytes() == b"new"
-    assert (save_dir / "Modelfile").read_text(encoding="utf-8") == "FROM new.Q4_K_M.gguf"
+    assert (save_dir / "Modelfile").read_text(encoding = "utf-8") == "FROM new.Q4_K_M.gguf"
     assert not (save_dir / "old.Q8_0.gguf").exists()
     assert checkpoint_gguf.is_dir()
-    assert (checkpoint_gguf / "notes.txt").read_text(encoding="utf-8") == "keep"
+    assert (checkpoint_gguf / "notes.txt").read_text(encoding = "utf-8") == "keep"
     assert (checkpoint_gguf / "old.Q8_0.gguf").read_bytes() == b"old"
     assert list(save_dir.glob("_tmp_model_*")) == []
 
@@ -610,7 +610,7 @@ def test_save_directory_validator_rejects_windows_parent_segments(monkeypatch):
     _install_pydantic_stub(monkeypatch)
     export_models = _load_module("test_models_export", "models/export.py", monkeypatch)
 
-    with pytest.raises(ValueError, match=r"\.\."):
+    with pytest.raises(ValueError, match = r"\.\."):
         export_models._validate_save_directory(r"E:\AI\..\secret")
 
 
@@ -633,7 +633,7 @@ def test_save_directory_validator_rejects_long_path_component(monkeypatch, tmp_p
         "test_models_export_long_component", "models/export.py", monkeypatch
     )
 
-    with pytest.raises(ValueError, match="path components"):
+    with pytest.raises(ValueError, match = "path components"):
         export_models._validate_save_directory(str(tmp_path / ("a" * 256)))
 
 
@@ -651,7 +651,7 @@ def test_export_write_dir_accepts_external_absolute_but_read_dir_rejects(tmp_pat
 
     assert storage_roots.resolve_export_write_dir(str(external)) == external
 
-    with pytest.raises(ValueError, match="path escapes root"):
+    with pytest.raises(ValueError, match = "path escapes root"):
         storage_roots.resolve_export_dir(str(external))
 
 
@@ -680,7 +680,7 @@ def test_resolve_export_write_dir_rejects_backslash_parent_segment():
         "utils/paths/storage_roots.py",
     )
 
-    with pytest.raises(ValueError, match=r"\.\."):
+    with pytest.raises(ValueError, match = r"\.\."):
         storage_roots.resolve_export_write_dir(r"exports\..\outside")
 
 
@@ -714,7 +714,7 @@ def test_export_details_registers_external_absolute_output(tmp_path, monkeypatch
     output = tmp_path / "Gemma4_26B_gguf"
     output.mkdir()
     export_root = tmp_path / "studio" / "exports"
-    export_root.mkdir(parents=True)
+    export_root.mkdir(parents = True)
     registered = []
 
     monkeypatch.setattr(
@@ -765,7 +765,7 @@ def test_recovered_external_export_invalidates_only_when_first_registered(tmp_pa
 
     assert export_route._try_register_external_export(output) == (True, str(output))
     assert export_route._try_register_external_export(output) == (True, str(output))
-    assert export_route._try_register_external_export(output, refresh_index=True) == (
+    assert export_route._try_register_external_export(output, refresh_index = True) == (
         True,
         str(output),
     )
@@ -783,7 +783,7 @@ def test_export_details_does_not_register_contained_exports(tmp_path, monkeypatc
 
     export_root = tmp_path / "exports"
     output = export_root / "model-gguf"
-    output.mkdir(parents=True)
+    output.mkdir(parents = True)
 
     monkeypatch.setattr(
         export_route,

@@ -50,7 +50,7 @@ NATIVE = _plan.NATIVE
 
 class TestTheRule:
     def test_grok_is_forced_off(self):
-        assert _planned_flash_attn_state(architecture="grok") is False
+        assert _planned_flash_attn_state(architecture = "grok") is False
 
     def test_the_architecture_is_read_as_the_gguf_stores_it(self):
         assert _architecture_forces_flash_attn_off("grok") is True
@@ -61,7 +61,7 @@ class TestTheRule:
     def test_every_other_architecture_keeps_the_managed_default(self, architecture):
         """One architecture, not a new default: an unread header keeps the managed on."""
         assert _architecture_forces_flash_attn_off(architecture) is False
-        assert _planned_flash_attn_state(architecture=architecture) is True
+        assert _planned_flash_attn_state(architecture = architecture) is True
 
 
 class TestNothingPutsItBack:
@@ -69,32 +69,32 @@ class TestNothingPutsItBack:
     def test_a_quantized_v_cache_does_not(self, v_type):
         """The quantized-V upgrade sits below the Grok branch, so it never runs on Grok."""
         assert (
-            _planned_flash_attn_state(planned_cache_types=("f16", v_type), architecture="grok")
+            _planned_flash_attn_state(planned_cache_types = ("f16", v_type), architecture = "grok")
             is False
         )
         # The same pair elsewhere still forces it on: not asserting a constant.
         assert (
-            _planned_flash_attn_state(planned_cache_types=("f16", v_type), architecture="qwen3")
+            _planned_flash_attn_state(planned_cache_types = ("f16", v_type), architecture = "qwen3")
             is True
         )
 
     def test_a_tensor_split_does_not(self):
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel=True, architecture="grok")
+            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel = True, architecture = "grok")
             is False
         )
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel=True, architecture="qwen3")
+            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel = True, architecture = "qwen3")
             is True
         )
 
     def test_an_explicit_on_in_the_extras_does_not(self):
-        assert _planned_flash_attn_state(["--flash-attn", "on"], architecture="grok") is False
-        assert _planned_flash_attn_state(["-fa", "1"], architecture="grok") is False
+        assert _planned_flash_attn_state(["--flash-attn", "on"], architecture = "grok") is False
+        assert _planned_flash_attn_state(["-fa", "1"], architecture = "grok") is False
 
     def test_the_inherited_environment_does_not(self):
         assert (
-            _planned_flash_attn_state(architecture="grok", env={"LLAMA_ARG_FLASH_ATTN": "1"})
+            _planned_flash_attn_state(architecture = "grok", env = {"LLAMA_ARG_FLASH_ATTN": "1"})
             is False
         )
 
@@ -104,18 +104,18 @@ class TestNothingPutsItBack:
         for tensor_parallel in (False, True):
             planned = _planned_flash_attn_state(
                 ["-fa", "on"],
-                planned_cache_types=("q8_0", "q8_0"),
-                tensor_parallel=tensor_parallel,
-                architecture="grok",
+                planned_cache_types = ("q8_0", "q8_0"),
+                tensor_parallel = tensor_parallel,
+                architecture = "grok",
             )
             assert (
-                _reserved_flash_attn_state(planned, ["-fa", "on"], tensor_parallel=tensor_parallel)
+                _reserved_flash_attn_state(planned, ["-fa", "on"], tensor_parallel = tensor_parallel)
                 is False
             )
 
 
 def _grok_backend(tmp_path, architecture: str):
-    backend, gguf = _plan._tensor_backend(tmp_path, free_mib=12000)
+    backend, gguf = _plan._tensor_backend(tmp_path, free_mib = 12000)
     backend._architecture = architecture
     return backend, gguf
 
@@ -144,9 +144,9 @@ class TestTheLoadPricesGrokWithoutIt:
             tmp_path,
             "grok",
             "_estimate_kv_cache_bytes",
-            n_ctx=NATIVE,
-            cache_type_kv="q8_0",
-            tensor_parallel=True,
+            n_ctx = NATIVE,
+            cache_type_kv = "q8_0",
+            tensor_parallel = True,
         )
         assert all(state is False for state in seen), (
             f"the load priced its KV cache with flash_attn states "
@@ -160,9 +160,9 @@ class TestTheLoadPricesGrokWithoutIt:
             tmp_path,
             "qwen3",
             "_estimate_kv_cache_bytes",
-            n_ctx=NATIVE,
-            cache_type_kv="q8_0",
-            tensor_parallel=True,
+            n_ctx = NATIVE,
+            cache_type_kv = "q8_0",
+            tensor_parallel = True,
         )
         assert all(state is True for state in seen)
 
@@ -173,9 +173,9 @@ class TestTheLoadPricesGrokWithoutIt:
             tmp_path,
             "grok",
             "_compute_buffer_ctx_bytes",
-            n_ctx=NATIVE,
-            cache_type_kv="q8_0",
-            tensor_parallel=True,
+            n_ctx = NATIVE,
+            cache_type_kv = "q8_0",
+            tensor_parallel = True,
         )
         assert all(state is False for state in seen), (
             f"the load priced its compute buffers with flash_attn states "
@@ -187,21 +187,21 @@ class TestTheLoadPricesGrokWithoutIt:
             tmp_path,
             "qwen3",
             "_compute_buffer_ctx_bytes",
-            n_ctx=NATIVE,
-            cache_type_kv="q8_0",
-            tensor_parallel=True,
+            n_ctx = NATIVE,
+            cache_type_kv = "q8_0",
+            tensor_parallel = True,
         )
         assert all(state is True for state in seen)
 
     def test_the_padded_cache_actually_costs_more(self, tmp_path):
         """Reachability: the two states must price differently, or the above assert nothing."""
         backend, _ = _grok_backend(tmp_path, "grok")
-        on = backend._estimate_kv_cache_bytes(NATIVE, "q8_0", flash_attn=True)
-        off = backend._estimate_kv_cache_bytes(NATIVE, "q8_0", flash_attn=False)
+        on = backend._estimate_kv_cache_bytes(NATIVE, "q8_0", flash_attn = True)
+        off = backend._estimate_kv_cache_bytes(NATIVE, "q8_0", flash_attn = False)
         assert off > on
         assert backend._compute_buffer_ctx_bytes(
-            NATIVE, 512, "q8_0", flash_attn=False
-        ) > backend._compute_buffer_ctx_bytes(NATIVE, 512, "q8_0", flash_attn=True)
+            NATIVE, 512, "q8_0", flash_attn = False
+        ) > backend._compute_buffer_ctx_bytes(NATIVE, 512, "q8_0", flash_attn = True)
 
 
 def _calls_to(source: str, name: str) -> list[ast.Call]:
@@ -243,7 +243,7 @@ class TestEverySeamHandsTheArchitectureOver:
 
     def test_the_kv_cache_estimate_route_does(self):
         """Read from the file: importing the route drags the whole app in."""
-        source = (Path(_BACKEND_DIR) / "routes" / "models.py").read_text(encoding="utf-8")
+        source = (Path(_BACKEND_DIR) / "routes" / "models.py").read_text(encoding = "utf-8")
         calls = _calls_to(source, "_planned_flash_attn_state")
         assert calls, "the kv-cache-estimate route no longer resolves an attention plan"
         for call in calls:

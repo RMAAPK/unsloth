@@ -62,7 +62,7 @@ class _Tokenizer:
 
     def __call__(self, *_args, **_kwargs):
         torch = pytest.importorskip("torch")
-        return _Batch({"input_ids": torch.zeros((1, 1), dtype=torch.long)})
+        return _Batch({"input_ids": torch.zeros((1, 1), dtype = torch.long)})
 
     def decode(self, ids, **kwargs):
         return "".join(self.pieces.get(int(i), "") for i in ids)
@@ -84,10 +84,10 @@ class _Model:
 
     def generate(self, streamer, stopping_criteria, max_new_tokens, **_kwargs):
         torch = pytest.importorskip("torch")
-        ids = torch.zeros((1, 1), dtype=torch.long)
+        ids = torch.zeros((1, 1), dtype = torch.long)
         streamer.put(ids)
         for index, piece in enumerate(self.pieces[:max_new_tokens], 2):
-            ids = torch.cat([ids, torch.tensor([[index]])], dim=1)
+            ids = torch.cat([ids, torch.tensor([[index]])], dim = 1)
             streamer.put(torch.tensor([index]))
             self.sent.append(piece)
             if stopping_criteria is not None and bool(stopping_criteria(ids, None).all()):
@@ -101,7 +101,7 @@ def _backend(pieces, tokenizer):
     model = _Model(pieces)
     raw_tokenizer = getattr(tokenizer, "tokenizer", tokenizer)
     raw_tokenizer.pieces = dict(enumerate(pieces, 2))
-    streamer = inf.TextIteratorStreamer(raw_tokenizer, skip_prompt=True, timeout=0.2)
+    streamer = inf.TextIteratorStreamer(raw_tokenizer, skip_prompt = True, timeout = 0.2)
     backend = inf.InferenceBackend.__new__(inf.InferenceBackend)
     backend.active_model_name = "stop-test"
     backend._generation_lock = threading.Lock()
@@ -120,7 +120,7 @@ def test_worker_forwards_stop_and_the_reply_ends_before_it(monkeypatch):
 
     backend, model = _backend(["Hello ", "ST", "OP", " world"], _Tokenizer())
     monkeypatch.setattr(
-        backend, "_apply_chat_template_for_generation", lambda *a, **k: "PROMPT", raising=False
+        backend, "_apply_chat_template_for_generation", lambda *a, **k: "PROMPT", raising = False
     )
     responses = _Responses()
     cmd = {
@@ -144,16 +144,16 @@ def test_vision_reply_ends_before_a_stop_sequence():
 
     snapshots = list(
         backend._generate_vision_response(
-            messages=[{"role": "user", "content": "hi"}],
-            system_prompt="",
-            image=None,
-            temperature=0.0,
-            top_p=1.0,
-            top_k=0,
-            min_p=0.0,
-            max_new_tokens=3,
-            repetition_penalty=1.0,
-            stop=["STOP"],
+            messages = [{"role": "user", "content": "hi"}],
+            system_prompt = "",
+            image = None,
+            temperature = 0.0,
+            top_p = 1.0,
+            top_k = 0,
+            min_p = 0.0,
+            max_new_tokens = 3,
+            repetition_penalty = 1.0,
+            stop = ["STOP"],
         )
     )
 
@@ -165,7 +165,7 @@ def test_vision_reply_ends_before_a_stop_sequence():
 def test_a_partial_stop_sequence_is_released_when_the_reply_ends():
     backend, _ = _backend(["Hello ", "ST"], _Tokenizer())
 
-    snapshots = list(backend.generate_stream("PROMPT", max_new_tokens=8, stop=["STOP"]))
+    snapshots = list(backend.generate_stream("PROMPT", max_new_tokens = 8, stop = ["STOP"]))
 
     assert snapshots == ["Hello", "Hello ST"]
 
@@ -178,20 +178,20 @@ def test_compact_json_stops_in_producer_before_word_flush(vision):
         backend.format_chat_prompt = lambda *a, **k: "PROMPT"
         output = list(
             backend._generate_vision_response(
-                messages=[{"role": "user", "content": "hi"}],
-                system_prompt="",
-                image=None,
-                temperature=0.0,
-                top_p=1.0,
-                top_k=0,
-                min_p=0.0,
-                max_new_tokens=200,
-                repetition_penalty=1.0,
-                stop=["}"],
+                messages = [{"role": "user", "content": "hi"}],
+                system_prompt = "",
+                image = None,
+                temperature = 0.0,
+                top_p = 1.0,
+                top_k = 0,
+                min_p = 0.0,
+                max_new_tokens = 200,
+                repetition_penalty = 1.0,
+                stop = ["}"],
             )
         )
     else:
-        output = list(backend.generate_stream("PROMPT", max_new_tokens=200, stop=["}"]))
+        output = list(backend.generate_stream("PROMPT", max_new_tokens = 200, stop = ["}"]))
     assert model.sent == [pieces[0]]
     assert output == ['{"id":1']
     assert backend.last_generation_stats["truncated"] is False
@@ -214,12 +214,12 @@ def test_synthetic_reasoning_tags_do_not_match_stops(kind, raw, stop):
     tokenizer = _Tokenizer()
     tokenizer.pieces = {2: raw}
     if kind == "harmony":
-        streamer = inf.HarmonyTextStreamer(tokenizer, skip_prompt=False)
+        streamer = inf.HarmonyTextStreamer(tokenizer, skip_prompt = False)
     else:
         streamer = inf.ReasoningTextIteratorStreamer(
             tokenizer,
-            markers=("<|channel>thought", "<channel|>"),
-            skip_prompt=False,
+            markers = ("<|channel>thought", "<channel|>"),
+            skip_prompt = False,
         )
     wrapped = inf._StopSequenceStreamer(streamer, [stop])
     wrapped.put(torch.tensor([2]))
@@ -237,7 +237,7 @@ def test_synthetic_reasoning_tags_do_not_match_stops(kind, raw, stop):
 @pytest.mark.parametrize("stop", [None, [], ["missing"]])
 def test_requests_without_a_matching_stop_keep_all_text(stop):
     backend, model = _backend(["Hello ", "world"], _Tokenizer())
-    output = list(backend.generate_stream("PROMPT", max_new_tokens=8, stop=stop))
+    output = list(backend.generate_stream("PROMPT", max_new_tokens = 8, stop = stop))
     assert output[-1] == "Hello world"
     assert model.sent == ["Hello ", "world"]
 
@@ -250,8 +250,8 @@ def test_stop_wrapper_finishes_reasoning_once(abort):
     tokenizer.pieces = {2: "<|channel>thoughtReasoning ST"}
     streamer = inf.ReasoningTextIteratorStreamer(
         tokenizer,
-        markers=("<|channel>thought", "<channel|>"),
-        skip_prompt=False,
+        markers = ("<|channel>thought", "<channel|>"),
+        skip_prompt = False,
     )
     wrapped = inf._StopSequenceStreamer(streamer, ["STOP"])
     wrapped.put(torch.tensor([2]))
@@ -272,9 +272,9 @@ def test_stop_matching_decodes_split_unicode_without_leaking_partial_bytes():
         pieces = {2: b"Hello \xc3", 3: b"\xa9END"}
 
         def decode(self, ids, **kwargs):
-            return b"".join(self.pieces[int(i)] for i in ids).decode("utf-8", errors="replace")
+            return b"".join(self.pieces[int(i)] for i in ids).decode("utf-8", errors = "replace")
 
-    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt=False)
+    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt = False)
     wrapped = inf._StopSequenceStreamer(streamer, ["éEND"])
     wrapped.put(torch.tensor([2]))
     assert not wrapped.matched.is_set()
@@ -295,7 +295,7 @@ def test_a_stop_created_by_decode_cleanup_of_settled_text_still_matches():
             # Mirrors clean_up_tokenization_spaces, which rewrites " ." as ".".
             return super().decode(ids, **kwargs).replace(" .", ".")
 
-    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt=False)
+    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt = False)
     wrapped = inf._StopSequenceStreamer(streamer, ["."])
     for token in (2, 3, 4):
         wrapped.put(torch.tensor([token]))
@@ -333,7 +333,7 @@ def test_a_cleanup_rewrite_split_across_tokens_still_matches_a_stop(pieces, rule
     # is never found.
     tokenizer = Tokenizer()
     tokenizer.pieces = pieces
-    streamer = inf.TextIteratorStreamer(tokenizer, skip_prompt=False)
+    streamer = inf.TextIteratorStreamer(tokenizer, skip_prompt = False)
     wrapped = inf._StopSequenceStreamer(streamer, [stop])
     for token in sorted(pieces):
         wrapped.put(torch.tensor([token]))
@@ -369,7 +369,7 @@ def test_an_unfinished_byte_run_is_not_settled_before_it_completes():
             except UnicodeDecodeError:
                 return "\ufffd" * len(run)
 
-    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt=False)
+    streamer = inf.TextIteratorStreamer(Tokenizer(), skip_prompt = False)
     wrapped = inf._StopSequenceStreamer(streamer, ["never"])
     for token in range(2, 12):
         wrapped.put(torch.tensor([token]))
@@ -392,7 +392,7 @@ def test_stop_matching_decodes_a_bounded_window_per_token():
     words = 2000
     tokenizer.pieces = {i: "word " for i in range(2, words + 2)}
     tokenizer.pieces.update({words + 2 + i: ch for i, ch in enumerate("STOP")})
-    streamer = inf.TextIteratorStreamer(tokenizer, skip_prompt=False)
+    streamer = inf.TextIteratorStreamer(tokenizer, skip_prompt = False)
     wrapped = inf._StopSequenceStreamer(streamer, ["STOP"])
     for token in range(2, words + 2):
         wrapped.put(torch.tensor([token]))
@@ -415,12 +415,12 @@ def test_harmony_stream_waits_for_split_multibyte_characters(stop):
     parts += [b"<|end|><|start|>assistant<|channel|>final<|message|>", *split, b"\xf0", b"\x9f"]
 
     class Tokenizer(_Tokenizer):
-        pieces = dict(enumerate(parts, start=2))
+        pieces = dict(enumerate(parts, start = 2))
 
         def decode(self, ids, **kwargs):
-            return b"".join(self.pieces[int(i)] for i in ids).decode("utf-8", errors="replace")
+            return b"".join(self.pieces[int(i)] for i in ids).decode("utf-8", errors = "replace")
 
-    streamer = inf.HarmonyTextStreamer(Tokenizer(), skip_prompt=False)
+    streamer = inf.HarmonyTextStreamer(Tokenizer(), skip_prompt = False)
     if stop:
         streamer = inf._StopSequenceStreamer(streamer, stop)
     for token in Tokenizer.pieces:

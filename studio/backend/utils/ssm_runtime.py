@@ -101,12 +101,11 @@ def _transformers_model_type_uses_causal_conv1d(model_type: str) -> bool | None:
     result: bool | None = None
     try:
         import transformers
-
         model_dir = Path(transformers.__file__).parent / "models" / candidate
         if model_dir.is_dir():
             for modeling_file in model_dir.glob("modeling_*.py"):
                 try:
-                    source = modeling_file.read_text(encoding="utf-8", errors="ignore")
+                    source = modeling_file.read_text(encoding = "utf-8", errors = "ignore")
                 except OSError:
                     continue
                 result = False
@@ -166,7 +165,6 @@ def resolved_model_wants_causal_conv1d(
 ) -> bool:
     try:
         from utils.transformers_version import _load_config_json
-
         model_config = _load_config_json(model_load_target, hf_token)
     except Exception as exc:
         logger.debug("Could not inspect model config for causal-conv1d: %s", exc)
@@ -189,7 +187,6 @@ def ssm_probe_identifier(model_name: str, base: str | None = None) -> str:
     if probe == model_name:
         try:
             from utils.paths import is_local_path
-
             if is_local_path(model_name):
                 probe = os.path.basename((model_name or "").rstrip("/\\")) or model_name
         except Exception:
@@ -216,7 +213,7 @@ def _emit(status_cb: StatusCb, message: str) -> None:
     try:
         status_cb(message)
     except Exception:  # status is best-effort; never fail a load over a UI message
-        logger.debug("ssm_runtime status callback raised", exc_info=True)
+        logger.debug("ssm_runtime status callback raised", exc_info = True)
 
 
 def _hipcc_gcc_install_dir() -> Optional[str]:
@@ -244,14 +241,14 @@ def _heartbeat(status_cb: StatusCb, message: str) -> Iterator[None]:
         while not done.wait(_HEARTBEAT_SECONDS):
             _emit(status_cb, message)
 
-    thread = threading.Thread(target=_beat, daemon=True, name="ssm-install-heartbeat")
+    thread = threading.Thread(target = _beat, daemon = True, name = "ssm-install-heartbeat")
     thread.start()
     try:
         yield
     finally:
         done.set()
         # Wait out a tick that already left done.wait().
-        thread.join(timeout=1)
+        thread.join(timeout = 1)
 
 
 def _run_with_heartbeat(run, cmd, status_cb, display_name, **kwargs):
@@ -285,13 +282,13 @@ def _install_kernel(
         logger.info("Skipping %s installation while offline", display_name)
         return False
 
-    env = probe_torch_wheel_env(timeout=30)
+    env = probe_torch_wheel_env(timeout = 30)
     wheel_url = direct_wheel_url(
-        filename_prefix=import_name,
-        package_version=package_version,
-        release_tag=release_tag,
-        release_base_url=release_base_url,
-        env=env,
+        filename_prefix = import_name,
+        package_version = package_version,
+        release_tag = release_tag,
+        release_base_url = release_base_url,
+        env = env,
     )
     if wheel_url and url_exists(wheel_url):
         _emit(status_cb, f"Installing {display_name} (prebuilt kernel) for this model...")
@@ -303,9 +300,9 @@ def _install_kernel(
             # A cold first import can also stay quiet for tens of seconds.
             for installer, result in install_wheel(
                 wheel_url,
-                python_executable=sys.executable,
-                use_uv=bool(shutil.which("uv")),
-                run=run,
+                python_executable = sys.executable,
+                use_uv = bool(shutil.which("uv")),
+                run = run,
             ):
                 if getattr(result, "returncode", 1) == 0:
                     # A wheel can install yet fail to import (CUDA/ABI mismatch); verify before trusting it, else source-build to match the local ABI.
@@ -422,25 +419,25 @@ def ensure_ssm_runtime(
 
     # causal-conv1d first: SSM modeling files lazy-import it, and mamba-ssm's fast path uses it.
     if wants_causal_conv1d and not _install_kernel(
-        import_name="causal_conv1d",
-        display_name="causal-conv1d",
-        pypi_name="causal-conv1d",
-        package_version=CAUSAL_CONV1D_PACKAGE_VERSION,
-        release_tag=CAUSAL_CONV1D_RELEASE_TAG,
-        release_base_url=CAUSAL_CONV1D_RELEASE_BASE_URL,
-        status_cb=status_cb,
-        run=run,
+        import_name = "causal_conv1d",
+        display_name = "causal-conv1d",
+        pypi_name = "causal-conv1d",
+        package_version = CAUSAL_CONV1D_PACKAGE_VERSION,
+        release_tag = CAUSAL_CONV1D_RELEASE_TAG,
+        release_base_url = CAUSAL_CONV1D_RELEASE_BASE_URL,
+        status_cb = status_cb,
+        run = run,
     ):
         logger.warning("causal-conv1d unavailable; continuing on the model's torch fallback")
 
     if is_ssm and not _install_kernel(
-        import_name="mamba_ssm",
-        display_name="mamba-ssm",
-        pypi_name="mamba-ssm",
-        package_version=MAMBA_SSM_PACKAGE_VERSION,
-        release_tag=MAMBA_SSM_RELEASE_TAG,
-        release_base_url=MAMBA_SSM_RELEASE_BASE_URL,
-        status_cb=status_cb,
-        run=run,
+        import_name = "mamba_ssm",
+        display_name = "mamba-ssm",
+        pypi_name = "mamba-ssm",
+        package_version = MAMBA_SSM_PACKAGE_VERSION,
+        release_tag = MAMBA_SSM_RELEASE_TAG,
+        release_base_url = MAMBA_SSM_RELEASE_BASE_URL,
+        status_cb = status_cb,
+        run = run,
     ):
         raise RuntimeError("Could not install mamba-ssm, required by this Mamba model.")

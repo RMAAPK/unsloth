@@ -74,7 +74,7 @@ def _unpinned_default_start_method(module) -> Optional[str]:
 def _module_start_method(module_name: str) -> Optional[str]:
     """One module's start method. Raises if the module cannot be read at all. Observing must not mutate: ``get_start_method(allow_none = False)`` pins ``_actual_context``, which would make a later ``set_start_method()`` raise."""
     module = __import__(module_name)
-    method = module.get_start_method(allow_none=True)
+    method = module.get_start_method(allow_none = True)
     if method is None:
         method = _unpinned_default_start_method(module)
     return method
@@ -104,7 +104,6 @@ def _cgroup_cpu_quota() -> Optional[float]:
     """This process's cgroup CPU ceiling in cores, or None outside one. Reuses the reader in ``hf_xet_tuning`` rather than parsing ``/sys/fs/cgroup`` again: it already handles v1 against v2, the ``/proc/self/cgroup`` path walk and the "unlimited" sentinels. Imported lazily, so this module still loads on its own."""
     try:
         from unsloth_zoo.hf_xet_tuning import cgroup_cpu_limit
-
         return cgroup_cpu_limit()
     except Exception:
         return None
@@ -117,7 +116,7 @@ CGROUP_ROOT = "/sys/fs/cgroup"
 def _cgroup_first_line(path: str) -> Optional[str]:
     try:
         # encoding named explicitly: a locale-dependent read of these ASCII kernel files crashes or produces mojibake on a Windows console codepage, and CI polices every read/write for it.
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding = "utf-8") as f:
             return f.readline().strip()
     except OSError:
         return None
@@ -155,7 +154,7 @@ def _cgroup_dirs(root: str, rel: Optional[str]) -> list:
 
 def _proc_self_cgroup() -> list:
     try:
-        with open("/proc/self/cgroup", "r", encoding="utf-8") as f:
+        with open("/proc/self/cgroup", "r", encoding = "utf-8") as f:
             return [line.strip() for line in f if line.strip()]
     except OSError:
         return []  # not Linux, or procfs is hidden
@@ -202,7 +201,6 @@ def _cgroup_free_bytes_unaided() -> Optional[int]:
 
     try:
         from unsloth_zoo.hf_xet_tuning import cgroup_memory_limit
-
         return cgroup_memory_limit()
     except Exception:
         return None
@@ -250,7 +248,6 @@ def _available_memory_gb() -> Optional[float]:
     """Free RAM this process may actually use, or None when it cannot be read. ``psutil.virtual_memory().available`` reports the HOST inside a container, so a 2GB pod on a 512GB box read as having room for the full worker set and got OOM-killed, the exact failure the memory ceiling exists to prevent."""
     try:
         import psutil
-
         available_gb = psutil.virtual_memory().available / (1024**3)
     except Exception:
         return None
@@ -265,7 +262,6 @@ def _usable_cpus() -> Optional[int]:
     """CPUs this process may actually run on, or None when that cannot be read. ``cpu_count()`` is the host's, so under ``taskset``, Slurm pinning or a Kubernetes CPU quota a one-core job would auto-size workers that then contend for that one core, making tokenization slower than doing it in-process."""
     try:
         import psutil
-
         cpus = psutil.cpu_count()
     except Exception:
         cpus = os.cpu_count()
@@ -516,7 +512,7 @@ def resolve_responses_only_num_proc(trainer, num_proc):
     small = rows is None or rows < ZOO_MIN_ROWS_FOR_MULTIPROC
 
     if not was_auto:
-        resolved = get_dataset_num_proc(num_proc, serial_as_none=False)
+        resolved = get_dataset_num_proc(num_proc, serial_as_none = False)
         if resolved == 1 and small:
             # Serial with every split under the threshold, so the helper's own guard runs each in-process.
             return None
@@ -530,4 +526,4 @@ def resolve_responses_only_num_proc(trainer, num_proc):
         # Otherwise it would have gone in-process anyway, and its guard yields None, which is more in-process than the 1 expressible here. Safe whatever the start method.
         return num_proc
 
-    return _serial_for_the_zoo(get_dataset_num_proc(None, serial_as_none=False))
+    return _serial_for_the_zoo(get_dataset_num_proc(None, serial_as_none = False))

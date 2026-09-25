@@ -101,10 +101,10 @@ class TestWorkflowAndResolverAgree:
                 for python_version in prebuilt_wheels.PYTHON_VERSIONS:
                     built = prebuilt_wheels.wheel_name(package, torch_version, python_version)
                     url = wheel_utils.unsloth_prebuilt_wheel_url(
-                        filename_prefix=spec["dist"],
-                        env=env(
-                            torch_mm=prebuilt_wheels.torch_minor(torch_version),
-                            python_tag=prebuilt_wheels.python_tag(python_version),
+                        filename_prefix = spec["dist"],
+                        env = env(
+                            torch_mm = prebuilt_wheels.torch_minor(torch_version),
+                            python_tag = prebuilt_wheels.python_tag(python_version),
                         ),
                     )
                     assert url is not None, (package, torch_version, python_version)
@@ -124,7 +124,7 @@ class TestWorkflowAndResolverAgree:
         assert built == set(wheel_utils._UNSLOTH_PREBUILT_TORCH_MM)
 
     def test_the_release_tag_the_workflow_defaults_to_is_the_one_we_resolve(self):
-        workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+        workflow = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
         default = triggers(workflow)["workflow_dispatch"]["inputs"]["release_tag"]["default"]
         assert default == wheel_utils.UNSLOTH_PREBUILT_RELEASE_TAG
 
@@ -140,7 +140,7 @@ class TestOverrideScope:
     )
     def test_exact_url(self, torch_mm, prefix, version):
         url = wheel_utils.unsloth_prebuilt_wheel_url(
-            filename_prefix=prefix, env=env(torch_mm=torch_mm)
+            filename_prefix = prefix, env = env(torch_mm = torch_mm)
         )
         assert url == (
             f"{OUR_BASE}{prefix}-{version}+cu13torch{torch_mm}"
@@ -151,7 +151,7 @@ class TestOverrideScope:
     def test_other_torch_minors_are_not_ours(self, torch_mm):
         assert (
             wheel_utils.unsloth_prebuilt_wheel_url(
-                filename_prefix="flash_attn", env=env(torch_mm=torch_mm)
+                filename_prefix = "flash_attn", env = env(torch_mm = torch_mm)
             )
             is None
         )
@@ -160,7 +160,7 @@ class TestOverrideScope:
     def test_only_linux_x86_64(self, platform_tag):
         assert (
             wheel_utils.unsloth_prebuilt_wheel_url(
-                filename_prefix="mamba_ssm", env=env(platform_tag=platform_tag)
+                filename_prefix = "mamba_ssm", env = env(platform_tag = platform_tag)
             )
             is None
         )
@@ -169,7 +169,7 @@ class TestOverrideScope:
     def test_only_cuda_13(self, cuda_major):
         assert (
             wheel_utils.unsloth_prebuilt_wheel_url(
-                filename_prefix="mamba_ssm", env=env(cuda_major=cuda_major)
+                filename_prefix = "mamba_ssm", env = env(cuda_major = cuda_major)
             )
             is None
         )
@@ -177,23 +177,23 @@ class TestOverrideScope:
     def test_only_cxx11_abi_true(self):
         assert (
             wheel_utils.unsloth_prebuilt_wheel_url(
-                filename_prefix="flash_attn", env=env(cxx11abi="FALSE")
+                filename_prefix = "flash_attn", env = env(cxx11abi = "FALSE")
             )
             is None
         )
 
     def test_unknown_package_is_not_ours(self):
-        assert wheel_utils.unsloth_prebuilt_wheel_url(filename_prefix="xformers", env=env()) is None
+        assert wheel_utils.unsloth_prebuilt_wheel_url(filename_prefix = "xformers", env = env()) is None
 
     def test_no_env_is_not_ours(self):
         assert (
-            wheel_utils.unsloth_prebuilt_wheel_url(filename_prefix="flash_attn", env=None) is None
+            wheel_utils.unsloth_prebuilt_wheel_url(filename_prefix = "flash_attn", env = None) is None
         )
 
     @pytest.mark.parametrize("python_tag", ["cp311", "cp312", "cp313"])
     def test_every_interpreter_we_build(self, python_tag):
         url = wheel_utils.unsloth_prebuilt_wheel_url(
-            filename_prefix="flash_attn", env=env(python_tag=python_tag)
+            filename_prefix = "flash_attn", env = env(python_tag = python_tag)
         )
         assert url is not None and f"-{python_tag}-{python_tag}-" in url
 
@@ -203,7 +203,7 @@ class TestOverrideScope:
 
 class TestBackwardsCompatible:
     def test_torch_210_still_resolves_upstream_flash_attn(self):
-        url = wheel_utils.flash_attn_wheel_url(env(torch_mm="2.10"))
+        url = wheel_utils.flash_attn_wheel_url(env(torch_mm = "2.10"))
         assert url == (
             "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.1/"
             "flash_attn-2.8.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl"
@@ -212,22 +212,22 @@ class TestBackwardsCompatible:
     @pytest.mark.parametrize("torch_mm", ["2.11", "2.12"])
     def test_the_torch210_reuse_window_is_untouched(self, torch_mm):
         assert wheel_utils.prebuilt_wheel_torch_mm(torch_mm) == "2.10"
-        url = wheel_utils.flash_attn_wheel_url(env(torch_mm=torch_mm))
+        url = wheel_utils.flash_attn_wheel_url(env(torch_mm = torch_mm))
         assert "torch2.10" in url
         assert "Dao-AILab" in url
 
     def test_torch_29_still_resolves_upstream(self):
-        url = wheel_utils.flash_attn_wheel_url(env(torch_mm="2.9"))
+        url = wheel_utils.flash_attn_wheel_url(env(torch_mm = "2.9"))
         assert "Dao-AILab/flash-attention/releases/download/v2.8.3/" in url
         assert "torch2.9" in url
 
     def test_upstream_causal_conv1d_url_is_unchanged_on_212(self):
         url = wheel_utils.direct_wheel_url(
-            filename_prefix="causal_conv1d",
-            package_version="1.6.1",
-            release_tag="v1.6.1.post4",
-            release_base_url="https://github.com/Dao-AILab/causal-conv1d/releases/download",
-            env=env(torch_mm="2.12"),
+            filename_prefix = "causal_conv1d",
+            package_version = "1.6.1",
+            release_tag = "v1.6.1.post4",
+            release_base_url = "https://github.com/Dao-AILab/causal-conv1d/releases/download",
+            env = env(torch_mm = "2.12"),
         )
         assert url == (
             "https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/"
@@ -237,11 +237,11 @@ class TestBackwardsCompatible:
     def test_213_takes_over_the_same_call(self):
         """Same call site, same arguments, different answer only for the new minors."""
         url = wheel_utils.direct_wheel_url(
-            filename_prefix="causal_conv1d",
-            package_version="1.6.1",
-            release_tag="v1.6.1.post4",
-            release_base_url="https://github.com/Dao-AILab/causal-conv1d/releases/download",
-            env=env(torch_mm="2.13"),
+            filename_prefix = "causal_conv1d",
+            package_version = "1.6.1",
+            release_tag = "v1.6.1.post4",
+            release_base_url = "https://github.com/Dao-AILab/causal-conv1d/releases/download",
+            env = env(torch_mm = "2.13"),
         )
         assert (
             url
@@ -251,11 +251,11 @@ class TestBackwardsCompatible:
     def test_a_windows_env_still_reaches_upstream_for_a_non_our_package(self):
         """The override must not become a Windows gate for anything else that uses this path."""
         url = wheel_utils.direct_wheel_url(
-            filename_prefix="something_else",
-            package_version="1.0",
-            release_tag="v1.0",
-            release_base_url="https://example.invalid/download",
-            env=env(torch_mm="2.13", platform_tag="win_amd64"),
+            filename_prefix = "something_else",
+            package_version = "1.0",
+            release_tag = "v1.0",
+            release_base_url = "https://example.invalid/download",
+            env = env(torch_mm = "2.13", platform_tag = "win_amd64"),
         )
         assert url == (
             "https://example.invalid/download/v1.0/"
@@ -265,11 +265,11 @@ class TestBackwardsCompatible:
     def test_no_cuda_still_resolves_to_nothing(self):
         assert (
             wheel_utils.direct_wheel_url(
-                filename_prefix="flash_attn",
-                package_version="2.8.1",
-                release_tag="v2.8.1",
-                release_base_url="https://example.invalid/download",
-                env=env(cuda_major=""),
+                filename_prefix = "flash_attn",
+                package_version = "2.8.1",
+                release_tag = "v2.8.1",
+                release_base_url = "https://example.invalid/download",
+                env = env(cuda_major = ""),
             )
             is None
         )
@@ -287,12 +287,12 @@ class TestMatrix:
         assert {cell["package"] for cell in include} == set(prebuilt_wheels.SPECS)
 
     def test_extra_interpreters_are_separate_cells(self):
-        include = prebuilt_wheels.build_matrix(pythons="3.11,3.12,3.13")
+        include = prebuilt_wheels.build_matrix(pythons = "3.11,3.12,3.13")
         assert len(include) == 18
         assert len({cell["wheel_name"] for cell in include}) == 18
 
     def test_one_torch_minor_at_a_time(self):
-        include = prebuilt_wheels.build_matrix(torches="2.14.0")
+        include = prebuilt_wheels.build_matrix(torches = "2.14.0")
         assert {cell["torch_mm"] for cell in include} == {"2.14"}
 
     @pytest.mark.parametrize(
@@ -333,7 +333,7 @@ class TestMatrix:
             "wheel_name",
             "label",
         }
-        for cell in prebuilt_wheels.build_matrix(pythons="3.11,3.12,3.13"):
+        for cell in prebuilt_wheels.build_matrix(pythons = "3.11,3.12,3.13"):
             assert needed <= set(cell), needed - set(cell)
 
     def test_sources_are_pinned_to_a_commit(self):
@@ -422,7 +422,7 @@ class TestReleaseNotes:
         ]
         entries.append(("deadbeef", "SHA256SUMS"))
         return prebuilt_wheels.render_notes(
-            entries, tag="prebuilt-wheels-cu13", repo="unslothai/unsloth"
+            entries, tag = "prebuilt-wheels-cu13", repo = "unslothai/unsloth"
         )
 
     def test_every_wheel_is_listed_with_its_digest(self):
@@ -455,7 +455,7 @@ class TestReleaseNotes:
         assert "Not covered: Windows, macOS, ROCm" in notes
 
     def test_an_empty_release_does_not_render_an_empty_table(self):
-        notes = prebuilt_wheels.render_notes([], tag="t", repo="o/r")
+        notes = prebuilt_wheels.render_notes([], tag = "t", repo = "o/r")
         assert "No wheels are attached" in notes
         assert "| Wheel | Package |" not in notes
 
@@ -474,18 +474,18 @@ other = {
 
     def _run(self, tmp_path, source):
         setup = tmp_path / "setup.py"
-        setup.write_text(source, encoding="utf-8")
+        setup.write_text(source, encoding = "utf-8")
         result = subprocess.run(
             [sys.executable, str(SCRIPTS / "patch_mamba_cxx20.py"), str(setup)],
-            capture_output=True,
-            text=True,
+            capture_output = True,
+            text = True,
         )
         return result, setup
 
     def test_it_patches_all_four(self, tmp_path):
         result, setup = self._run(tmp_path, self.SOURCE)
         assert result.returncode == 0, result.stderr
-        patched = setup.read_text(encoding="utf-8")
+        patched = setup.read_text(encoding = "utf-8")
         assert patched.count('"-std=c++20"') == 4
         assert '"-std=c++17"' not in patched
 
@@ -494,12 +494,12 @@ other = {
         assert result.returncode == 0
         again = subprocess.run(
             [sys.executable, str(SCRIPTS / "patch_mamba_cxx20.py"), str(setup)],
-            capture_output=True,
-            text=True,
+            capture_output = True,
+            text = True,
         )
         assert again.returncode == 0, again.stderr
         assert "nothing to do" in again.stdout
-        assert setup.read_text(encoding="utf-8").count('"-std=c++20"') == 4
+        assert setup.read_text(encoding = "utf-8").count('"-std=c++20"') == 4
 
     def test_an_upstream_change_fails_loudly(self, tmp_path):
         """If upstream makes this change itself, or moves to c++23, the run must stop rather
@@ -511,8 +511,8 @@ other = {
     def test_a_missing_file_fails(self, tmp_path):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS / "patch_mamba_cxx20.py"), str(tmp_path / "nope.py")],
-            capture_output=True,
-            text=True,
+            capture_output = True,
+            text = True,
         )
         assert result.returncode == 1
 
@@ -520,9 +520,9 @@ other = {
 # ── The workflow itself ───────────────────────────────────────────────────────
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def workflow():
-    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    return yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
 
 
 class TestWorkflow:
@@ -643,7 +643,7 @@ class TestWorkflow:
         existing = set()
         for path in (REPO / ".github" / "workflows").glob("*.yml"):
             for job in (
-                (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("jobs", {}).values()
+                (yaml.safe_load(path.read_text(encoding = "utf-8")) or {}).get("jobs", {}).values()
             ):
                 runs_on = job.get("runs-on")
                 if isinstance(runs_on, list):

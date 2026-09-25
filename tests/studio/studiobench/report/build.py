@@ -32,7 +32,7 @@ from .render import render_summary
 
 def _records(path: str | Path) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    with Path(path).open(encoding="utf-8") as fh:
+    with Path(path).open(encoding = "utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line:
@@ -108,13 +108,13 @@ def score_payload(path: str | Path, declared_rungs: Sequence[int] | None = None)
                 score_rung(
                     tokens,
                     {},
-                    completed=False,
-                    failure_mode="declared for this tier but no cell was recorded for it",
+                    completed = False,
+                    failure_mode = "declared for this tier but no cell was recorded for it",
                 )
             )
             continue
         complete, reason = completion.get(tokens, (True, None))
-        scored.append(score_rung(tokens, measures[tokens], completed=complete, failure_mode=reason))
+        scored.append(score_rung(tokens, measures[tokens], completed = complete, failure_mode = reason))
     return score_ladder(scored)
 
 
@@ -133,5 +133,5 @@ def build_report(
     refuse_if_probed(_records(path), str(path))
     payload = assemble_rows(path)
     ladder = score_payload(path, declared_rungs)
-    text = render_summary(payload, ladder, extra_sections=extra_sections)
+    text = render_summary(payload, ladder, extra_sections = extra_sections)
     return text, ladder, payload

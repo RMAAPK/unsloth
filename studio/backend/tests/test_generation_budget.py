@@ -27,8 +27,8 @@ _WINDOW = 2048
 _PROMPT_LEN = 37
 
 
-def _model(window=_WINDOW):
-    return SimpleNamespace(config=SimpleNamespace(max_position_embeddings=window))
+def _model(window = _WINDOW):
+    return SimpleNamespace(config = SimpleNamespace(max_position_embeddings = window))
 
 
 def test_an_unset_budget_becomes_the_free_context():
@@ -40,27 +40,27 @@ def test_an_explicit_budget_is_never_reduced():
     assert generation_budget_within_context(_model(), _PROMPT_LEN, 512) == 512
     assert generation_budget_within_context(_model(), _PROMPT_LEN, _WINDOW) == _WINDOW
     wide = SimpleNamespace(
-        max_seq_length=1024, config=SimpleNamespace(max_position_embeddings=32768)
+        max_seq_length = 1024, config = SimpleNamespace(max_position_embeddings = 32768)
     )
     assert generation_budget_within_context(wide, _PROMPT_LEN, 4096) == 4096
 
 
 def test_a_prompt_with_no_room_left_gets_the_default_not_a_token():
     # A floor of 1 clears a native 32768 guard on a 1024 load and returns one token.
-    assert generation_budget_within_context(_model(window=32), 64, None) == UNSET_GENERATION_BUDGET
+    assert generation_budget_within_context(_model(window = 32), 64, None) == UNSET_GENERATION_BUDGET
     narrow = SimpleNamespace(
-        max_seq_length=1024, config=SimpleNamespace(max_position_embeddings=32768)
+        max_seq_length = 1024, config = SimpleNamespace(max_position_embeddings = 32768)
     )
     assert generation_budget_within_context(narrow, 1100, None) == UNSET_GENERATION_BUDGET
-    assert generation_budget_within_context(_model(window=32), 31, None) == 1
+    assert generation_budget_within_context(_model(window = 32), 31, None) == 1
 
 
 def test_the_selected_window_wins_over_a_wider_checkpoint():
     # from_pretrained keeps config.max_position_embeddings at max(requested, native), so the
     # config alone would serve a --max-seq-length 1024 load the whole 32768.
     model = SimpleNamespace(
-        max_seq_length=1024,
-        config=SimpleNamespace(max_position_embeddings=32768),
+        max_seq_length = 1024,
+        config = SimpleNamespace(max_position_embeddings = 32768),
     )
     assert generation_budget_within_context(model, _PROMPT_LEN, None) == 1024 - _PROMPT_LEN
 
@@ -72,7 +72,7 @@ def test_a_model_declaring_no_window_falls_back():
     )
     for unusable in (None, "n/a", True):
         assert (
-            generation_budget_within_context(_model(window=unusable), 1, None)
+            generation_budget_within_context(_model(window = unusable), 1, None)
             == UNSET_GENERATION_BUDGET
         )
     assert generation_budget_within_context(SimpleNamespace(), _PROMPT_LEN, 256) == 256
@@ -109,10 +109,10 @@ class _FakeTokenizer:
     def __call__(
         self,
         _prompt,
-        return_tensors=None,
-        add_special_tokens=True,
+        return_tensors = None,
+        add_special_tokens = True,
     ):
-        return _FakeEncoding(input_ids=_FakeTensor(_PROMPT_LEN))
+        return _FakeEncoding(input_ids = _FakeTensor(_PROMPT_LEN))
 
 
 class _FakeModel:
@@ -120,7 +120,7 @@ class _FakeModel:
 
     def __init__(self, window):
         self.max_seq_length = window
-        self.config = SimpleNamespace(max_position_embeddings=window)
+        self.config = SimpleNamespace(max_position_embeddings = window)
         self.device = "cpu"
         self.calls = []
 
@@ -148,7 +148,7 @@ class _EmptyStreamer:
         pass
 
 
-def _streaming_backend(monkeypatch, window=_WINDOW):
+def _streaming_backend(monkeypatch, window = _WINDOW):
     try:
         from core.inference.inference import InferenceBackend
     except (ImportError, RuntimeError) as exc:  # pragma: no cover - env-dependent
@@ -170,7 +170,7 @@ def _streaming_backend(monkeypatch, window=_WINDOW):
         }
     }
     monkeypatch.setattr(
-        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising=False
+        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising = False
     )
     return backend, model
 
@@ -179,9 +179,9 @@ def _run(backend, max_new_tokens):
     return list(
         backend.generate_stream(
             "PROMPT",
-            temperature=0.0,
-            max_new_tokens=max_new_tokens,
-            repetition_penalty=1.0,
+            temperature = 0.0,
+            max_new_tokens = max_new_tokens,
+            repetition_penalty = 1.0,
         )
     )
 
@@ -203,7 +203,7 @@ def test_generate_stream_passes_a_fitting_budget_through(monkeypatch):
     assert model.calls[0]["max_new_tokens"] == 512
 
 
-def _vision_backend(monkeypatch, window=_WINDOW):
+def _vision_backend(monkeypatch, window = _WINDOW):
     try:
         from core.inference.inference import InferenceBackend
     except (ImportError, RuntimeError) as exc:  # pragma: no cover - env-dependent
@@ -225,9 +225,9 @@ def _vision_backend(monkeypatch, window=_WINDOW):
         }
     }
     monkeypatch.setattr(
-        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising=False
+        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising = False
     )
-    monkeypatch.setattr(backend, "format_chat_prompt", lambda *a, **k: "PROMPT", raising=False)
+    monkeypatch.setattr(backend, "format_chat_prompt", lambda *a, **k: "PROMPT", raising = False)
     return backend, model
 
 
@@ -254,7 +254,7 @@ def test_the_vision_path_resolves_an_unset_budget(monkeypatch):
     assert model.calls[0]["max_new_tokens"] == _WINDOW - _PROMPT_LEN
 
 
-def _audio_backend(monkeypatch, window=_WINDOW):
+def _audio_backend(monkeypatch, window = _WINDOW):
     try:
         from core.inference.inference import InferenceBackend
     except (ImportError, RuntimeError) as exc:  # pragma: no cover - env-dependent
@@ -268,7 +268,7 @@ def _audio_backend(monkeypatch, window=_WINDOW):
 
     class _AudioProcessor(_FakeTokenizer):
         def apply_chat_template(self, *_a, **_k):
-            return _FakeEncoding(input_ids=_FakeTensor(_PROMPT_LEN))
+            return _FakeEncoding(input_ids = _FakeTensor(_PROMPT_LEN))
 
     processor = _AudioProcessor()
     backend.models = {
@@ -281,7 +281,7 @@ def _audio_backend(monkeypatch, window=_WINDOW):
         }
     }
     monkeypatch.setattr(
-        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising=False
+        backend, "_make_text_streamer", lambda *a, **k: _EmptyStreamer(), raising = False
     )
     return backend, model
 
@@ -323,7 +323,7 @@ def _audio_turns(monkeypatch, messages):
         seen["messages"] = messages
         return render(messages, *args, **kwargs)
 
-    monkeypatch.setattr(processor, "apply_chat_template", _capture, raising=False)
+    monkeypatch.setattr(processor, "apply_chat_template", _capture, raising = False)
     list(
         backend.generate_audio_input_response(
             messages, "be brief", object(), 0.0, 1.0, 0, 0.0, 8, 1.0

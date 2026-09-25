@@ -62,8 +62,8 @@ def _synchronous(conn: sqlite3.Connection) -> int:
 
 def _seed_message(
     conn,
-    thread="t1",
-    message="m1",
+    thread = "t1",
+    message = "m1",
 ):
     conn.execute(
         "INSERT OR IGNORE INTO chat_threads (id, title, model_type, created_at, updated_at) "
@@ -186,7 +186,7 @@ def test_concurrent_openers_all_get_normal(db):
         except Exception as exc:  # noqa: BLE001
             errors.append(exc)
 
-    threads = [threading.Thread(target=worker) for _ in range(16)]
+    threads = [threading.Thread(target = worker) for _ in range(16)]
     _shared_setup_1(threads)
     assert not errors, errors
     assert results == [NORMAL] * 16
@@ -332,10 +332,10 @@ def test_eight_processes_upgrading_at_once_all_succeed(db):
     start = threading.Barrier(8)
 
     def worker():
-        conn = sqlite3.connect(str(db), timeout=10)
+        conn = sqlite3.connect(str(db), timeout = 10)
         conn.row_factory = sqlite3.Row
         try:
-            start.wait(timeout=10)
+            start.wait(timeout = 10)
             studio_db._replace_inventory_update_trigger(conn)
             seen.append(
                 conn.execute(
@@ -348,7 +348,7 @@ def test_eight_processes_upgrading_at_once_all_succeed(db):
         finally:
             conn.close()
 
-    threads = [threading.Thread(target=worker) for _ in range(8)]
+    threads = [threading.Thread(target = worker) for _ in range(8)]
     _shared_setup_1(threads)
 
     assert not errors, errors
@@ -368,7 +368,7 @@ def test_the_migration_is_skipped_once_the_scoped_trigger_is_installed(db):
                 ("chat_attachment_inventory_dirty_update",),
             ).fetchone()["sql"]
         )
-        held = sqlite3.connect(str(db), timeout=0.2)
+        held = sqlite3.connect(str(db), timeout = 0.2)
         try:
             _hold_writer_lock(held)
             # No writer lock is taken, so this returns even while one is held elsewhere.
@@ -392,8 +392,8 @@ def test_a_lost_create_race_cannot_raise(db):
     finally:
         setup.close()
 
-    first = sqlite3.connect(str(db), timeout=10)
-    second = sqlite3.connect(str(db), timeout=10)
+    first = sqlite3.connect(str(db), timeout = 10)
+    second = sqlite3.connect(str(db), timeout = 10)
     try:
         for conn in (first, second):
             conn.execute("DROP TRIGGER IF EXISTS chat_attachment_inventory_dirty_update")
@@ -404,7 +404,7 @@ def test_a_lost_create_race_cannot_raise(db):
         # Without IF NOT EXISTS this raises out of get_connection, so the second process
         # cannot open the database at all.
         unguarded = studio_db._INVENTORY_UPDATE_TRIGGER_SQL.replace("IF NOT EXISTS ", "")
-        with pytest.raises(sqlite3.OperationalError, match="already exists"):
+        with pytest.raises(sqlite3.OperationalError, match = "already exists"):
             second.execute(unguarded)
 
         second.execute(studio_db._INVENTORY_UPDATE_TRIGGER_SQL)
@@ -490,9 +490,9 @@ def test_downgrade_still_sees_attachment_changes(db):
 
 
 def _make_run(
-    run_id="r1",
-    thread="t1",
-    status="queued",
+    run_id = "r1",
+    thread = "t1",
+    status = "queued",
 ):
     studio_db.upsert_chat_thread({"id": thread, "title": "T", "modelType": "gguf", "createdAt": 1})
     studio_db.upsert_chat_message(
@@ -509,12 +509,12 @@ def _make_run(
         }
     )
     research_runs_db.create_run(
-        run_id=run_id,
-        owner_subject="sub",
-        thread_id=thread,
-        user_message_id=f"u-{run_id}",
-        assistant_message_id=f"a-{run_id}",
-        config={},
+        run_id = run_id,
+        owner_subject = "sub",
+        thread_id = thread,
+        user_message_id = f"u-{run_id}",
+        assistant_message_id = f"a-{run_id}",
+        config = {},
     )
     if status != "queued":
         conn = studio_db.get_connection()
@@ -547,7 +547,7 @@ def test_claim_next_still_claims_real_work(db):
 
 @pytest.mark.parametrize("status", ["planning", "queued", "running", "cancelling"])
 def test_probe_agrees_with_the_transaction_when_claimable(db, status):
-    _make_run(status=status)
+    _make_run(status = status)
     assert research_runs_db._has_claimable(research_runs_db.now_ms()) is True
     assert research_runs_db.claim_next("worker-1") is not None
 
@@ -556,7 +556,7 @@ def test_probe_agrees_with_the_transaction_when_claimable(db, status):
     "status", ["completed", "failed", "cancelled", "paused", "awaiting_approval"]
 )
 def test_probe_agrees_with_the_transaction_when_not_claimable(db, status):
-    _make_run(status=status)
+    _make_run(status = status)
     assert research_runs_db._has_claimable(research_runs_db.now_ms()) is False
     assert research_runs_db.claim_next("worker-1") is None
 
@@ -602,7 +602,7 @@ def test_concurrent_workers_claim_a_run_exactly_once(db):
         except Exception as exc:  # noqa: BLE001
             errors.append(exc)
 
-    threads = [threading.Thread(target=worker, args=(f"w{i}",)) for i in range(8)]
+    threads = [threading.Thread(target = worker, args = (f"w{i}",)) for i in range(8)]
     _shared_setup_1(threads)
     assert not errors, errors
     assert len(claims) == 1, f"the read-first probe must not let two workers claim: {claims}"
@@ -629,7 +629,6 @@ def test_busy_predicate(message, busy):
 
 def test_api_usage_db_shares_one_definition():
     import storage.api_usage_db as api_usage_db
-
     assert api_usage_db._is_busy_error(sqlite3.OperationalError("database is locked"))
     assert not api_usage_db._is_busy_error(sqlite3.OperationalError("disk I/O error"))
 
@@ -674,7 +673,7 @@ def _levels(caplog):
 def test_lock_contention_is_six_warnings_not_six_tracebacks(caplog):
     logger = logging.getLogger("test.supervisor.busy")
     ladder = _Ladder([sqlite3.OperationalError("database is locked")] * 6, logger)
-    with caplog.at_level(logging.WARNING, logger=logger.name):
+    with caplog.at_level(logging.WARNING, logger = logger.name):
         asyncio.run(ladder.run())
     assert ladder.survived
     assert _levels(caplog) == [("WARNING", False)] * 6
@@ -686,7 +685,7 @@ def test_a_real_sqlite_fault_does_not_stop_the_supervisor(caplog):
     the process, silently, which is worse than the log noise this change removes."""
     logger = logging.getLogger("test.supervisor.fault")
     ladder = _Ladder([sqlite3.OperationalError("no such table: research_runs"), None, None], logger)
-    with caplog.at_level(logging.ERROR, logger=logger.name):
+    with caplog.at_level(logging.ERROR, logger = logger.name):
         asyncio.run(ladder.run())
     assert ladder.survived and ladder.iterations == 3
     assert _levels(caplog) == [("ERROR", True)], "and it keeps its traceback"
@@ -695,7 +694,7 @@ def test_a_real_sqlite_fault_does_not_stop_the_supervisor(caplog):
 def test_unrelated_exceptions_are_unchanged(caplog):
     logger = logging.getLogger("test.supervisor.other")
     ladder = _Ladder([ValueError("boom"), None], logger)
-    with caplog.at_level(logging.ERROR, logger=logger.name):
+    with caplog.at_level(logging.ERROR, logger = logger.name):
         asyncio.run(ladder.run())
     assert ladder.survived
     assert _levels(caplog) == [("ERROR", True)]
@@ -727,7 +726,7 @@ def test_client_errors_log_one_warning_without_a_traceback(status):
     from utils.utils import log_and_http_error
 
     log = _RecordingLogger()
-    error = log_and_http_error(ValueError("x"), status, "public", event="e", log=log)
+    error = log_and_http_error(ValueError("x"), status, "public", event = "e", log = log)
     assert error.status_code == status
     assert error.detail == "public", "the raw exception must never reach the client"
     assert log.calls == [("warning", {})]
@@ -739,7 +738,7 @@ def test_server_errors_keep_their_traceback(status):
 
     raised = ValueError("x")
     log = _RecordingLogger()
-    log_and_http_error(raised, status, "public", event="e", log=log)
+    log_and_http_error(raised, status, "public", event = "e", log = log)
     level, kwargs = log.calls[0]
     assert level == "error" and kwargs.get("exc_info") is raised
 
@@ -810,14 +809,14 @@ def test_the_replaced_keeper_is_not_left_open(db):
     stale = studio_db._wal_keepers[studio_db.studio_db_path().resolve()]
     assert studio_db.open_wal_keeper() is True
 
-    with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+    with pytest.raises(sqlite3.ProgrammingError, match = "closed database"):
         stale.execute("SELECT 1")
     studio_db.close_wal_keeper()
 
 
 def test_a_keeper_left_by_a_dead_thread_is_replaced(db):
     """sqlite refuses a cross-thread close, so replacing has to survive that failing."""
-    opened = threading.Thread(target=studio_db.open_wal_keeper)
+    opened = threading.Thread(target = studio_db.open_wal_keeper)
     opened.start()
     opened.join()
     stale = studio_db._wal_keepers[studio_db.studio_db_path().resolve()]
@@ -839,7 +838,7 @@ def test_wal_keeper_declines_when_the_filesystem_refused_wal(db, caplog):
     conn.close()
     assert _journal_mode(db) == "delete"
 
-    with caplog.at_level(logging.INFO, logger=studio_db.logger.name):
+    with caplog.at_level(logging.INFO, logger = studio_db.logger.name):
         assert studio_db.open_wal_keeper() is False
     assert not studio_db._wal_keepers
     assert "not WAL" in caplog.text

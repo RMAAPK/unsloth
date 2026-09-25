@@ -42,16 +42,15 @@ _PERFECT_MATCH_PSNR = 100.0
 
 def _gray(frame: Any) -> Any:
     import numpy as np
-
-    f = np.asarray(frame, dtype=np.float64)
+    f = np.asarray(frame, dtype = np.float64)
     return f @ np.array([0.299, 0.587, 0.114])
 
 
 def frame_psnr(a: Any, b: Any) -> float:
     import numpy as np
 
-    a64 = np.asarray(a, dtype=np.float64)
-    b64 = np.asarray(b, dtype=np.float64)
+    a64 = np.asarray(a, dtype = np.float64)
+    b64 = np.asarray(b, dtype = np.float64)
     if a64.shape != b64.shape:
         return 0.0
     mse = float(((a64 - b64) ** 2).mean())
@@ -64,9 +63,9 @@ def _box_mean(x: Any, w: int) -> Any:
     import numpy as np
 
     r = w // 2
-    xp = np.pad(x, r, mode="edge")
-    ii = np.cumsum(np.cumsum(xp, axis=0), axis=1)
-    ii = np.pad(ii, ((1, 0), (1, 0)), mode="constant")
+    xp = np.pad(x, r, mode = "edge")
+    ii = np.cumsum(np.cumsum(xp, axis = 0), axis = 1)
+    ii = np.pad(ii, ((1, 0), (1, 0)), mode = "constant")
     h, wd = x.shape
     total = ii[w : h + w, w : wd + w] - ii[0:h, w : wd + w] - ii[w : h + w, 0:wd] + ii[0:h, 0:wd]
     return total / float(w * w)
@@ -141,7 +140,7 @@ def clip_metrics(
     ssims = [frame_ssim(ref_frames[i], cand_frames[i]) for i in idx]
     lumas = [float(_gray(cand_frames[i]).mean() / 255.0) for i in idx]
     has_nan = any(
-        bool(np.isnan(np.asarray(f, dtype=np.float64)).any()) for f in (cand_frames[i] for i in idx)
+        bool(np.isnan(np.asarray(f, dtype = np.float64)).any()) for f in (cand_frames[i] for i in idx)
     )
     return {
         "frames_compared": len(idx),
@@ -163,7 +162,7 @@ def audio_metrics(ref_audio: Optional[Any], cand_audio: Optional[Any]) -> dict[s
     def _rms(a: Any) -> Optional[float]:
         if a is None:
             return None
-        arr = np.asarray(a, dtype=np.float64)
+        arr = np.asarray(a, dtype = np.float64)
         return float(np.sqrt((arr**2).mean())) if arr.size else 0.0
 
     ref_rms, cand_rms = _rms(ref_audio), _rms(cand_audio)
@@ -203,14 +202,14 @@ def decode_mp4(mp4_bytes: bytes, workdir: Path, name: str) -> tuple[list[Any], O
     path = workdir / f"{name}.mp4"
     path.write_bytes(mp4_bytes)
     container = av.open(str(path))
-    frames = [f.to_ndarray(format="rgb24") for f in container.decode(container.streams.video[0])]
+    frames = [f.to_ndarray(format = "rgb24") for f in container.decode(container.streams.video[0])]
     audio = None
     if container.streams.audio:
         container.close()
         container = av.open(str(path))
         chunks = [c.to_ndarray() for c in container.decode(container.streams.audio[0])]
         if chunks:
-            audio = np.concatenate([c.reshape(c.shape[0], -1).mean(axis=0) for c in chunks])
+            audio = np.concatenate([c.reshape(c.shape[0], -1).mean(axis = 0) for c in chunks])
     container.close()
     return frames, audio
 
@@ -265,14 +264,14 @@ def run_config(
         torch.cuda.reset_peak_memory_stats()
     t0 = time.monotonic()
     result = backend.generate(
-        prompt=args.prompt,
-        width=args.width,
-        height=args.height,
-        num_frames=args.frames,
-        fps=args.fps,
-        steps=args.steps,
-        guidance=args.guidance,
-        seed=args.seed,
+        prompt = args.prompt,
+        width = args.width,
+        height = args.height,
+        num_frames = args.frames,
+        fps = args.fps,
+        steps = args.steps,
+        guidance = args.guidance,
+        seed = args.seed,
     )
     generate_s = time.monotonic() - t0
     peak_gib = torch.cuda.max_memory_allocated() / 2**30 if torch.cuda.is_available() else 0.0
@@ -306,24 +305,24 @@ def run_gate(args: Any) -> int:
     from core.inference.video import get_video_backend
 
     out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents = True, exist_ok = True)
     backend = get_video_backend()
 
-    print(f"reference: {args.reference or 'base'}", flush=True)
+    print(f"reference: {args.reference or 'base'}", flush = True)
     ref = run_config(backend, args, parse_spec(args.reference), out_dir, "reference")
     print(
         f"  load {ref['load_s']}s, generate {ref['generate_s']}s, "
         f"peak {ref['peak_vram_gib']} GiB",
-        flush=True,
+        flush = True,
     )
 
     rows = []
     for spec_str in args.candidates:
         spec = parse_spec(spec_str)
         label = spec_label(spec)
-        print(f"candidate: {label}", flush=True)
+        print(f"candidate: {label}", flush = True)
         cand = run_config(backend, args, spec, out_dir, label.replace("/", "_").replace("=", "-"))
-        metrics = clip_metrics(ref["frames"], cand["frames"], sample_count=args.sample_frames)
+        metrics = clip_metrics(ref["frames"], cand["frames"], sample_count = args.sample_frames)
         audio = audio_metrics(ref["audio"], cand["audio"])
         row = {
             "candidate": label,
@@ -345,7 +344,7 @@ def run_gate(args: Any) -> int:
             f"temporal {row['temporal_deviation']:.3f} | luma>={row['min_luma']:.3f} | "
             f"gen {row['generate_s']}s (ref {ref['generate_s']}s) | "
             f"vram {row['peak_vram_gib']} GiB | {row['verdict']}",
-            flush=True,
+            flush = True,
         )
 
     report = {
@@ -359,8 +358,8 @@ def run_gate(args: Any) -> int:
         "reference_cost": {k: ref[k] for k in ("load_s", "generate_s", "peak_vram_gib")},
         "candidates": rows,
     }
-    (out_dir / "report.json").write_text(json.dumps(report, indent=1))
-    print(f"report: {out_dir / 'report.json'}", flush=True)
+    (out_dir / "report.json").write_text(json.dumps(report, indent = 1))
+    print(f"report: {out_dir / 'report.json'}", flush = True)
     return 0 if all(r["verdict"] != "FAIL" for r in rows) else 1
 
 
@@ -374,15 +373,15 @@ def selftest() -> int:
     h, w, n = 64, 96, 12
 
     def make_clip(
-        offset=0.0,
-        noise=0.0,
-        black=False,
+        offset = 0.0,
+        noise = 0.0,
+        black = False,
     ):
         frames = []
         for t in range(n):
             x = np.linspace(0, 1, w)[None, :] + t * 0.05 + offset
             base = (np.sin(x * 6.283) * 0.5 + 0.5) * 255.0
-            frame = np.repeat(base[..., None], 3, axis=2) * np.ones((h, 1, 1))
+            frame = np.repeat(base[..., None], 3, axis = 2) * np.ones((h, 1, 1))
             if noise:
                 frame = frame + rng.normal(0, noise, frame.shape)
             if black:
@@ -405,16 +404,16 @@ def selftest() -> int:
     )
     check(verdict(same, {"silent_collapse": False}) == "PASS", "identical clip verdict PASS")
 
-    noisy = clip_metrics(ref, make_clip(noise=12.0))
+    noisy = clip_metrics(ref, make_clip(noise = 12.0))
     check(0.3 < noisy["ssim_mean"] < 0.99, f"noisy clip degrades ssim ({noisy['ssim_mean']:.3f})")
 
-    black = clip_metrics(ref, make_clip(black=True))
+    black = clip_metrics(ref, make_clip(black = True))
     check(
         verdict(black, {"silent_collapse": False}) == "FAIL",
         f"black clip verdict FAIL (min_luma {black['min_luma']:.3f})",
     )
 
-    shifted = clip_metrics(ref, make_clip(offset=0.5))
+    shifted = clip_metrics(ref, make_clip(offset = 0.5))
     check(shifted["ssim_mean"] < same["ssim_mean"], "content shift lowers ssim")
 
     # A truncated render with a pixel-identical prefix must still FAIL on the frame-count mismatch.
@@ -437,24 +436,24 @@ def selftest() -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--selftest", action="store_true", help="CPU metric sanity check")
-    parser.add_argument("--model", help="Repo id handed to the video backend")
-    parser.add_argument("--model-kind", default=None, help="pipeline | gguf | single_file")
+    parser = argparse.ArgumentParser(description = __doc__.split("\n")[0])
+    parser.add_argument("--selftest", action = "store_true", help = "CPU metric sanity check")
+    parser.add_argument("--model", help = "Repo id handed to the video backend")
+    parser.add_argument("--model-kind", default = None, help = "pipeline | gguf | single_file")
     parser.add_argument(
-        "--reference", default="", help="Reference spec 'k=v;k=v' ('' = plain base load)"
+        "--reference", default = "", help = "Reference spec 'k=v;k=v' ('' = plain base load)"
     )
-    parser.add_argument("--candidates", nargs="+", default=[], help="Candidate specs 'k=v;k=v'")
-    parser.add_argument("--prompt", default=DEFAULT_PROMPT)
-    parser.add_argument("--width", type=int, default=768)
-    parser.add_argument("--height", type=int, default=512)
-    parser.add_argument("--frames", type=int, default=33)
-    parser.add_argument("--fps", type=int, default=24)
-    parser.add_argument("--steps", type=int, default=None)
-    parser.add_argument("--guidance", type=float, default=None)
-    parser.add_argument("--seed", type=int, default=7)
-    parser.add_argument("--sample-frames", type=int, default=5)
-    parser.add_argument("--out-dir", default="outputs/video_quality")
+    parser.add_argument("--candidates", nargs = "+", default = [], help = "Candidate specs 'k=v;k=v'")
+    parser.add_argument("--prompt", default = DEFAULT_PROMPT)
+    parser.add_argument("--width", type = int, default = 768)
+    parser.add_argument("--height", type = int, default = 512)
+    parser.add_argument("--frames", type = int, default = 33)
+    parser.add_argument("--fps", type = int, default = 24)
+    parser.add_argument("--steps", type = int, default = None)
+    parser.add_argument("--guidance", type = float, default = None)
+    parser.add_argument("--seed", type = int, default = 7)
+    parser.add_argument("--sample-frames", type = int, default = 5)
+    parser.add_argument("--out-dir", default = "outputs/video_quality")
     args = parser.parse_args()
 
     if args.selftest:

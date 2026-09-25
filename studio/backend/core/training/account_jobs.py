@@ -30,13 +30,11 @@ _retired: set[str] = set()
 def _multi_user() -> bool:
     # Lazy: the export worker imports this module on hosts without the auth stack.
     from auth import policy
-
     return policy.installation_is_multi_user()
 
 
 def _has_managed_accounts() -> bool:
     from auth import policy
-
     return policy.installation_has_managed_accounts()
 
 
@@ -77,10 +75,9 @@ def account_path(
     roots = (workspace_root(), project_workspaces_root(), tmp_root())
     if shared_cache:
         from utils.hf_cache_settings import active_hf_hub_cache
-
         roots += (Path(active_hf_hub_cache()),)
     if not any(resolved.is_relative_to(root.resolve()) for root in roots):
-        raise HTTPException(status_code=403, detail="Path is outside this account's workspace")
+        raise HTTPException(status_code = 403, detail = "Path is outside this account's workspace")
     return value
 
 
@@ -92,7 +89,7 @@ def export_write_path(value):
     try:
         resolve_export_write_dir(str(value))
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc))
+        raise HTTPException(status_code = 403, detail = str(exc))
     return value
 
 
@@ -101,7 +98,7 @@ def visible_cached_path(value, repo_type: str = "model"):
         return value
     from hub.services.models import account_access
 
-    if account_access.model_visible(str(value), repo_type=repo_type):
+    if account_access.model_visible(str(value), repo_type = repo_type):
         return value
     return account_path(value)
 
@@ -117,7 +114,7 @@ def require_explicit_credentials(values: dict) -> None:
     if not managed_account():
         return
     if values.get("enable_wandb") and not str(values.get("wandb_token") or "").strip():
-        raise HTTPException(status_code=403, detail="Supply your own W&B API key")
+        raise HTTPException(status_code = 403, detail = "Supply your own W&B API key")
     for key in ("model_name", "base_model", "hf_dataset"):
         reference = values.get(key)
         if (
@@ -127,25 +124,25 @@ def require_explicit_credentials(values: dict) -> None:
         ):
             if not isinstance(values.get("hf_token"), str) or not values["hf_token"].strip():
                 raise HTTPException(
-                    status_code=403,
-                    detail="Supply your own Hugging Face token for remote training resources",
+                    status_code = 403,
+                    detail = "Supply your own Hugging Face token for remote training resources",
                 )
     if values.get("push_to_hub") and not values.get("hf_token"):
-        raise HTTPException(status_code=403, detail="Supply your own Hugging Face token to publish")
+        raise HTTPException(status_code = 403, detail = "Supply your own Hugging Face token to publish")
     s3 = values.get("s3_dataset") or values.get("s3_config")
     if hasattr(s3, "model_dump"):
         s3 = s3.model_dump()
     if s3 and (
         s3.get("use_iam_role") or not s3.get("access_key_id") or not s3.get("secret_access_key")
     ):
-        raise HTTPException(status_code=403, detail="Supply your own AWS access keys")
+        raise HTTPException(status_code = 403, detail = "Supply your own AWS access keys")
 
 
 def validate_job_paths(values: dict, *, cached_resources: bool = False) -> None:
     if not managed_account():
         return
     for key in ("model_name", "base_model", "base_model_id", "hf_dataset"):
-        account_path(values.get(key), reference=True)
+        account_path(values.get(key), reference = True)
     for key, repo_type in (
         ("model_local_path", "model"),
         ("dataset_local_path", "dataset"),
@@ -156,7 +153,7 @@ def validate_job_paths(values: dict, *, cached_resources: bool = False) -> None:
         if value and not cached_resources:
             visible_cached_path(value, repo_type)
             continue
-        account_path(value, shared_cache=cached_resources)
+        account_path(value, shared_cache = cached_resources)
     for key, claimed, repo_type in (
         ("model_name", "model_known_cached", "model"),
         ("hf_dataset", "dataset_known_cached", "dataset"),
@@ -165,7 +162,6 @@ def validate_job_paths(values: dict, *, cached_resources: bool = False) -> None:
         # A cached claim pins the shared cache, so the caller's token never authorizes it.
         if values.get(claimed) and reference:
             from hub.services.models import account_access
-
             account_access.require_model_access(str(reference), repo_type)
     for key in (
         "checkpoint_path",
@@ -194,7 +190,7 @@ def init_job_owner(
     service,
     active,
     cancel,
-    clear=None,
+    clear = None,
 ) -> None:
     service.job_account = None
     service._result_account = OWNER
@@ -218,7 +214,7 @@ def job_is_foreign(service) -> bool:
 
 def require_job_owner(service) -> None:
     if job_is_foreign(service):
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code = 404, detail = "Job not found")
 
 
 def refresh_job_owner(service) -> None:
@@ -239,12 +235,12 @@ def owned_job(*, continuation: bool = False):
             account = current_account()
             with self._account_job_lock:
                 if account.account_id in _retired:
-                    raise HTTPException(status_code=403, detail="Account is retired")
+                    raise HTTPException(status_code = 403, detail = "Account is retired")
                 if continuation:
                     require_job_owner(self)
                 if job_is_foreign(self) and (self._account_inflight or self._account_active()):
                     raise HTTPException(
-                        status_code=409, detail={"code": "job_busy", "message": "Busy"}
+                        status_code = 409, detail = {"code": "job_busy", "message": "Busy"}
                     )
                 if job_is_foreign(self) and self._account_clear is not None:
                     self._account_clear()
@@ -314,7 +310,7 @@ def job_pump(fn):
 
 def account_process_spec(module: str, target: str, env: dict, kwargs: dict):
     if account_is_retired():
-        raise HTTPException(status_code=403, detail="Account is retired")
+        raise HTTPException(status_code = 403, detail = "Account is retired")
     if not managed_account():
         return (module, target, env), kwargs
     return ("core.training.account_jobs", "run_account_child", env), {
@@ -366,14 +362,14 @@ def run_account_child(*, account: AccountContext, job_module: str, job_target: s
                 ):
                     os.environ.pop(key, None)
             private_tmp = tmp_root()
-            private_tmp.mkdir(parents=True, exist_ok=True)
+            private_tmp.mkdir(parents = True, exist_ok = True)
             os.environ.update(
-                HF_HUB_DISABLE_IMPLICIT_TOKEN="1",
-                HF_TOKEN_PATH=str(private_tmp / ".no-ambient-hf-token"),
-                AWS_EC2_METADATA_DISABLED="true",
-                AWS_SHARED_CREDENTIALS_FILE=str(private_tmp / ".no-ambient-aws-credentials"),
-                AWS_CONFIG_FILE=str(private_tmp / ".no-ambient-aws-config"),
-                TMPDIR=str(private_tmp),
+                HF_HUB_DISABLE_IMPLICIT_TOKEN = "1",
+                HF_TOKEN_PATH = str(private_tmp / ".no-ambient-hf-token"),
+                AWS_EC2_METADATA_DISABLED = "true",
+                AWS_SHARED_CREDENTIALS_FILE = str(private_tmp / ".no-ambient-aws-credentials"),
+                AWS_CONFIG_FILE = str(private_tmp / ".no-ambient-aws-config"),
+                TMPDIR = str(private_tmp),
             )
         target = getattr(importlib.import_module(job_module), job_target)
         return target(**kwargs)
@@ -403,10 +399,10 @@ def retire_account_jobs(account: AccountContext) -> None:
                         proc = getattr(service, "_proc", None)
                         if proc is not None and proc.is_alive():
                             proc.terminate()
-                            proc.join(timeout=5)
+                            proc.join(timeout = 5)
                             if proc.is_alive():
                                 proc.kill()
-                                proc.join(timeout=3)
+                                proc.join(timeout = 3)
                             if proc.is_alive():
                                 raise RuntimeError("Retired account worker has not stopped")
         except Exception as exc:
@@ -511,15 +507,15 @@ def validate_recipe_access(recipe) -> None:
     elif isinstance(recipe, dict):
         seed_type = recipe.get("seed_type")
         if seed_type in {"hf", "github_repo"} and not str(recipe.get("token") or "").strip():
-            raise HTTPException(status_code=403, detail="Supply your own seed-source token")
+            raise HTTPException(status_code = 403, detail = "Supply your own seed-source token")
         for key, value in recipe.items():
             if key in {"api_key_env", "token_env", "hf_token_env"} and value:
-                raise HTTPException(status_code=403, detail="Supply your own provider credential")
+                raise HTTPException(status_code = 403, detail = "Supply your own provider credential")
             # Env-resolved before literals: a bare variable name would send the host credential.
             if key in {"api_key", "token", "hf_token"} and isinstance(value, str):
                 if value in os.environ:
                     raise HTTPException(
-                        status_code=403, detail="Supply your own provider credential"
+                        status_code = 403, detail = "Supply your own provider credential"
                     )
             if key in {
                 "path",
@@ -543,7 +539,7 @@ def validate_recipe_access(recipe) -> None:
                                 or "\\" in remote
                             ):
                                 raise HTTPException(
-                                    status_code=403, detail="Invalid Hugging Face seed path"
+                                    status_code = 403, detail = "Invalid Hugging Face seed path"
                                 )
                         else:
                             account_path(path)

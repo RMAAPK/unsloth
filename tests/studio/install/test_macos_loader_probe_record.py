@@ -38,9 +38,9 @@ PRODUCT_VERSION = "15.5.1"
 _REAL_MACOS_PRODUCT_VERSION = ILP.macos_product_version
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _clear_full_check(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_PREBUILT_FULL_CHECK", raising=False)
+    monkeypatch.delenv("UNSLOTH_PREBUILT_FULL_CHECK", raising = False)
     # platform.mac_ver() is empty off macOS, so the probe record would never be written
     # and every test here would read as "no evidence". Pin the host's own answer instead.
     monkeypatch.setattr(ILP, "macos_product_version", lambda: PRODUCT_VERSION)
@@ -49,44 +49,44 @@ def _clear_full_check(monkeypatch):
 def macos_host(**overrides):
     return llama_host(
         ILP.HostInfo,
-        system="Darwin",
-        machine="arm64",
-        macos_version=overrides.pop("macos_version", (15, 5)),
+        system = "Darwin",
+        machine = "arm64",
+        macos_version = overrides.pop("macos_version", (15, 5)),
         **overrides,
     )
 
 
 def choice_for(host) -> "ILP.AssetChoice":
     return ILP.AssetChoice(
-        repo=PUBLISHED_REPO,
-        tag=RELEASE_TAG,
-        name=f"llama-{UPSTREAM_TAG}-bin-{INSTALL_KIND}.tar.gz",
-        url=f"https://example.com/llama-{UPSTREAM_TAG}-bin-{INSTALL_KIND}.tar.gz",
-        source_label="published",
-        install_kind=INSTALL_KIND,
-        expected_sha256="a" * 64,
+        repo = PUBLISHED_REPO,
+        tag = RELEASE_TAG,
+        name = f"llama-{UPSTREAM_TAG}-bin-{INSTALL_KIND}.tar.gz",
+        url = f"https://example.com/llama-{UPSTREAM_TAG}-bin-{INSTALL_KIND}.tar.gz",
+        source_label = "published",
+        install_kind = INSTALL_KIND,
+        expected_sha256 = "a" * 64,
     )
 
 
 def checksums_for(choice) -> "ILP.ApprovedReleaseChecksums":
     logical = ILP.source_archive_logical_name(UPSTREAM_TAG)
     return ILP.ApprovedReleaseChecksums(
-        repo=PUBLISHED_REPO,
-        release_tag=RELEASE_TAG,
-        upstream_tag=UPSTREAM_TAG,
-        source_commit="deadbeef",
-        artifacts={
+        repo = PUBLISHED_REPO,
+        release_tag = RELEASE_TAG,
+        upstream_tag = UPSTREAM_TAG,
+        source_commit = "deadbeef",
+        artifacts = {
             logical: ILP.ApprovedArtifactHash(
-                asset_name=logical,
-                sha256="b" * 64,
-                repo="ggml-org/llama.cpp",
-                kind="upstream-source",
+                asset_name = logical,
+                sha256 = "b" * 64,
+                repo = "ggml-org/llama.cpp",
+                kind = "upstream-source",
             ),
             choice.name: ILP.ApprovedArtifactHash(
-                asset_name=choice.name,
-                sha256=choice.expected_sha256,
-                repo=PUBLISHED_REPO,
-                kind="prebuilt",
+                asset_name = choice.name,
+                sha256 = choice.expected_sha256,
+                repo = PUBLISHED_REPO,
+                kind = "prebuilt",
             ),
         },
     )
@@ -107,11 +107,11 @@ def build_install(
     """
     install_dir = tmp_path / "llama.cpp"
     runtime_dir = install_dir / "build" / "bin"
-    runtime_dir.mkdir(parents=True)
+    runtime_dir.mkdir(parents = True)
     for name in ("llama-server", "llama-quantize", "llama-diffusion-gemma-visual-server"):
         for directory in (install_dir, runtime_dir):
             binary = directory / name
-            binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            binary.write_text("#!/bin/sh\nexit 0\n", encoding = "utf-8")
             binary.chmod(0o755)
     # The libraries a real macos-arm64 bundle carries, one per group in
     # runtime_payload_health_groups: libllama-common and the split ggml libraries ship
@@ -131,32 +131,32 @@ def build_install(
         "libllama-quantize-impl.dylib",
     ):
         (runtime_dir / dylib).write_bytes(b"DYLIB")
-    (install_dir / "convert_hf_to_gguf.py").write_text("#!/usr/bin/env python3\n", encoding="utf-8")
-    (install_dir / "gguf-py" / "gguf").mkdir(parents=True)
+    (install_dir / "convert_hf_to_gguf.py").write_text("#!/usr/bin/env python3\n", encoding = "utf-8")
+    (install_dir / "gguf-py" / "gguf").mkdir(parents = True)
 
     choice = choice_for(host)
     ILP.write_prebuilt_metadata(
         install_dir,
-        host=host,
-        requested_tag="latest",
-        llama_tag=UPSTREAM_TAG,
-        release_tag=RELEASE_TAG,
-        choice=choice,
-        approved_checksums=checksums_for(choice),
-        prebuilt_fallback_used=False,
-        backend_request="auto",
-        macos_load_probe_passed=load_probe_passed,
+        host = host,
+        requested_tag = "latest",
+        llama_tag = UPSTREAM_TAG,
+        release_tag = RELEASE_TAG,
+        choice = choice,
+        approved_checksums = checksums_for(choice),
+        prebuilt_fallback_used = False,
+        backend_request = "auto",
+        macos_load_probe_passed = load_probe_passed,
     )
     return install_dir
 
 
 def marker_of(install_dir: Path) -> dict:
-    return json.loads((install_dir / "UNSLOTH_PREBUILT_INFO.json").read_text(encoding="utf-8"))
+    return json.loads((install_dir / "UNSLOTH_PREBUILT_INFO.json").read_text(encoding = "utf-8"))
 
 
 def write_marker(install_dir: Path, marker: dict) -> None:
     (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text(
-        json.dumps(marker, indent=2) + "\n", encoding="utf-8"
+        json.dumps(marker, indent = 2) + "\n", encoding = "utf-8"
     )
 
 
@@ -174,7 +174,7 @@ def count_spawns(monkeypatch) -> list[int]:
         install_dir,
         host,
         *,
-        loaded=None,
+        loaded = None,
         **_kwargs,
     ):
         calls[0] += 1
@@ -191,30 +191,30 @@ def matches_choice(install_dir: Path, host) -> bool:
     return ILP.existing_install_matches_choice(
         install_dir,
         host,
-        llama_tag=UPSTREAM_TAG,
-        release_tag=RELEASE_TAG,
-        choice=choice,
-        approved_checksums=checksums_for(choice),
+        llama_tag = UPSTREAM_TAG,
+        release_tag = RELEASE_TAG,
+        choice = choice,
+        approved_checksums = checksums_for(choice),
     )
 
 
 def fast_path(install_dir: Path, host) -> bool:
     route = ILP.BackendRoute(
-        backend=None,
-        host=host,
-        published_repo=PUBLISHED_REPO,
-        published_release_tag=RELEASE_TAG,
-        persist_llama_backend=None,
-        persist_rocm_gfx=None,
+        backend = None,
+        host = host,
+        published_repo = PUBLISHED_REPO,
+        published_release_tag = RELEASE_TAG,
+        persist_llama_backend = None,
+        persist_rocm_gfx = None,
     )
     return ILP.existing_install_current_without_plan(
         install_dir,
-        llama_tag=UPSTREAM_TAG,
-        published_repo=PUBLISHED_REPO,
-        published_release_tag=RELEASE_TAG,
-        backend_request="auto",
-        force_cpu=False,
-        route=route,
+        llama_tag = UPSTREAM_TAG,
+        published_repo = PUBLISHED_REPO,
+        published_release_tag = RELEASE_TAG,
+        backend_request = "auto",
+        force_cpu = False,
+        route = route,
     )
 
 
@@ -304,8 +304,8 @@ def test_a_marker_without_a_host_profile_still_probes(tmp_path: Path, monkeypatc
 
 
 def test_a_macos_upgrade_probes_again(tmp_path: Path, monkeypatch):
-    install_dir = build_install(tmp_path, macos_host(macos_version=(15, 5)))
-    upgraded = macos_host(macos_version=(26, 0))
+    install_dir = build_install(tmp_path, macos_host(macos_version = (15, 5)))
+    upgraded = macos_host(macos_version = (26, 0))
     calls = count_spawns(monkeypatch)
     # The minos read is the other half of the preflight and reads real Mach-O headers.
     monkeypatch.setattr(ILP, "macos_binary_minos_issues", lambda *a, **k: [])
@@ -315,7 +315,7 @@ def test_a_macos_upgrade_probes_again(tmp_path: Path, monkeypatch):
 
 
 def test_an_unknown_macos_version_still_probes(tmp_path: Path, monkeypatch):
-    host = macos_host(macos_version=None)
+    host = macos_host(macos_version = None)
     install_dir = build_install(tmp_path, host)
     calls = count_spawns(monkeypatch)
     monkeypatch.setattr(ILP, "_binary_image_runs", lambda *a, **k: True)
@@ -339,7 +339,7 @@ def test_a_replaced_binary_is_still_rejected(tmp_path: Path, monkeypatch):
     host = macos_host()
     install_dir = build_install(tmp_path, host)
     (install_dir / "build" / "bin" / "llama-server").write_text(
-        "#!/bin/sh\nexit 1\n# swapped\n", encoding="utf-8"
+        "#!/bin/sh\nexit 1\n# swapped\n", encoding = "utf-8"
     )
     calls = count_spawns(monkeypatch)
 
@@ -368,7 +368,7 @@ def test_a_bundle_that_cannot_load_is_rejected_when_it_is_probed(tmp_path: Path,
 def test_an_install_whose_probe_never_ran_is_not_recorded_as_a_pass(tmp_path: Path, monkeypatch):
     """The probe fails open, so "no issues" is not the same as "it loaded"."""
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
 
     assert ILP.MACOS_LOAD_PROBE_KEY not in marker_of(install_dir)
     calls = count_spawns(monkeypatch)
@@ -384,7 +384,7 @@ def test_a_timed_out_probe_reports_no_pass(tmp_path: Path, monkeypatch):
     binaries = [runtime_dir / "llama-server", runtime_dir / "llama-quantize"]
 
     def _timeout(*_args, **_kwargs):
-        raise subprocess.TimeoutExpired(cmd="llama-server", timeout=60)
+        raise subprocess.TimeoutExpired(cmd = "llama-server", timeout = 60)
 
     monkeypatch.setattr(ILP, "run_capture", _timeout)
     monkeypatch.setattr(ILP, "macos_binary_minos_issues", lambda *a, **k: [])
@@ -402,7 +402,7 @@ def test_a_probe_that_ran_reports_a_pass(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(
         ILP,
         "run_capture",
-        lambda *a, **k: types.SimpleNamespace(returncode=0, stdout="", stderr=""),
+        lambda *a, **k: types.SimpleNamespace(returncode = 0, stdout = "", stderr = ""),
     )
     monkeypatch.setattr(ILP, "macos_binary_minos_issues", lambda *a, **k: [])
 
@@ -426,7 +426,7 @@ def test_a_macos_patch_update_probes_again(tmp_path: Path, monkeypatch):
 def test_a_reuse_probe_that_passed_is_remembered(tmp_path: Path, monkeypatch):
     """Otherwise the skip is unreachable for every install not born with the record."""
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
     assert ILP.MACOS_LOAD_PROBE_KEY not in marker_of(install_dir)
 
     calls = count_spawns(monkeypatch)
@@ -445,7 +445,7 @@ def test_a_reuse_probe_that_passed_is_remembered(tmp_path: Path, monkeypatch):
 def test_a_legacy_size_only_marker_is_upgraded_by_a_passing_probe(tmp_path: Path, monkeypatch):
     """The shape every install written before this PR has: payload recorded, not hashed."""
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
     marker = marker_of(install_dir)
     for key, entry in marker["runtime_files"].items():
         if not key.endswith(("llama-server", "llama-quantize")):
@@ -467,7 +467,7 @@ def test_the_reuse_fast_paths_do_not_record_a_pass(tmp_path: Path, monkeypatch):
     """They probe build/bin only, so they never reach a root wrapper and cannot vouch
     for a record that a later run uses to skip starting one."""
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
     calls = count_spawns(monkeypatch)
 
     assert matches_choice(install_dir, host) is True
@@ -484,7 +484,7 @@ def test_a_broken_root_wrapper_is_not_blessed_into_the_record(tmp_path: Path, mo
     the next run would read that record as current and never start the wrapper again.
     """
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
     marker = marker_of(install_dir)
     for key, entry in marker["runtime_files"].items():  # the pre-change shape
         if not key.endswith(("llama-server", "llama-quantize")):
@@ -508,11 +508,11 @@ def test_a_broken_root_wrapper_is_not_blessed_into_the_record(tmp_path: Path, mo
 def test_a_probe_that_could_not_run_is_not_remembered(tmp_path: Path, monkeypatch):
     """Only a real load is evidence, so a fail-open probe must not persist one."""
     host = macos_host()
-    install_dir = build_install(tmp_path, host, load_probe_passed=False)
+    install_dir = build_install(tmp_path, host, load_probe_passed = False)
     monkeypatch.setattr(ILP, "macos_binary_minos_issues", lambda *a, **k: [])
 
     def _timeout(*_args, **_kwargs):
-        raise subprocess.TimeoutExpired(cmd="llama-server", timeout=60)
+        raise subprocess.TimeoutExpired(cmd = "llama-server", timeout = 60)
 
     monkeypatch.setattr(ILP, "run_capture", _timeout)
     monkeypatch.setattr(ILP, "_binary_image_runs", lambda *a, **k: True)
@@ -540,14 +540,14 @@ def test_the_recorded_version_carries_the_rsr_and_build_fields(monkeypatch):
     def _sw_vers(cmd, **_kwargs):
         seen.append(cmd)
         return types.SimpleNamespace(
-            returncode=0,
-            stdout=(
+            returncode = 0,
+            stdout = (
                 "ProductName:\tmacOS\n"
                 "ProductVersion:\t13.3.1\n"
                 "ProductVersionExtra:\t(a)\n"
                 "BuildVersion:\t22E772610a\n"
             ),
-            stderr="",
+            stderr = "",
         )
 
     monkeypatch.setattr(ILP.subprocess, "run", _sw_vers)
@@ -561,9 +561,9 @@ def test_no_rsr_installed_still_yields_a_version(monkeypatch):
 
     def _sw_vers(_cmd, **_kwargs):
         return types.SimpleNamespace(
-            returncode=0,
-            stdout="ProductName:\tmacOS\nProductVersion:\t15.5.1\nBuildVersion:\t24F74\n",
-            stderr="",
+            returncode = 0,
+            stdout = "ProductName:\tmacOS\nProductVersion:\t15.5.1\nBuildVersion:\t24F74\n",
+            stderr = "",
         )
 
     monkeypatch.setattr(ILP.subprocess, "run", _sw_vers)

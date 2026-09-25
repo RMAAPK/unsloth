@@ -20,14 +20,12 @@ class DatabaseRAGBridge:
     def _init_supabase(self):
         # Uses PostgREST / supabase-py
         from supabase import create_client, Client
-
         url, key = self.connection_string.split("|")
         self.client: Client = create_client(url, key)
 
     def _init_neon(self):
         # Uses standard psycopg2 for Neon Postgres pgvector
         import psycopg2
-
         self.conn = psycopg2.connect(self.connection_string)
 
     def _init_sqlite(self):

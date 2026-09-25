@@ -76,25 +76,25 @@ except:
 
 @triton.jit
 def weight_dequant_kernel(x_ptr, s_ptr, y_ptr, M, N, BLOCK_SIZE: tl.constexpr):
-    pid_m = tl.program_id(axis=0)
-    pid_n = tl.program_id(axis=1)
+    pid_m = tl.program_id(axis = 0)
+    pid_n = tl.program_id(axis = 1)
     n = tl.cdiv(N, BLOCK_SIZE)
     offs_m = pid_m * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     offs_n = pid_n * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     # tl.arange is int32, so offs_m * N overflows past 2**31 elements (flattened MoE expert stacks); index in int64.
     offs = offs_m[:, None].to(tl.int64) * N + offs_n[None, :].to(tl.int64)
     mask = (offs_m[:, None] < M) & (offs_n[None, :] < N)
-    x = tl.load(x_ptr + offs, mask=mask).to(tl.float32)
+    x = tl.load(x_ptr + offs, mask = mask).to(tl.float32)
     s = tl.load(s_ptr + pid_m * n + pid_n)
     y = x * s
-    tl.store(y_ptr + offs, y, mask=mask)
+    tl.store(y_ptr + offs, y, mask = mask)
 
 
 def weight_dequant_block(
     x: torch.Tensor,
     s: torch.Tensor,
     block_size: int = 128,
-    dtype=torch.bfloat16,
+    dtype = torch.bfloat16,
 ) -> torch.Tensor:
     if not x.is_contiguous():
         x = x.contiguous()
@@ -102,20 +102,20 @@ def weight_dequant_block(
         s = s.contiguous()
     assert x.dim() == 2 and s.dim() == 2
     M, N = x.size()
-    y = torch.empty_like(x, dtype=dtype)
+    y = torch.empty_like(x, dtype = dtype)
     grid = lambda meta: (
         triton.cdiv(M, meta["BLOCK_SIZE"]),
         triton.cdiv(N, meta["BLOCK_SIZE"]),
     )
     with _fp8_triton_device_context(x):
-        weight_dequant_kernel[grid](x, s, y, M, N, BLOCK_SIZE=block_size)
+        weight_dequant_kernel[grid](x, s, y, M, N, BLOCK_SIZE = block_size)
     return y
 
 
 def weight_dequant(
     x: torch.Tensor,
     s: torch.Tensor,
-    dtype=torch.bfloat16,
+    dtype = torch.bfloat16,
 ):
     # Per-tensor scale: single value for entire weight matrix
     if s.numel() == 1:
@@ -140,7 +140,7 @@ def weight_dequant(
 # Copied from huggingface.co/deepseek-ai/DeepSeek-V3 inference/kernel.py
 @triton.jit
 def act_quant_kernel(x_ptr, y_ptr, s_ptr, BLOCK_SIZE: tl.constexpr):
-    pid = tl.program_id(axis=0)
+    pid = tl.program_id(axis = 0)
     offs = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     x = tl.load(x_ptr + offs).to(tl.float32)
     s = tl.max(tl.abs(x)) / 448.0
@@ -157,14 +157,14 @@ def act_quant(x: torch.Tensor, block_size: int = 128) -> tuple[torch.Tensor, tor
     if not x.is_contiguous():
         x = x.contiguous()
     assert x.shape[-1] % block_size == 0
-    y = torch.empty_like(x, dtype=torch.float8_e4m3fn)
-    s = x.new_empty(*x.size()[:-1], x.size(-1) // block_size, dtype=torch.float32)
+    y = torch.empty_like(x, dtype = torch.float8_e4m3fn)
+    s = x.new_empty(*x.size()[:-1], x.size(-1) // block_size, dtype = torch.float32)
 
     def grid(meta):
         return (triton.cdiv(x.numel(), meta["BLOCK_SIZE"]),)
 
     with _fp8_triton_device_context(x):
-        act_quant_kernel[grid](x, y, s, BLOCK_SIZE=block_size)
+        act_quant_kernel[grid](x, y, s, BLOCK_SIZE = block_size)
     return y, s
 
 
@@ -202,7 +202,7 @@ def _w8a8_block_fp8_matmul(
     store the result in output tensor `C`.
     """
 
-    pid = tl.program_id(axis=0)
+    pid = tl.program_id(axis = 0)
     num_pid_m = tl.cdiv(M, BLOCK_SIZE_M)
     num_pid_n = tl.cdiv(N, BLOCK_SIZE_N)
     num_pid_in_group = GROUP_SIZE_M * num_pid_n
@@ -222,10 +222,10 @@ def _w8a8_block_fp8_matmul(
     offs_bsn = offs_bn // group_n
     Bs_ptrs = Bs + offs_bsn * stride_Bs_n
 
-    accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
+    accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype = tl.float32)
     for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K, other=0.0)
-        b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0.0)
+        a = tl.load(a_ptrs, mask = offs_k[None, :] < K - k * BLOCK_SIZE_K, other = 0.0)
+        b = tl.load(b_ptrs, mask = offs_k[:, None] < K - k * BLOCK_SIZE_K, other = 0.0)
 
         k_start = k * BLOCK_SIZE_K
         offs_ks = k_start // group_k
@@ -247,7 +247,7 @@ def _w8a8_block_fp8_matmul(
     offs_cn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
     c_ptrs = C + stride_cm * offs_cm[:, None] + stride_cn * offs_cn[None, :]
     c_mask = (offs_cm[:, None] < M) & (offs_cn[None, :] < N)
-    tl.store(c_ptrs, c, mask=c_mask)
+    tl.store(c_ptrs, c, mask = c_mask)
 
 
 def w8a8_block_fp8_matmul_triton(
@@ -275,7 +275,7 @@ def w8a8_block_fp8_matmul_triton(
 
     M = A.numel() // A.shape[-1]
     C_shape = A.shape[:-1] + (N,)
-    C = A.new_empty(C_shape, dtype=output_dtype)
+    C = A.new_empty(C_shape, dtype = output_dtype)
 
     BLOCK_SIZE_M = 128
     if M < BLOCK_SIZE_M:
@@ -307,10 +307,10 @@ def w8a8_block_fp8_matmul_triton(
             As.stride(-1),
             Bs.stride(1),
             Bs.stride(0),
-            BLOCK_SIZE_M=BLOCK_SIZE_M,
-            BLOCK_SIZE_N=BLOCK_SIZE_N,
-            BLOCK_SIZE_K=BLOCK_SIZE_K,
-            GROUP_SIZE_M=8,
+            BLOCK_SIZE_M = BLOCK_SIZE_M,
+            BLOCK_SIZE_N = BLOCK_SIZE_N,
+            BLOCK_SIZE_K = BLOCK_SIZE_K,
+            GROUP_SIZE_M = 8,
         )
     return C
 
@@ -329,7 +329,7 @@ def torchao_block_matmul(
             act_scale.contiguous(),
             weight_q.contiguous(),
             weight_scale.contiguous(),
-            block_size=block_size[1],
+            block_size = block_size[1],
         )
     return out.to(output_dtype)
 
@@ -342,14 +342,14 @@ fp8_block_matmul = (
 )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize = None)
 def _fp8_device_lacks_kernel(device):
     # A device's capability cannot change, so look it up once. Tests that simulate another
     # card must call _fp8_device_lacks_kernel.cache_clear().
     return torch.version.hip is None and torch.cuda.get_device_capability(device) < (8, 9)
 
 
-def _fp8_kernel_unsupported(tensor, kernel_dtype=None):
+def _fp8_kernel_unsupported(tensor, kernel_dtype = None):
     """True when triton here cannot compile this fp8 dtype, so kernels taking it must be avoided.
 
     triton adds fp8e4nv only from sm89 on, so compare the full (major, minor): sm89 (4090,
@@ -377,7 +377,7 @@ def _torch_blockwise_dequant(weight, weight_scale, block_size, out_dtype):
     # unrolls one graph per chunk, which measured slower than eager.
     with torch.no_grad():
         m, n = weight.shape
-        out = torch.empty(m, n, dtype=out_dtype, device=weight.device)
+        out = torch.empty(m, n, dtype = out_dtype, device = weight.device)
         rows = max(
             block_size[0], (_DEQUANT_CHUNK_ELEMS // max(n, 1)) // block_size[0] * block_size[0]
         )
@@ -415,7 +415,7 @@ def _blockwise_weight_dequant_any_shape(weight, weight_scale, block_size, out_dt
         return _torch_blockwise_dequant(weight, weight_scale, block_size, out_dtype)
     # Even tiling with square blocks: pass the real block size, since weight_dequant would silently
     # default to 128 and dequantize wrongly.
-    return weight_dequant_block(weight, weight_scale, block_size=block_size[0], dtype=out_dtype)
+    return weight_dequant_block(weight, weight_scale, block_size = block_size[0], dtype = out_dtype)
 
 
 class FP8BlockQuantLinear(torch.autograd.Function):
@@ -478,7 +478,7 @@ class FP8BlockQuantLinear(torch.autograd.Function):
             scale,
             weight_scale,
             block_size,
-            output_dtype=X.dtype,
+            output_dtype = X.dtype,
         )
         ctx.weight = weight
         ctx.weight_scale = original_weight_scale
@@ -507,7 +507,7 @@ class FbgemmFp8Linear_matmul(torch.autograd.Function):
         x,
         weight,
         weight_scale,
-        bias=None,
+        bias = None,
     ):
         if weight.shape[0] == weight_scale.shape[0] and (
             weight.shape[0] % 8 == 0 and weight.shape[1] % 8 == 0
@@ -521,7 +521,7 @@ class FbgemmFp8Linear_matmul(torch.autograd.Function):
             # here produces gibberish, so move the output instead.
             x_quantized, x_scale = torch.ops.fbgemm.quantize_fp8_per_row(
                 x.view(-1, x.shape[-1]).contiguous(),
-                scale_ub=getattr(weight, "input_scale_ub", None),
+                scale_ub = getattr(weight, "input_scale_ub", None),
             )
             weight_scale_float32 = weight_scale.to(torch.float32)
 
@@ -531,7 +531,7 @@ class FbgemmFp8Linear_matmul(torch.autograd.Function):
                 weight_scale = weight_scale.contiguous()
 
             output = torch.ops.fbgemm.f8f8bf16_rowwise(
-                x_quantized, weight, x_scale, weight_scale_float32, use_fast_accum=True
+                x_quantized, weight, x_scale, weight_scale_float32, use_fast_accum = True
             )
             output = output + bias if bias is not None else output
             # Move output back to x's device (the move-input path produced gibberish)
@@ -569,7 +569,7 @@ def fbgemm_fp8_linear(
     X,
     weight,
     weight_scale,
-    bias=None,
+    bias = None,
 ):
     return FbgemmFp8Linear_matmul.apply(X, weight, weight_scale, bias)
 
@@ -581,7 +581,7 @@ class FP8_fbgemm_block_linear(torch.autograd.Function):
         X,
         weight,
         weight_scale,
-        bias=None,
+        bias = None,
     ):
         orig_shape = X.shape
         X = X.reshape(-1, X.shape[-1])  # reshape, not view: X may be strided
@@ -670,7 +670,7 @@ def fp8_fbgemm_block_linear(
     X,
     weight,
     weight_scale,
-    bias=None,
+    bias = None,
 ):
     return FP8_fbgemm_block_linear.apply(X, weight, weight_scale, bias)
 
@@ -679,11 +679,11 @@ def test_has_fbgemm():
     # Probe whether the faster FBGEMM works on this GPU: RTX 4090/5090 and SM100 (Blackwell B200/B100)
     # fail with CUTLASS SM90 kernels.
     M, N, K = 128, 128, 128
-    xq = torch.ones(M, K, dtype=torch.float8_e4m3fn, device="cuda")
+    xq = torch.ones(M, K, dtype = torch.float8_e4m3fn, device = "cuda")
     wq = xq
     M, K = xq.shape
     N, _ = wq.shape
-    block_scale = torch.ones(M // 128, K // 128, dtype=torch.float32, device="cuda")
+    block_scale = torch.ones(M // 128, K // 128, dtype = torch.float32, device = "cuda")
     has_fbgemm = False
     try:
         out = torch.ops.fbgemm.f8f8bf16_blockwise(xq, wq, block_scale, block_scale)
@@ -731,7 +731,6 @@ try:
         # Suppress CUDA printf during the probe: on Blackwell (SM100) FBGEMM's SM90 CUTLASS kernel floods
         # stdout with "Arch conditional MMA" before aborting.
         from unsloth.import_fixes import suppress_cuda_printf
-
         with suppress_cuda_printf():
             _has_fbgemm = test_has_fbgemm()
         if _has_fbgemm:
@@ -749,7 +748,7 @@ def fp8_linear(
     X,
     weight,
     weight_scale,
-    bias=None,
+    bias = None,
 ):
     # Per-tensor (scalar scale) or block FP8 (2D scale, multiple columns).
     if weight_scale.numel() == 1 or (weight_scale.ndim == 2 and weight_scale.shape[1] > 1):
@@ -760,7 +759,7 @@ def fp8_linear(
     return out
 
 
-def module_forward_patch(forward_function, scale_attr="weight_scale"):
+def module_forward_patch(forward_function, scale_attr = "weight_scale"):
     def patched_forward(self, X):
         return forward_function(X, self.weight, getattr(self, scale_attr))
 

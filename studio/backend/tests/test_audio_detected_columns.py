@@ -76,7 +76,7 @@ def audio_trainer(monkeypatch):
 )
 def test_resolves_the_columns_the_check_accepted(audio_trainer, row, expected):
     dataset = Dataset.from_list([row])
-    check = check_dataset_format(dataset, is_vlm=False)
+    check = check_dataset_format(dataset, is_vlm = False)
     assert check["requires_manual_mapping"] is False
 
     resolved = audio_trainer._resolve_audio_columns(dataset, None)

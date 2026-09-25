@@ -49,7 +49,6 @@ _INFERENCE_ROUTES = frozenset(
 
 def is_empty_bearer(header: str) -> bool:
     from fastapi.security.utils import get_authorization_scheme_param
-
     scheme, token = get_authorization_scheme_param(header)
     return scheme.lower() == "bearer" and not token
 
@@ -159,7 +158,6 @@ async def _settings_async() -> tuple[str, bool, int]:
 
 async def _refresh_settings_async() -> tuple[str, bool, int]:
     from starlette.concurrency import run_in_threadpool
-
     while True:
         scope, tools, pending, generation = await run_in_threadpool(_settings_once)
         if not pending:
@@ -177,7 +175,7 @@ def _async_settings_task() -> asyncio.Task:
             _async_settings_tasks[loop] = weakref.ref(task)
             _async_settings_pending_tasks.add(task)
             task.add_done_callback(
-                lambda completed, loop_ref=weakref.ref(loop): _release_async_settings_task(
+                lambda completed, loop_ref = weakref.ref(loop): _release_async_settings_task(
                     completed, loop_ref
                 )
             )
@@ -242,7 +240,7 @@ def set_keyless_api_access(value: Any, *, tools: Any = None) -> tuple[str, bool]
                     KEYLESS_API_ACCESS_SETTING_KEY: scope,
                     KEYLESS_API_TOOLS_SETTING_KEY: allow_tools,
                 },
-                read_back=False,
+                read_back = False,
             )
             with _cache_lock:
                 _settings_generation += 1
@@ -291,7 +289,6 @@ def access_exposure(app_state: Any) -> Optional[str]:
         )
     if bool(getattr(app_state, "lan_access_launch_managed", False)):
         from utils.lan_access_settings import _normalized_ip, _private_non_loopback
-
         addresses = tuple(
             _normalized_ip(value)
             for value in (getattr(app_state, "lan_access_launch_addresses", ()) or ())
@@ -366,7 +363,6 @@ def _public_tunnel_active(app_state: Any) -> bool:
         return True
     try:
         from utils.host_policy import tunnel_connector_active
-
         return tunnel_connector_active()
     except Exception:
         return True
@@ -540,7 +536,6 @@ def request_was_admitted_keyless(request: Any) -> Optional[bool]:
         return None
     if value is True:
         from auth.policy import installation_has_managed_accounts
-
         if installation_has_managed_accounts():
             return False
     return value if isinstance(value, bool) else None
@@ -583,7 +578,6 @@ def asgi_request_is_keyless(asgi_scope, settings: Optional[tuple[str, bool]] = N
     """Whether this ASGI request is admitted by the setting rather than by a credential. Middleware-side twin of ``auth.authentication.admitted_without_credential``, reading the raw scope because it runs before the request object exists. An Unsloth session and a working API key both authenticate as themselves, so neither is keyless: applying the tool restriction to an existing API client would take away tools it already had."""
     try:
         from starlette.requests import Request
-
         request = Request(asgi_scope)
     except Exception:
         return False

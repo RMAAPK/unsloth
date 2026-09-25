@@ -68,7 +68,7 @@ from utils.utils import safe_curated_detail, log_and_http_error
 logger = structlog.get_logger(__name__)
 
 
-router = APIRouter(dependencies=[Depends(get_current_subject)])
+router = APIRouter(dependencies = [Depends(get_current_subject)])
 
 _MAX_RESPONSES_CONNECTIVITY_MODELS = 5
 _PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS = 15.0
@@ -76,18 +76,18 @@ _PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS = 15.0
 
 def _provider_response(row: dict) -> ProviderResponse:
     return ProviderResponse(
-        id=row["id"],
-        provider_type=row["provider_type"],
-        display_name=row["display_name"],
-        base_url=row["base_url"],
-        api_type=row.get("api_type", "chat_completions"),
-        is_enabled=bool(row["is_enabled"]),
-        has_api_key=credential_secrets.has_secret(
+        id = row["id"],
+        provider_type = row["provider_type"],
+        display_name = row["display_name"],
+        base_url = row["base_url"],
+        api_type = row.get("api_type", "chat_completions"),
+        is_enabled = bool(row["is_enabled"]),
+        has_api_key = credential_secrets.has_secret(
             credential_secrets.PROVIDER_API_KEY_KIND,
             row["id"],
         ),
-        auth_kind=("chatgpt_oauth" if row["provider_type"] == "openai_codex" else "api_key"),
-        auth_status=(
+        auth_kind = ("chatgpt_oauth" if row["provider_type"] == "openai_codex" else "api_key"),
+        auth_status = (
             openai_codex_auth.auth_status(row["id"])
             if row["provider_type"] == "openai_codex"
             else (
@@ -98,11 +98,11 @@ def _provider_response(row: dict) -> ProviderResponse:
                 else "disconnected"
             )
         ),
-        models=row.get("models") or [],
-        available_models=row.get("available_models") or [],
-        max_output_tokens=row.get("max_output_tokens"),
-        created_at=row["created_at"],
-        updated_at=row["updated_at"],
+        models = row.get("models") or [],
+        available_models = row.get("available_models") or [],
+        max_output_tokens = row.get("max_output_tokens"),
+        created_at = row["created_at"],
+        updated_at = row["updated_at"],
     )
 
 
@@ -121,9 +121,9 @@ def _validate_provider_auth_contract(
     if info.get("auth_kind") != "chatgpt_oauth":
         return
     if encrypted_api_key or clear_api_key:
-        raise HTTPException(status_code=400, detail="ChatGPT subscriptions do not use API keys.")
+        raise HTTPException(status_code = 400, detail = "ChatGPT subscriptions do not use API keys.")
     if base_url is not None and (not updating or base_url != info["base_url"]):
-        raise HTTPException(status_code=400, detail="ChatGPT subscription routing is fixed.")
+        raise HTTPException(status_code = 400, detail = "ChatGPT subscription routing is fixed.")
     if models is None:
         return
     # Same order of evidence the chat route uses, so a save cannot persist a model that every send would then
@@ -149,7 +149,7 @@ def _validate_provider_auth_contract(
             # unrelated edit such as a rename unsavable.
             allowed |= set(persisted_models)
     if not models or not set(models).issubset(allowed):
-        raise HTTPException(status_code=400, detail="Choose only curated Codex models.")
+        raise HTTPException(status_code = 400, detail = "Choose only curated Codex models.")
 
 
 def _validate_max_output_tokens_contract(
@@ -164,8 +164,8 @@ def _validate_max_output_tokens_contract(
     field serialises as null rather than as an omission, and clearing an absent override is a no-op."""
     if field_was_set and value is not None and provider_type == "openai_codex":
         raise HTTPException(
-            status_code=400,
-            detail="ChatGPT subscriptions use a fixed Max Tokens limit.",
+            status_code = 400,
+            detail = "ChatGPT subscriptions use a fixed Max Tokens limit.",
         )
 
 
@@ -182,7 +182,7 @@ async def get_public_key(current_subject: str = Depends(get_current_subject)):
     }
 
 
-@router.get("/registry", response_model=list[ProviderRegistryEntry])
+@router.get("/registry", response_model = list[ProviderRegistryEntry])
 async def list_registry(
     include_hidden: bool = False, current_subject: str = Depends(get_current_subject)
 ):
@@ -194,7 +194,7 @@ async def list_registry(
     which does not know to filter on ``hidden``, keeps seeing exactly the list
     it saw before and cannot render them as duplicate dropdown options.
     """
-    return list_available_providers(include_hidden=include_hidden)
+    return list_available_providers(include_hidden = include_hidden)
 
 
 @router.get("/pricing")
@@ -205,14 +205,14 @@ async def get_pricing_snapshot(current_subject: str = Depends(get_current_subjec
 
 
 # FastAPI offloads sync reads; mutations stay on-loop to preserve atomic sequences.
-@router.get("/", response_model=list[ProviderResponse])
+@router.get("/", response_model = list[ProviderResponse])
 def list_provider_configs(_current_subject: str = Depends(get_current_subject)):
     """List all saved provider configurations."""
     rows = providers_db.list_providers()
     return [_provider_response(row) for row in rows]
 
 
-@router.post("/", response_model=ProviderResponse, status_code=201)
+@router.post("/", response_model = ProviderResponse, status_code = 201)
 async def create_provider_config(
     payload: ProviderCreate,
     credential: tuple = Depends(get_current_credential),
@@ -224,8 +224,8 @@ async def create_provider_config(
     info = get_provider_info(payload.provider_type)
     if info is None:
         raise HTTPException(
-            status_code=400,
-            detail=f"Unknown provider type: {payload.provider_type}. "
+            status_code = 400,
+            detail = f"Unknown provider type: {payload.provider_type}. "
             f"Use GET /api/providers/registry to see available types.",
         )
 
@@ -237,10 +237,10 @@ async def create_provider_config(
 
     _validate_provider_auth_contract(
         info,
-        encrypted_api_key=payload.encrypted_api_key,
-        base_url=payload.base_url,
-        models=payload.models,
-        updating=False,
+        encrypted_api_key = payload.encrypted_api_key,
+        base_url = payload.base_url,
+        models = payload.models,
+        updating = False,
     )
 
     base_url = payload.base_url or info["base_url"]
@@ -250,7 +250,7 @@ async def create_provider_config(
         try:
             base_url = validate_provider_base_url(base_url)
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from None
+            raise HTTPException(status_code = 400, detail = str(exc)) from None
 
     api_key = resolve_provider_api_key_or_400(None, payload.encrypted_api_key)
     provider_id = uuid.uuid4().hex[:16]
@@ -259,14 +259,14 @@ async def create_provider_config(
         credential_secrets.get_or_create_credential_encryption_key()
     with current_credential_write(credential):
         providers_db.create_provider(
-            id=provider_id,
-            provider_type=payload.provider_type,
-            display_name=payload.display_name,
-            base_url=base_url,
-            models=payload.models,
-            available_models=payload.available_models,
-            max_output_tokens=payload.max_output_tokens,
-            api_type=payload.api_type,
+            id = provider_id,
+            provider_type = payload.provider_type,
+            display_name = payload.display_name,
+            base_url = base_url,
+            models = payload.models,
+            available_models = payload.available_models,
+            max_output_tokens = payload.max_output_tokens,
+            api_type = payload.api_type,
         )
         try:
             if api_key:
@@ -279,7 +279,7 @@ async def create_provider_config(
     return _provider_response(row)
 
 
-@router.put("/{provider_id}", response_model=ProviderResponse)
+@router.put("/{provider_id}", response_model = ProviderResponse)
 @serialize_provider_config
 async def update_provider_config(
     provider_id: str,
@@ -292,7 +292,7 @@ async def update_provider_config(
     require_ui_session(via_api_key)
     existing = providers_db.get_provider(provider_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(status_code = 404, detail = "Provider not found")
 
     existing_info = get_provider_info(existing["provider_type"]) or {}
     max_output_tokens_requested = "max_output_tokens" in payload.model_fields_set
@@ -331,23 +331,23 @@ async def update_provider_config(
                 openai_codex_auth.CodexAuthError,
                 openai_codex_client.CodexReauthorizationError,
             ) as exc:
-                raise HTTPException(status_code=401, detail=str(exc)) from exc
+                raise HTTPException(status_code = 401, detail = str(exc)) from exc
     _validate_provider_auth_contract(
         existing_info,
-        encrypted_api_key=payload.encrypted_api_key,
-        base_url=payload.base_url,
-        models=payload.models,
-        updating=True,
-        clear_api_key=payload.clear_api_key,
-        provider_id=provider_id,
-        persisted_models=persisted_models,
-        validated_account=validated_account,
+        encrypted_api_key = payload.encrypted_api_key,
+        base_url = payload.base_url,
+        models = payload.models,
+        updating = True,
+        clear_api_key = payload.clear_api_key,
+        provider_id = provider_id,
+        persisted_models = persisted_models,
+        validated_account = validated_account,
     )
 
     if payload.clear_api_key and payload.encrypted_api_key:
         raise HTTPException(
-            status_code=400,
-            detail="Cannot replace and clear an API key in the same request",
+            status_code = 400,
+            detail = "Cannot replace and clear an API key in the same request",
         )
 
     metadata_fields = {
@@ -368,7 +368,7 @@ async def update_provider_config(
         try:
             base_url = validate_provider_base_url(base_url)
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from None
+            raise HTTPException(status_code = 400, detail = str(exc)) from None
 
     replacement_api_key = None
     if payload.encrypted_api_key:
@@ -377,31 +377,31 @@ async def update_provider_config(
             provider_id, payload.encrypted_api_key
         )
         if not replacement_api_key:
-            raise HTTPException(status_code=400, detail="API key cannot be empty")
+            raise HTTPException(status_code = 400, detail = "API key cannot be empty")
 
     metadata_updates: dict = {}
     if metadata_requested:
         metadata_updates = dict(
-            id=provider_id,
-            display_name=payload.display_name,
-            base_url=base_url,
-            is_enabled=payload.is_enabled,
-            models=payload.models,
-            available_models=payload.available_models,
-            api_type=payload.api_type,
+            id = provider_id,
+            display_name = payload.display_name,
+            base_url = base_url,
+            is_enabled = payload.is_enabled,
+            models = payload.models,
+            available_models = payload.available_models,
+            api_type = payload.api_type,
         )
         if max_output_tokens_requested:
             metadata_updates["max_output_tokens"] = payload.max_output_tokens
 
     # The row snapshot this request found, keyed the way update_provider takes it.
     _restorable = dict(
-        display_name=existing["display_name"],
-        base_url=existing["base_url"],
-        is_enabled=bool(existing["is_enabled"]),
-        models=existing.get("models") or [],
-        available_models=existing.get("available_models") or [],
-        max_output_tokens=existing.get("max_output_tokens"),
-        api_type=existing.get("api_type", "chat_completions"),
+        display_name = existing["display_name"],
+        base_url = existing["base_url"],
+        is_enabled = bool(existing["is_enabled"]),
+        models = existing.get("models") or [],
+        available_models = existing.get("available_models") or [],
+        max_output_tokens = existing.get("max_output_tokens"),
+        api_type = existing.get("api_type", "chat_completions"),
     )
 
     def _current_matches(current: dict, field: str, written) -> bool:
@@ -438,9 +438,9 @@ async def update_provider_config(
         if not undo:
             return
         try:
-            providers_db.update_provider(id=provider_id, **undo)
+            providers_db.update_provider(id = provider_id, **undo)
         except Exception:
-            logger.exception("provider.update_metadata_rollback_failed", provider_id=provider_id)
+            logger.exception("provider.update_metadata_rollback_failed", provider_id = provider_id)
 
     with current_credential_write(credential):
         credential_requested = replacement_api_key is not None or payload.clear_api_key
@@ -448,17 +448,17 @@ async def update_provider_config(
             # Metadata and the saved key share studio.db.  Commit them together so
             # another process can never route to the new endpoint with the old key.
             with providers_db.provider_bundle_transaction() as connection:
-                providers_db.update_provider(**metadata_updates, connection=connection)
+                providers_db.update_provider(**metadata_updates, connection = connection)
                 if replacement_api_key is not None:
                     credential_secrets.save_provider_api_key(
                         provider_id,
                         replacement_api_key,
-                        connection=connection,
+                        connection = connection,
                     )
                 else:
                     credential_secrets.delete_provider_api_key(
                         provider_id,
-                        connection=connection,
+                        connection = connection,
                     )
         else:
             if metadata_requested:
@@ -469,7 +469,7 @@ async def update_provider_config(
                 credential_secrets.delete_provider_api_key(provider_id)
 
     if not metadata_requested and not payload.encrypted_api_key and not payload.clear_api_key:
-        raise HTTPException(status_code=400, detail="No fields to update")
+        raise HTTPException(status_code = 400, detail = "No fields to update")
 
     row = providers_db.get_provider(provider_id)
     if existing_info.get("auth_kind") == "chatgpt_oauth" and payload.models is not None:
@@ -491,7 +491,7 @@ async def update_provider_config(
     return _provider_response(row)
 
 
-@router.put("/{provider_id}/api-key/migrate", response_model=ProviderResponse)
+@router.put("/{provider_id}/api-key/migrate", response_model = ProviderResponse)
 @serialize_provider_config
 async def migrate_provider_api_key(
     provider_id: str,
@@ -502,19 +502,19 @@ async def migrate_provider_api_key(
     """Insert a browser legacy key only when this provider has no saved key."""
     require_ui_session(via_api_key)
     if providers_db.get_provider(provider_id) is None:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(status_code = 404, detail = "Provider not found")
     api_key = resolve_provider_api_key_or_400(
-        None, payload.encrypted_api_key, allow_saved_key=False
+        None, payload.encrypted_api_key, allow_saved_key = False
     )
     if not api_key:
-        raise HTTPException(status_code=400, detail="API key cannot be empty")
+        raise HTTPException(status_code = 400, detail = "API key cannot be empty")
     credential_secrets.get_or_create_credential_encryption_key()
     with current_credential_write(credential):
         credential_secrets.save_provider_api_key_if_absent(provider_id, api_key)
     return _provider_response(providers_db.get_provider(provider_id))
 
 
-@router.delete("/{provider_id}", status_code=204)
+@router.delete("/{provider_id}", status_code = 204)
 @serialize_provider_config
 async def delete_provider_config(
     provider_id: str,
@@ -523,7 +523,7 @@ async def delete_provider_config(
 ):
     """Idempotently delete a saved provider and its installation credential."""
     if account_access.managed_account() and providers_db.get_provider(provider_id) is None:
-        raise HTTPException(status_code=404, detail="Provider config not found")
+        raise HTTPException(status_code = 404, detail = "Provider config not found")
     require_ui_session(via_api_key)
     await openai_codex_auth.cancel_provider_flows(provider_id)
     credential_secrets.get_or_create_credential_encryption_key()
@@ -566,7 +566,7 @@ async def delete_provider_config(
                         )
                 except Exception:
                     logger.exception(
-                        "provider.delete_credential_rollback_failed", provider_id=provider_id
+                        "provider.delete_credential_rollback_failed", provider_id = provider_id
                     )
                 raise
             # The plan catalog is held per connection in this process and is only released by
@@ -585,16 +585,16 @@ def _bind_saved_provider_target(payload):
     config = providers_db.get_provider(payload.provider_id)
     if config is None:
         raise HTTPException(
-            status_code=404,
-            detail=f"Provider config not found: {payload.provider_id}",
+            status_code = 404,
+            detail = f"Provider config not found: {payload.provider_id}",
         )
     if not config["is_enabled"]:
         raise HTTPException(
-            status_code=400,
-            detail=f"Provider '{config['display_name']}' is disabled.",
+            status_code = 400,
+            detail = f"Provider '{config['display_name']}' is disabled.",
         )
     return payload.model_copy(
-        update={
+        update = {
             "provider_type": config["provider_type"],
             "base_url": config["base_url"],
             "api_type": config.get("api_type", "chat_completions"),
@@ -620,9 +620,9 @@ async def _test_custom_provider_connectivity(
 
     if models is not None and api_type != "responses":
         return ProviderTestResult(
-            success=True,
-            message=f"Connected successfully. Found {len(models)} model(s).",
-            models_count=len(models),
+            success = True,
+            message = f"Connected successfully. Found {len(models)} model(s).",
+            models_count = len(models),
         )
 
     responses_model_ids: list[str] = []
@@ -638,29 +638,29 @@ async def _test_custom_provider_connectivity(
                 break
         if not responses_model_ids:
             return ProviderTestResult(
-                success=False,
-                message=(
+                success = False,
+                message = (
                     "Connection failed: /models responded, but no model ID was available "
                     "to test the Responses endpoint."
                 ),
-                models_count=len(models),
+                models_count = len(models),
             )
         model_id = responses_model_ids[0]
 
     if not model_id:
         if models is not None:
             return ProviderTestResult(
-                success=True,
-                message=f"Connected successfully. Found {len(models)} model(s).",
-                models_count=len(models),
+                success = True,
+                message = f"Connected successfully. Found {len(models)} model(s).",
+                models_count = len(models),
             )
         return ProviderTestResult(
-            success=False,
-            message=(
+            success = False,
+            message = (
                 "Connection failed: could not reach /models and no model ID was "
                 f"provided to test further. {safe_curated_detail(models_error)}"
             ),
-            models_count=None,
+            models_count = None,
         )
 
     if api_type == "responses":
@@ -670,11 +670,11 @@ async def _test_custom_provider_connectivity(
                 received_response = False
                 model_failure: str | None = None
                 response_stream = client.stream_chat_completion(
-                    messages=[{"role": "user", "content": "ping"}],
-                    model=response_model_id,
-                    temperature=None,
-                    top_p=None,
-                    max_tokens=16,
+                    messages = [{"role": "user", "content": "ping"}],
+                    model = response_model_id,
+                    temperature = None,
+                    top_p = None,
+                    max_tokens = 16,
                 )
 
                 async def consume_response_stream():
@@ -691,14 +691,14 @@ async def _test_custom_provider_connectivity(
                 try:
                     await asyncio.wait_for(
                         consume_response_stream(),
-                        timeout=_PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS,
+                        timeout = _PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS,
                     )
                 finally:
                     await response_stream.aclose()
                 if received_response and model_failure is None:
                     return ProviderTestResult(
-                        success=True,
-                        message="Connected successfully. Responses endpoint responded.",
+                        success = True,
+                        message = "Connected successfully. Responses endpoint responded.",
                     )
                 last_failure = model_failure or "Responses endpoint returned no completion."
             except asyncio.TimeoutError:
@@ -709,47 +709,47 @@ async def _test_custom_provider_connectivity(
             except Exception as exc:
                 last_failure = safe_curated_detail(exc)
         return ProviderTestResult(
-            success=False,
-            message=f"Connection failed: {last_failure}",
+            success = False,
+            message = f"Connection failed: {last_failure}",
         )
 
     try:
         await client.create_speech(
-            text=".",
-            model=model_id,
-            voice="alloy",
-            response_format="wav",
+            text = ".",
+            model = model_id,
+            voice = "alloy",
+            response_format = "wav",
         )
         return ProviderTestResult(
-            success=True,
-            message="Connected successfully. Audio speech endpoint responded.",
-            models_count=None,
+            success = True,
+            message = "Connected successfully. Audio speech endpoint responded.",
+            models_count = None,
         )
     except Exception:
         pass
 
     try:
         await client.chat_completion(
-            messages=[{"role": "user", "content": "ping"}],
-            model=model_id,
-            temperature=0.0,
-            top_p=None,
-            max_tokens=1,
+            messages = [{"role": "user", "content": "ping"}],
+            model = model_id,
+            temperature = 0.0,
+            top_p = None,
+            max_tokens = 1,
         )
         return ProviderTestResult(
-            success=True,
-            message="Connected successfully. Chat completions endpoint responded.",
-            models_count=None,
+            success = True,
+            message = "Connected successfully. Chat completions endpoint responded.",
+            models_count = None,
         )
     except Exception as exc:
         return ProviderTestResult(
-            success=False,
-            message=f"Connection failed: {safe_curated_detail(exc)}",
-            models_count=None,
+            success = False,
+            message = f"Connection failed: {safe_curated_detail(exc)}",
+            models_count = None,
         )
 
 
-@router.post("/test", response_model=ProviderTestResult)
+@router.post("/test", response_model = ProviderTestResult)
 async def test_provider(
     payload: ProviderTestRequest,
     _current_subject: str = Depends(get_current_subject),
@@ -768,39 +768,39 @@ async def test_provider(
     info = get_provider_info(payload.provider_type)
     if info is None:
         raise HTTPException(
-            status_code=400,
-            detail=f"Unknown provider type: {payload.provider_type}",
+            status_code = 400,
+            detail = f"Unknown provider type: {payload.provider_type}",
         )
 
     api_key = resolve_provider_api_key_or_400(
         payload.provider_id,
         payload.encrypted_api_key,
-        allow_saved_key=not via_api_key,
+        allow_saved_key = not via_api_key,
     )
 
     base_url = payload.base_url or info["base_url"]
     if payload.provider_type == "custom":
         if not base_url:
             return ProviderTestResult(
-                success=False,
-                message="Connection failed: Base URL is required for custom providers.",
-                models_count=None,
+                success = False,
+                message = "Connection failed: Base URL is required for custom providers.",
+                models_count = None,
             )
     try:
         base_url = validate_provider_base_url(base_url)
     except ValueError as exc:
         return ProviderTestResult(
-            success=False,
-            message=f"Connection failed: {exc}",
-            models_count=None,
+            success = False,
+            message = f"Connection failed: {exc}",
+            models_count = None,
         )
 
     client = ExternalProviderClient(
-        provider_type=payload.provider_type,
-        base_url=base_url,
-        api_key=api_key,
-        api_type=payload.api_type,
-        timeout=_PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS,
+        provider_type = payload.provider_type,
+        base_url = base_url,
+        api_key = api_key,
+        api_type = payload.api_type,
+        timeout = _PROVIDER_CONNECTIVITY_TIMEOUT_SECONDS,
     )
 
     try:
@@ -811,30 +811,30 @@ async def test_provider(
         if info.get("model_list_mode") == "curated":
             await client.verify_models_endpoint_lightweight()
             return ProviderTestResult(
-                success=True,
-                message=(
+                success = True,
+                message = (
                     "Connected successfully. Full model list is not fetched for this provider — "
                     "use suggestions and manual model IDs in the dialog."
                 ),
-                models_count=None,
+                models_count = None,
             )
         models = await client.list_models()
         return ProviderTestResult(
-            success=True,
-            message=f"Connected successfully. Found {len(models)} model(s).",
-            models_count=len(models),
+            success = True,
+            message = f"Connected successfully. Found {len(models)} model(s).",
+            models_count = len(models),
         )
     except Exception as exc:
         logger.error(
             "providers.test_failed",
-            provider_type=payload.provider_type,
-            error=str(exc),
-            exc_info=True,
+            provider_type = payload.provider_type,
+            error = str(exc),
+            exc_info = True,
         )
         return ProviderTestResult(
-            success=False,
-            message=f"Connection failed: {safe_curated_detail(exc)}",
-            models_count=None,
+            success = False,
+            message = f"Connection failed: {safe_curated_detail(exc)}",
+            models_count = None,
         )
     finally:
         await client.close()
@@ -854,7 +854,7 @@ def _model_catalog_cache_path():
 
 def _read_model_catalog_file() -> dict | None:
     try:
-        data = json.loads(_model_catalog_cache_path().read_text(encoding="utf-8"))
+        data = json.loads(_model_catalog_cache_path().read_text(encoding = "utf-8"))
     except (OSError, ValueError):
         return None
     if (
@@ -869,21 +869,21 @@ def _read_model_catalog_file() -> dict | None:
 def _write_model_catalog_file(data: dict) -> None:
     try:
         path = _model_catalog_cache_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data), encoding="utf-8")
+        path.parent.mkdir(parents = True, exist_ok = True)
+        path.write_text(json.dumps(data), encoding = "utf-8")
     except OSError as exc:
-        logger.warning("providers.model_catalog_cache_write_failed", error=str(exc))
+        logger.warning("providers.model_catalog_cache_write_failed", error = str(exc))
 
 
 async def _fetch_models_dev_catalog() -> dict:
     from core.inference.external_provider import _client
 
-    response = await _client().get(MODELS_DEV_URL, timeout=20.0)
+    response = await _client().get(MODELS_DEV_URL, timeout = 20.0)
     response.raise_for_status()
     return {"fetched_at": time.time(), "providers": trim_models_dev_catalog(response.json())}
 
 
-@router.get("/model-catalog", response_model=ModelCatalogResponse)
+@router.get("/model-catalog", response_model = ModelCatalogResponse)
 async def get_model_catalog(_current_subject: str = Depends(get_current_subject)):
     global _model_catalog_cache
     cached = _model_catalog_cache or _read_model_catalog_file()
@@ -893,19 +893,19 @@ async def get_model_catalog(_current_subject: str = Depends(get_current_subject)
     try:
         fresh = await _fetch_models_dev_catalog()
     except Exception as exc:
-        logger.warning("providers.model_catalog_refresh_failed", error=str(exc))
+        logger.warning("providers.model_catalog_refresh_failed", error = str(exc))
         if cached is not None:
             _model_catalog_cache = cached
             return cached
         raise HTTPException(
-            status_code=503, detail="The model catalog is unavailable offline."
+            status_code = 503, detail = "The model catalog is unavailable offline."
         ) from None
     _model_catalog_cache = fresh
     _write_model_catalog_file(fresh)
     return fresh
 
 
-@router.post("/model-capabilities", response_model=list[ProviderModelCapabilityInfo])
+@router.post("/model-capabilities", response_model = list[ProviderModelCapabilityInfo])
 async def list_provider_model_capabilities(
     payload: ProviderModelsRequest,
     _current_subject: str = Depends(get_current_subject),
@@ -915,8 +915,8 @@ async def list_provider_model_capabilities(
     info = get_provider_info(payload.provider_type)
     if info is None:
         raise HTTPException(
-            status_code=400,
-            detail=f"Unknown provider type: {payload.provider_type}",
+            status_code = 400,
+            detail = f"Unknown provider type: {payload.provider_type}",
         )
     if payload.provider_type not in MODEL_CAPABILITY_PROVIDERS:
         return []
@@ -924,13 +924,13 @@ async def list_provider_model_capabilities(
     api_key = resolve_provider_api_key_or_400(
         payload.provider_id,
         payload.encrypted_api_key,
-        allow_saved_key=not via_api_key,
+        allow_saved_key = not via_api_key,
     )
     base_url = payload.base_url or info["base_url"]
     try:
         base_url = validate_provider_base_url(base_url)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+        raise HTTPException(status_code = 400, detail = str(exc)) from None
 
     cache_key = f"{payload.provider_type}\n{base_url}"
     cached = _model_capability_cache.get(cache_key)
@@ -938,11 +938,11 @@ async def list_provider_model_capabilities(
         return cached[1]
 
     client = ExternalProviderClient(
-        provider_type=payload.provider_type,
-        base_url=base_url,
-        api_key=api_key,
-        api_type=payload.api_type,
-        timeout=15.0,
+        provider_type = payload.provider_type,
+        base_url = base_url,
+        api_key = api_key,
+        api_type = payload.api_type,
+        timeout = 15.0,
     )
     try:
         models = await client.list_models()
@@ -951,8 +951,8 @@ async def list_provider_model_capabilities(
             exc,
             502,
             f"Failed to list model capabilities from {payload.provider_type}.",
-            event="providers.list_model_capabilities_failed",
-            log=logger,
+            event = "providers.list_model_capabilities_failed",
+            log = logger,
         )
     finally:
         await client.close()
@@ -962,7 +962,7 @@ async def list_provider_model_capabilities(
     return capabilities
 
 
-@router.post("/models", response_model=list[ProviderModelInfo])
+@router.post("/models", response_model = list[ProviderModelInfo])
 async def list_provider_models(
     payload: ProviderModelsRequest,
     _current_subject: str = Depends(get_current_subject),
@@ -978,23 +978,23 @@ async def list_provider_models(
     info = get_provider_info(payload.provider_type)
     if info is None:
         raise HTTPException(
-            status_code=400,
-            detail=f"Unknown provider type: {payload.provider_type}",
+            status_code = 400,
+            detail = f"Unknown provider type: {payload.provider_type}",
         )
 
     api_key = resolve_provider_api_key_or_400(
         payload.provider_id,
         payload.encrypted_api_key,
-        allow_saved_key=not via_api_key,
+        allow_saved_key = not via_api_key,
     )
 
     if info.get("model_list_mode") == "curated":
         return [
             ProviderModelInfo(
-                id=m,
-                display_name=m,
-                context_length=None,
-                owned_by=None,
+                id = m,
+                display_name = m,
+                context_length = None,
+                owned_by = None,
             )
             for m in info.get("default_models", [])
         ]
@@ -1003,14 +1003,14 @@ async def list_provider_models(
     try:
         base_url = validate_provider_base_url(base_url)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+        raise HTTPException(status_code = 400, detail = str(exc)) from None
 
     client = ExternalProviderClient(
-        provider_type=payload.provider_type,
-        base_url=base_url,
-        api_key=api_key,
-        api_type=payload.api_type,
-        timeout=15.0,
+        provider_type = payload.provider_type,
+        base_url = base_url,
+        api_key = api_key,
+        api_type = payload.api_type,
+        timeout = 15.0,
     )
 
     try:
@@ -1029,7 +1029,6 @@ async def list_provider_models(
         if native_hosts is not None:
             try:
                 from urllib.parse import urlparse as _urlparse
-
                 _host = (_urlparse(base_url).hostname or "").lower()
             except Exception:
                 _host = ""
@@ -1059,10 +1058,10 @@ async def list_provider_models(
             models = models[:limit]
         return [
             ProviderModelInfo(
-                id=m.get("id", ""),
-                display_name=m.get("id", ""),
-                context_length=m.get("context_length") or m.get("context_window"),
-                owned_by=m.get("owned_by"),
+                id = m.get("id", ""),
+                display_name = m.get("id", ""),
+                context_length = m.get("context_length") or m.get("context_window"),
+                owned_by = m.get("owned_by"),
             )
             for m in models
         ]
@@ -1071,8 +1070,8 @@ async def list_provider_models(
             exc,
             502,
             f"Failed to list models from {payload.provider_type}.",
-            event="providers.list_models_failed",
-            log=logger,
+            event = "providers.list_models_failed",
+            log = logger,
         )
     finally:
         await client.close()

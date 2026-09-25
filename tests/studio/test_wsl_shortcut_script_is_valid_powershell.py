@@ -48,7 +48,7 @@ from unsloth_pwsh_runner import run_pwsh
 REPO = Path(__file__).resolve().parents[2]
 INSTALL_SH = REPO / "install.sh"
 
-needs_pwsh = pytest.mark.skipif(shutil.which("pwsh") is None, reason="needs PowerShell")
+needs_pwsh = pytest.mark.skipif(shutil.which("pwsh") is None, reason = "needs PowerShell")
 
 # What `_render` produces is a pure function of install.sh's bytes and the four values below, so the
 # Linux and macOS legs cover the subject completely and a Windows leg adds no coverage of it. What a
@@ -60,7 +60,7 @@ needs_pwsh = pytest.mark.skipif(shutil.which("pwsh") is None, reason="needs Powe
 # tests/studio/install/test_selection_logic.py:4185).
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32",
-    reason="renders install.sh with bash; POSIX shell installer test",
+    reason = "renders install.sh with bash; POSIX shell installer test",
 )
 
 # Values install.sh would interpolate, chosen to be awkward: a distro name with a space, and the
@@ -80,7 +80,7 @@ def _render() -> str:
     it is resolved the way install.sh resolves it. A test holding its own copy of this script
     would keep passing after install.sh broke.
     """
-    text = INSTALL_SH.read_text(encoding="utf-8")
+    text = INSTALL_SH.read_text(encoding = "utf-8")
     body = re.search(
         # The body is captured into a variable now, because it is either written to a file or piped
         # to powershell on stdin depending on whether a Windows directory is reachable.
@@ -99,7 +99,7 @@ def _render() -> str:
     # check = False, then asserted. CalledProcessError carries the command and the return code and
     # drops the shell's own diagnostic, so a rendering that fails to render reported a 6 KB repr of
     # the script and not the one line saying what was wrong with it.
-    done = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+    done = subprocess.run(["bash", "-c", script], capture_output = True, text = True)
     assert done.returncode == 0, (
         f"bash could not render the here-string (exit {done.returncode}):\n"
         f"{done.stderr.strip()}\n{done.stdout.strip()[:2000]}"
@@ -123,10 +123,10 @@ def test_the_generated_wsl_shortcut_script_parses() -> None:
     )
     done = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", probe],
-        input=rendered,
-        capture_output=True,
-        text=True,
-        verdict="PARSE_OK",
+        input = rendered,
+        capture_output = True,
+        text = True,
+        verdict = "PARSE_OK",
     )
     assert "PARSE_OK" in done.stdout, (
         "the PowerShell install.sh generates for the WSL shortcut does not parse, so on a real "
@@ -165,9 +165,9 @@ def test_the_icon_refresh_emit_sequence_builds_a_callable_type() -> None:
     script += body + "\nWrite-Output ('EMIT_B ' + [string]$refreshType::getpid())\n"
     done = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output=True,
-        text=True,
-        verdict="EMIT_B",
+        capture_output = True,
+        text = True,
+        verdict = "EMIT_B",
     )
     pids = re.findall(r"EMIT_[AB] (\d+)", done.stdout)
     assert len(pids) == 2, (
@@ -195,7 +195,7 @@ def test_the_wsl_install_is_watched_live_for_a_compiler() -> None:
 
     workflow = yaml.safe_load(
         (REPO / ".github" / "workflows" / "clean-machine-install-ci.yml").read_text(
-            encoding="utf-8"
+            encoding = "utf-8"
         )
     )
     steps = [
@@ -235,7 +235,7 @@ def test_the_wsl_lane_arms_the_4688_half_of_the_watch() -> None:
 
     workflow = yaml.safe_load(
         (REPO / ".github" / "workflows" / "clean-machine-install-ci.yml").read_text(
-            encoding="utf-8"
+            encoding = "utf-8"
         )
     )
     job = next(

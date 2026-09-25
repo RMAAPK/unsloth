@@ -81,12 +81,11 @@ def _run_detail(model_type: str, path: str, run: Optional[dict]) -> str:
 def _runs_by_output_dir() -> dict:
     try:
         from storage.studio_db import list_runs
-
-        runs = list_runs(limit=1000)["runs"]
+        runs = list_runs(limit = 1000)["runs"]
     except Exception:
         return {}
     by_dir = {}
-    for run in sorted(runs, key=lambda r: r.get("started_at") or ""):
+    for run in sorted(runs, key = lambda r: r.get("started_at") or ""):
         if run.get("output_dir"):
             by_dir[os.path.normpath(run["output_dir"])] = run
     return by_dir
@@ -165,9 +164,9 @@ def _pinned_snapshot(repo_path: Path, load_id: Optional[str]) -> Optional[Path]:
         return None
     try:
         candidate = Path(load_id)
-        snapshots = (repo_path / "snapshots").resolve(strict=False)
+        snapshots = (repo_path / "snapshots").resolve(strict = False)
         for path in (candidate, *candidate.parents):
-            if path.parent.resolve(strict=False) == snapshots and path.is_dir():
+            if path.parent.resolve(strict = False) == snapshots and path.is_dir():
                 return path
     except (OSError, ValueError):
         return None
@@ -196,7 +195,7 @@ def _reachable_snapshots(repo_path: Path, load_id: Optional[str] = None) -> List
     try:
         # ValueError too: an undecodable ref raises UnicodeDecodeError, which is not an OSError, and
         # uncaught it leaves _safe hiding every Downloaded row over one repo.
-        ref = (repo_path / "refs" / "main").read_text(encoding="utf-8").strip()
+        ref = (repo_path / "refs" / "main").read_text(encoding = "utf-8").strip()
     except (OSError, ValueError):
         ref = ""
     if ref:
@@ -214,7 +213,6 @@ def _complete_quants(snapshot: Path) -> Optional[set]:
     """
     try:
         from hub.utils.inventory_scan import complete_snapshot_variants
-
         complete = complete_snapshot_variants(str(snapshot))
     except Exception:
         return None
@@ -423,7 +421,6 @@ def _cached_gguf_load_id(row: dict) -> str:
     if cache_path:
         try:
             from hub.utils.inventory_scan import default_ref_snapshot
-
             snapshot = default_ref_snapshot(Path(cache_path))
         except Exception:
             snapshot = None
@@ -451,11 +448,11 @@ def _cached_catalog_rows() -> tuple[list[dict], list[dict]]:
     def newest_first(rows):
         return sorted(
             rows,
-            key=lambda row: (-(row.get("last_modified") or 0.0), row["repo_id"].lower()),
+            key = lambda row: (-(row.get("last_modified") or 0.0), row["repo_id"].lower()),
         )
 
-    gguf_rows = _scan_cached_gguf(cache_scans=scans, active_hub_cache=active_hub_cache)
-    model_rows = _scan_cached_models(cache_scans=scans, active_hub_cache=active_hub_cache)
+    gguf_rows = _scan_cached_gguf(cache_scans = scans, active_hub_cache = active_hub_cache)
+    model_rows = _scan_cached_models(cache_scans = scans, active_hub_cache = active_hub_cache)
     return newest_first(gguf_rows), newest_first(model_rows)
 
 
@@ -511,7 +508,6 @@ def _cached_model_load_id(row: dict) -> str:
         return load_id
     try:
         from hub.utils.inventory_scan import default_ref_snapshot
-
         snapshot = default_ref_snapshot(Path(cache_path))
     except Exception:
         snapshot = None
@@ -569,25 +565,21 @@ def _local_is_a_diffusers_pipeline(model) -> bool:
     this with the row's ``diffusers`` flag; this is the local twin.
     """
     from hub.services.models.catalog_classification import _local_is_diffusers
-
     return bool(_local_is_diffusers(model))
 
 
 def _local_model_task(model) -> Optional[str]:
     from hub.services.models.catalog_classification import _local_model_task as classify
-
     return classify(model)
 
 
 def _local_model_can_chat(model) -> Optional[bool]:
     from hub.services.models.catalog_classification import _local_model_can_chat as classify
-
     return classify(model)
 
 
 def _local_catalog_rows():
     from hub.services.models.local_inventory import list_local_models_response
-
     response = asyncio.run(list_local_models_response(str(Path("./models").resolve())))
     return response.models
 
@@ -682,7 +674,7 @@ def _safe(fn) -> List[ModelEntry]:
         typer.echo(
             f"Could not read one model source ({fn.__name__}): {type(error).__name__}: {error}. "
             f"Set UNSLOTH_DEBUG=1 for the traceback.",
-            err=True,
+            err = True,
         )
         return []
 

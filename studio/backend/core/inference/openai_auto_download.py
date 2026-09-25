@@ -60,7 +60,7 @@ _REMOTE_GGUF_SPEECH_PROBE_BYTES = 32 * 1024**2
 _REMOTE_GGUF_SPEECH_PROBE_TIMEOUT_S = _CODE_PROBE_TIMEOUT_S - 2.0
 
 
-@dataclass(frozen=True)
+@dataclass(frozen = True)
 class AutoDownloadRefusal:
     """Why this request cannot be served yet; the route raises it in the
     surface's own error envelope."""
@@ -116,7 +116,6 @@ def split_model_ref(requested: str) -> tuple[str, Optional[str]]:
     stripped = base.strip()
     if "/" in suffix.replace("\\", "/"):
         from hub.utils.paths import is_valid_repo_id
-
         if "/" not in stripped or not is_valid_repo_id(stripped):
             return text, None
     return stripped, suffix.strip()
@@ -136,7 +135,6 @@ def is_downloadable_ref(requested: str) -> bool:
         return False
     if variant is not None:
         from hub.utils.paths import is_valid_gguf_variant
-
         return is_valid_gguf_variant(variant)
     return True
 
@@ -177,7 +175,7 @@ def looks_like_quant(variant: Optional[str]) -> bool:
     if not variant:
         return False
     # _extract_quant_label can append a bpw modifier (IQ4_XS-3.53bpw); still a quant.
-    label = re.sub(r"-[0-9]+(?:\.[0-9]+)?bpw$", "", variant.strip(), flags=re.IGNORECASE)
+    label = re.sub(r"-[0-9]+(?:\.[0-9]+)?bpw$", "", variant.strip(), flags = re.IGNORECASE)
     # A qualified key is one of OUR advertised rows: a path (``distilled/model-Q6_K``) or an H3 root stem
     # (``minimax_h3_ref2va_pruned-Q6_K``). Explicit, so it must MISS when absent; falling through served the caller a
     # different checkpoint under the requested id.
@@ -226,9 +224,9 @@ def _is_not_servable(repo_id: str, hf_token: Optional[str]) -> bool:
 
 def _gated_refusal(repo_id: str) -> AutoDownloadRefusal:
     return AutoDownloadRefusal(
-        status=403,
-        code="model_access_denied",
-        message=(
+        status = 403,
+        code = "model_access_denied",
+        message = (
             f"'{repo_id}' is gated on Hugging Face. Accept its licence, then retry with "
             "your own token in the X-Unsloth-HF-Token header: automatic download never "
             "uses this server's Hugging Face identity."
@@ -256,8 +254,7 @@ def _auth_denied(repo_id: str, hf_token: Optional[str]) -> bool:
 
     try:
         from huggingface_hub import auth_check
-
-        auth_check(repo_id, token=_hub_token(hf_token))
+        auth_check(repo_id, token = _hub_token(hf_token))
     except Exception as exc:
         return hf_error_status(exc) in (401, 403)
     return False
@@ -274,9 +271,9 @@ def _probe_remote_gguf_audio_type(
             repo_id,
             gguf_filename,
             _hub_token(hf_token),
-            revision=revision,
-            max_bytes=_REMOTE_GGUF_SPEECH_PROBE_BYTES,
-            timeout_seconds=_REMOTE_GGUF_SPEECH_PROBE_TIMEOUT_S,
+            revision = revision,
+            max_bytes = _REMOTE_GGUF_SPEECH_PROBE_BYTES,
+            timeout_seconds = _REMOTE_GGUF_SPEECH_PROBE_TIMEOUT_S,
         )
         return classify_gguf_tts_audio_prefix(prefix) if prefix else (None, False)
     except Exception as exc:
@@ -365,7 +362,7 @@ def _enough_disk(need_bytes: int) -> tuple[bool, int]:
     try:
         from hub.utils.hf_cache_state import hf_cache_root
 
-        root = hf_cache_root(create=True)
+        root = hf_cache_root(create = True)
         if root is None:
             return True, 0
         free = shutil.disk_usage(root).free
@@ -380,7 +377,6 @@ def _gb(num_bytes: int) -> str:
 
 async def _job_state(repo_id: str, variant: Optional[str]) -> tuple[str, Optional[str]]:
     from hub.services.models import downloads
-
     try:
         status = await downloads.get_download_status_response(repo_id, variant or "")
         return status.state, status.error
@@ -395,7 +391,6 @@ async def _progress_percent(
 ) -> Optional[float]:
     """0-100, or None. The hub service reports a 0-1 fraction, so scale it."""
     from hub.services.models import downloads
-
     try:
         payload = await downloads.get_gguf_download_progress_response(
             repo_id, variant or "", expected_bytes, hf_token
@@ -457,12 +452,12 @@ async def _watch(active: _Active, hf_token: Optional[str]) -> None:
                     )
                 continue
             if state == "cancelled":
-                api_monitor.finish(active.monitor_id, status="cancelled")
+                api_monitor.finish(active.monitor_id, status = "cancelled")
                 return
             if state == "complete":
                 # No invalidate here: finalize_worker_exit already dropped the cache and warmed it; a second would mark
                 # that fresh scan stale and push a synchronous rescan onto the client's retry.
-                api_monitor.finish(active.monitor_id, status="completed")
+                api_monitor.finish(active.monitor_id, status = "completed")
             elif state == "idle":
                 # The job vanished without a terminal state (worker killed).
                 api_monitor.fail_open(active.monitor_id, "Download did not complete")
@@ -486,10 +481,10 @@ async def _watch(active: _Active, hf_token: Optional[str]) -> None:
 def _downloading_refusal(label: str, percent: Optional[float]) -> AutoDownloadRefusal:
     progress = f" ({percent:.0f}% done)" if percent is not None else ""
     return AutoDownloadRefusal(
-        status=503,
-        code="model_downloading",
-        message=(f"Downloading '{label}'{progress}. Retry shortly. Track it in Unsloth Studio."),
-        retry_after=_RETRY_AFTER_S,
+        status = 503,
+        code = "model_downloading",
+        message = (f"Downloading '{label}'{progress}. Retry shortly. Track it in Unsloth Studio."),
+        retry_after = _RETRY_AFTER_S,
     )
 
 
@@ -505,8 +500,7 @@ async def _is_downloadable_model(repo_id: str, hf_token: Optional[str]) -> bool:
 
     def _probe():
         from huggingface_hub import HfApi
-
-        return HfApi(token=_hub_token(hf_token)).model_info(repo_id, timeout=_MODEL_INFO_TIMEOUT_S)
+        return HfApi(token = _hub_token(hf_token)).model_info(repo_id, timeout = _MODEL_INFO_TIMEOUT_S)
 
     try:
         info = await asyncio.to_thread(_probe)
@@ -567,7 +561,7 @@ async def maybe_auto_download(
         else:
             adopted = None
             provisional = _Active(
-                repo_id=repo_id, started_at=time.time(), account_id=current_account_id()
+                repo_id = repo_id, started_at = time.time(), account_id = current_account_id()
             )
             _active = provisional
 
@@ -582,10 +576,10 @@ async def maybe_auto_download(
         else:
             what = "Another download is in progress."
         return AutoDownloadRefusal(
-            status=503,
-            code="model_download_busy",
-            message=f"{what} Retry '{requested_model}' once it finishes.",
-            retry_after=_RETRY_AFTER_S,
+            status = 503,
+            code = "model_download_busy",
+            message = f"{what} Retry '{requested_model}' once it finishes.",
+            retry_after = _RETRY_AFTER_S,
         )
 
     if adopted is not None:
@@ -605,9 +599,9 @@ async def maybe_auto_download(
             # Surface once, then free the slot so a retry can start over.
             _release(adopted)
             return AutoDownloadRefusal(
-                status=502,
-                code="model_download_failed",
-                message=f"Downloading '{requested_model}' failed: {error or 'unknown error'}",
+                status = 502,
+                code = "model_download_failed",
+                message = f"Downloading '{requested_model}' failed: {error or 'unknown error'}",
             )
         return _downloading_refusal(
             _public_label(adopted.repo_id, adopted.variant),
@@ -623,8 +617,8 @@ async def maybe_auto_download(
             provisional,
             require_vision,
             require_speech,
-            subject=subject,
-            via_api_key=via_api_key,
+            subject = subject,
+            via_api_key = via_api_key,
         )
     except BaseException:
         # Not `except Exception`: a cancel mid-probe would otherwise wedge the provisional slot.
@@ -648,9 +642,8 @@ async def _admit_and_start(
 
     def _probe():
         from huggingface_hub import HfApi
-
-        return HfApi(token=_hub_token(hf_token)).model_info(
-            repo_id, files_metadata=True, timeout=_MODEL_INFO_TIMEOUT_S
+        return HfApi(token = _hub_token(hf_token)).model_info(
+            repo_id, files_metadata = True, timeout = _MODEL_INFO_TIMEOUT_S
         )
 
     try:
@@ -660,9 +653,9 @@ async def _admit_and_start(
         status = hf_error_status(exc)
         if status == 401:
             return AutoDownloadRefusal(
-                status=401,
-                code="model_access_denied",
-                message=(
+                status = 401,
+                code = "model_access_denied",
+                message = (
                     f"Hugging Face rejected the token sent for '{repo_id}'. Replace the "
                     "X-Unsloth-HF-Token header with a valid token; retrying will not help."
                 ),
@@ -674,24 +667,24 @@ async def _admit_and_start(
             if not looks_like_quant(wanted_variant):
                 return None
             return AutoDownloadRefusal(
-                status=404,
-                code="model_not_found",
-                message=(
+                status = 404,
+                code = "model_not_found",
+                message = (
                     f"'{repo_id}' was not found on Hugging Face, or is not accessible. "
                     "If it is private, send a token in the X-Unsloth-HF-Token header."
                 ),
             )
         logger.warning("auto-download: Hub lookup failed for %r: %s", repo_id, exc)
         return AutoDownloadRefusal(
-            status=503,
-            code="model_lookup_failed",
-            message=f"Could not reach Hugging Face to look up '{repo_id}'. Retry shortly.",
-            retry_after=_RETRY_AFTER_S,
+            status = 503,
+            code = "model_lookup_failed",
+            message = f"Could not reach Hugging Face to look up '{repo_id}'. Retry shortly.",
+            retry_after = _RETRY_AFTER_S,
         )
 
     # Inconclusive on timeout: the download's own auth is the real gate.
     if getattr(info, "gated", False) and await _bounded_probe(
-        _auth_denied, repo_id, hf_token, timeout=_MODEL_INFO_TIMEOUT_S, default=False
+        _auth_denied, repo_id, hf_token, timeout = _MODEL_INFO_TIMEOUT_S, default = False
     ):
         _release(active)
         return _gated_refusal(repo_id)
@@ -703,9 +696,9 @@ async def _admit_and_start(
         if not looks_like_quant(wanted_variant):
             return None
         return AutoDownloadRefusal(
-            status=400,
-            code="model_not_supported",
-            message=(
+            status = 400,
+            code = "model_not_supported",
+            message = (
                 f"'{repo_id}' has no GGUF weights. Automatic download serves GGUF only; "
                 "load other formats from Unsloth Studio."
             ),
@@ -721,16 +714,16 @@ async def _admit_and_start(
         _config_has_auto_map,
         repo_id,
         _hub_token(hf_token),
-        timeout=_CODE_PROBE_TIMEOUT_S,
-        default=None,
+        timeout = _CODE_PROBE_TIMEOUT_S,
+        default = None,
     )
     if has_auto_map is not False:
         _release(active)
         unknown = has_auto_map is None
         return AutoDownloadRefusal(
-            status=403,
-            code="remote_code_consent_required",
-            message=(
+            status = 403,
+            code = "remote_code_consent_required",
+            message = (
                 f"'{repo_id}' "
                 + (
                     "could not be checked for custom code"
@@ -748,9 +741,9 @@ async def _admit_and_start(
         shown = ", ".join(listed[:_MAX_LISTED_VARIANTS])
         extra = len(listed) - _MAX_LISTED_VARIANTS
         return AutoDownloadRefusal(
-            status=404,
-            code="model_not_found",
-            message=(
+            status = 404,
+            code = "model_not_found",
+            message = (
                 f"'{repo_id}' has no quant '{wanted_variant}'. Available quants: "
                 f"{shown}{f' and {extra} more' if extra > 0 else ''}."
             ),
@@ -765,9 +758,9 @@ async def _admit_and_start(
     if require_vision and not (plan and plan.mmproj_filenames):
         _release(active)
         return AutoDownloadRefusal(
-            status=400,
-            code="invalid_value",
-            message=(
+            status = 400,
+            code = "invalid_value",
+            message = (
                 f"'{_public_label(repo_id, variant)}' ships no mmproj companion, so it "
                 "cannot answer the image or audio input in this request. It was not "
                 "downloaded."
@@ -783,11 +776,11 @@ async def _admit_and_start(
             partial(
                 detect_audio_type_checked,
                 repo_id,
-                hf_token=_hub_token(hf_token),
-                revision=getattr(info, "sha", None),
+                hf_token = _hub_token(hf_token),
+                revision = getattr(info, "sha", None),
             ),
-            timeout=_CODE_PROBE_TIMEOUT_S,
-            default=(None, False),
+            timeout = _CODE_PROBE_TIMEOUT_S,
+            default = (None, False),
         )
         if definitive and (audio_type is None or audio_type in GGUF_TTS_AUDIO_TYPES):
             sidecar_audio_type = audio_type
@@ -800,8 +793,8 @@ async def _admit_and_start(
                     hf_token,
                     getattr(info, "sha", None),
                 ),
-                timeout=_CODE_PROBE_TIMEOUT_S,
-                default=(None, False),
+                timeout = _CODE_PROBE_TIMEOUT_S,
+                default = (None, False),
             )
             if probed_definitive:
                 audio_type, definitive = probed_audio_type, True
@@ -812,20 +805,20 @@ async def _admit_and_start(
         if not definitive:
             _release(active)
             return AutoDownloadRefusal(
-                status=503,
-                code="model_lookup_failed",
-                message=(
+                status = 503,
+                code = "model_lookup_failed",
+                message = (
                     f"Could not verify that '{_public_label(repo_id, variant)}' supports "
                     "text-to-speech. It was not downloaded; retry shortly."
                 ),
-                retry_after=_RETRY_AFTER_S,
+                retry_after = _RETRY_AFTER_S,
             )
         if audio_type not in GGUF_TTS_AUDIO_TYPES:
             _release(active)
             return AutoDownloadRefusal(
-                status=400,
-                code="invalid_value",
-                message=(
+                status = 400,
+                code = "invalid_value",
+                message = (
                     f"'{_public_label(repo_id, variant)}' is not a supported "
                     "text-to-speech GGUF model. It was not downloaded."
                 ),
@@ -836,9 +829,9 @@ async def _admit_and_start(
     if not fits:
         _release(active)
         return AutoDownloadRefusal(
-            status=507,
-            code="insufficient_disk_space",
-            message=(
+            status = 507,
+            code = "insufficient_disk_space",
+            message = (
                 f"'{_public_label(repo_id, variant)}' needs {_gb(need_bytes)} plus "
                 f"{_gb(_DISK_RESERVE_BYTES)} headroom, but only {_gb(free)} is free."
             ),
@@ -851,8 +844,8 @@ async def _admit_and_start(
         requested_model,
         hf_token,
         active,
-        subject=subject,
-        via_api_key=via_api_key,
+        subject = subject,
+        via_api_key = via_api_key,
     )
 
 
@@ -945,16 +938,16 @@ async def _dispatch(
 
     label = _public_label(repo_id, variant)
     busy = AutoDownloadRefusal(
-        status=503,
-        code="model_download_busy",
-        message=f"'{repo_id}' is already being downloaded or loaded. Retry shortly.",
-        retry_after=_RETRY_AFTER_S,
+        status = 503,
+        code = "model_download_busy",
+        message = f"'{repo_id}' is already being downloaded or loaded. Retry shortly.",
+        retry_after = _RETRY_AFTER_S,
     )
     try:
         dispatched = await downloads.download_model_response(
-            DownloadModelRequest(repo_id=repo_id, gguf_variant=variant),
+            DownloadModelRequest(repo_id = repo_id, gguf_variant = variant),
             hf_token,
-            allow_ambient_token=False,
+            allow_ambient_token = False,
         )
     except Exception as exc:
         _release(active)
@@ -963,9 +956,9 @@ async def _dispatch(
             return busy
         logger.warning("auto-download: could not start %r: %s", label, exc)
         return AutoDownloadRefusal(
-            status=502,
-            code="model_download_failed",
-            message=f"Could not start downloading '{requested_model}'.",
+            status = 502,
+            code = "model_download_failed",
+            message = f"Could not start downloading '{requested_model}'.",
         )
 
     # accepted=False means no worker launched, so report the conflict instead of taking the slot
@@ -978,12 +971,12 @@ async def _dispatch(
         # Reason "api" since only /v1 reaches auto-download, but that is not API-key traffic: Unsloth's chat calls /v1
         # on a JWT, and marking its download would pop the overlay mid-chat. So attribution comes from the request,
         # plus its caller, since the row is shared.
-        event="download",
-        model=label,
-        reason="api",
-        running=True,
-        via_api_key=via_api_key,
-        subject=subject,
+        event = "download",
+        model = label,
+        reason = "api",
+        running = True,
+        via_api_key = via_api_key,
+        subject = subject,
     )
     with _lock:
         if _active is active:
@@ -999,7 +992,7 @@ async def _dispatch(
                 expected_bytes,
                 monitor_id,
                 time.time(),
-                account_id=active.account_id,
+                account_id = active.account_id,
             )
             if _active is None:
                 _active = tracked
@@ -1007,13 +1000,13 @@ async def _dispatch(
     asyncio.create_task(_watch(tracked, hf_token))
     logger.info("auto-download: started %s (%s)", label, _gb(expected_bytes))
     return AutoDownloadRefusal(
-        status=503,
-        code="model_downloading",
-        message=(
+        status = 503,
+        code = "model_downloading",
+        message = (
             f"Downloading '{label}' ({_gb(expected_bytes)}). Retry shortly. "
             "Track it in Unsloth Studio."
         ),
-        retry_after=_RETRY_AFTER_S,
+        retry_after = _RETRY_AFTER_S,
     )
 
 

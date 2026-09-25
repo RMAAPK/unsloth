@@ -77,7 +77,7 @@ def test_weightless_norm_is_skipped():
 
     class Weightless(nn.LayerNorm):
         def __init__(self):
-            super().__init__(8, elementwise_affine=False)
+            super().__init__(8, elementwise_affine = False)
 
     class Block(nn.Module):
         def __init__(self):

@@ -26,7 +26,7 @@ from utils.models.checkpoints import (
 
 def _make_run(outputs: Path) -> tuple[Path, Path]:
     run = outputs / "unsloth_SmolLM-135M_1775412608"
-    run.mkdir(parents=True)
+    run.mkdir(parents = True)
     (run / "adapter_config.json").write_text(
         json.dumps({"base_model_name_or_path": "HuggingFaceTB/SmolLM-135M"})
     )
@@ -104,7 +104,7 @@ def test_preview_ref_preserves_one_level_nesting(tmp_path: Path, monkeypatch):
     outputs = tmp_path / "outputs"
     _point_outputs_root_at(monkeypatch, outputs)
     nested = outputs / "experiments" / "run1"
-    nested.mkdir(parents=True)
+    nested.mkdir(parents = True)
     (nested / "adapter_config.json").write_text("{}")
 
     # /p route supports run/checkpoint, so a single level of nesting survives.
@@ -118,12 +118,12 @@ def test_preview_ref_none_for_unpreviewable_or_too_deep(tmp_path: Path, monkeypa
     # Missing / no model artifact -> not previewable.
     assert preview_ref(None) is None
     empty = outputs / "empty"
-    empty.mkdir(parents=True)
+    empty.mkdir(parents = True)
     assert preview_ref(str(empty)) is None
 
     # Too deep for the two-segment /p route -> no dead link.
     deep = outputs / "a" / "b" / "run"
-    deep.mkdir(parents=True)
+    deep.mkdir(parents = True)
     (deep / "adapter_config.json").write_text("{}")
     assert preview_ref(str(deep)) is None
 

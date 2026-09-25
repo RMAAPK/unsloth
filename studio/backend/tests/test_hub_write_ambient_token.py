@@ -32,8 +32,8 @@ async def _fake_ensure_export_supported():
 
 def _app(via_api_key: bool) -> FastAPI:
     app = FastAPI()
-    app.include_router(data_recipe_jobs_routes.router, prefix="/api/data-recipe")
-    app.include_router(export_routes.router, prefix="/api")
+    app.include_router(data_recipe_jobs_routes.router, prefix = "/api/data-recipe")
+    app.include_router(export_routes.router, prefix = "/api")
     app.dependency_overrides[get_current_subject] = lambda: "alice"
     app.dependency_overrides[get_current_credential] = lambda: ("alice", "cred-1")
     app.dependency_overrides[authenticated_via_api_key] = lambda: via_api_key
@@ -54,7 +54,7 @@ def _publish_manager(monkeypatch, seen):
         # link_endpoint is keyword-only at the real call site, so **kwargs here keeps
         # the stub from going stale the next time the route grows an argument.
         lambda *, artifact_path, repo_id, description, hf_token, private, **kwargs: (
-            seen.update(token=hf_token, **kwargs)
+            seen.update(token = hf_token, **kwargs)
             or f"{kwargs.get('link_endpoint') or OFFICIAL_HF}/datasets/{repo_id}"
         ),
     )
@@ -67,9 +67,9 @@ def test_publish_refuses_an_api_key_without_a_token(monkeypatch):
     """The hole this PR exists for: publish_recipe_dataset passes the token straight to
     HuggingFaceHubClient and card.push_to_hub, so None publishes as the host's login."""
     _publish_manager(monkeypatch, {})
-    response = TestClient(_app(via_api_key=True)).post(
+    response = TestClient(_app(via_api_key = True)).post(
         "/api/data-recipe/jobs/job-1/publish",
-        json={"repo_id": "org/dataset", "description": "d", "hf_token": None},
+        json = {"repo_id": "org/dataset", "description": "d", "hf_token": None},
     )
     assert response.status_code == 400
     assert "required to publish datasets" in response.json()["detail"]
@@ -86,7 +86,7 @@ def test_publish_allows_a_token_bearing_key_and_a_ui_session(
     _publish_manager(monkeypatch, seen)
     response = TestClient(_app(via_api_key)).post(
         "/api/data-recipe/jobs/job-1/publish",
-        json={"repo_id": "org/dataset", "description": "d", "hf_token": token},
+        json = {"repo_id": "org/dataset", "description": "d", "hf_token": token},
     )
     assert response.status_code == 200
     assert seen["token"] == expected
@@ -118,9 +118,9 @@ def _backend(monkeypatch, method):
 @pytest.mark.parametrize("endpoint,method,extra", _EXPORTS)
 def test_push_refuses_an_api_key_without_a_token(monkeypatch, endpoint, method, extra):
     monkeypatch.setattr(export_routes, "_ensure_export_supported", _fake_ensure_export_supported)
-    response = TestClient(_app(via_api_key=True)).post(
+    response = TestClient(_app(via_api_key = True)).post(
         endpoint,
-        json={"save_directory": "/tmp/x", "push_to_hub": True, "repo_id": "o/m", **extra},
+        json = {"save_directory": "/tmp/x", "push_to_hub": True, "repo_id": "o/m", **extra},
     )
     assert response.status_code == 400
     assert "required to push to Hub" in response.json()["detail"]
@@ -129,9 +129,9 @@ def test_push_refuses_an_api_key_without_a_token(monkeypatch, endpoint, method, 
 @pytest.mark.parametrize("endpoint,method,extra", _EXPORTS)
 def test_push_with_a_token_reaches_the_backend_unchanged(monkeypatch, endpoint, method, extra):
     backend = _backend(monkeypatch, method)
-    response = TestClient(_app(via_api_key=True)).post(
+    response = TestClient(_app(via_api_key = True)).post(
         endpoint,
-        json={
+        json = {
             "save_directory": "/tmp/x",
             "push_to_hub": True,
             "repo_id": "o/m",
@@ -152,7 +152,7 @@ def test_a_local_export_carries_the_callers_identity(
     GGUF export resolves its base and imatrix from the Hub."""
     backend = _backend(monkeypatch, method)
     response = TestClient(_app(via_api_key)).post(
-        endpoint, json={"save_directory": "/tmp/x", "push_to_hub": False, **extra}
+        endpoint, json = {"save_directory": "/tmp/x", "push_to_hub": False, **extra}
     )
     assert response.status_code == 200
     assert getattr(backend, method).call_args.kwargs["hf_token"] is expected
@@ -175,7 +175,7 @@ def test_load_checkpoint_forwards_the_policy(
     monkeypatch.setattr(export_routes, "get_export_backend", lambda: backend)
 
     response = TestClient(_app(via_api_key)).post(
-        "/api/load-checkpoint", json={"checkpoint_path": "o/m", "hf_token": token}
+        "/api/load-checkpoint", json = {"checkpoint_path": "o/m", "hf_token": token}
     )
     assert response.status_code == 200
     kwargs = backend.load_checkpoint.call_args.kwargs
@@ -215,7 +215,7 @@ def test_the_worker_environment_matches_the_callers_policy(
     worker = worker_in_process
     for key in ("HF_TOKEN", "HF_HUB_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACEHUB_API_TOKEN"):
         monkeypatch.setenv(key, "hf_operator_secret")
-    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising=False)
+    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising = False)
 
     seen: dict = {}
 
@@ -229,9 +229,9 @@ def test_the_worker_environment_matches_the_callers_policy(
     monkeypatch.setattr(worker, "_activate_transformers_version", _fake_activate)
     with pytest.raises(SystemExit):
         worker.run_export_process(
-            cmd_queue=MagicMock(),
-            resp_queue=MagicMock(),
-            config={
+            cmd_queue = MagicMock(),
+            resp_queue = MagicMock(),
+            config = {
                 "checkpoint_path": "/tmp/model",
                 "allow_ambient": allow_ambient,
                 "hf_token": caller_token,
@@ -263,7 +263,7 @@ def test_a_non_ambient_worker_holds_no_credential_for_the_next_caller(
         "HF_OIDC_RESOURCE",
     ):
         monkeypatch.setenv(key, "hf_operator_secret")
-    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising=False)
+    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising = False)
 
     seen: dict = {}
 
@@ -285,9 +285,9 @@ def test_a_non_ambient_worker_holds_no_credential_for_the_next_caller(
     monkeypatch.setattr(worker, "_activate_transformers_version", _fake_activate)
     with pytest.raises(SystemExit):
         worker.run_export_process(
-            cmd_queue=MagicMock(),
-            resp_queue=MagicMock(),
-            config={
+            cmd_queue = MagicMock(),
+            resp_queue = MagicMock(),
+            config = {
                 "checkpoint_path": "/tmp/model",
                 "allow_ambient": False,
                 "hf_token": "hf_caller",
@@ -305,7 +305,7 @@ def test_an_old_orchestrator_config_keeps_the_previous_behaviour(monkeypatch, wo
 
     worker = worker_in_process
     monkeypatch.setenv("HF_TOKEN", "hf_operator_secret")
-    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising=False)
+    monkeypatch.delenv("HF_HUB_DISABLE_IMPLICIT_TOKEN", raising = False)
 
     seen: dict = {}
 
@@ -317,9 +317,9 @@ def test_an_old_orchestrator_config_keeps_the_previous_behaviour(monkeypatch, wo
     monkeypatch.setattr(worker, "_activate_transformers_version", _fake_activate)
     with pytest.raises(SystemExit):
         worker.run_export_process(
-            cmd_queue=MagicMock(),
-            resp_queue=MagicMock(),
-            config={"checkpoint_path": "/tmp/m", "hf_token": None},
+            cmd_queue = MagicMock(),
+            resp_queue = MagicMock(),
+            config = {"checkpoint_path": "/tmp/m", "hf_token": None},
         )
 
     assert seen["HF_TOKEN"] == "hf_operator_secret"
@@ -432,7 +432,7 @@ def test_the_weight_loader_never_receives_none_for_an_anonymous_caller(
     monkeypatch.setattr(export_backend_module, "FastLanguageModel", _Loader)
 
     export_backend_module.ExportBackend().load_checkpoint(
-        checkpoint_path="owner/model", hf_token=hf_token
+        checkpoint_path = "owner/model", hf_token = hf_token
     )
 
     # The probes take the plain token; only the loaders get the sentinel.
@@ -473,9 +473,9 @@ def test_a_local_gguf_lora_conversion_carries_the_sentinel(
         def save_pretrained_gguf(
             save_directory,
             tokenizer,
-            save_method=None,
-            quantization_method=None,
-            token=None,
+            save_method = None,
+            quantization_method = None,
+            token = None,
         ):
             seen["token"] = token
 
@@ -489,7 +489,7 @@ def test_a_local_gguf_lora_conversion_carries_the_sentinel(
     backend.is_peft = True
 
     success, message, _path = backend.export_lora_adapter(
-        save_directory=str(tmp_path), gguf=True, hf_token=hf_token
+        save_directory = str(tmp_path), gguf = True, hf_token = hf_token
     )
     assert success, message
     assert seen["token"] == expected
@@ -508,8 +508,8 @@ def test_a_local_merged_save_carries_the_sentinel(monkeypatch, tmp_path, hf_toke
         def save_pretrained_merged(
             save_directory,
             tokenizer,
-            save_method=None,
-            token=None,
+            save_method = None,
+            token = None,
         ):
             seen["token"] = token
 
@@ -520,7 +520,7 @@ def test_a_local_merged_save_carries_the_sentinel(monkeypatch, tmp_path, hf_toke
     backend.current_model = _FakeModel()
     backend.current_tokenizer = object()
 
-    backend.export_merged_model(save_directory=str(tmp_path), hf_token=hf_token)
+    backend.export_merged_model(save_directory = str(tmp_path), hf_token = hf_token)
     assert seen["token"] == expected
 
 
@@ -556,7 +556,7 @@ def test_offline_type_detection_is_not_degraded_by_the_sentinel(monkeypatch):
     monkeypatch.setattr(export_backend_module, "FastLanguageModel", _Loader)
 
     export_backend_module.ExportBackend().load_checkpoint(
-        checkpoint_path="owner/vlm", hf_token=False
+        checkpoint_path = "owner/vlm", hf_token = False
     )
 
     assert seen["audio"] is None, "an anonymous probe must not be forced down the guard"
@@ -574,14 +574,14 @@ def test_offline_tier_detection_is_not_degraded_by_the_sentinel(monkeypatch, tmp
 
     repo = "acme/private-finetune"
     repo_dir = tmp_path / ("models--" + repo.replace("/", "--"))
-    (repo_dir / "snapshots" / "abc123").mkdir(parents=True)
+    (repo_dir / "snapshots" / "abc123").mkdir(parents = True)
     (repo_dir / "snapshots" / "abc123" / "config.json").write_text(
         json.dumps({"model_type": "qwen3_moe", "architectures": ["Qwen3MoeForCausalLM"]})
     )
-    (repo_dir / "refs").mkdir(parents=True)
+    (repo_dir / "refs").mkdir(parents = True)
     (repo_dir / "refs" / "main").write_text("abc123")
 
-    monkeypatch.setattr(tv, "get_hf_cache_paths", lambda: SimpleNamespace(hub_cache=tmp_path))
+    monkeypatch.setattr(tv, "get_hf_cache_paths", lambda: SimpleNamespace(hub_cache = tmp_path))
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     monkeypatch.setenv("UNSLOTH_DISABLE_TIER_PROBE", "1")
 
@@ -647,7 +647,7 @@ def test_every_hub_write_route_names_the_ambient_policy():
         (jobs_routes, "publish_job_dataset"),
     }
     missing = []
-    for module, name in sorted(gated, key=lambda pair: pair[1]):
+    for module, name in sorted(gated, key = lambda pair: pair[1]):
         fn = getattr(module, name)
         param = inspect.signature(fn).parameters.get("allow_ambient")
         if (
@@ -693,7 +693,7 @@ def test_the_worker_can_still_disable_implicit_tokens_when_it_starts():
         print("imported" if "huggingface_hub" in sys.modules else "clear")
         """
     ) % str(backend)
-    out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, timeout=300)
+    out = subprocess.run([sys.executable, "-c", probe], capture_output = True, text = True, timeout = 300)
     assert out.returncode == 0, out.stderr[-2000:]
     assert out.stdout.strip().endswith("clear"), (
         "core.export.worker imports huggingface_hub at module scope, so "

@@ -15,7 +15,7 @@ import sys
 
 
 def banner(title: str) -> None:
-    print(f"\n=== {title} ===", flush=True)
+    print(f"\n=== {title} ===", flush = True)
 
 
 def check_torch() -> tuple[int, int]:
@@ -56,7 +56,6 @@ def check_imports() -> None:
     print(f"unsloth_zoo {unsloth_zoo.__version__}")
     try:
         import xformers
-
         print(f"xformers    {xformers.__version__}")
     except ImportError:
         print("xformers    (missing -- expected on arm64 [huggingface] extras)")
@@ -94,20 +93,20 @@ def check_tiny_train(cap: tuple[int, int]) -> None:
     model_name = "unsloth/Llama-3.2-1B-Instruct-bnb-4bit"
     print(f"loading     {model_name}")
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name,
-        max_seq_length=512,
-        dtype=None,
-        load_in_4bit=True,
+        model_name = model_name,
+        max_seq_length = 512,
+        dtype = None,
+        load_in_4bit = True,
     )
     model = FastLanguageModel.get_peft_model(
         model,
-        r=8,
-        lora_alpha=16,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.0,
-        bias="none",
-        use_gradient_checkpointing="unsloth",
-        random_state=0,
+        r = 8,
+        lora_alpha = 16,
+        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"],
+        lora_dropout = 0.0,
+        bias = "none",
+        use_gradient_checkpointing = "unsloth",
+        random_state = 0,
     )
 
     prompts = [
@@ -116,18 +115,18 @@ def check_tiny_train(cap: tuple[int, int]) -> None:
         "Q: Name a primary color.\nA:",
         "Q: Hello, who are you?\nA:",
     ] * 2
-    enc = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True, max_length=64)
+    enc = tokenizer(prompts, return_tensors = "pt", padding = True, truncation = True, max_length = 64)
     enc = {k: v.cuda() for k, v in enc.items()}
     labels = enc["input_ids"].clone()
 
     model.train()
-    optim = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-4)
+    optim = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr = 1e-4)
     for step in range(5):
-        out = model(**enc, labels=labels)
+        out = model(**enc, labels = labels)
         out.loss.backward()
         optim.step()
-        optim.zero_grad(set_to_none=True)
-        print(f"step {step}  loss={out.loss.item():.4f}", flush=True)
+        optim.zero_grad(set_to_none = True)
+        print(f"step {step}  loss={out.loss.item():.4f}", flush = True)
 
     print("OK: 5 LoRA steps completed")
 
@@ -136,8 +135,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--skip-train",
-        action="store_true",
-        help="Skip the tiny LoRA training step (no HF download).",
+        action = "store_true",
+        help = "Skip the tiny LoRA training step (no HF download).",
     )
     args = ap.parse_args()
 

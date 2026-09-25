@@ -33,7 +33,7 @@ def assert_fixture_version_clears_floor(repo_root: Path) -> None:
     Compared on the leading component: a string compare would read "999" as above
     "9999", which is the one answer this must not get wrong.
     """
-    source = (repo_root / "studio/src-tauri/src/preflight/version.rs").read_text(encoding="utf-8")
+    source = (repo_root / "studio/src-tauri/src/preflight/version.rs").read_text(encoding = "utf-8")
     marker = 'MIN_DESKTOP_BACKEND_VERSION: &str = "'
     start = source.find(marker)
     if start < 0:
@@ -53,7 +53,7 @@ def assert_no_loader_errors(*logs: Path) -> None:
     for log in logs:
         if not log.is_file():
             continue
-        for line in log.read_text(encoding="utf-8", errors="replace").splitlines():
+        for line in log.read_text(encoding = "utf-8", errors = "replace").splitlines():
             if any(marker in line for marker in LOADER_ERROR_MARKERS):
                 failures.append(f"{log.name}: {line}")
     if failures:

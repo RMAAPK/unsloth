@@ -42,7 +42,7 @@ class _Model:
 
 
 def _p(device):
-    return torch.nn.Parameter(torch.zeros(2, device=device), requires_grad=False)
+    return torch.nn.Parameter(torch.zeros(2, device = device), requires_grad = False)
 
 
 # ---- fires when it should --------------------------------------------------
@@ -128,7 +128,7 @@ def test_a_parameter_with_no_device_does_not_crash():
 
 # ---- wiring ---------------------------------------------------------------
 
-SRC = (ROOT / "unsloth" / "save.py").read_text(encoding="utf-8")
+SRC = (ROOT / "unsloth" / "save.py").read_text(encoding = "utf-8")
 
 
 def test_both_save_failure_paths_use_it():

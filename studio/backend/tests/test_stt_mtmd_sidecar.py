@@ -18,7 +18,7 @@ from core.inference import stt_ggml_sidecar as ggml_mod
 
 def _shared_setup_1(monkeypatch, spawned):
     made, _, _ = spawned
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(lambda *a, **k: True))
     sidecar.load("qwen3-asr-0.6b")
     return made, sidecar
@@ -26,7 +26,7 @@ def _shared_setup_1(monkeypatch, spawned):
 
 def _shared_setup_2(monkeypatch):
     monkeypatch.setattr(
-        mtmd_mod, "_decode_audio_bounded", lambda audio, cancel_event=None: b"\x00\x00" * 16000
+        mtmd_mod, "_decode_audio_bounded", lambda audio, cancel_event = None: b"\x00\x00" * 16000
     )
     monkeypatch.setattr(mtmd_mod, "_pcm_to_wav_bytes", lambda pcm: b"RIFFwav")
 
@@ -36,7 +36,7 @@ class _FakeProcess:
 
     _next_pid = 9000
 
-    def __init__(self, ignores_sigterm=False):
+    def __init__(self, ignores_sigterm = False):
         _FakeProcess._next_pid += 1
         self.pid = _FakeProcess._next_pid
         self._returncode = None
@@ -57,7 +57,7 @@ class _FakeProcess:
         self.killed = True
         self._returncode = -9
 
-    def wait(self, timeout=None):
+    def wait(self, timeout = None):
         self.waited = True
         if self._returncode is None:
             raise subprocess.TimeoutExpired("llama-server", timeout)
@@ -91,13 +91,13 @@ def test_training_preempts_a_startup_before_it_can_publish(spawned, monkeypatch)
     """_process is only set once the server is ready, so training had nothing to
     act on for the whole startup and raced a child that was still allocating."""
     made, _, forgotten = spawned
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     started = threading.Event()
 
     def never_ready(
         process,
         port,
-        cancel_event=None,
+        cancel_event = None,
     ):
         started.set()
         while not (cancel_event is not None and cancel_event.is_set()):
@@ -105,7 +105,7 @@ def test_training_preempts_a_startup_before_it_can_publish(spawned, monkeypatch)
         return False
 
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(never_ready))
-    loader = threading.Thread(target=lambda: _swallow(sidecar, "qwen3-asr-0.6b"))
+    loader = threading.Thread(target = lambda: _swallow(sidecar, "qwen3-asr-0.6b"))
     loader.start()
     try:
         assert started.wait(2), "startup never began"
@@ -113,21 +113,21 @@ def test_training_preempts_a_startup_before_it_can_publish(spawned, monkeypatch)
         assert sidecar.cancel_pending_load() is True
         sidecar.wait_for_load_to_settle()
     finally:
-        loader.join(timeout=5)
+        loader.join(timeout = 5)
 
     assert made[0].terminated, "the starting llama-server was left allocating"
     assert forgotten == [made[0].pid], "a reaped PID must leave the registry"
 
 
 def test_cancel_pending_load_reports_when_there_is_nothing_to_cancel():
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     assert sidecar.cancel_pending_load() is False
 
 
 def test_a_child_that_ignores_sigterm_is_killed_not_abandoned(monkeypatch):
     forgotten = []
     monkeypatch.setattr(mtmd_mod, "forget_pid", forgotten.append)
-    process = _FakeProcess(ignores_sigterm=True)
+    process = _FakeProcess(ignores_sigterm = True)
 
     mtmd_mod._reap(process)
 
@@ -138,7 +138,7 @@ def test_a_child_that_ignores_sigterm_is_killed_not_abandoned(monkeypatch):
 def test_the_idle_timer_cannot_fire_during_a_long_transcription():
     """Audio may run longer than the keep-alive, and posting happens outside the
     lock, so an armed timer would kill llama-server mid-request."""
-    sidecar = MtmdSttSidecar(keep_alive_seconds=300)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 300)
     with sidecar._lock:
         sidecar._active_requests = 1
         sidecar._schedule_idle_unload_locked()
@@ -151,10 +151,10 @@ def test_the_idle_timer_cannot_fire_during_a_long_transcription():
 
 
 def test_an_update_blocks_new_dictation_loads(spawned):
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     with sidecar.update_maintenance() as was_active:
         assert was_active is False
-        with pytest.raises(mtmd_mod.SttUnavailableError, match="being updated"):
+        with pytest.raises(mtmd_mod.SttUnavailableError, match = "being updated"):
             sidecar.load("qwen3-asr-0.6b")
     # Released again once the install finishes.
     assert sidecar._update_in_progress is False
@@ -326,7 +326,7 @@ def test_a_training_load_pins_the_projector_off_the_gpu_too(spawned, monkeypatch
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(lambda *a, **k: True))
     monkeypatch.setattr(mtmd_mod, "_training_active", lambda: True)
 
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar.load("qwen3-asr-0.6b")
 
     cmd = commands[0]
@@ -347,7 +347,7 @@ def test_an_ordinary_load_keeps_the_gpu(spawned, monkeypatch):
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(lambda *a, **k: True))
     monkeypatch.setattr(mtmd_mod, "_training_active", lambda: False)
 
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar.load("qwen3-asr-0.6b")
 
     cmd = commands[0]
@@ -360,13 +360,13 @@ def test_unload_stops_a_startup_instead_of_letting_it_publish(spawned, monkeypat
     """_process is unset during startup, so a plain release was a no-op and the
     model came back resident moments after the user unloaded it."""
     made, _, forgotten = spawned
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     started = threading.Event()
 
     def never_ready(
         process,
         port,
-        cancel_event=None,
+        cancel_event = None,
     ):
         started.set()
         while not (cancel_event is not None and cancel_event.is_set()):
@@ -374,13 +374,13 @@ def test_unload_stops_a_startup_instead_of_letting_it_publish(spawned, monkeypat
         return False
 
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(never_ready))
-    loader = threading.Thread(target=lambda: _swallow(sidecar, "qwen3-asr-0.6b"))
+    loader = threading.Thread(target = lambda: _swallow(sidecar, "qwen3-asr-0.6b"))
     loader.start()
     try:
         assert started.wait(2), "startup never began"
         sidecar.unload()
     finally:
-        loader.join(timeout=5)
+        loader.join(timeout = 5)
 
     assert made[0].terminated, "the starting server survived an explicit unload"
     assert sidecar.loaded_model is None
@@ -417,7 +417,7 @@ def test_a_server_started_for_training_goes_back_to_the_gpu_after(spawned, monke
 
     training = {"active": True}
     monkeypatch.setattr(mtmd_mod, "_training_active", lambda: training["active"])
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar.load("qwen3-asr-0.6b")
     assert commands[0][commands[0].index("-ngl") + 1] == "0"
 
@@ -446,7 +446,7 @@ def test_a_running_transcription_outranks_the_offload_upgrade(spawned, monkeypat
 
     training = {"active": True}
     monkeypatch.setattr(mtmd_mod, "_training_active", lambda: training["active"])
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar.load("qwen3-asr-0.6b")
 
     training["active"] = False
@@ -465,7 +465,7 @@ def test_a_running_transcription_outranks_the_offload_upgrade(spawned, monkeypat
 def test_audio_is_never_sent_to_a_server_another_client_swapped_in(spawned, monkeypatch):
     """load() returns before the request slot is taken, so the model can change
     in between and the port read would be the other server's."""
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(lambda *a, **k: True))
     _shared_setup_2(monkeypatch)
 
@@ -473,14 +473,14 @@ def test_audio_is_never_sent_to_a_server_another_client_swapped_in(spawned, monk
     monkeypatch.setattr(
         MtmdSttSidecar,
         "_post_transcribe",
-        lambda self, port, model_id, wav, seconds=None, **kwargs: posted.append((port, model_id))
+        lambda self, port, model_id, wav, seconds = None, **kwargs: posted.append((port, model_id))
         or "hi",
     )
 
     def swap_after_load(
         self,
-        model=None,
-        request_cancel_event=None,
+        model = None,
+        request_cancel_event = None,
     ):
         # Stands in for another client switching the singleton in the gap.
         with self._lock:
@@ -490,7 +490,7 @@ def test_audio_is_never_sent_to_a_server_another_client_swapped_in(spawned, monk
 
     monkeypatch.setattr(MtmdSttSidecar, "load", swap_after_load)
     with pytest.raises(mtmd_mod.SttModelBusyError):
-        sidecar.transcribe(b"audio", model="qwen3-asr-0.6b")
+        sidecar.transcribe(b"audio", model = "qwen3-asr-0.6b")
     assert posted == [], "audio went to the model the other client loaded"
 
 
@@ -518,10 +518,10 @@ def test_a_busy_transcription_is_a_retry_not_a_server_error(monkeypatch):
         asyncio.run(
             ri._transcribe_audio_bytes(
                 b"audio",
-                model="qwen3-asr-0.6b",
-                language=None,
-                fast=True,
-                engine="mtmd",
+                model = "qwen3-asr-0.6b",
+                language = None,
+                fast = True,
+                engine = "mtmd",
             )
         )
     assert excinfo.value.status_code == 409
@@ -537,11 +537,11 @@ def test_dictation_still_works_on_cpu_during_training(spawned, monkeypatch):
     monkeypatch.setattr(
         MtmdSttSidecar,
         "_post_transcribe",
-        lambda self, port, model_id, wav, seconds=None, **kwargs: "on cpu",
+        lambda self, port, model_id, wav, seconds = None, **kwargs: "on cpu",
     )
 
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
-    result = sidecar.transcribe(b"audio", model="qwen3-asr-0.6b")
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
+    result = sidecar.transcribe(b"audio", model = "qwen3-asr-0.6b")
     assert result["text"] == "on cpu"
     sidecar.unload()
 
@@ -561,7 +561,7 @@ def test_disconnecting_one_mtmd_request_does_not_kill_its_sibling(monkeypatch):
             self.terminated = True
 
     process = _AliveProcess()
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar._process = process
     sidecar._port = 65000
     sidecar._model_id = "qwen3-asr-0.6b"
@@ -578,20 +578,20 @@ def test_disconnecting_one_mtmd_request_does_not_kill_its_sibling(monkeypatch):
         _port,
         _model,
         _wav,
-        _seconds=None,
+        _seconds = None,
         *,
-        cancel_event=None,
+        cancel_event = None,
     ):
         nonlocal started
         with started_lock:
             started += 1
             if started == 2:
                 both_started.set()
-        assert both_started.wait(timeout=5)
+        assert both_started.wait(timeout = 5)
         if cancel_event is first_cancel:
-            assert first_cancel.wait(timeout=5)
+            assert first_cancel.wait(timeout = 5)
             raise mtmd_mod.SttTranscriptionCancelledError("Transcription cancelled.")
-        assert release_second.wait(timeout=5)
+        assert release_second.wait(timeout = 5)
         return "sibling survived"
 
     monkeypatch.setattr(sidecar, "_post_transcribe", post)
@@ -601,22 +601,22 @@ def test_disconnecting_one_mtmd_request_does_not_kill_its_sibling(monkeypatch):
     def run(cancel_event):
         try:
             results.append(
-                sidecar.transcribe(b"audio", model="qwen3-asr-0.6b", cancel_event=cancel_event)[
+                sidecar.transcribe(b"audio", model = "qwen3-asr-0.6b", cancel_event = cancel_event)[
                     "text"
                 ]
             )
         except Exception as exc:
             errors.append(exc)
 
-    first = threading.Thread(target=run, args=(first_cancel,))
-    second = threading.Thread(target=run, args=(second_cancel,))
+    first = threading.Thread(target = run, args = (first_cancel,))
+    second = threading.Thread(target = run, args = (second_cancel,))
     first.start()
     second.start()
-    assert both_started.wait(timeout=5)
+    assert both_started.wait(timeout = 5)
     sidecar.cancel_transcription(first_cancel)
     release_second.set()
-    first.join(timeout=5)
-    second.join(timeout=5)
+    first.join(timeout = 5)
+    second.join(timeout = 5)
 
     assert results == ["sibling survived"]
     assert len(errors) == 1 and isinstance(errors[0], mtmd_mod.SttTranscriptionCancelledError)
@@ -640,7 +640,7 @@ def test_mtmd_disconnect_closes_the_request_connection(monkeypatch):
             requested.set()
 
         def getresponse(self):
-            assert shutdown.wait(timeout=5)
+            assert shutdown.wait(timeout = 5)
             raise OSError("request connection closed")
 
         def close(self):
@@ -657,16 +657,16 @@ def test_mtmd_disconnect_closes_the_request_connection(monkeypatch):
                 65000,
                 "qwen3-asr-0.6b",
                 b"RIFFwav",
-                cancel_event=cancelled,
+                cancel_event = cancelled,
             )
         except Exception as exc:
             errors.append(exc)
 
-    worker = threading.Thread(target=post)
+    worker = threading.Thread(target = post)
     worker.start()
-    assert requested.wait(timeout=5)
+    assert requested.wait(timeout = 5)
     cancelled.set()
-    worker.join(timeout=5)
+    worker.join(timeout = 5)
 
     assert shutdown.is_set()
     assert len(errors) == 1 and isinstance(errors[0], OSError)
@@ -702,7 +702,7 @@ def test_mtmd_transcription_rejects_non_success_server_response(monkeypatch):
 
     monkeypatch.setattr(mtmd_mod.http.client, "HTTPConnection", _Connection)
 
-    with pytest.raises(RuntimeError, match="returned HTTP 500"):
+    with pytest.raises(RuntimeError, match = "returned HTTP 500"):
         MtmdSttSidecar()._post_transcribe(
             65000,
             "qwen3-asr-0.6b",
@@ -742,14 +742,14 @@ def test_mtmd_disconnect_cancels_only_its_owned_startup():
 
 def test_a_startup_cancelled_for_training_is_retryable_not_unavailable(spawned, monkeypatch):
     """501 reads as a broken runtime; this is ordinary preemption, so 409."""
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     started = threading.Event()
     raised = []
 
     def never_ready(
         process,
         port,
-        cancel_event=None,
+        cancel_event = None,
     ):
         started.set()
         while not (cancel_event is not None and cancel_event.is_set()):
@@ -764,13 +764,13 @@ def test_a_startup_cancelled_for_training_is_retryable_not_unavailable(spawned, 
         except Exception as exc:
             raised.append(exc)
 
-    loader = threading.Thread(target=load_and_record)
+    loader = threading.Thread(target = load_and_record)
     loader.start()
     try:
         assert started.wait(2), "startup never began"
         sidecar.cancel_pending_load()
     finally:
-        loader.join(timeout=5)
+        loader.join(timeout = 5)
 
     assert raised and isinstance(raised[0], mtmd_mod.SttLoadCancelledError)
     # Not the 501 class: the route separates them by exception type.
@@ -800,7 +800,7 @@ def test_training_that_starts_while_the_old_server_is_reaped_still_pins_the_cpu(
     monkeypatch.setattr(MtmdSttSidecar, "_wait_for_server", staticmethod(lambda *a, **k: True))
     monkeypatch.setattr(mtmd_mod, "_training_active", lambda: training["active"])
 
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar.load("qwen3-asr-0.6b")
     assert commands[0][commands[0].index("-ngl") + 1] == "99", "nothing was training yet"
 
@@ -817,7 +817,7 @@ def test_a_load_is_cancellable_before_it_decides_where_to_run(spawned, monkeypat
     """The other order: admission arriving after the snapshot must find a load
     it can cancel, so _loading is published before training is read."""
     seen = []
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
 
     def training_active():
         seen.append(sidecar.is_loading())
@@ -846,9 +846,9 @@ class _SlowlyDyingProcess:
     def terminate(self):
         pass
 
-    def wait(self, timeout=None):
+    def wait(self, timeout = None):
         # Blocks until the test lets go, like a server slow to release its port and VRAM.
-        if not self._release.wait(timeout=timeout):
+        if not self._release.wait(timeout = timeout):
             raise subprocess.TimeoutExpired("llama-server", timeout)
         self._returncode = -15
         return self._returncode
@@ -871,11 +871,11 @@ def test_status_reads_do_not_block_behind_a_reap(monkeypatch):
     on a dying server.
     """
     monkeypatch.setattr(mtmd_mod, "forget_pid", lambda pid: None)
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     release = threading.Event()
     _resident(sidecar, _SlowlyDyingProcess(release))
 
-    unloading = threading.Thread(target=sidecar.unload, daemon=True)
+    unloading = threading.Thread(target = sidecar.unload, daemon = True)
     unloading.start()
     try:
         # Give unload() time to take _lock and block inside _reap().
@@ -888,13 +888,13 @@ def test_status_reads_do_not_block_behind_a_reap(monkeypatch):
             sidecar.is_loading()
             answered.set()
 
-        threading.Thread(target=read_status, daemon=True).start()
+        threading.Thread(target = read_status, daemon = True).start()
         assert answered.wait(
-            timeout=5
+            timeout = 5
         ), "a status read blocked behind the reap; the event loop would stall with it"
     finally:
         release.set()
-        unloading.join(timeout=10)
+        unloading.join(timeout = 10)
 
 
 def test_a_reaping_server_stays_visible_to_training_admission(monkeypatch):
@@ -904,7 +904,7 @@ def test_a_reaping_server_stays_visible_to_training_admission(monkeypatch):
     nothing while the process is alive, and training would start into its memory.
     """
     monkeypatch.setattr(mtmd_mod, "forget_pid", lambda pid: None)
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     release = threading.Event()
     _resident(sidecar, _SlowlyDyingProcess(release))
 
@@ -913,7 +913,7 @@ def test_a_reaping_server_stays_visible_to_training_admission(monkeypatch):
     def unload():
         sidecar.unload()
 
-    unloading = threading.Thread(target=unload, daemon=True)
+    unloading = threading.Thread(target = unload, daemon = True)
     unloading.start()
     try:
         time.sleep(0.2)  # inside the reap
@@ -921,7 +921,7 @@ def test_a_reaping_server_stays_visible_to_training_admission(monkeypatch):
         seen["device"] = sidecar.device
     finally:
         release.set()
-        unloading.join(timeout=10)
+        unloading.join(timeout = 10)
 
     assert (
         seen["model"] == "qwen3-asr-0.6b"
@@ -938,13 +938,13 @@ def test_a_starting_load_is_announced_before_the_probe_and_the_reap():
     Training admission reads it lock-free, so a False there sends it to unload(),
     which waits out the whole startup instead of cancelling the load.
     """
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     probing = threading.Event()
     release = threading.Event()
 
     def slow_probe(model_id):
         probing.set()
-        release.wait(timeout=10)
+        release.wait(timeout = 10)
         raise RuntimeError("the probe is where the test stops")
 
     sidecar._ensure_model_downloaded = slow_probe
@@ -955,15 +955,15 @@ def test_a_starting_load_is_announced_before_the_probe_and_the_reap():
         except Exception:
             pass
 
-    loading = threading.Thread(target=load, daemon=True)
+    loading = threading.Thread(target = load, daemon = True)
     loading.start()
     try:
-        assert probing.wait(timeout=5)
+        assert probing.wait(timeout = 5)
         assert sidecar.is_loading() is True, "the load was not announced before the probe"
         assert sidecar.cancel_pending_load() is True, "training could not cancel this load"
     finally:
         release.set()
-        loading.join(timeout=10)
+        loading.join(timeout = 10)
     # The load never started a server, so it must not leave _loading set.
     assert sidecar.is_loading() is False
     assert sidecar._load_cancel_event is None
@@ -971,7 +971,7 @@ def test_a_starting_load_is_announced_before_the_probe_and_the_reap():
 
 def test_device_never_contradicts_the_loaded_model():
     """Mid-publish _process is set and _model_id is not; the two must agree."""
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     sidecar._process = _SlowlyDyingProcess(threading.Event())
     sidecar._port = 12345
     sidecar._model_id = None
@@ -981,7 +981,7 @@ def test_device_never_contradicts_the_loaded_model():
 
 def test_status_reads_do_not_block_during_a_llama_cpp_update():
     """update_maintenance() holds _lock for the whole install; polls continue."""
-    sidecar = MtmdSttSidecar(keep_alive_seconds=0)
+    sidecar = MtmdSttSidecar(keep_alive_seconds = 0)
     with sidecar.update_maintenance():
         answered = threading.Event()
 
@@ -990,9 +990,9 @@ def test_status_reads_do_not_block_during_a_llama_cpp_update():
             sidecar.is_loading()
             answered.set()
 
-        threading.Thread(target=read_status, daemon=True).start()
+        threading.Thread(target = read_status, daemon = True).start()
         assert answered.wait(
-            timeout=5
+            timeout = 5
         ), "a status read blocked for the length of the llama.cpp install"
 
 
@@ -1036,7 +1036,7 @@ def test_ggml_download_drops_its_adopted_pid(monkeypatch, tmp_path):
             return None
 
     monkeypatch.setattr(
-        huggingface_hub, "get_hf_file_metadata", lambda *a, **k: _Metadata(), raising=False
+        huggingface_hub, "get_hf_file_metadata", lambda *a, **k: _Metadata(), raising = False
     )
     import core.inference.stt_download_worker as worker_mod
 
@@ -1181,19 +1181,19 @@ def test_download_status_reports_progress_without_holding_the_lock():
 
     def slow_downloaded_bytes(*_args, **_kwargs):
         # The lock must be free while this runs.
-        observed.append(state._lock.acquire(blocking=False))
+        observed.append(state._lock.acquire(blocking = False))
         if observed[-1]:
             state._lock.release()
         return 1
 
     state._downloaded_bytes = slow_downloaded_bytes
     state._model_id = "qwen3-asr-0.6b"
-    state._thread = threading.Thread(target=lambda: time.sleep(0.5), daemon=True)
+    state._thread = threading.Thread(target = lambda: time.sleep(0.5), daemon = True)
     state._thread.start()
     try:
         status = state.status()
     finally:
-        state._thread.join(timeout=5)
+        state._thread.join(timeout = 5)
 
     assert status["bytes_done"] == 1
     assert observed == [True], "progress was computed while holding the download lock"

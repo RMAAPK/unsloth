@@ -28,15 +28,15 @@ def test_linux_tauri_icon_is_1024_square():
 
 def test_tauri_icons_are_declared_as_package_data():
     tomllib = pytest.importorskip("tomllib" if sys.version_info >= (3, 11) else "tomli")
-    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    data = tomllib.loads(PYPROJECT.read_text(encoding = "utf-8"))
     package_data = data["tool"]["setuptools"]["package-data"]["studio"]
     assert "src-tauri/icons/icon.icns" in package_data
     assert "src-tauri/icons/icon.png" in package_data
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash is unavailable")
+@pytest.mark.skipif(shutil.which("bash") is None, reason = "bash is unavailable")
 def test_linux_tauri_icon_is_copied_into_installed_data(tmp_path):
-    source = INSTALL_SH.read_text(encoding="utf-8")
+    source = INSTALL_SH.read_text(encoding = "utf-8")
     marker = source.index("# Prefer the higher-resolution Tauri icon.png")
     start = source.index('        _css_desktop_icon="$_css_icon_png"', marker)
     end = source.index('        cat > "$_css_desktop"', start)
@@ -58,18 +58,18 @@ def test_linux_tauri_icon_is_copied_into_installed_data(tmp_path):
     )
     result = subprocess.run(
         ["bash", "-c", script],
-        env={"PATH": "/usr/bin:/bin"},
-        check=True,
-        capture_output=True,
-        text=True,
+        env = {"PATH": "/usr/bin:/bin"},
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert result.stdout == str(installed_icon)
     assert installed_icon.read_text() == "high-resolution"
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash is unavailable")
+@pytest.mark.skipif(shutil.which("bash") is None, reason = "bash is unavailable")
 def test_macos_prebuilt_copy_failure_runs_generated_icns_fallback(tmp_path):
-    source = INSTALL_SH.read_text(encoding="utf-8")
+    source = INSTALL_SH.read_text(encoding = "utf-8")
     marker = source.index("# ── AppIcon ──")
     start = source.index('        if [ -f "$_css_tauri_icns"', marker)
     end = source.index("        # Touch so Finder indexes it", start)
@@ -121,9 +121,9 @@ def test_macos_prebuilt_copy_failure_runs_generated_icns_fallback(tmp_path):
     )
     result = subprocess.run(
         ["bash", "-c", script],
-        env={"PATH": f"{fake_bin}:/usr/bin:/bin", **{"TMPDIR": str(tmp_path)}},
-        capture_output=True,
-        text=True,
+        env = {"PATH": f"{fake_bin}:/usr/bin:/bin", **{"TMPDIR": str(tmp_path)}},
+        capture_output = True,
+        text = True,
     )
     assert result.returncode == 0, result.stderr
     assert (resources / "AppIcon.icns").read_text() == "generated"
@@ -133,20 +133,20 @@ INSTALL_PS1 = REPO_ROOT / "install.ps1"
 
 
 def _wsl_packaged_icon_block() -> str:
-    source = INSTALL_SH.read_text(encoding="utf-8")
+    source = INSTALL_SH.read_text(encoding = "utf-8")
     start = source.index('        _css_wsl_ico_win=""')
     end = source.index("        # Create shortcuts via a temp PowerShell script", start)
     return textwrap.dedent(source[start:end])
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash is unavailable")
+@pytest.mark.skipif(shutil.which("bash") is None, reason = "bash is unavailable")
 def test_wsl_shortcut_reads_the_packaged_ico_out_of_site_packages(tmp_path):
     """A WSL install that found the .ico in site-packages must hand the shortcut script a
     Windows path."""
     dist = (
         tmp_path / "venv" / "lib" / "python3.12" / "site-packages" / "studio" / "frontend" / "dist"
     )
-    dist.mkdir(parents=True)
+    dist.mkdir(parents = True)
     (dist / "unsloth.ico").write_bytes(b"\x00\x00\x01\x00icon")
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -162,21 +162,21 @@ def test_wsl_shortcut_reads_the_packaged_ico_out_of_site_packages(tmp_path):
     )
     result = subprocess.run(
         ["bash", "-c", script],
-        env={"PATH": f"{fake_bin}:/usr/bin:/bin"},
-        check=True,
-        capture_output=True,
-        text=True,
+        env = {"PATH": f"{fake_bin}:/usr/bin:/bin"},
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert result.stdout == "C:\\wsl\\unsloth.ico"
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="bash is unavailable")
+@pytest.mark.skipif(shutil.which("bash") is None, reason = "bash is unavailable")
 @pytest.mark.parametrize("ships_icon", [True, False])
 def test_wsl_shortcut_falls_back_when_the_ico_cannot_be_translated(tmp_path, ships_icon):
     dist = (
         tmp_path / "venv" / "lib" / "python3.12" / "site-packages" / "studio" / "frontend" / "dist"
     )
-    dist.mkdir(parents=True)
+    dist.mkdir(parents = True)
     if ships_icon:
         (dist / "unsloth.ico").write_bytes(b"\x00\x00\x01\x00icon")
     fake_bin = tmp_path / "bin"
@@ -193,19 +193,19 @@ def test_wsl_shortcut_falls_back_when_the_ico_cannot_be_translated(tmp_path, shi
     )
     result = subprocess.run(
         ["bash", "-c", script],
-        env={"PATH": f"{fake_bin}:/usr/bin:/bin"},
-        check=True,
-        capture_output=True,
-        text=True,
+        env = {"PATH": f"{fake_bin}:/usr/bin:/bin"},
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert result.stdout == ""
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="pwsh is unavailable")
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason = "pwsh is unavailable")
 def test_windows_shortcut_prefers_the_packaged_icon_over_the_download(tmp_path):
     """An irm|iex install has no $PSScriptRoot and so no $bundledIcon, which is where the
     packaged .ico has to win."""
-    source = INSTALL_PS1.read_text(encoding="utf-8")
+    source = INSTALL_PS1.read_text(encoding = "utf-8")
     start = source.index("            $hasValidIcon = $false")
     end = source.index("            if (Test-Path -LiteralPath $iconPath) {", start)
     block = textwrap.dedent(source[start:end])
@@ -215,7 +215,7 @@ def test_windows_shortcut_prefers_the_packaged_icon_over_the_download(tmp_path):
     icon_path = tmp_path / "unsloth.ico"
 
     def run(packaged_icon: str) -> str:
-        icon_path.unlink(missing_ok=True)
+        icon_path.unlink(missing_ok = True)
         script = "\n".join(
             [
                 "function Write-StudioLine { }",
@@ -231,9 +231,9 @@ def test_windows_shortcut_prefers_the_packaged_icon_over_the_download(tmp_path):
         # and check = True would report that as the precedence being wrong.
         return run_pwsh(
             ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-            check=True,
-            capture_output=True,
-            text=True,
+            check = True,
+            capture_output = True,
+            text = True,
         ).stdout
 
     assert "DOWNLOADED" not in run(f"'{packaged}'")
@@ -241,19 +241,19 @@ def test_windows_shortcut_prefers_the_packaged_icon_over_the_download(tmp_path):
     assert "DOWNLOADED" in run("$null")
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="pwsh is unavailable")
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason = "pwsh is unavailable")
 def test_windows_packaged_icon_is_found_next_to_the_managed_python(tmp_path):
     """Resolve one level too few or too many and nothing is found, so the icon is downloaded."""
-    source = INSTALL_PS1.read_text(encoding="utf-8")
+    source = INSTALL_PS1.read_text(encoding = "utf-8")
     start = source.index("            $packagedIcon = $null")
     end = source.index('            $iconUrl = "https://raw.githubusercontent.com', start)
     block = textwrap.dedent(source[start:end])
 
     venv = tmp_path / "venv"
-    (venv / "Scripts").mkdir(parents=True)
+    (venv / "Scripts").mkdir(parents = True)
     (venv / "Scripts" / "python.exe").write_text("")
     icon = venv / "Lib" / "site-packages" / "studio" / "frontend" / "dist" / "unsloth.ico"
-    icon.parent.mkdir(parents=True)
+    icon.parent.mkdir(parents = True)
     icon.write_bytes(b"\x00\x00\x01\x00packaged")
 
     script = "\n".join(
@@ -265,9 +265,9 @@ def test_windows_packaged_icon_is_found_next_to_the_managed_python(tmp_path):
     )
     found = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-        check=True,
-        capture_output=True,
-        text=True,
+        check = True,
+        capture_output = True,
+        text = True,
     ).stdout.strip()
     assert found.startswith(str(venv))
     assert found.endswith("unsloth.ico")
@@ -275,13 +275,13 @@ def test_windows_packaged_icon_is_found_next_to_the_managed_python(tmp_path):
 
 @pytest.mark.skipif(
     shutil.which("pwsh") is None or shutil.which("bash") is None,
-    reason="pwsh and bash are both required",
+    reason = "pwsh and bash are both required",
 )
 def test_wsl_shortcut_script_copies_the_packaged_ico_instead_of_downloading(tmp_path):
     """The half of the WSL path that runs under Windows, piped through bash because
     install.sh writes it in an unquoted heredoc: a `$` that lost its backslash expands to
     nothing and strips the path off Copy-Item, which no later check would catch."""
-    source = INSTALL_SH.read_text(encoding="utf-8")
+    source = INSTALL_SH.read_text(encoding = "utf-8")
     start = source.index("\\$packagedIcon = '$_css_wsl_ico_win_ps'")
     end = source.index("\\$hasIcon = \\$false", start)
     packaged = tmp_path / "packaged.ico"
@@ -300,10 +300,10 @@ def test_wsl_shortcut_script_copies_the_packaged_ico_instead_of_downloading(tmp_
                 ]
             ),
         ],
-        env={"PATH": "/usr/bin:/bin"},
-        check=True,
-        capture_output=True,
-        text=True,
+        env = {"PATH": "/usr/bin:/bin"},
+        check = True,
+        capture_output = True,
+        text = True,
     ).stdout
 
     script = "\n".join(
@@ -316,9 +316,9 @@ def test_wsl_shortcut_script_copies_the_packaged_ico_instead_of_downloading(tmp_
     )
     result = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-        check=True,
-        capture_output=True,
-        text=True,
+        check = True,
+        capture_output = True,
+        text = True,
     )
     assert "DOWNLOADED" not in result.stdout
     assert (icon_dir / "unsloth.ico").read_bytes() == b"\x00\x00\x01\x00packaged"

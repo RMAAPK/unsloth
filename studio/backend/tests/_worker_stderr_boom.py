@@ -5,14 +5,14 @@ import sys
 
 
 def exit_one_after_writing_to_stderr(**_kwargs) -> None:
-    print("Received command: generate", file=sys.stderr)
-    print("Starting text generation", file=sys.stderr)
+    print("Received command: generate", file = sys.stderr)
+    print("Starting text generation", file = sys.stderr)
     sys.stderr.flush()
     raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
 
 
 def record_received_kwargs(**kwargs) -> None:
-    print(f"entrypoint kwargs: {sorted(kwargs)}", file=sys.stderr)
+    print(f"entrypoint kwargs: {sorted(kwargs)}", file = sys.stderr)
     sys.stderr.flush()
     raise SystemExit(1)
 
@@ -21,7 +21,7 @@ def hold_a_second_handle_on_stderr_then_exit(**_kwargs) -> None:
     import os
 
     _keep_alive = os.dup(2)  # noqa: F841
-    print("held a second handle on stderr", file=sys.stderr)
+    print("held a second handle on stderr", file = sys.stderr)
     sys.stderr.flush()
     raise SystemExit(1)
 

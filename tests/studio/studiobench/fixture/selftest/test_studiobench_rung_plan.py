@@ -161,7 +161,7 @@ def test_settled_actions_open_after_the_follow_up_drains():
         ):
             continue
         last_send = None
-        for slot in sorted(scene.slots, key=lambda s: s.t_start_ms):
+        for slot in sorted(scene.slots, key = lambda s: s.t_start_ms):
             if slot.action == "send_turn":
                 # THE LATEST THE SEND CAN FIRE, not the earliest. The drain starts when the send actually happens,
                 # and a send slot is a WINDOW: the action may legitimately begin anywhere inside its own budget,

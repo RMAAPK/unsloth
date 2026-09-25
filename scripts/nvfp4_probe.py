@@ -32,7 +32,7 @@ def _lpips(ref, arr):
         import torch, lpips
 
         if _LP["fn"] is None:
-            _LP["fn"] = lpips.LPIPS(net="alex", verbose=False).cuda().eval()
+            _LP["fn"] = lpips.LPIPS(net = "alex", verbose = False).cuda().eval()
 
         def t(x):
             return (torch.from_numpy(x).float().permute(2, 0, 1).unsqueeze(0) / 127.5 - 1.0).cuda()
@@ -40,7 +40,7 @@ def _lpips(ref, arr):
         with torch.no_grad():
             return float(_LP["fn"](t(ref), t(arr)).item())
     except Exception as exc:  # noqa: BLE001
-        print(f"    (lpips: {type(exc).__name__})", flush=True)
+        print(f"    (lpips: {type(exc).__name__})", flush = True)
         return None
 
 
@@ -48,9 +48,9 @@ def _load_dense():
     import torch, diffusers
 
     t = diffusers.ZImageTransformer2DModel.from_pretrained(
-        BASE, subfolder="transformer", torch_dtype=torch.bfloat16
+        BASE, subfolder = "transformer", torch_dtype = torch.bfloat16
     )
-    pipe = diffusers.ZImagePipeline.from_pretrained(BASE, torch_dtype=torch.bfloat16, transformer=t)
+    pipe = diffusers.ZImagePipeline.from_pretrained(BASE, torch_dtype = torch.bfloat16, transformer = t)
     pipe.to("cuda")
     return pipe
 
@@ -58,16 +58,16 @@ def _load_dense():
 def _gen(pipe, steps, seed, res):
     import torch
 
-    g = torch.Generator(device="cuda").manual_seed(seed)
+    g = torch.Generator(device = "cuda").manual_seed(seed)
     torch.cuda.synchronize()
     t0 = time.time()
     img = pipe(
-        prompt=PROMPT,
-        width=res,
-        height=res,
-        num_inference_steps=steps,
-        guidance_scale=0.0,
-        generator=g,
+        prompt = PROMPT,
+        width = res,
+        height = res,
+        num_inference_steps = steps,
+        guidance_scale = 0.0,
+        generator = g,
     ).images[0]
     torch.cuda.synchronize()
     return img, time.time() - t0
@@ -77,14 +77,14 @@ def _median(xs):
     return sorted(xs)[len(xs) // 2]
 
 
-def main(argv=None) -> int:
+def main(argv = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--steps", type=int, default=8)
-    p.add_argument("--res", type=int, default=1024)
-    p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--iters", type=int, default=3)
-    p.add_argument("--min-feat", type=int, default=512)
-    p.add_argument("--out-dir", default=None, help="image output dir (default: repo outputs/)")
+    p.add_argument("--steps", type = int, default = 8)
+    p.add_argument("--res", type = int, default = 1024)
+    p.add_argument("--seed", type = int, default = 42)
+    p.add_argument("--iters", type = int, default = 3)
+    p.add_argument("--min-feat", type = int, default = 512)
+    p.add_argument("--out-dir", default = None, help = "image output dir (default: repo outputs/)")
     args = p.parse_args(argv)
     steps, res, seed, mf = args.steps, args.res, args.seed, args.min_feat
     import torch
@@ -93,16 +93,16 @@ def main(argv=None) -> int:
     global OUT
     if args.out_dir:
         OUT = Path(args.out_dir).expanduser()
-    OUT.mkdir(parents=True, exist_ok=True)
+    OUT.mkdir(parents = True, exist_ok = True)
 
-    def filt(mod, fqn=""):
+    def filt(mod, fqn = ""):
         return isinstance(mod, nn.Linear) and mod.in_features >= mf and mod.out_features >= mf
 
     def run(
         tag,
         *,
-        cfg=None,
-        compile=True,
+        cfg = None,
+        compile = True,
     ):
         torch.compiler.reset()
         torch.cuda.empty_cache()
@@ -110,14 +110,13 @@ def main(argv=None) -> int:
         pipe = _load_dense()
         if cfg is not None:
             from torchao.quantization import quantize_
-
-            quantize_(pipe.transformer, cfg, filter_fn=filt)
+            quantize_(pipe.transformer, cfg, filter_fn = filt)
         if compile:
             try:
-                pipe.transformer.compile_repeated_blocks(fullgraph=True, dynamic=True)
+                pipe.transformer.compile_repeated_blocks(fullgraph = True, dynamic = True)
             except Exception as exc:  # noqa: BLE001
                 print(
-                    f"    [{tag}] compile failed: {type(exc).__name__}: {str(exc)[:90]}", flush=True
+                    f"    [{tag}] compile failed: {type(exc).__name__}: {str(exc)[:90]}", flush = True
                 )
         _gen(pipe, steps, seed, res)  # warmup / compile
         dts, img = [], None
@@ -134,35 +133,35 @@ def main(argv=None) -> int:
     from torchao.quantization import Float8DynamicActivationFloat8WeightConfig as FP8
     from torchao.prototype.mx_formats import NVFP4DynamicActivationNVFP4WeightConfig as NV
 
-    print(f"== nvfp4 probe (Z-Image dense, {res}px, {steps} steps, min_feat={mf}) ==", flush=True)
-    bref, ref, _ = run("bf16_eager", cfg=None, compile=False)
-    print(f"  bf16 eager ref: {bref:.3f}s", flush=True)
+    print(f"== nvfp4 probe (Z-Image dense, {res}px, {steps} steps, min_feat={mf}) ==", flush = True)
+    bref, ref, _ = run("bf16_eager", cfg = None, compile = False)
+    print(f"  bf16 eager ref: {bref:.3f}s", flush = True)
     rows = [("bf16_eager", bref, float("inf"), 0.0, None)]
 
     specs = [
         ("bf16_compile", None, True),
         ("fp8_compile", FP8(), True),
-        ("nvfp4_notriton_compile", NV(use_triton_kernel=False), True),
-        ("nvfp4_notriton_eager", NV(use_triton_kernel=False), False),
+        ("nvfp4_notriton_compile", NV(use_triton_kernel = False), True),
+        ("nvfp4_notriton_eager", NV(use_triton_kernel = False), False),
     ]
     for tag, cfg, comp in specs:
         try:
-            med, arr, gp = run(tag, cfg=cfg, compile=comp)
+            med, arr, gp = run(tag, cfg = cfg, compile = comp)
             ps, lp = _psnr(ref, arr), _lpips(ref, arr)
             rows.append((tag, med, ps, lp, gp))
             print(
                 f"  {tag:24s} {med:.3f}s ({bref/med:.2f}x vs eager) PSNR={ps:.1f} LPIPS={lp} VRAM={gp:.1f}G",
-                flush=True,
+                flush = True,
             )
         except Exception as exc:  # noqa: BLE001
             import traceback
 
             traceback.print_exc()
-            print(f"  {tag:24s} FAILED: {type(exc).__name__}: {str(exc)[:160]}", flush=True)
+            print(f"  {tag:24s} FAILED: {type(exc).__name__}: {str(exc)[:160]}", flush = True)
             rows.append((tag, None, None, None, None))
 
     fp8 = next((r[1] for r in rows if r[0] == "fp8_compile" and r[1]), None)
-    print("\n==== SUMMARY (ref = bf16 dense eager) ====", flush=True)
+    print("\n==== SUMMARY (ref = bf16 dense eager) ====", flush = True)
     for tag, med, ps, lp, gp in rows:
         if med is None:
             print(f"  {tag:24s} FAILED")
@@ -176,9 +175,9 @@ def main(argv=None) -> int:
         )
         print(
             f"  {tag:24s} {med:.3f}s  vs_fp8:{vs_fp8:>6s}  PSNR={psv:>5s}  LPIPS={lpv:>6s}",
-            flush=True,
+            flush = True,
         )
-    print("NVFP4-PROBE-DONE", flush=True)
+    print("NVFP4-PROBE-DONE", flush = True)
     return 0
 
 

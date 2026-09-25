@@ -39,7 +39,7 @@ def now_ms() -> int:
 
 
 def canonical_plan(plan: dict[str, Any]) -> tuple[str, str]:
-    raw = json.dumps(plan, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    raw = json.dumps(plan, sort_keys = True, separators = (",", ":"), ensure_ascii = False)
     return raw, hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -65,7 +65,7 @@ def _event_locked(conn: sqlite3.Connection, run_id: str, event_type: str, data: 
     conn.execute(
         "INSERT INTO research_events (run_id, seq, event_type, data_json, created_at) "
         "VALUES (?, ?, ?, ?, ?)",
-        (run_id, seq, event_type, json.dumps(event_data, ensure_ascii=False), created),
+        (run_id, seq, event_type, json.dumps(event_data, ensure_ascii = False), created),
     )
     conn.execute(
         "UPDATE research_runs SET next_event_seq = ?, updated_at = ? WHERE id = ?",
@@ -166,7 +166,7 @@ def _bind_assistant_locked(
                 assistant_message_id,
                 thread_id,
                 user_message_id,
-                json.dumps(metadata, ensure_ascii=False),
+                json.dumps(metadata, ensure_ascii = False),
                 created,
             ),
         )
@@ -215,7 +215,7 @@ def _bind_assistant_locked(
     merged_metadata.update(metadata)
     conn.execute(
         "UPDATE chat_messages SET metadata_json=? WHERE id=?",
-        (json.dumps(merged_metadata, ensure_ascii=False), assistant_message_id),
+        (json.dumps(merged_metadata, ensure_ascii = False), assistant_message_id),
     )
 
 
@@ -249,12 +249,12 @@ def create_run(
             raise
         _bind_assistant_locked(
             conn,
-            run_id=run_id,
-            thread_id=thread_id,
-            user_message_id=user_message_id,
-            assistant_message_id=assistant_message_id,
-            plan_revision=0,
-            created=created,
+            run_id = run_id,
+            thread_id = thread_id,
+            user_message_id = user_message_id,
+            assistant_message_id = assistant_message_id,
+            plan_revision = 0,
+            created = created,
         )
         conn.execute(
             """
@@ -269,7 +269,7 @@ def create_run(
                 thread_id,
                 user_message_id,
                 assistant_message_id,
-                json.dumps(config, ensure_ascii=False),
+                json.dumps(config, ensure_ascii = False),
                 created,
                 created,
             ),
@@ -304,7 +304,7 @@ def _unbind_assistant_locked(
         metadata.pop(key, None)
     conn.execute(
         "UPDATE chat_messages SET metadata_json=? WHERE id=?",
-        (json.dumps(metadata, ensure_ascii=False), previous_id),
+        (json.dumps(metadata, ensure_ascii = False), previous_id),
     )
 
 
@@ -369,12 +369,12 @@ def rebind_cancelled(
         _unbind_assistant_locked(conn, run["assistant_message_id"], assistant_message_id)
         _bind_assistant_locked(
             conn,
-            run_id=run_id,
-            thread_id=thread_id,
-            user_message_id=user_message_id,
-            assistant_message_id=assistant_message_id,
-            plan_revision=revision,
-            created=now,
+            run_id = run_id,
+            thread_id = thread_id,
+            user_message_id = user_message_id,
+            assistant_message_id = assistant_message_id,
+            plan_revision = revision,
+            created = now,
         )
         # retry_count is the attempt epoch every event is stamped with, and a new question is a new attempt: without
         # the bump its report would carry the stopped question's reasoning, since get_reasoning_text joins every event
@@ -393,7 +393,7 @@ def rebind_cancelled(
                 revision,
                 now,
                 now,
-                json.dumps(config, ensure_ascii=False),
+                json.dumps(config, ensure_ascii = False),
                 now,
                 run_id,
             ),
@@ -630,8 +630,8 @@ def create_and_bind_terminal_fallback(
                 message_id,
                 run["thread_id"],
                 run["user_message_id"],
-                json.dumps(parts, ensure_ascii=False),
-                json.dumps(metadata, ensure_ascii=False),
+                json.dumps(parts, ensure_ascii = False),
+                json.dumps(metadata, ensure_ascii = False),
                 created,
             ),
         )
@@ -1163,7 +1163,7 @@ def upsert_execution_step(
                 title[:200],
                 query[:500],
                 status,
-                json.dumps(result, ensure_ascii=False) if result is not None else None,
+                json.dumps(result, ensure_ascii = False) if result is not None else None,
                 now,
                 now if status in {"completed", "failed"} else None,
             ),

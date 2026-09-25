@@ -44,7 +44,7 @@ def test_no_amd_gpu_imports_nothing_and_spawns_no_shell(linux, monkeypatch):
 
     monkeypatch.setattr(dse, "read_login_shell_env", _explode)
     environ = desktop()
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
     assert environ == desktop()
 
 
@@ -60,8 +60,8 @@ def test_amd_host_imports_the_missing_rocm_vars(linux, monkeypatch):
             "PATH": "/usr/bin",
         },
     )
-    environ = desktop(PATH="/gui/bin")
-    imported = dse.import_rocm_env_from_login_shell(environ=environ)
+    environ = desktop(PATH = "/gui/bin")
+    imported = dse.import_rocm_env_from_login_shell(environ = environ)
     assert imported == {
         "HSA_OVERRIDE_GFX_VERSION": "11.0.0",
         "ROCM_PATH": "/opt/rocm",
@@ -115,8 +115,8 @@ def test_importing_twice_is_a_no_op_the_second_time(linux, monkeypatch):
     monkeypatch.setattr(dse, "host_has_amd_gpu", lambda: True)
     monkeypatch.setattr(dse, "read_login_shell_env", lambda *_a, **_k: {"ROCM_PATH": "/opt/rocm"})
     environ = desktop()
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {"ROCM_PATH": "/opt/rocm"}
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {"ROCM_PATH": "/opt/rocm"}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
 
 
 def test_the_opt_out_short_circuits_before_anything_is_read(monkeypatch):
@@ -125,7 +125,7 @@ def test_the_opt_out_short_circuits_before_anything_is_read(monkeypatch):
 
     monkeypatch.setattr(dse, "host_has_amd_gpu", _explode)
     environ = desktop(**{dse.DISABLE_ENV_VAR: "1"})
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
 
 
 def test_a_shell_that_fails_yields_nothing(linux, monkeypatch):
@@ -136,11 +136,11 @@ def test_a_shell_that_fails_yields_nothing(linux, monkeypatch):
 
     monkeypatch.setattr(dse.subprocess, "Popen", _raise)
     environ = desktop()
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
     assert environ == desktop()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX shell on Windows")
+@pytest.mark.skipif(sys.platform == "win32", reason = "no POSIX shell on Windows")
 def test_a_real_login_shell_round_trips_a_value(tmp_path, monkeypatch):
     """``env -0`` is used so a value with a newline cannot split the record."""
     rc = tmp_path / "rc.sh"
@@ -149,24 +149,24 @@ def test_a_real_login_shell_round_trips_a_value(tmp_path, monkeypatch):
         'export ROCM_PATH="/opt/rocm"\n'
         'export HSA_OVERRIDE_GFX_VERSION="11.0.0"\n'
         'export UNSLOTH_TEST_MULTILINE="one\ntwo"\n',
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     shim = tmp_path / "shell.sh"
     # Stands in for a login shell: takes -ilc and sources an rc file first.
     shim.write_text(
         "#!/bin/sh\n" f'. "{rc}"\n' "shift 1\n" 'exec /bin/sh -c "$1"\n',
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     shim.chmod(0o755)
 
-    env = dse.read_login_shell_env(shell=str(shim))
+    env = dse.read_login_shell_env(shell = str(shim))
     assert env.get("ROCM_PATH") == "/opt/rocm"
     assert env.get("HSA_OVERRIDE_GFX_VERSION") == "11.0.0"
     assert env.get("UNSLOTH_TEST_MULTILINE") == "one\ntwo"
 
 
 @pytest.mark.skipif(
-    not sys.platform.startswith("linux"), reason="the KFD topology only exists on Linux"
+    not sys.platform.startswith("linux"), reason = "the KFD topology only exists on Linux"
 )
 def test_the_amd_probe_answers_from_the_kernel_without_torch():
     # No assertion about the answer: this box may or may not have an AMD GPU.
@@ -182,7 +182,7 @@ def test_a_launch_the_desktop_app_does_not_own_reads_no_shell(linux, monkeypatch
     # A terminal, a systemd unit, a container: none carry the marker.
     for environ in ({}, {dse.DESKTOP_MANAGED_ENV: "0"}, {dse.DESKTOP_MANAGED_ENV: ""}):
         before = dict(environ)
-        assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+        assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
         assert environ == before
 
 
@@ -204,16 +204,16 @@ def test_a_cpu_node_is_not_a_gpu():
 def _shim(tmp_path, rc_body: str):
     """A stand-in login shell: sources an rc file, then runs the -c command."""
     rc = tmp_path / "rc.sh"
-    rc.write_text(rc_body, encoding="utf-8")
+    rc.write_text(rc_body, encoding = "utf-8")
     shim = tmp_path / "shell.sh"
     shim.write_text(
-        "#!/bin/sh\n" f'. "{rc}"\n' "shift 1\n" 'exec /bin/sh -c "$1"\n', encoding="utf-8"
+        "#!/bin/sh\n" f'. "{rc}"\n' "shift 1\n" 'exec /bin/sh -c "$1"\n', encoding = "utf-8"
     )
     shim.chmod(0o755)
     return str(shim)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX shell on Windows")
+@pytest.mark.skipif(sys.platform == "win32", reason = "no POSIX shell on Windows")
 def test_a_background_job_in_the_rc_neither_stalls_nor_loses_the_environment(tmp_path):
     """An rc that starts an agent must not cost the whole timeout.
 
@@ -221,7 +221,7 @@ def test_a_background_job_in_the_rc_neither_stalls_nor_loses_the_environment(tmp
     """
     shell = _shim(tmp_path, "sleep 45 &\nexport ROCM_PATH=/opt/rocm\n")
     started = time.monotonic()
-    env = dse.read_login_shell_env(shell=shell, timeout=15.0)
+    env = dse.read_login_shell_env(shell = shell, timeout = 15.0)
     assert time.monotonic() - started < 10.0
     assert env.get("ROCM_PATH") == "/opt/rocm"
 
@@ -237,35 +237,35 @@ def _wait_for_exit(pid: int, seconds: float = 5.0) -> bool:
     return False
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX shell on Windows")
+@pytest.mark.skipif(sys.platform == "win32", reason = "no POSIX shell on Windows")
 def test_a_successful_read_still_takes_the_shells_children_with_it(tmp_path):
     """The shell exits cleanly, so nothing raises: its children still must go."""
     pidfile = tmp_path / "child.pid"
     shell = _shim(tmp_path, f"sleep 300 &\necho $! > {pidfile}\nexport ROCM_PATH=/opt/rocm\n")
-    assert dse.read_login_shell_env(shell=shell).get("ROCM_PATH") == "/opt/rocm"
+    assert dse.read_login_shell_env(shell = shell).get("ROCM_PATH") == "/opt/rocm"
     child = int(pidfile.read_text().strip())
     if not _wait_for_exit(child):
         os.kill(child, signal.SIGKILL)
         raise AssertionError(f"pid {child} outlived the shell that started it")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX shell on Windows")
+@pytest.mark.skipif(sys.platform == "win32", reason = "no POSIX shell on Windows")
 def test_the_timeout_takes_the_shells_children_with_it(tmp_path):
     """A hung shell must not leave its children running, once per launch."""
     pidfile = tmp_path / "child.pid"
     shell = _shim(tmp_path, f"sleep 300 &\necho $! > {pidfile}\nsleep 300\n")
-    assert dse.read_login_shell_env(shell=shell, timeout=2.0) == {}
+    assert dse.read_login_shell_env(shell = shell, timeout = 2.0) == {}
     child = int(pidfile.read_text().strip())
     if not _wait_for_exit(child):
         os.kill(child, signal.SIGKILL)
         raise AssertionError(f"pid {child} outlived the shell that started it")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="no POSIX shell on Windows")
+@pytest.mark.skipif(sys.platform == "win32", reason = "no POSIX shell on Windows")
 def test_a_value_the_filesystem_allows_but_utf8_does_not_round_trips(tmp_path):
     """A path carrying a non-UTF-8 byte must arrive as those bytes."""
     shell = _shim(tmp_path, "export ROCM_PATH=\"$(printf '/opt/rocm\\377')\"\n")
-    env = dse.read_login_shell_env(shell=shell)
+    env = dse.read_login_shell_env(shell = shell)
     assert os.fsencode(env["ROCM_PATH"]) == b"/opt/rocm\xff"
 
 
@@ -281,7 +281,7 @@ def _shell_with_the_reporters_override(monkeypatch):
 def test_an_override_the_install_cannot_serve_is_not_imported(linux, monkeypatch):
     _shell_with_the_reporters_override(monkeypatch)
     environ = desktop(**{dse.ROCM_INSTALLED_ARCH_ENV: "gfx1151"})
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {"ROCM_PATH": "/opt/rocm"}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {"ROCM_PATH": "/opt/rocm"}
     assert dse.HSA_OVERRIDE_ENV not in environ
 
 
@@ -289,14 +289,14 @@ def test_an_override_the_install_can_serve_is_imported(linux, monkeypatch):
     # 11.0.0 is gfx1100, and these wheels carry gfx1100 kernels.
     _shell_with_the_reporters_override(monkeypatch)
     environ = desktop(**{dse.ROCM_INSTALLED_ARCH_ENV: "gfx1100"})
-    imported = dse.import_rocm_env_from_login_shell(environ=environ)
+    imported = dse.import_rocm_env_from_login_shell(environ = environ)
     assert imported["HSA_OVERRIDE_GFX_VERSION"] == "11.0.0"
 
 
 def test_an_install_that_is_not_single_arch_arbitrates_nothing(linux, monkeypatch):
     """No marker means generic or multi-arch wheels, which contradict no override."""
     _shell_with_the_reporters_override(monkeypatch)
-    imported = dse.import_rocm_env_from_login_shell(environ=desktop())
+    imported = dse.import_rocm_env_from_login_shell(environ = desktop())
     assert imported["HSA_OVERRIDE_GFX_VERSION"] == "11.0.0"
 
 
@@ -332,7 +332,6 @@ def test_an_unreadable_override_is_not_ours_to_drop():
 def test_the_cli_and_this_module_name_the_same_marker():
     """Two files, one contract: a rename on either side must fail here."""
     import unsloth_cli.commands.studio as studio_cli
-
     assert studio_cli.ROCM_INSTALLED_ARCH_ENV == dse.ROCM_INSTALLED_ARCH_ENV
 
 
@@ -347,5 +346,5 @@ def test_no_other_platform_reads_a_shell(platform, monkeypatch):
     monkeypatch.setattr(dse, "host_has_amd_gpu", _explode)
     monkeypatch.setattr(dse, "read_login_shell_env", _explode)
     environ = desktop()
-    assert dse.import_rocm_env_from_login_shell(environ=environ) == {}
+    assert dse.import_rocm_env_from_login_shell(environ = environ) == {}
     assert environ == desktop()

@@ -24,7 +24,7 @@ _SHIPPED_CONFIGS = _REPO_ROOT / "studio" / "backend" / "assets" / "configs"
 
 def _write(tmp_path, body: str) -> Path:
     path = tmp_path / "config.yaml"
-    path.write_text(body, encoding="utf-8")
+    path.write_text(body, encoding = "utf-8")
     return path
 
 
@@ -130,7 +130,7 @@ def test_unparseable_yaml_reports_cleanly_instead_of_tracebacking(tmp_path):
 
 def test_unparseable_json_reports_cleanly_instead_of_tracebacking(tmp_path):
     path = tmp_path / "config.json"
-    path.write_text("{oops}", encoding="utf-8")
+    path.write_text("{oops}", encoding = "utf-8")
 
     with pytest.raises(ConfigError) as excinfo:
         load_config(path)
@@ -199,14 +199,14 @@ def test_a_byte_order_mark_written_by_notepad_still_loads(tmp_path, suffix):
 
 def test_a_whitespace_only_json_config_loads_defaults_like_yaml_does(tmp_path):
     path = tmp_path / "config.json"
-    path.write_text("   \n\t\n", encoding="utf-8")
+    path.write_text("   \n\t\n", encoding = "utf-8")
 
     assert load_config(path).training.num_epochs == 3
 
 
 def test_an_unrecognised_extension_says_it_was_parsed_as_json(tmp_path):
     path = tmp_path / "config.txt"
-    path.write_text("model: unsloth/Qwen2.5-0.5B\n", encoding="utf-8")
+    path.write_text("model: unsloth/Qwen2.5-0.5B\n", encoding = "utf-8")
 
     with pytest.raises(ConfigError) as excinfo:
         load_config(path)

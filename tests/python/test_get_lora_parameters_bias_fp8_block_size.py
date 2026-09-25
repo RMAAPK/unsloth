@@ -5,13 +5,13 @@ from pathlib import Path
 def _load_function(name):
     # Extract a function from kernels/utils.py without importing unsloth (which needs a GPU / torch / bitsandbytes).
     source = Path(__file__).parents[2] / "unsloth" / "kernels" / "utils.py"
-    tree = ast.parse(source.read_text(encoding="utf-8"))
+    tree = ast.parse(source.read_text(encoding = "utf-8"))
     funcs = [
         node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == name
     ]
     assert len(funcs) == 1, (name, funcs)
     namespace = {"getattr": getattr, "_FP8_WEIGHT_DTYPES": ()}
-    module = ast.Module(body=funcs, type_ignores=[])
+    module = ast.Module(body = funcs, type_ignores = [])
     ast.fix_missing_locations(module)
     exec(compile(module, str(source), "exec"), namespace)
     return namespace[name]

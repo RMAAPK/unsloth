@@ -51,7 +51,7 @@ from utils.models.model_config import (
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _clear_vision_cache(tmp_path, monkeypatch):
     """Ensure every test starts with a fresh cache, from an empty working dir.
 
@@ -77,21 +77,21 @@ def _clear_vision_cache(tmp_path, monkeypatch):
 class TestVisionCacheHitMiss:
     """Verify the cache prevents redundant detection calls."""
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=True)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = True)
     def test_second_call_uses_cache(self, mock_uncached):
         """Two calls for the same model invoke the uncached fn once."""
         assert is_vision_model("org/my-vlm") is True
         assert is_vision_model("org/my-vlm") is True
-        mock_uncached.assert_called_once_with("org/my-vlm", None, local_files_only=False)
+        mock_uncached.assert_called_once_with("org/my-vlm", None, local_files_only = False)
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=False)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = False)
     def test_different_models_each_detected(self, mock_uncached):
         """Different model names should each trigger detection."""
         is_vision_model("model-a")
         is_vision_model("model-b")
         assert mock_uncached.call_count == 2
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=True)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = True)
     def test_cache_returns_correct_value(self, mock_uncached):
         """The cached value must match what _is_vision_model_uncached returned."""
         first = is_vision_model("org/vlm")
@@ -103,7 +103,7 @@ class TestVisionCacheHitMiss:
 class TestVisionCacheStoresFalse:
     """Non-VLM results (False) must also be cached to avoid re-detection."""
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=False)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = False)
     def test_false_result_cached(self, mock_uncached):
         assert is_vision_model("org/text-only") is False
         assert is_vision_model("org/text-only") is False
@@ -119,9 +119,9 @@ class TestVisionCacheSubprocessPath:
     The cache should spawn the subprocess at most once per model per
     process."""
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.models.model_config._is_vision_model_subprocess", return_value=True)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=True)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.models.model_config._is_vision_model_subprocess", return_value = True)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = True)
     def test_subprocess_called_once_with_cache(self, mock_needs_t5, mock_subprocess, mock_raw):
         """When the raw-config reader is inconclusive (None), the transformers
         5.x subprocess fires only on the first call; the second is cached."""
@@ -133,9 +133,9 @@ class TestVisionCacheSubprocessPath:
         mock_subprocess.assert_called_once()
         assert _vision_detection_cache[("unsloth/Qwen3.5-2B", None, False)] is True
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=True)
-    @patch("utils.models.model_config._is_vision_model_subprocess", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=True)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = True)
+    @patch("utils.models.model_config._is_vision_model_subprocess", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = True)
     def test_raw_config_primary_skips_subprocess(
         self, mock_needs_t5, mock_subprocess, mock_raw_config
     ):
@@ -144,7 +144,7 @@ class TestVisionCacheSubprocessPath:
         assert is_vision_model("unsloth/gemma-4-E4B-it") is True
 
         mock_raw_config.assert_called_once_with(
-            "unsloth/gemma-4-E4B-it", hf_token=None, local_files_only=False
+            "unsloth/gemma-4-E4B-it", hf_token = None, local_files_only = False
         )
         mock_subprocess.assert_not_called()
 
@@ -166,7 +166,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_qwen36_gguf_with_mmproj_skips_transformers(self, mock_subprocess, tmp_path):
         model = tmp_path / "Qwen3.6-27B-UD-Q4_K_XL-MTP.gguf"
@@ -178,7 +178,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_direct_gguf_in_variant_subdir_finds_snapshot_mmproj(self, mock_subprocess, tmp_path):
         variant_dir = tmp_path / "BF16"
@@ -192,7 +192,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_qwen36_gguf_without_mmproj_skips_transformers(self, mock_subprocess, tmp_path):
         model = tmp_path / "Qwen3.6-27B-UD-Q4_K_XL-MTP.gguf"
@@ -211,7 +211,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_ui_selection_returns_local_gguf_config(self, mock_subprocess, tmp_path):
         model = tmp_path / "Qwen3.6-27B-UD-Q4_K_XL-MTP.gguf"
@@ -229,7 +229,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_ui_selection_direct_gguf_in_variant_subdir_keeps_mmproj(
         self, mock_subprocess, tmp_path
@@ -267,7 +267,7 @@ class TestLocalGgufVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_named_quant_in_a_subdir_reads_the_snapshot_projector(self, mock_subprocess, tmp_path):
         """A repo whose quants all live under a per-quant subdir has no weight file at the
@@ -278,12 +278,12 @@ class TestLocalGgufVisionDetection:
         (variant_dir / "Qwen3-VL-235B-UD-Q4_K_XL-00002-of-00002.gguf").write_bytes(b"\0" * 32)
         (tmp_path / "mmproj-F32.gguf").write_bytes(b"\0" * 32)
 
-        assert is_vision_model(str(tmp_path), gguf_variant="UD-Q4_K_XL") is True
+        assert is_vision_model(str(tmp_path), gguf_variant = "UD-Q4_K_XL") is True
         mock_subprocess.assert_not_called()
 
     @patch(
         "utils.models.model_config._is_vision_model_subprocess",
-        side_effect=AssertionError("GGUF must not use Transformers vision detection"),
+        side_effect = AssertionError("GGUF must not use Transformers vision detection"),
     )
     def test_named_quant_in_a_subdir_without_a_projector_is_text_only(
         self, mock_subprocess, tmp_path
@@ -292,7 +292,7 @@ class TestLocalGgufVisionDetection:
         variant_dir.mkdir()
         (variant_dir / "Qwen3-235B-UD-Q4_K_XL.gguf").write_bytes(b"\0" * 32)
 
-        assert is_vision_model(str(tmp_path), gguf_variant="UD-Q4_K_XL") is False
+        assert is_vision_model(str(tmp_path), gguf_variant = "UD-Q4_K_XL") is False
         mock_subprocess.assert_not_called()
 
     @pytest.mark.parametrize(
@@ -310,13 +310,13 @@ class TestLocalGgufVisionDetection:
         (variant_dir / "mmproj-F16.gguf").write_bytes(b"\0" * 32)
         (tmp_path / "Qwen3-VL-8B-Instruct-Q8_0.gguf").write_bytes(b"\0" * 32)
 
-        config = ModelConfig.from_identifier(str(tmp_path), gguf_variant=variant)
+        config = ModelConfig.from_identifier(str(tmp_path), gguf_variant = variant)
 
         assert config is not None
         assert config.is_vision is expected
-        assert is_vision_model(str(tmp_path), gguf_variant=variant) is expected
+        assert is_vision_model(str(tmp_path), gguf_variant = variant) is expected
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=False)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = False)
     def test_a_quant_that_is_not_on_disk_is_not_answered_by_another_one(
         self, mock_uncached, tmp_path
     ):
@@ -325,11 +325,11 @@ class TestLocalGgufVisionDetection:
         (tmp_path / "Qwen3-VL-8B-Instruct-Q8_0.gguf").write_bytes(b"\0" * 32)
         (tmp_path / "mmproj-F16.gguf").write_bytes(b"\0" * 32)
 
-        config = ModelConfig.from_identifier(str(tmp_path), gguf_variant="UD-Q4_K_XL")
+        config = ModelConfig.from_identifier(str(tmp_path), gguf_variant = "UD-Q4_K_XL")
 
         assert config is not None
         assert config.is_gguf is False
-        assert is_vision_model(str(tmp_path), gguf_variant="UD-Q4_K_XL") is False
+        assert is_vision_model(str(tmp_path), gguf_variant = "UD-Q4_K_XL") is False
 
 
 # --- Exception handling: cache the False fallback ---
@@ -342,9 +342,9 @@ class TestVisionCacheOnException:
 
     @patch(
         "utils.models.model_config.load_model_config",
-        side_effect=ValueError("bad config"),
+        side_effect = ValueError("bad config"),
     )
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     def test_permanent_exception_result_cached(self, mock_needs_t5, mock_load_config):
         """A permanent failure (ValueError / RepositoryNotFoundError /
         GatedRepoError / JSONDecodeError) is caught, returns False, and
@@ -357,9 +357,9 @@ class TestVisionCacheOnException:
 
     @patch(
         "utils.models.model_config.load_model_config",
-        side_effect=OSError("network down"),
+        side_effect = OSError("network down"),
     )
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     def test_transient_exception_not_cached(self, mock_needs_t5, mock_load_config):
         """A transient failure (OSError, timeouts) returns None from
         _is_vision_model_uncached, surfaces as False, and is NOT cached
@@ -377,12 +377,12 @@ class TestVisionCacheDirectPath:
     """Models that do NOT need transformers 5.x detect via
     load_model_config directly. The cache must work the same way."""
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_direct_vlm_detection_cached(self, mock_load_config, mock_needs_t5, mock_raw):
         """A standard VLM detected via architecture suffix should be cached."""
-        cfg = MagicMock(spec=[])  # strict: only explicitly set attrs exist
+        cfg = MagicMock(spec = [])  # strict: only explicitly set attrs exist
         cfg.model_type = "gemma3"
         cfg.architectures = ["Gemma3ForConditionalGeneration"]
         mock_load_config.return_value = cfg
@@ -392,12 +392,12 @@ class TestVisionCacheDirectPath:
         # load_model_config should only be called once
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_direct_non_vlm_detection_cached(self, mock_load_config, mock_needs_t5, mock_raw):
         """A standard text model (no VLM indicators) should cache False."""
-        cfg = MagicMock(spec=[])  # spec=[] means no attributes at all
+        cfg = MagicMock(spec = [])  # spec=[] means no attributes at all
         cfg.model_type = "llama"
         cfg.architectures = ["LlamaForCausalLM"]
         mock_load_config.return_value = cfg
@@ -407,14 +407,14 @@ class TestVisionCacheDirectPath:
         assert is_vision_model("meta-llama/Llama-3-8B") is False
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_vision_config_attr_detected_and_cached(
         self, mock_load_config, mock_needs_t5, mock_raw
     ):
         """Models with vision_config (LLaVA, Qwen2-VL, etc.) should be cached as True."""
-        cfg = MagicMock(spec=[])  # strict: only explicitly set attrs exist
+        cfg = MagicMock(spec = [])  # strict: only explicitly set attrs exist
         cfg.model_type = "qwen2_vl"
         cfg.architectures = ["Qwen2VLForCausalLM"]  # Doesn't match VLM suffixes
         cfg.vision_config = {"hidden_size": 1024}
@@ -424,11 +424,11 @@ class TestVisionCacheDirectPath:
         assert is_vision_model("Qwen/Qwen2-VL-7B") is True
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_gemma4_model_type_detected_and_cached(self, mock_load_config, mock_needs_t5, mock_raw):
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "gemma4"
         cfg.architectures = ["Gemma4ForConditionalGeneration"]
         mock_load_config.return_value = cfg
@@ -437,13 +437,13 @@ class TestVisionCacheDirectPath:
         assert is_vision_model("google/gemma-4-E4B-it") is True
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_gemma4_audio_subconfig_not_detected_as_vision(
         self, mock_load_config, mock_needs_t5, mock_raw
     ):
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "gemma4_audio"
         cfg.architectures = ["Gemma4AudioModel"]
         mock_load_config.return_value = cfg
@@ -452,13 +452,13 @@ class TestVisionCacheDirectPath:
         assert is_vision_model("local/gemma4-audio-encoder") is False
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_gemma4_text_subconfig_not_detected_as_vision(
         self, mock_load_config, mock_needs_t5, mock_raw
     ):
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "gemma4_text"
         cfg.architectures = ["Gemma4ForCausalLM"]
         mock_load_config.return_value = cfg
@@ -467,13 +467,13 @@ class TestVisionCacheDirectPath:
         assert is_vision_model("local/gemma-4-text") is False
         mock_load_config.assert_called_once()
 
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
     @patch("utils.models.model_config.load_model_config")
     def test_audio_model_excluded_and_cached(self, mock_load_config, mock_needs_t5, mock_raw):
         """Audio-only models (csm, whisper) with ForConditionalGeneration
         should be excluded from VLM detection and cached as False."""
-        cfg = MagicMock(spec=[])  # strict: only explicitly set attrs exist
+        cfg = MagicMock(spec = [])  # strict: only explicitly set attrs exist
         cfg.model_type = "whisper"
         cfg.architectures = ["WhisperForConditionalGeneration"]
         mock_load_config.return_value = cfg
@@ -490,20 +490,20 @@ class TestVisionCacheTokenHandling:
     """The cache is keyed on (model_name, hf_token). Different tokens
     for the same model trigger separate detections for gated models."""
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=True)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = True)
     def test_different_tokens_trigger_new_detection(self, mock_uncached):
         """Different tokens trigger separate detections for gated models
         (e.g. unauthenticated probe → False, then authenticated
         re-check)."""
-        assert is_vision_model("gated/model", hf_token="token-a") is True
-        assert is_vision_model("gated/model", hf_token="token-b") is True
+        assert is_vision_model("gated/model", hf_token = "token-a") is True
+        assert is_vision_model("gated/model", hf_token = "token-b") is True
         assert mock_uncached.call_count == 2
 
-    @patch("utils.models.model_config._is_vision_model_uncached", return_value=True)
+    @patch("utils.models.model_config._is_vision_model_uncached", return_value = True)
     def test_same_token_uses_cache(self, mock_uncached):
         """Repeated calls with identical model + token should hit cache."""
-        assert is_vision_model("gated/model", hf_token="token-a") is True
-        assert is_vision_model("gated/model", hf_token="token-a") is True
+        assert is_vision_model("gated/model", hf_token = "token-a") is True
+        assert is_vision_model("gated/model", hf_token = "token-a") is True
         mock_uncached.assert_called_once()
 
 
@@ -512,36 +512,36 @@ class TestRevisionAwareVisionDetection:
 
     @patch(
         "utils.models.model_config._is_vision_model_uncached",
-        side_effect=[False, True],
+        side_effect = [False, True],
     )
     def test_different_revisions_do_not_share_cache(self, mock_uncached, monkeypatch):
         monkeypatch.setattr("utils.models.model_config._env_offline", lambda: False)
-        assert is_vision_model("org/model", revision="commit-a") is False
-        assert is_vision_model("org/model", revision="commit-b") is True
-        assert is_vision_model("org/model", revision="commit-a") is False
+        assert is_vision_model("org/model", revision = "commit-a") is False
+        assert is_vision_model("org/model", revision = "commit-b") is True
+        assert is_vision_model("org/model", revision = "commit-a") is False
 
         assert mock_uncached.call_count == 2
         mock_uncached.assert_any_call(
             "org/model",
             None,
-            local_files_only=False,
-            revision="commit-a",
+            local_files_only = False,
+            revision = "commit-a",
         )
         mock_uncached.assert_any_call(
             "org/model",
             None,
-            local_files_only=False,
-            revision="commit-b",
+            local_files_only = False,
+            revision = "commit-b",
         )
         assert _vision_detection_cache[("org/model", None, False, "commit-a")] is False
         assert _vision_detection_cache[("org/model", None, False, "commit-b")] is True
 
     @patch("transformers.AutoConfig.from_pretrained")
     def test_load_model_config_forwards_only_non_null_revision(self, from_pretrained):
-        load_model_config("org/model", use_auth=True, revision="commit-a")
+        load_model_config("org/model", use_auth = True, revision = "commit-a")
         assert from_pretrained.call_args.kwargs["revision"] == "commit-a"
 
-        load_model_config("org/model", use_auth=True)
+        load_model_config("org/model", use_auth = True)
         assert "revision" not in from_pretrained.call_args.kwargs
 
     def test_raw_config_download_uses_revision(self, monkeypatch, tmp_path):
@@ -549,21 +549,21 @@ class TestRevisionAwareVisionDetection:
 
         config_path = tmp_path / "config.json"
         config_path.write_text('{"model_type": "llama"}')
-        download = MagicMock(return_value=str(config_path))
+        download = MagicMock(return_value = str(config_path))
         monkeypatch.setattr(mc, "is_local_path", lambda *_a, **_k: False)
         monkeypatch.setattr("huggingface_hub.hf_hub_download", download)
 
-        assert mc._raw_config_has_vision_config("org/model", revision="commit-a") is False
+        assert mc._raw_config_has_vision_config("org/model", revision = "commit-a") is False
         assert download.call_args.kwargs["revision"] == "commit-a"
 
         assert mc._raw_config_has_vision_config("org/model") is False
         assert "revision" not in download.call_args.kwargs
 
     @patch("utils.models.model_config.load_model_config")
-    @patch("utils.transformers_version.needs_transformers_5", return_value=False)
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = False)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
     def test_direct_config_fallback_uses_revision(self, mock_raw, mock_needs_t5, mock_load):
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "llama"
         cfg.architectures = ["LlamaForCausalLM"]
         mock_load.return_value = cfg
@@ -571,51 +571,51 @@ class TestRevisionAwareVisionDetection:
         assert (
             _is_vision_model_uncached(
                 "org/model",
-                hf_token="hf_x",
-                revision="commit-a",
+                hf_token = "hf_x",
+                revision = "commit-a",
             )
             is False
         )
         mock_load.assert_called_once_with(
             "org/model",
-            use_auth=True,
-            token="hf_x",
-            local_files_only=False,
-            revision="commit-a",
+            use_auth = True,
+            token = "hf_x",
+            local_files_only = False,
+            revision = "commit-a",
         )
 
-    @patch("utils.models.model_config._is_vision_model_subprocess", return_value=True)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=True)
-    @patch("utils.models.model_config._raw_config_has_vision_config", return_value=None)
+    @patch("utils.models.model_config._is_vision_model_subprocess", return_value = True)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = True)
+    @patch("utils.models.model_config._raw_config_has_vision_config", return_value = None)
     def test_transformers_5_fallback_uses_revision(self, mock_raw, mock_needs_t5, mock_subprocess):
         assert (
             _is_vision_model_uncached(
                 "org/model",
-                hf_token="hf_x",
-                revision="commit-a",
+                hf_token = "hf_x",
+                revision = "commit-a",
             )
             is True
         )
         mock_subprocess.assert_called_once_with(
             "org/model",
-            hf_token="hf_x",
-            revision="commit-a",
+            hf_token = "hf_x",
+            revision = "commit-a",
         )
 
-    @patch("utils.transformers_version.get_transformers_tier", return_value="default")
+    @patch("utils.transformers_version.get_transformers_tier", return_value = "default")
     @patch("utils.models.model_config.subprocess.run")
     def test_subprocess_command_carries_revision(self, run, mock_tier):
         run.return_value = MagicMock(
-            returncode=0,
-            stdout='{"is_vision": false}',
-            stderr="",
+            returncode = 0,
+            stdout = '{"is_vision": false}',
+            stderr = "",
         )
 
         assert (
             _is_vision_model_subprocess(
                 "org/model",
-                hf_token="hf_x",
-                revision="commit-a",
+                hf_token = "hf_x",
+                revision = "commit-a",
             )
             is False
         )
@@ -640,8 +640,8 @@ class TestVisionCacheLocalOnly:
 
         def _probe(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             seen.append(local_files_only)
             # Offline can't fetch -> not a VLM; online reveals the VLM.
@@ -650,12 +650,12 @@ class TestVisionCacheLocalOnly:
         monkeypatch.setattr(mc, "_is_vision_model_uncached", _probe)
 
         # Offline probe caches False under a local-only key.
-        assert mc.is_vision_model("some/vlm", local_files_only=True) is False
+        assert mc.is_vision_model("some/vlm", local_files_only = True) is False
         # A later online probe must re-run (different key) and detect the VLM.
-        assert mc.is_vision_model("some/vlm", local_files_only=False) is True
+        assert mc.is_vision_model("some/vlm", local_files_only = False) is True
         assert seen == [True, False]
         # The online positive is then cached for subsequent online callers.
-        assert mc.is_vision_model("some/vlm", local_files_only=False) is True
+        assert mc.is_vision_model("some/vlm", local_files_only = False) is True
         assert seen == [True, False]
         mc._vision_detection_cache.clear()
 
@@ -745,17 +745,17 @@ class TestSubprocessScript:
         assert (
             inline_is_vlm(
                 _C(
-                    model_type="gemma4",
-                    architectures=["Gemma4ForConditionalGeneration"],
+                    model_type = "gemma4",
+                    architectures = ["Gemma4ForConditionalGeneration"],
                 )
             )
             is True
         )
         assert (
-            inline_is_vlm(_C(model_type="gemma4_text", architectures=["Gemma4ForCausalLM"]))
+            inline_is_vlm(_C(model_type = "gemma4_text", architectures = ["Gemma4ForCausalLM"]))
             is False
         )
-        assert inline_is_vlm(_C(model_type="llama", architectures=["LlamaForCausalLM"])) is False
+        assert inline_is_vlm(_C(model_type = "llama", architectures = ["LlamaForCausalLM"])) is False
 
 
 # --- Audio-only model exclusion must apply across every detection path ---
@@ -771,7 +771,7 @@ class TestVlmAudioExclusion:
         assert {"csm", "whisper"} <= _AUDIO_ONLY_MODEL_TYPES
 
     def test_is_vlm_excludes_whisper(self):
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "whisper"
         cfg.architectures = ["WhisperForConditionalGeneration"]
         assert _is_vlm(cfg) is False
@@ -789,13 +789,13 @@ class TestVlmAudioExclusion:
     def test_inline_subprocess_helper_excludes_whisper(self):
         ns: dict = {}
         exec(_VISION_CHECK_INLINE_HELPERS, ns)
-        cfg = MagicMock(spec=[])
+        cfg = MagicMock(spec = [])
         cfg.model_type = "whisper"
         cfg.architectures = ["WhisperForConditionalGeneration"]
         assert ns["_is_vlm"](cfg) is False
 
-    @patch("utils.models.model_config._is_vision_model_subprocess", return_value=None)
-    @patch("utils.transformers_version.needs_transformers_5", return_value=True)
+    @patch("utils.models.model_config._is_vision_model_subprocess", return_value = None)
+    @patch("utils.transformers_version.needs_transformers_5", return_value = True)
     def test_t5_subprocess_none_falls_back_through_raw_for_whisper(
         self, mock_needs_t5, mock_subprocess, tmp_path
     ):
@@ -821,8 +821,8 @@ class TestAudioDetectionCacheTokenAware:
 
         def _fake(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             calls.append(hf_token)
             # Gated repo: only an authenticated probe can read the tokenizer.
@@ -836,11 +836,11 @@ class TestAudioDetectionCacheTokenAware:
         # Unauthenticated miss caches None under (name, None)...
         assert mc.detect_audio_type("private/spark") is None
         # ...but the authenticated call uses a different key and is NOT poisoned.
-        assert mc.detect_audio_type("private/spark", hf_token="hf_x") == "bicodec"
+        assert mc.detect_audio_type("private/spark", hf_token = "hf_x") == "bicodec"
         assert calls == [None, "hf_x"]
 
         # Same (model, token) is served from cache (no third probe).
-        assert mc.detect_audio_type("private/spark", hf_token="hf_x") == "bicodec"
+        assert mc.detect_audio_type("private/spark", hf_token = "hf_x") == "bicodec"
         assert calls == [None, "hf_x"]
         mc._audio_detection_cache.clear()
 
@@ -852,9 +852,9 @@ class TestAudioDetectionCacheTokenAware:
 
         def _fake(
             name,
-            hf_token=None,
-            local_files_only=False,
-            revision=None,
+            hf_token = None,
+            local_files_only = False,
+            revision = None,
         ):
             calls.append(revision)
             return ("csm", True) if revision == "commit-a" else (None, True)
@@ -864,9 +864,9 @@ class TestAudioDetectionCacheTokenAware:
         monkeypatch.setattr(mc, "resolve_cached_repo_id_case", lambda n, *_a, **_k: n)
         monkeypatch.setattr(mc, "_env_offline", lambda: False)
 
-        assert mc.detect_audio_type("org/model", revision="commit-a") == "csm"
-        assert mc.detect_audio_type("org/model", revision="commit-b") is None
-        assert mc.detect_audio_type("org/model", revision="commit-a") == "csm"
+        assert mc.detect_audio_type("org/model", revision = "commit-a") == "csm"
+        assert mc.detect_audio_type("org/model", revision = "commit-b") is None
+        assert mc.detect_audio_type("org/model", revision = "commit-a") == "csm"
         assert calls == ["commit-a", "commit-b"]
         assert mc._audio_detection_cache[("org/model", None, False, "commit-a")] == "csm"
         assert mc._audio_detection_cache[("org/model", None, False, "commit-b")] is None
@@ -881,8 +881,8 @@ class TestAudioDetectionCacheTokenAware:
 
         def _transient(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             transient_calls.append(hf_token)
             return (None, False)  # network/5xx -- not cacheable
@@ -897,8 +897,8 @@ class TestAudioDetectionCacheTokenAware:
 
         def _definitive(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             definitive_calls.append(hf_token)
             return (None, True)  # read the config, no audio tokens
@@ -921,8 +921,8 @@ class TestAudioDetectionCacheTokenAware:
 
         def _probe(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             seen.append(local_files_only)
             # Offline: nothing on disk -> not audio; online reveals the audio model.
@@ -931,12 +931,12 @@ class TestAudioDetectionCacheTokenAware:
         monkeypatch.setattr(mc, "_detect_audio_from_tokenizer", _probe)
 
         # Offline probe caches None under a local-only key.
-        assert mc.detect_audio_type("some/audio-model", local_files_only=True) is None
+        assert mc.detect_audio_type("some/audio-model", local_files_only = True) is None
         # A later online probe must re-run (different key) and detect the audio model.
-        assert mc.detect_audio_type("some/audio-model", local_files_only=False) == "snac"
+        assert mc.detect_audio_type("some/audio-model", local_files_only = False) == "snac"
         assert seen == [True, False]
         # The online positive is then cached for subsequent online callers.
-        assert mc.detect_audio_type("some/audio-model", local_files_only=False) == "snac"
+        assert mc.detect_audio_type("some/audio-model", local_files_only = False) == "snac"
         assert seen == [True, False]
         mc._audio_detection_cache.clear()
 
@@ -952,8 +952,8 @@ class TestAudioDetectionCacheTokenAware:
 
         def _probe(
             name,
-            hf_token=None,
-            local_files_only=False,
+            hf_token = None,
+            local_files_only = False,
         ):
             seen.append(local_files_only)
             return (None, True) if local_files_only else ("snac", True)
@@ -985,8 +985,8 @@ class TestRevisionAwareAudioReads:
         repo_dir = tmp_path / "models--org--model"
         commit_a = repo_dir / "snapshots" / "commit-a"
         commit_b = repo_dir / "snapshots" / "commit-b"
-        commit_a.mkdir(parents=True)
-        commit_b.mkdir(parents=True)
+        commit_a.mkdir(parents = True)
+        commit_b.mkdir(parents = True)
         (commit_a / "tokenizer_config.json").write_text(
             _json.dumps(self._tokenizer_config("<|AUDIO|>", "<|audio_eos|>"))
         )
@@ -1000,31 +1000,31 @@ class TestRevisionAwareAudioReads:
 
         assert _detect_audio_from_tokenizer(
             "org/model",
-            local_files_only=True,
-            revision="commit-b",
+            local_files_only = True,
+            revision = "commit-b",
         ) == (None, True)
         assert _detect_audio_from_tokenizer(
             "org/model",
-            local_files_only=True,
-            revision="commit-a",
+            local_files_only = True,
+            revision = "commit-a",
         ) == ("csm", True)
 
     def test_remote_tokenizer_read_uses_requested_revision(self, monkeypatch):
         import requests
         import utils.models.model_config as mc
 
-        response = MagicMock(status_code=200, ok=True)
+        response = MagicMock(status_code = 200, ok = True)
         response.json.return_value = self._tokenizer_config(
             "<|AUDIO|>",
             "<|audio_eos|>",
         )
-        get = MagicMock(return_value=response)
+        get = MagicMock(return_value = response)
         monkeypatch.setattr(mc, "is_local_path", lambda *_a, **_k: False)
         monkeypatch.setattr(mc, "get_cache_path", lambda *_a, **_k: None)
         monkeypatch.setattr(mc, "_env_offline", lambda: False)
         monkeypatch.setattr(requests, "get", get)
 
-        assert _detect_audio_from_tokenizer("org/model", revision="refs/pr/7") == ("csm", True)
+        assert _detect_audio_from_tokenizer("org/model", revision = "refs/pr/7") == ("csm", True)
         assert get.call_args.args[0] == (
             "https://huggingface.co/org/model/resolve/refs%2Fpr%2F7/tokenizer_config.json"
         )
@@ -1033,9 +1033,9 @@ class TestRevisionAwareAudioReads:
         import requests
         import utils.models.model_config as mc
 
-        response = MagicMock(status_code=200, ok=True)
+        response = MagicMock(status_code = 200, ok = True)
         response.json.return_value = self._tokenizer_config("<|startoftranscript|>")
-        get = MagicMock(return_value=response)
+        get = MagicMock(return_value = response)
         monkeypatch.setattr(mc, "is_local_path", lambda *_a, **_k: False)
         monkeypatch.setattr(mc, "get_cache_path", lambda *_a, **_k: None)
         monkeypatch.setattr(mc, "_env_offline", lambda: False)
@@ -1053,19 +1053,18 @@ class TestEnvOfflineParsing:
 
     def test_truthy_values_recognized(self, monkeypatch):
         import utils.models.model_config as mc
-
         for var in ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE"):
             for val in ("1", "true", "TRUE", "yes", "Yes", "on", "ON", " 1 ", " on ", "\ttrue\n"):
-                monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
-                monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
+                monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
+                monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
                 monkeypatch.setenv(var, val)
                 assert mc._env_offline() is True, f"{var}={val!r} should be offline"
 
     def test_falsy_values_not_offline(self, monkeypatch):
         import utils.models.model_config as mc
 
-        monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
-        monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
+        monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
+        monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
         assert mc._env_offline() is False
         for val in ("", "0", "false", "no", "off", "2", "onn"):
             monkeypatch.setenv("HF_HUB_OFFLINE", val)
@@ -1079,14 +1078,14 @@ def _hub_cached_repo(
     tmp_path,
     repo_id,
     files,
-    sha="abc123",
+    sha = "abc123",
 ):
     """A repo laid out the way the HF hub cache lays one out."""
     repo_dir = tmp_path / ("models--" + repo_id.replace("/", "--"))
     snapshot = repo_dir / "snapshots" / sha
-    snapshot.mkdir(parents=True)
+    snapshot.mkdir(parents = True)
     for name, text in files.items():
-        (snapshot / name).write_text(text, encoding="utf-8")
+        (snapshot / name).write_text(text, encoding = "utf-8")
     return repo_dir, snapshot
 
 
@@ -1094,9 +1093,9 @@ def _probe_against_cache(
     monkeypatch,
     repo_dir,
     *,
-    sha="abc123",
-    listed=("config.json",),
-    remote_config=None,
+    sha = "abc123",
+    listed = ("config.json",),
+    remote_config = None,
     **kwargs,
 ):
     """Drive the vision probe against a cached snapshot, recording any Hub read it makes.
@@ -1113,14 +1112,14 @@ def _probe_against_cache(
 
     def _info(
         model_name,
-        hf_token=None,
+        hf_token = None,
         **kw,
     ):
         if listed is None:
             raise ConnectionError("no repo document")
         return _types.SimpleNamespace(
-            sha=sha,
-            siblings=[_types.SimpleNamespace(rfilename=name) for name in listed],
+            sha = sha,
+            siblings = [_types.SimpleNamespace(rfilename = name) for name in listed],
         )
 
     monkeypatch.setattr(mc, "_hub_model_info", _info)
@@ -1132,7 +1131,7 @@ def _probe_against_cache(
     def _download(**kw):
         reads.append(("download", kw.get("filename")))
         path = repo_dir / "remote-config.json"
-        path.write_text(_json.dumps(remote_config), encoding="utf-8")
+        path.write_text(_json.dumps(remote_config), encoding = "utf-8")
         return str(path)
 
     monkeypatch.setattr(hf_probe, "hf_file_definitely_absent", _absent)
@@ -1182,7 +1181,7 @@ def test_the_hub_still_answers_when_the_snapshot_may_not(
     repo_dir, _ = _hub_cached_repo(tmp_path, "acme/vlm", files)
 
     answer, reads = _probe_against_cache(
-        monkeypatch, repo_dir, remote_config={"vision_config": {"hidden_size": 8}}, **kwargs
+        monkeypatch, repo_dir, remote_config = {"vision_config": {"hidden_size": 8}}, **kwargs
     )
 
     assert answer is True, case
@@ -1200,7 +1199,7 @@ def test_local_files_only_reads_no_repo_document(tmp_path, monkeypatch):
 
     def _info(
         model_name,
-        hf_token=None,
+        hf_token = None,
         **kw,
     ):
         reads.append(model_name)
@@ -1220,7 +1219,7 @@ def test_local_files_only_reads_no_repo_document(tmp_path, monkeypatch):
 
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", _download)
 
-    assert mc._raw_config_has_vision_config("acme/vlm", local_files_only=True) is False
+    assert mc._raw_config_has_vision_config("acme/vlm", local_files_only = True) is False
     assert reads == []
     # The download reads the same cache, without a network call of its own.
     assert downloads == [True]
@@ -1239,7 +1238,7 @@ def test_nothing_cached_costs_no_repo_document(tmp_path, monkeypatch):
 
     def _info(
         model_name,
-        hf_token=None,
+        hf_token = None,
         **kw,
     ):
         reads.append(model_name)
@@ -1255,18 +1254,18 @@ def test_the_current_snapshot_is_the_one_the_repo_document_names(tmp_path, monke
     """The helper both probes rest on, exercised rather than stubbed."""
     import utils.models.model_config as mc
 
-    repo_dir, snapshot = _hub_cached_repo(tmp_path, "acme/vlm", {"config.json": "{}"}, sha="aaa")
+    repo_dir, snapshot = _hub_cached_repo(tmp_path, "acme/vlm", {"config.json": "{}"}, sha = "aaa")
     (repo_dir / "snapshots" / "bbb").mkdir()
     monkeypatch.setattr(mc, "is_local_path", lambda *_a, **_k: False)
     monkeypatch.setattr(mc, "get_cache_path", lambda *_a, **_k: repo_dir)
 
     def _info(
         model_name,
-        hf_token=None,
+        hf_token = None,
         **kw,
     ):
         return _types.SimpleNamespace(
-            sha="aaa", siblings=[_types.SimpleNamespace(rfilename="config.json")]
+            sha = "aaa", siblings = [_types.SimpleNamespace(rfilename = "config.json")]
         )
 
     monkeypatch.setattr(mc, "_hub_model_info", _info)
@@ -1282,7 +1281,7 @@ def test_a_repo_that_publishes_no_config_is_settled_by_the_document(tmp_path, mo
     made a cached GGUF-only repo cost this caller two reads where main costs it one."""
     repo_dir, _ = _hub_cached_repo(tmp_path, "acme/vlm", {"model-Q4_K_M.gguf": "x"})
 
-    result, reads = _probe_against_cache(monkeypatch, repo_dir, listed=("model-Q4_K_M.gguf",))
+    result, reads = _probe_against_cache(monkeypatch, repo_dir, listed = ("model-Q4_K_M.gguf",))
 
     assert result is None
     assert reads == []
@@ -1296,8 +1295,8 @@ def test_a_config_the_repo_has_but_the_cache_lacks_still_asks(tmp_path, monkeypa
     result, reads = _probe_against_cache(
         monkeypatch,
         repo_dir,
-        listed=("model-Q4_K_M.gguf", "config.json"),
-        remote_config={"vision_config": {"hidden_size": 8}},
+        listed = ("model-Q4_K_M.gguf", "config.json"),
+        remote_config = {"vision_config": {"hidden_size": 8}},
     )
 
     assert result is True

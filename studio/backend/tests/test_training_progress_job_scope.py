@@ -16,7 +16,7 @@ def _shared_setup_1(backend, inline, monkeypatch):
     monkeypatch.setattr(rt, "get_training_backend", lambda: backend)
     monkeypatch.setattr(rt.asyncio, "to_thread", inline)
 
-    status = asyncio.run(rt.get_training_status(current_subject="tester"))
+    status = asyncio.run(rt.get_training_status(current_subject = "tester"))
     return status
 
 
@@ -27,8 +27,8 @@ if "structlog" not in sys.modules:
             return lambda *args, **kwargs: None
 
     sys.modules["structlog"] = types.SimpleNamespace(
-        BoundLogger=_DummyLogger,
-        get_logger=lambda *args, **kwargs: _DummyLogger(),
+        BoundLogger = _DummyLogger,
+        get_logger = lambda *args, **kwargs: _DummyLogger(),
     )
 
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent
@@ -42,7 +42,7 @@ TrainingBackend = sys.modules["core.training.training"].TrainingBackend
 
 
 class _Progress:
-    def __init__(self, step=2):
+    def __init__(self, step = 2):
         self.step = step
         self.total_steps = 10
         self.loss = 1.0
@@ -59,7 +59,7 @@ class _Backend:
     def __init__(
         self,
         active,
-        on_poll=None,
+        on_poll = None,
     ):
         self.current_job_id = "job-old"
         self._spawn_in_progress = False
@@ -69,7 +69,7 @@ class _Backend:
         self.grad_norm_step_history = []
         self.grad_norm_history = []
         self.eval_enabled = False
-        self.trainer = types.SimpleNamespace(training_progress=_Progress())
+        self.trainer = types.SimpleNamespace(training_progress = _Progress())
         self._active = list(active)
         self._on_poll = on_poll
         self._polls = 0
@@ -83,7 +83,7 @@ class _Backend:
 
 
 class _Request:
-    def __init__(self, last_event_id=None):
+    def __init__(self, last_event_id = None):
         self.headers = {"last-event-id": str(last_event_id)} if last_event_id is not None else {}
 
     async def is_disconnected(self):
@@ -128,8 +128,8 @@ def _stream(backend, request, expected_job_id):
         response = asyncio.run(
             rt.stream_training_progress(
                 request,
-                expected_job_id=expected_job_id,
-                current_subject="tester",
+                expected_job_id = expected_job_id,
+                current_subject = "tester",
             )
         )
         return _collect(response)
@@ -142,7 +142,7 @@ def test_reconnect_cursor_cannot_cross_job_identity():
     backend = _Backend([True])
     backend.current_job_id = "job-new"
 
-    raw = _stream(backend, _Request(last_event_id=2), "job-old")
+    raw = _stream(backend, _Request(last_event_id = 2), "job-old")
 
     assert _events(raw) == []
 
@@ -154,7 +154,7 @@ def test_active_stream_stops_when_a_new_job_takes_ownership():
             backend.step_history[:] = [9]
             backend.loss_history[:] = [0.5]
             backend.lr_history[:] = [0.00005]
-            backend.trainer.training_progress = _Progress(step=9)
+            backend.trainer.training_progress = _Progress(step = 9)
 
     backend = _Backend([True, True], switch_job)
 
@@ -195,7 +195,7 @@ def test_job_replacement_during_replay_suppresses_candidate_frame():
 
     backend.loss_history = _SwitchingLosses([1.5, 1.0])
 
-    events = _events(_stream(backend, _Request(last_event_id=1), "job-old"))
+    events = _events(_stream(backend, _Request(last_event_id = 1), "job-old"))
 
     assert events == []
 
@@ -263,23 +263,23 @@ class _StatusBackend:
         self._output_dir = "/old/output"
         self._should_stop = False
         self._start_request = types.SimpleNamespace(
-            start_request_id="start-new",
-            job_id="job-new",
-            state="pending",
-            message="Preparing new run",
-            error=None,
+            start_request_id = "start-new",
+            job_id = "job-new",
+            state = "pending",
+            message = "Preparing new run",
+            error = None,
         )
         self.trainer = types.SimpleNamespace(
-            get_training_progress=lambda: types.SimpleNamespace(
-                status_message="Old training",
-                error=None,
-                warnings=["old warning"],
-                is_completed=False,
-                epoch=0.7,
-                step=7,
-                total_steps=10,
-                loss=1.5,
-                learning_rate=0.0002,
+            get_training_progress = lambda: types.SimpleNamespace(
+                status_message = "Old training",
+                error = None,
+                warnings = ["old warning"],
+                is_completed = False,
+                epoch = 0.7,
+                step = 7,
+                total_steps = 10,
+                loss = 1.5,
+                learning_rate = 0.0002,
             )
         )
 
@@ -391,15 +391,15 @@ def test_status_retries_when_ownership_changes_during_the_active_probe(monkeypat
             backend.loss_history[:] = [0.9]
             backend.lr_history[:] = [0.0001]
             backend.trainer.get_training_progress = lambda: types.SimpleNamespace(
-                status_message="New training",
-                error=None,
-                warnings=[],
-                is_completed=False,
-                epoch=0.1,
-                step=1,
-                total_steps=20,
-                loss=0.9,
-                learning_rate=0.0001,
+                status_message = "New training",
+                error = None,
+                warnings = [],
+                is_completed = False,
+                epoch = 0.1,
+                step = 1,
+                total_steps = 20,
+                loss = 0.9,
+                learning_rate = 0.0001,
             )
         return True
 
@@ -425,15 +425,15 @@ def test_status_retries_when_a_handoff_starts_during_the_build(monkeypatch):
         backend._spawn_in_progress = True
         backend._new_job_spawn_id = "job-new"
         return types.SimpleNamespace(
-            status_message="Old training",
-            error=None,
-            warnings=[],
-            is_completed=False,
-            epoch=0.7,
-            step=7,
-            total_steps=10,
-            loss=1.5,
-            learning_rate=0.0002,
+            status_message = "Old training",
+            error = None,
+            warnings = [],
+            is_completed = False,
+            epoch = 0.7,
+            step = 7,
+            total_steps = 10,
+            loss = 1.5,
+            learning_rate = 0.0002,
         )
 
     backend.trainer.get_training_progress = get_progress
@@ -481,8 +481,8 @@ def test_metrics_reject_a_job_that_does_not_own_the_backend(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(
             rt.get_training_metrics(
-                expected_job_id="job-new",
-                current_subject="tester",
+                expected_job_id = "job-new",
+                current_subject = "tester",
             )
         )
 
@@ -495,8 +495,8 @@ def test_metrics_response_declares_its_owner(monkeypatch):
 
     metrics = asyncio.run(
         rt.get_training_metrics(
-            expected_job_id="job-old",
-            current_subject="tester",
+            expected_job_id = "job-old",
+            current_subject = "tester",
         )
     )
 
@@ -515,8 +515,8 @@ def test_installing_job_exposes_no_previous_metrics(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(
             rt.get_training_metrics(
-                expected_job_id="job-new",
-                current_subject="tester",
+                expected_job_id = "job-new",
+                current_subject = "tester",
             )
         )
 
@@ -572,8 +572,8 @@ def test_xet_respawn_preserves_owner_metrics(monkeypatch):
 
     metrics = asyncio.run(
         rt.get_training_metrics(
-            expected_job_id="job-old",
-            current_subject="tester",
+            expected_job_id = "job-old",
+            current_subject = "tester",
         )
     )
 

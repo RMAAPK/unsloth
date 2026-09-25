@@ -78,14 +78,14 @@ def _build(n: int) -> str:
 def test_a_linear_path_passes():
     """The negative control. Without it every row below could pass by the guard never accepting."""
     run, clock, _ = _shaped(1.0)
-    assert assert_linear(run, _build, "linear", 2, clock=clock) == _build(8)
+    assert assert_linear(run, _build, "linear", 2, clock = clock) == _build(8)
 
 
 def test_a_quadratic_path_fails():
     """The positive control: the shape these guards exist to catch."""
     run, clock, _ = _shaped(2.0)
-    with pytest.raises(AssertionError, match="is not linear"):
-        assert_linear(run, _build, "quadratic", 2, clock=clock)
+    with pytest.raises(AssertionError, match = "is not linear"):
+        assert_linear(run, _build, "quadratic", 2, clock = clock)
 
 
 def test_a_stall_in_the_first_sample_does_not_fail_a_linear_path():
@@ -96,8 +96,8 @@ def test_a_stall_in_the_first_sample_does_not_fail_a_linear_path():
     sized so the first median reads well above 6. A linear path must still pass, because
     the re-measurement is taken on a sample with no stall in it.
     """
-    run, clock, calls = _shaped(1.0, stalls={1: 40.0, 3: 40.0})
-    assert assert_linear(run, _build, "stalled but linear", 2, clock=clock) == _build(8)
+    run, clock, calls = _shaped(1.0, stalls = {1: 40.0, 3: 40.0})
+    assert assert_linear(run, _build, "stalled but linear", 2, clock = clock) == _build(8)
     # It really did take the retry: three pairs is six legs, so anything past six is the
     # second sample. A row that passed on the first reading would prove nothing about it.
     assert calls["n"] > 6, "the first sample did not trip the bar, so the retry was not exercised"
@@ -110,16 +110,16 @@ def test_the_retry_is_not_a_second_chance_for_a_quadratic_path():
     path measures ~`factor ** 2`, so the larger second sample has to come back over the bar
     too. If it does not, the retry has turned the guard off.
     """
-    run, clock, _ = _shaped(2.0, stalls={1: 40.0, 3: 40.0})
-    with pytest.raises(AssertionError, match="is not linear"):
-        assert_linear(run, _build, "stalled and quadratic", 2, clock=clock)
+    run, clock, _ = _shaped(2.0, stalls = {1: 40.0, 3: 40.0})
+    with pytest.raises(AssertionError, match = "is not linear"):
+        assert_linear(run, _build, "stalled and quadratic", 2, clock = clock)
 
 
 def test_the_failure_message_names_both_samples():
     """A red run has to say it was measured twice, or the next person re-litigates the retry."""
     run, clock, _ = _shaped(2.0)
     with pytest.raises(AssertionError) as excinfo:
-        assert_linear(run, _build, "quadratic", 2, clock=clock)
+        assert_linear(run, _build, "quadratic", 2, clock = clock)
     message = str(excinfo.value)
     assert "pairs, after" in message, message
     assert "quadratic is ~16" in message, message
@@ -131,16 +131,16 @@ def test_growth_reports_the_best_big_time_not_the_worst():
     Contention only adds, so the minimum big leg is the closest that size got to its own
     cost. A backstop reading the worst would fire on a runner that stalled once.
     """
-    run, clock, _ = _shaped(1.0, stalls={1: 50.0})
-    _, big, _, _ = growth(run, _build, 2, repeats=3, clock=clock)
+    run, clock, _ = _shaped(1.0, stalls = {1: 50.0})
+    _, big, _, _ = growth(run, _build, 2, repeats = 3, clock = clock)
     assert big == pytest.approx(_UNIT * 8), f"the stalled leg was the big time: {big}"
 
 
 def test_a_path_slow_enough_to_trip_the_backstop_fails_on_the_backstop():
     """The other arm of the backstop: too slow to measure still has to fail, and say so."""
-    run, clock, _ = _shaped(1.0, stalls={1: 120.0})
-    with pytest.raises(AssertionError, match="path took"):
-        assert_linear(run, _build, "glacial", 2, clock=clock)
+    run, clock, _ = _shaped(1.0, stalls = {1: 120.0})
+    with pytest.raises(AssertionError, match = "path took"):
+        assert_linear(run, _build, "glacial", 2, clock = clock)
 
 
 def test_the_first_sample_is_inside_the_budget_too():
@@ -158,9 +158,9 @@ def test_the_first_sample_is_inside_the_budget_too():
     stalls = {}
     for index in range(6):
         stalls[index] = 49.998 if index % 2 == 0 else 54.992
-    run, clock, calls = _shaped(1.0, stalls=stalls)
-    with pytest.raises(AssertionError, match="first sample stopped after 2 of 3"):
-        assert_linear(run, _build, "slow on both legs", 2, clock=clock)
+    run, clock, calls = _shaped(1.0, stalls = stalls)
+    with pytest.raises(AssertionError, match = "first sample stopped after 2 of 3"):
+        assert_linear(run, _build, "slow on both legs", 2, clock = clock)
     assert calls["n"] == 4, f"a pair that could not fit was started anyway: {calls['n']}"
     assert clock.now - 1000.0 < 330.0, f"the call outlasted the runner: {clock.now - 1000.0}"
 
@@ -176,9 +176,9 @@ def test_a_confirmation_that_would_outlast_the_job_is_not_started():
     it fails as a linearity failure naming the first sample, and it does not pay for a
     second one -- three pairs is six legs, and nothing past six may run.
     """
-    run, clock, calls = _shaped(1.0, stalls={1: 40.0, 3: 40.0, 5: 40.0})
-    with pytest.raises(AssertionError, match="does not fit in"):
-        assert_linear(run, _build, "slow and superlinear", 2, clock=clock)
+    run, clock, calls = _shaped(1.0, stalls = {1: 40.0, 3: 40.0, 5: 40.0})
+    with pytest.raises(AssertionError, match = "does not fit in"):
+        assert_linear(run, _build, "slow and superlinear", 2, clock = clock)
     assert calls["n"] == 6, f"a confirmation it cannot afford was started anyway: {calls['n']}"
 
 
@@ -190,8 +190,8 @@ def test_a_confirmation_it_can_only_partly_afford_is_still_taken():
     must still pass -- on four pairs, rather than on the ratio being forgiven. Without this
     the row above could be satisfied by refusing every confirmation that is not free.
     """
-    run, clock, calls = _shaped(1.0, stalls={1: 30.0, 3: 30.0, 5: 30.0})
-    assert assert_linear(run, _build, "affordable in part", 2, clock=clock) == _build(8)
+    run, clock, calls = _shaped(1.0, stalls = {1: 30.0, 3: 30.0, 5: 30.0})
+    assert assert_linear(run, _build, "affordable in part", 2, clock = clock) == _build(8)
     # Six legs of the first sample, then four pairs rather than seven.
     assert calls["n"] == 6 + 8, f"the confirmation ran {(calls['n'] - 6) // 2} pairs"
 
@@ -213,9 +213,9 @@ def test_a_confirmation_sized_from_a_mixed_estimate_still_stops_at_the_budget():
     stalls = {0: 0.998, 1: 58.992, 2: 0.998, 3: 58.992, 4: 0.998, 5: 0.992}
     for index in range(6, 6 + 2 * 7):
         stalls[index] = 0.998 if index % 2 == 0 else 39.992
-    run, clock, calls = _shaped(1.0, stalls=stalls)
-    with pytest.raises(AssertionError, match="confirmation stopped after"):
-        assert_linear(run, _build, "mixed estimate", 2, clock=clock)
+    run, clock, calls = _shaped(1.0, stalls = stalls)
+    with pytest.raises(AssertionError, match = "confirmation stopped after"):
+        assert_linear(run, _build, "mixed estimate", 2, clock = clock)
     assert calls["n"] == 6 + 4, f"the confirmation ran on past its budget: {calls['n']}"
 
 
@@ -234,9 +234,9 @@ def test_the_budget_is_asked_before_a_pair_rather_than_after_it():
     stalls = {0: 0.998, 1: 12.992, 2: 0.998, 3: 19.992, 4: 0.998, 5: 19.992}
     for index in range(6, 6 + 2 * 7):
         stalls[index] = 0.0 if index % 2 == 0 else 58.992
-    run, clock, calls = _shaped(1.0, stalls=stalls)
-    with pytest.raises(AssertionError, match="confirmation stopped after 3 of 7"):
-        assert_linear(run, _build, "pair that would overrun", 2, clock=clock)
+    run, clock, calls = _shaped(1.0, stalls = stalls)
+    with pytest.raises(AssertionError, match = "confirmation stopped after 3 of 7"):
+        assert_linear(run, _build, "pair that would overrun", 2, clock = clock)
     assert calls["n"] == 6 + 6, f"a pair that could not fit was started anyway: {calls['n']}"
     assert (
         clock.now - 1000.0 < 330.0
@@ -253,6 +253,6 @@ def test_an_aborted_confirmation_is_not_accepted_as_one():
     on a sample that never finished. The stalls here are sized so the surviving ratio really
     is under 6, so the row fails for the abort and not for the ratio.
     """
-    run, clock, _ = _shaped(2.0, stalls={1: 40.0, 3: 40.0, 6: 30.0, 7: 70.0})
-    with pytest.raises(AssertionError, match="while re-measuring|confirmation stopped after"):
-        assert_linear(run, _build, "aborted confirmation", 2, clock=clock)
+    run, clock, _ = _shaped(2.0, stalls = {1: 40.0, 3: 40.0, 6: 30.0, 7: 70.0})
+    with pytest.raises(AssertionError, match = "while re-measuring|confirmation stopped after"):
+        assert_linear(run, _build, "aborted confirmation", 2, clock = clock)

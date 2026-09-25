@@ -69,20 +69,19 @@ def _skip_reason() -> str | None:
     return None
 
 
-pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason=_skip_reason() or "")
+pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason = _skip_reason() or "")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def context():
     from playwright.sync_api import sync_playwright
-
     with sync_playwright() as p:
         try:
-            b = p.chromium.launch(args=["--no-sandbox"])
+            b = p.chromium.launch(args = ["--no-sandbox"])
         except Exception as exc:  # noqa: BLE001
             pytest.skip(f"chromium could not be launched: {exc}")
-        ctx = b.new_context(permissions=["clipboard-read", "clipboard-write"])
-        ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin=ORIGIN)
+        ctx = b.new_context(permissions = ["clipboard-read", "clipboard-write"])
+        ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin = ORIGIN)
         yield ctx
         ctx.close()
         b.close()
@@ -93,24 +92,24 @@ def page(context):
     pg = context.new_page()
     pg.route(
         "**/*",
-        lambda route: route.fulfill(status=200, content_type="text/html; charset=utf-8", body=BODY),
+        lambda route: route.fulfill(status = 200, content_type = "text/html; charset=utf-8", body = BODY),
     )
     pg.goto(ORIGIN + "/chat")
-    pg.add_script_tag(content=_DOM_JS.read_text(encoding="utf-8"))
+    pg.add_script_tag(content = _DOM_JS.read_text(encoding = "utf-8"))
     yield pg
     pg.close()
 
 
-def _ctx(page, log=None) -> ActionContext:
+def _ctx(page, log = None) -> ActionContext:
     return ActionContext(
-        page=page,
-        cdp=None,
-        cell=Cell(cell_id="r100K.base.rep0", rung="100K", rung_tokens=100_000),
-        window=None,
-        args={"thread_id": "t1", "base_url": ORIGIN},
-        budget_ms=30_000,
-        dom=None,
-        log=log or (lambda _m: None),
+        page = page,
+        cdp = None,
+        cell = Cell(cell_id = "r100K.base.rep0", rung = "100K", rung_tokens = 100_000),
+        window = None,
+        args = {"thread_id": "t1", "base_url": ORIGIN},
+        budget_ms = 30_000,
+        dom = None,
+        log = log or (lambda _m: None),
     )
 
 

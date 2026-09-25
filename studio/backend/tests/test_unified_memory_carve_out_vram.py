@@ -71,21 +71,21 @@ def _torch_module(props_by_ordinal) -> types.SimpleNamespace:
         except (IndexError, KeyError):
             raise RuntimeError("Invalid device id")
 
-    return types.SimpleNamespace(get_device_properties=_get)
+    return types.SimpleNamespace(get_device_properties = _get)
 
 
 def _not_hip(monkeypatch) -> None:
     """Stub the torch the CUDA classifier asks for HIP, so a ROCm runner does not invert
     every assertion here (the same trap test_dgx_spark_gpu_inventory.py documents)."""
     monkeypatch.setitem(
-        sys.modules, "torch", types.SimpleNamespace(version=types.SimpleNamespace(hip=None))
+        sys.modules, "torch", types.SimpleNamespace(version = types.SimpleNamespace(hip = None))
     )
 
 
 def _cuda_host(
     monkeypatch,
     *props,
-    numeric_ids=None,
+    numeric_ids = None,
 ) -> None:
     ids = [0] if numeric_ids is None else numeric_ids
     _not_hip(monkeypatch)
@@ -108,21 +108,21 @@ def _cuda_host(
 
 def _host_memory(
     monkeypatch,
-    total_gb=HOST_TOTAL_GB,
-    available_gb=HOST_AVAILABLE_GB,
+    total_gb = HOST_TOTAL_GB,
+    available_gb = HOST_AVAILABLE_GB,
 ) -> None:
     monkeypatch.setattr(
         psutil,
         "virtual_memory",
-        lambda: types.SimpleNamespace(total=int(total_gb * GIB), available=int(available_gb * GIB)),
+        lambda: types.SimpleNamespace(total = int(total_gb * GIB), available = int(available_gb * GIB)),
     )
 
 
 def _util_row(
-    index=0,
-    ordinal=0,
-    total_gb=N1X_CARVE_OUT_GB,
-    used_gb=N1X_USED_GB,
+    index = 0,
+    ordinal = 0,
+    total_gb = N1X_CARVE_OUT_GB,
+    used_gb = N1X_USED_GB,
 ) -> dict:
     """A row exactly as nvidia.py::_build_gpu_metrics emits it."""
     return {
@@ -147,7 +147,7 @@ def _util_row(
 def _smi_utilization(
     monkeypatch,
     rows,
-    numeric_ids=None,
+    numeric_ids = None,
 ) -> None:
     ids = [0] if numeric_ids is None else numeric_ids
     monkeypatch.setattr(
@@ -196,10 +196,10 @@ def test_the_free_half_grows_with_the_total(monkeypatch):
     free_gb = device["vram_total_gb"] - device["vram_used_gb"]
 
     # Host used is 54.21 - 42.55 = 11.66, which is larger than the carve-out's 5.73.
-    assert device["vram_used_gb"] == pytest.approx(HOST_TOTAL_GB - HOST_AVAILABLE_GB, abs=0.02)
+    assert device["vram_used_gb"] == pytest.approx(HOST_TOTAL_GB - HOST_AVAILABLE_GB, abs = 0.02)
     # The number the training gate reads. It was 7.94 - 5.73 = 2.21.
     assert free_gb > 30
-    assert device["vram_utilization_pct"] == pytest.approx(25.7, abs=0.5)
+    assert device["vram_utilization_pct"] == pytest.approx(25.7, abs = 0.5)
 
 
 def test_a_270m_model_now_fits(monkeypatch):
@@ -265,7 +265,7 @@ def test_a_discrete_card_is_byte_identical(monkeypatch):
     """A 4090 answers memory.total correctly and nothing here may second-guess it."""
     _cuda_host(monkeypatch, _DiscreteProps())
     _host_memory(monkeypatch)
-    rows = [_util_row(total_gb=23.99, used_gb=1.5)]
+    rows = [_util_row(total_gb = 23.99, used_gb = 1.5)]
     before = [dict(row) for row in rows]
     _smi_utilization(monkeypatch, rows)
 
@@ -307,7 +307,7 @@ def test_a_larger_cli_total_is_never_shrunk(monkeypatch):
 
     _cuda_host(monkeypatch, _UnderReportingProps())
     _host_memory(monkeypatch)
-    _smi_utilization(monkeypatch, [_util_row(total_gb=16.0, used_gb=2.0)])
+    _smi_utilization(monkeypatch, [_util_row(total_gb = 16.0, used_gb = 2.0)])
 
     device = hw.get_visible_gpu_utilization()["devices"][0]
 
@@ -323,7 +323,7 @@ def test_totals_that_agree_within_rounding_are_left_alone(monkeypatch):
     """
     _cuda_host(monkeypatch, _N1XProps())
     _host_memory(monkeypatch)
-    _smi_utilization(monkeypatch, [_util_row(total_gb=N1X_POOL_GB - 0.01, used_gb=3.0)])
+    _smi_utilization(monkeypatch, [_util_row(total_gb = N1X_POOL_GB - 0.01, used_gb = 3.0)])
 
     device = hw.get_visible_gpu_utilization()["devices"][0]
 
@@ -338,8 +338,8 @@ def test_free_bytes_never_shrink_when_the_host_is_nearly_full(monkeypatch):
     less free memory than the 8 GiB carve-out it replaced.
     """
     _cuda_host(monkeypatch, _N1XProps())
-    _host_memory(monkeypatch, total_gb=HOST_TOTAL_GB, available_gb=2.0)
-    _smi_utilization(monkeypatch, [_util_row(total_gb=N1X_CARVE_OUT_GB, used_gb=1.0)])
+    _host_memory(monkeypatch, total_gb = HOST_TOTAL_GB, available_gb = 2.0)
+    _smi_utilization(monkeypatch, [_util_row(total_gb = N1X_CARVE_OUT_GB, used_gb = 1.0)])
 
     device = hw.get_visible_gpu_utilization()["devices"][0]
     free_gb = device["vram_total_gb"] - device["vram_used_gb"]
@@ -350,7 +350,7 @@ def test_free_bytes_never_shrink_when_the_host_is_nearly_full(monkeypatch):
 
 
 def test_llama_cpp_free_never_shrinks(monkeypatch):
-    _integrated_llama_host(monkeypatch, avail_mib=512)
+    _integrated_llama_host(monkeypatch, avail_mib = 512)
     _smi_free_total(monkeypatch, [(0, 6000, N1X_CARVE_OUT_MIB)])
 
     _idx, free_mib, total_mib = LlamaCppBackend._get_gpu_memory()[0]
@@ -369,12 +369,12 @@ def test_the_npu_row_is_left_unknown(monkeypatch):
     ``FB Memory Usage: Total: N/A``. torch does not enumerate it at all. There is no
     number to publish for it and inventing one would be worse than a blank.
     """
-    _cuda_host(monkeypatch, _N1XProps(), numeric_ids=[0, 1])
+    _cuda_host(monkeypatch, _N1XProps(), numeric_ids = [0, 1])
     _host_memory(monkeypatch)
     _smi_utilization(
         monkeypatch,
-        [_util_row(), _util_row(index=1, ordinal=1, total_gb=None, used_gb=None)],
-        numeric_ids=[0, 1],
+        [_util_row(), _util_row(index = 1, ordinal = 1, total_gb = None, used_gb = None)],
+        numeric_ids = [0, 1],
     )
 
     devices = hw.get_visible_gpu_utilization()["devices"]
@@ -393,12 +393,12 @@ def test_the_npu_cannot_drag_down_the_training_budget(monkeypatch):
     """
     from routes.training_vram import _free_vram_by_index
 
-    _cuda_host(monkeypatch, _N1XProps(), numeric_ids=[0, 1])
+    _cuda_host(monkeypatch, _N1XProps(), numeric_ids = [0, 1])
     _host_memory(monkeypatch)
     _smi_utilization(
         monkeypatch,
-        [_util_row(), _util_row(index=1, ordinal=1, total_gb=None, used_gb=None)],
-        numeric_ids=[0, 1],
+        [_util_row(), _util_row(index = 1, ordinal = 1, total_gb = None, used_gb = None)],
+        numeric_ids = [0, 1],
     )
 
     free = _free_vram_by_index(hw.get_visible_gpu_utilization()["devices"])
@@ -411,15 +411,15 @@ def test_the_npu_cannot_drag_down_the_training_budget(monkeypatch):
 
 def test_only_the_integrated_device_is_widened_on_a_mixed_host(monkeypatch):
     """A discrete card beside an integrated one keeps its own, correct capacity."""
-    _cuda_host(monkeypatch, _N1XProps(), _DiscreteProps(), numeric_ids=[0, 1])
+    _cuda_host(monkeypatch, _N1XProps(), _DiscreteProps(), numeric_ids = [0, 1])
     _host_memory(monkeypatch)
     _smi_utilization(
         monkeypatch,
         [
             _util_row(),
-            _util_row(index=1, ordinal=1, total_gb=23.99, used_gb=1.5),
+            _util_row(index = 1, ordinal = 1, total_gb = 23.99, used_gb = 1.5),
         ],
-        numeric_ids=[0, 1],
+        numeric_ids = [0, 1],
     )
 
     devices = hw.get_visible_gpu_utilization()["devices"]
@@ -435,10 +435,10 @@ def test_a_mismatched_device_order_refuses_the_join(monkeypatch):
     Joining them anyway attaches one card's capacity to another card's row. The widening
     uses the same gate the rest of the module already applies, so it declines instead.
     """
-    _cuda_host(monkeypatch, _N1XProps(), numeric_ids=[0, 1])
+    _cuda_host(monkeypatch, _N1XProps(), numeric_ids = [0, 1])
     _host_memory(monkeypatch)
     monkeypatch.setattr(hw, "_cuda_order_matches_smi", lambda: False)
-    _smi_utilization(monkeypatch, [_util_row()], numeric_ids=[0, 1])
+    _smi_utilization(monkeypatch, [_util_row()], numeric_ids = [0, 1])
 
     device = hw.get_visible_gpu_utilization()["devices"][0]
 
@@ -526,7 +526,7 @@ def test_a_host_memory_probe_failure_still_widens_the_total(monkeypatch):
     # still widens, which is the half that decides whether a model is offered at all;
     # the budget stays the one the CLI vouched for.
     cli_free_gb = round(N1X_CARVE_OUT_GB - N1X_USED_GB, 2)
-    assert device["vram_total_gb"] - device["vram_used_gb"] == pytest.approx(cli_free_gb, abs=0.01)
+    assert device["vram_total_gb"] - device["vram_used_gb"] == pytest.approx(cli_free_gb, abs = 0.01)
 
 
 def test_the_predicate_is_the_whole_rule():
@@ -565,11 +565,11 @@ def _llama_common(monkeypatch, avail_mib):
     # to say the same or the runner's own CUDA_VISIBLE_DEVICES is read as one. The
     # ordering mirrors main.py:19, which sets PCI_BUS_ID on import.
     for _var in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
-        monkeypatch.delenv(_var, raising=False)
+        monkeypatch.delenv(_var, raising = False)
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 
 
-def _integrated_llama_host(monkeypatch, avail_mib=int(HOST_AVAILABLE_GB * 1024)):
+def _integrated_llama_host(monkeypatch, avail_mib = int(HOST_AVAILABLE_GB * 1024)):
     _llama_common(monkeypatch, avail_mib)
     monkeypatch.setattr(LlamaCppBackend, "_integrated_cuda_gpu_ids", staticmethod(lambda: {0}))
     monkeypatch.setattr(
@@ -579,7 +579,7 @@ def _integrated_llama_host(monkeypatch, avail_mib=int(HOST_AVAILABLE_GB * 1024))
     )
 
 
-def _discrete_llama_host(monkeypatch, avail_mib=32000):
+def _discrete_llama_host(monkeypatch, avail_mib = 32000):
     _llama_common(monkeypatch, avail_mib)
     monkeypatch.setattr(LlamaCppBackend, "_integrated_cuda_gpu_ids", staticmethod(lambda: set()))
     monkeypatch.setattr(
@@ -592,7 +592,7 @@ def _smi_free_total(monkeypatch, rows):
     stdout = "\n".join(f"{idx}, {free}, {total}" for idx, free, total in rows)
     monkeypatch.setattr(
         "core.inference.llama_cpp.subprocess.run",
-        lambda *a, **k: types.SimpleNamespace(returncode=0, stdout=stdout, stderr=""),
+        lambda *a, **k: types.SimpleNamespace(returncode = 0, stdout = stdout, stderr = ""),
     )
 
 
@@ -604,7 +604,7 @@ def test_a_cgroup_ceiling_survives_the_never_shrink_floor(monkeypatch):
     charged to it, so republishing the larger carve-out figure prices a fit against
     memory the kernel will not give and the child is killed rather than offloaded.
     """
-    _integrated_llama_host(monkeypatch, avail_mib=40000)
+    _integrated_llama_host(monkeypatch, avail_mib = 40000)
     monkeypatch.setattr(LlamaCppBackend, "_cgroup_available_memory_mib", staticmethod(lambda: 2048))
 
     rows = LlamaCppBackend._widen_integrated_cuda_rows([(0, 6000, N1X_CARVE_OUT_MIB)])
@@ -622,7 +622,7 @@ def test_an_unmappable_mask_refuses_the_join_under_any_ordering(monkeypatch):
     CLI rows are NOT filtered to match. Re-pricing row 1 because ordinal 1 is integrated
     would advertise a discrete card with a system-RAM-sized pool.
     """
-    _llama_common(monkeypatch, avail_mib=43000)
+    _llama_common(monkeypatch, avail_mib = 43000)
     # A real UUID mask: `_resolve_visible_physical_ids` cannot parse it, and neither can
     # `_visible_devices_mask`, so the CLI rows are never filtered to match. PCI_BUS_ID
     # ordering does not help, and main.py sets it by default, so the refusal cannot be
@@ -666,7 +666,7 @@ def test_a_numeric_mask_under_fastest_first_refuses_the_join(monkeypatch):
     the two spaces can hand a discrete card the shared pool, so the widening is refused
     unless the ordering is provably PCI_BUS_ID.
     """
-    _llama_common(monkeypatch, avail_mib=43000)
+    _llama_common(monkeypatch, avail_mib = 43000)
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "FASTEST_FIRST")
     monkeypatch.setattr(
         LlamaCppBackend, "_resolve_visible_physical_ids", staticmethod(lambda: [0, 1])
@@ -712,7 +712,7 @@ def test_the_widened_utilization_is_capped_by_the_cgroup(monkeypatch):
 
     assert device["vram_total_gb"] == N1X_POOL_GB
     free_gb = device["vram_total_gb"] - device["vram_used_gb"]
-    assert free_gb == pytest.approx(2.0, abs=0.01), device
+    assert free_gb == pytest.approx(2.0, abs = 0.01), device
 
 
 def test_one_surviving_row_is_not_proof_of_one_gpu(monkeypatch):
@@ -723,7 +723,7 @@ def test_one_surviving_row_is_not_proof_of_one_gpu(monkeypatch):
     DISCRETE row dropped would otherwise have had that row widened under an ordering
     that cannot be joined.
     """
-    _llama_common(monkeypatch, avail_mib=43000)
+    _llama_common(monkeypatch, avail_mib = 43000)
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "FASTEST_FIRST")
     monkeypatch.setattr(LlamaCppBackend, "_integrated_cuda_gpu_ids", staticmethod(lambda: {1}))
     monkeypatch.setattr(
@@ -747,7 +747,7 @@ def test_the_nvml_fallback_is_widened_too(monkeypatch):
     # The nvidia-smi arm finds nothing, so the NVML arm answers.
     monkeypatch.setattr(
         "core.inference.llama_cpp.subprocess.run",
-        lambda *a, **k: types.SimpleNamespace(returncode=1, stdout="", stderr="no smi"),
+        lambda *a, **k: types.SimpleNamespace(returncode = 1, stdout = "", stderr = "no smi"),
     )
     monkeypatch.setattr(
         LlamaCppBackend,

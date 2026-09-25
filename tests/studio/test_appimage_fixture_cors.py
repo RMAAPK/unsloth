@@ -39,7 +39,7 @@ BACKEND_MAIN = REPO / "studio" / "backend" / "main.py"
 
 def frontend_request_headers() -> list[str]:
     """Every X-Unsloth-* header the auth layer attaches to an authed request."""
-    names = re.findall(r'"(X-Unsloth-[A-Za-z0-9-]+)"', AUTH_API.read_text(encoding="utf-8"))
+    names = re.findall(r'"(X-Unsloth-[A-Za-z0-9-]+)"', AUTH_API.read_text(encoding = "utf-8"))
     assert names, f"no X-Unsloth-* header constants found in {AUTH_API}; did they move?"
     return sorted(set(names))
 
@@ -62,16 +62,16 @@ def _preflight(allow_headers_for) -> str:
             self.end_headers()
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    threading.Thread(target = server.serve_forever, daemon = True).start()
     try:
         request = urllib.request.Request(
             f"http://127.0.0.1:{server.server_address[1]}/api/models/gguf-variants",
-            method="OPTIONS",
+            method = "OPTIONS",
         )
         request.add_header("Origin", "tauri://localhost")
         request.add_header("Access-Control-Request-Method", "GET")
         request.add_header("Access-Control-Request-Headers", sent)
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with urllib.request.urlopen(request, timeout = 10) as response:
             return (response.headers.get("Access-Control-Allow-Headers") or "").lower()
     finally:
         server.shutdown()
@@ -101,7 +101,7 @@ def test_the_list_that_broke_it_is_still_detected_as_broken():
 
 def test_the_fixture_echoes_rather_than_naming_headers():
     """A fixed list cannot track `allow_headers = ["*"]`, so the fixture must not carry one."""
-    source = FIXTURE.read_text(encoding="utf-8")
+    source = FIXTURE.read_text(encoding = "utf-8")
     options = source.split("def do_OPTIONS", 1)
     assert len(options) == 2, "the fixture no longer answers preflights"
     body = options[1].split("def do_GET", 1)[0]
@@ -121,7 +121,7 @@ def test_the_fixture_echoes_rather_than_naming_headers():
 
 def test_the_real_backend_still_allows_any_header():
     """The premise. If the product ever narrows this, echoing stops being faithful."""
-    source = BACKEND_MAIN.read_text(encoding="utf-8")
+    source = BACKEND_MAIN.read_text(encoding = "utf-8")
     assert re.search(r"allow_headers\s*=\s*\[\s*\"\*\"\s*\]", source), (
         "studio/backend/main.py no longer allows every request header, so the fixture "
         "echoing the request is no longer a faithful stand-in for it"

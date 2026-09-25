@@ -22,7 +22,7 @@ SOURCE = Path(__file__).resolve().parents[1] / "unsloth" / "models" / "rl.py"
 
 
 def _prediction_step():
-    tree = ast.parse(SOURCE.read_text(encoding="utf-8"))
+    tree = ast.parse(SOURCE.read_text(encoding = "utf-8"))
     patch_rl = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "PatchRL")
     step = next(
         n
@@ -30,14 +30,14 @@ def _prediction_step():
         if isinstance(n, ast.FunctionDef) and n.name == "unsloth_prediction_step"
     )
     namespace = {"os": os, "torch": torch, "nested_detach": lambda x: x}
-    exec(compile(ast.Module(body=[step], type_ignores=[]), str(SOURCE), "exec"), namespace)
+    exec(compile(ast.Module(body = [step], type_ignores = []), str(SOURCE), "exec"), namespace)
     return namespace["unsloth_prediction_step"]
 
 
 class _Trainer:
     label_names = ["labels"]
     can_return_loss = False
-    args = SimpleNamespace(device="cpu", past_index=-1)
+    args = SimpleNamespace(device = "cpu", past_index = -1)
 
     def __init__(self, compute_loss):
         self.model = SimpleNamespace()
@@ -49,7 +49,6 @@ class _Trainer:
 
     def compute_loss_context_manager(self):
         import contextlib
-
         return contextlib.nullcontext()
 
     def _get_num_items_in_batch(self, batches, device):
@@ -59,7 +58,7 @@ class _Trainer:
 @pytest.mark.parametrize("before", [None, "0", "1"])
 def test_a_failed_eval_step_restores_the_callers_setting(monkeypatch, before):
     if before is None:
-        monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising=False)
+        monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising = False)
     else:
         monkeypatch.setenv("UNSLOTH_RETURN_LOGITS", before)
     seen = []
@@ -69,7 +68,7 @@ def test_a_failed_eval_step_restores_the_callers_setting(monkeypatch, before):
         raise RuntimeError("CUDA out of memory")
 
     trainer = _Trainer(compute_loss)
-    with pytest.raises(RuntimeError, match="out of memory"):
+    with pytest.raises(RuntimeError, match = "out of memory"):
         _prediction_step()(trainer, trainer.model, {"labels": torch.zeros(1)}, True, None)
 
     assert seen == ["1"], "the step no longer forces logits on while it runs"

@@ -27,8 +27,8 @@ def _write_parquet_rows(parquet_dir: Path, rows: list[dict]) -> None:
     pytest.importorskip("pandas")
     import pandas as pd
 
-    parquet_dir.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(rows).to_parquet(parquet_dir / "batch_00000.parquet", index=False)
+    parquet_dir.mkdir(parents = True, exist_ok = True)
+    pd.DataFrame(rows).to_parquet(parquet_dir / "batch_00000.parquet", index = False)
 
 
 def test_build_dataset_download_jsonl_from_artifact(tmp_path: Path, monkeypatch):
@@ -43,17 +43,17 @@ def test_build_dataset_download_jsonl_from_artifact(tmp_path: Path, monkeypatch)
     )
 
     file_path, media_type, download_name = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="my-run",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "my-run",
     )
     try:
         assert media_type == "application/x-ndjson"
         assert download_name == "my-run.jsonl"
-        lines = file_path.read_text(encoding="utf-8").strip().splitlines()
+        lines = file_path.read_text(encoding = "utf-8").strip().splitlines()
         assert json.loads(lines[0])["question"] == "Q1"
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_json_dumps_row_replaces_non_finite_numbers_with_null():
@@ -77,14 +77,14 @@ def test_build_dataset_download_preserves_row_order_within_shard(tmp_path: Path,
     artifact_root = tmp_path / "recipe-datasets"
     dataset_path = artifact_root / "job-order"
     parquet_dir = dataset_path / "parquet-files"
-    parquet_dir.mkdir(parents=True, exist_ok=True)
+    parquet_dir.mkdir(parents = True, exist_ok = True)
     pd.DataFrame(
         [
             {"sequence": "first"},
             {"sequence": "second"},
             {"sequence": "third"},
         ]
-    ).to_parquet(parquet_dir / "batch_00000.parquet", index=False)
+    ).to_parquet(parquet_dir / "batch_00000.parquet", index = False)
 
     monkeypatch.setattr(
         "core.data_recipe.export._resolve_recipe_artifact_path",
@@ -92,16 +92,16 @@ def test_build_dataset_download_preserves_row_order_within_shard(tmp_path: Path,
     )
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="ordered",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "ordered",
     )
     try:
-        lines = file_path.read_text(encoding="utf-8").strip().splitlines()
+        lines = file_path.read_text(encoding = "utf-8").strip().splitlines()
         sequences = [json.loads(line)["sequence"] for line in lines]
         assert sequences == ["first", "second", "third"]
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_build_dataset_download_exports_every_row_once_across_shards(tmp_path: Path, monkeypatch):
@@ -112,13 +112,13 @@ def test_build_dataset_download_exports_every_row_once_across_shards(tmp_path: P
 
     dataset_path = tmp_path / "recipe-datasets" / "job-big"
     parquet_dir = dataset_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     shard_size = 40_000
     for shard, start in enumerate(range(0, 2 * shard_size, shard_size)):
         pd.DataFrame({"i": range(start, start + shard_size)}).to_parquet(
             parquet_dir / f"batch_{shard:05d}.parquet",
-            index=False,
-            row_group_size=5_000,
+            index = False,
+            row_group_size = 5_000,
         )
 
     monkeypatch.setattr(
@@ -127,16 +127,16 @@ def test_build_dataset_download_exports_every_row_once_across_shards(tmp_path: P
     )
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="big",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "big",
     )
     try:
         exported = [
-            json.loads(line)["i"] for line in file_path.read_text(encoding="utf-8").splitlines()
+            json.loads(line)["i"] for line in file_path.read_text(encoding = "utf-8").splitlines()
         ]
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
     assert exported == list(range(2 * shard_size))
 
 
@@ -167,9 +167,9 @@ def test_build_dataset_download_leaves_no_temp_file_when_export_fails(tmp_path: 
 
     with pytest.raises(RuntimeError):
         build_dataset_download(
-            artifact_path=str(dataset_path),
-            export_format="jsonl",
-            filename_stem="leaky",
+            artifact_path = str(dataset_path),
+            export_format = "jsonl",
+            filename_stem = "leaky",
         )
     assert sorted(system_temp.iterdir()) == [], (
         "the failed export left its temporary file behind: "
@@ -183,7 +183,7 @@ def test_build_dataset_download_parquet_zip_includes_images(tmp_path: Path, monk
     parquet_dir = dataset_path / "parquet-files"
     images_dir = dataset_path / "images" / "nested"
     _write_parquet_rows(parquet_dir, [{"image": "images/nested/pic.png"}])
-    images_dir.mkdir(parents=True, exist_ok=True)
+    images_dir.mkdir(parents = True, exist_ok = True)
     (images_dir / "pic.png").write_bytes(b"png-bytes")
 
     monkeypatch.setattr(
@@ -192,9 +192,9 @@ def test_build_dataset_download_parquet_zip_includes_images(tmp_path: Path, monk
     )
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="parquet",
-        filename_stem="with-images",
+        artifact_path = str(dataset_path),
+        export_format = "parquet",
+        filename_stem = "with-images",
     )
     try:
         with zipfile.ZipFile(file_path) as archive:
@@ -204,7 +204,7 @@ def test_build_dataset_download_parquet_zip_includes_images(tmp_path: Path, monk
         assert "images/nested/pic.png" in names
         assert image_bytes == b"png-bytes"
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_build_dataset_download_parquet_zip_from_artifact(tmp_path: Path, monkeypatch):
@@ -219,9 +219,9 @@ def test_build_dataset_download_parquet_zip_from_artifact(tmp_path: Path, monkey
     )
 
     file_path, media_type, download_name = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="parquet",
-        filename_stem="parquet-run",
+        artifact_path = str(dataset_path),
+        export_format = "parquet",
+        filename_stem = "parquet-run",
     )
     try:
         assert media_type == "application/zip"
@@ -230,7 +230,7 @@ def test_build_dataset_download_parquet_zip_from_artifact(tmp_path: Path, monkey
             names = archive.namelist()
         assert names == ["batch_00000.parquet"]
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_build_dataset_download_missing_parquet_raises(tmp_path: Path, monkeypatch):
@@ -241,11 +241,11 @@ def test_build_dataset_download_missing_parquet_raises(tmp_path: Path, monkeypat
         lambda artifact_path: dataset_path,
     )
 
-    with pytest.raises(RecipeDatasetExportError, match="parquet"):
+    with pytest.raises(RecipeDatasetExportError, match = "parquet"):
         build_dataset_download(
-            artifact_path=str(dataset_path),
-            export_format="jsonl",
-            filename_stem="missing",
+            artifact_path = str(dataset_path),
+            export_format = "jsonl",
+            filename_stem = "missing",
         )
 
 
@@ -255,7 +255,7 @@ def test_download_job_dataset_route_uses_artifact_path(monkeypatch, tmp_path: Pa
 
     jobs_route = pytest.importorskip(
         "routes.data_recipe.jobs",
-        reason="studio backend routes unavailable",
+        reason = "studio backend routes unavailable",
     )
 
     captured: dict[str, str] = {}
@@ -263,7 +263,7 @@ def test_download_job_dataset_route_uses_artifact_path(monkeypatch, tmp_path: Pa
     def fake_build_dataset_download(**kwargs):
         captured.update(kwargs)
         jsonl_path = tmp_path / "out.jsonl"
-        jsonl_path.write_text('{"ok": true}\n', encoding="utf-8")
+        jsonl_path.write_text('{"ok": true}\n', encoding = "utf-8")
         return jsonl_path, "application/x-ndjson", "run.jsonl"
 
     class _FakeManager:
@@ -284,10 +284,10 @@ def test_download_job_dataset_route_uses_artifact_path(monkeypatch, tmp_path: Pa
 
     response = jobs_route.download_job_dataset(
         "job-1",
-        background_tasks=BackgroundTasks(),
-        export_format="jsonl",
-        artifact_path=None,
-        filename="My Run",
+        background_tasks = BackgroundTasks(),
+        export_format = "jsonl",
+        artifact_path = None,
+        filename = "My Run",
     )
     assert captured["artifact_path"] == "/tmp/artifacts/job-1"
     assert captured["filename_stem"] == "My Run"
@@ -309,10 +309,10 @@ def test_download_job_dataset_route_rejects_incomplete_run(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         jobs_route.download_job_dataset(
             "job-1",
-            background_tasks=BackgroundTasks(),
-            export_format="jsonl",
-            artifact_path=None,
-            filename=None,
+            background_tasks = BackgroundTasks(),
+            export_format = "jsonl",
+            artifact_path = None,
+            filename = None,
         )
     assert exc_info.value.status_code == 409
 
@@ -348,10 +348,10 @@ def test_build_in_memory_job_dataset_download_pages_all_rows(monkeypatch, tmp_pa
 
     response = jobs_route.download_job_dataset(
         "job-big",
-        background_tasks=BackgroundTasks(),
-        export_format="jsonl",
-        artifact_path=None,
-        filename="big-run",
+        background_tasks = BackgroundTasks(),
+        export_format = "jsonl",
+        artifact_path = None,
+        filename = "big-run",
     )
     # Called directly, so the response's background unlink never runs: take the file away here.
     try:
@@ -360,11 +360,11 @@ def test_build_in_memory_job_dataset_download_pages_all_rows(monkeypatch, tmp_pa
             (jobs_route._IN_MEMORY_DOWNLOAD_PAGE_SIZE, 0),
             (jobs_route._IN_MEMORY_DOWNLOAD_PAGE_SIZE, 10_000),
         ]
-        lines = Path(response.path).read_text(encoding="utf-8").strip().splitlines()
+        lines = Path(response.path).read_text(encoding = "utf-8").strip().splitlines()
         assert len(lines) == 12_500
         assert json.loads(lines[-1]) == {"index": 12_499}
     finally:
-        Path(response.path).unlink(missing_ok=True)
+        Path(response.path).unlink(missing_ok = True)
 
 
 def _download_app(monkeypatch, tmp_path: Path, jobs_route):
@@ -378,9 +378,9 @@ def _download_app(monkeypatch, tmp_path: Path, jobs_route):
     monkeypatch.setattr(storage, "_bootstrap_password", None)
     storage._reset_api_key_hash_cache()
     storage.create_initial_user(
-        username=storage.DEFAULT_ADMIN_USERNAME,
-        password="human-password-123",
-        jwt_secret=secrets.token_urlsafe(64),
+        username = storage.DEFAULT_ADMIN_USERNAME,
+        password = "human-password-123",
+        jwt_secret = secrets.token_urlsafe(64),
     )
 
     from auth.authentication import create_access_token
@@ -388,7 +388,7 @@ def _download_app(monkeypatch, tmp_path: Path, jobs_route):
 
     def fake_build_dataset_download(**_kwargs):
         jsonl_path = tmp_path / "out.jsonl"
-        jsonl_path.write_text('{"ok": true}\n', encoding="utf-8")
+        jsonl_path.write_text('{"ok": true}\n', encoding = "utf-8")
         return jsonl_path, "application/x-ndjson", "run.jsonl"
 
     class _FakeManager:
@@ -405,7 +405,7 @@ def _download_app(monkeypatch, tmp_path: Path, jobs_route):
     )
 
     app = FastAPI()
-    app.include_router(data_recipe_router, prefix="/api/data-recipe")
+    app.include_router(data_recipe_router, prefix = "/api/data-recipe")
     return app, create_access_token(storage.DEFAULT_ADMIN_USERNAME)
 
 
@@ -421,7 +421,7 @@ def test_download_link_is_minted_over_the_bearer_and_used_without_one(monkeypatc
 
     minted = client.get(
         "/api/data-recipe/jobs/job-1/download-url",
-        headers={"Authorization": f"Bearer {token}"},
+        headers = {"Authorization": f"Bearer {token}"},
     )
     assert minted.status_code == 200
     url = "/api/data-recipe" + minted.json()["path"]
@@ -433,7 +433,7 @@ def test_download_link_is_minted_over_the_bearer_and_used_without_one(monkeypatc
     assert (
         client.get(
             "/api/data-recipe/jobs/job-1/download",
-            headers={"Authorization": f"Bearer {token}"},
+            headers = {"Authorization": f"Bearer {token}"},
         ).status_code
         == 200
     )
@@ -462,7 +462,7 @@ def test_download_route_refuses_an_unsigned_or_repointed_link(monkeypatch, tmp_p
     assert (
         client.get(
             "/api/data-recipe/jobs/job-1/download",
-            params={"token": "not-a-real-token"},
+            params = {"token": "not-a-real-token"},
         ).status_code
         == 401
     )
@@ -470,22 +470,22 @@ def test_download_route_refuses_an_unsigned_or_repointed_link(monkeypatch, tmp_p
     assert (
         client.get(
             "/api/data-recipe/jobs/job-1/download",
-            params={"token": token},
+            params = {"token": token},
         ).status_code
         == 401
     )
 
     url = client.get(
         "/api/data-recipe/jobs/job-1/download-url",
-        params={"artifact_path": "/recipes/mine"},
-        headers={"Authorization": f"Bearer {token}"},
+        params = {"artifact_path": "/recipes/mine"},
+        headers = {"Authorization": f"Bearer {token}"},
     ).json()["path"]
     signed = parse_qs(urlparse(url).query)["token"][0]
     # Every parameter the export reads is signed, so the artifact cannot be swapped for another.
     assert (
         client.get(
             "/api/data-recipe/jobs/job-1/download",
-            params={"artifact_path": "/recipes/someone-else", "token": signed},
+            params = {"artifact_path": "/recipes/someone-else", "token": signed},
         ).status_code
         == 401
     )
@@ -503,7 +503,7 @@ def test_download_link_expires(monkeypatch, tmp_path: Path):
         "/api/data-recipe"
         + client.get(
             "/api/data-recipe/jobs/job-1/download-url",
-            headers={"Authorization": f"Bearer {token}"},
+            headers = {"Authorization": f"Bearer {token}"},
         ).json()["path"]
     )
     assert client.get(url).status_code == 200
@@ -519,7 +519,6 @@ def test_download_link_expires(monkeypatch, tmp_path: Path):
 
 def _write_appledouble_companion(path: Path) -> None:
     from utils.paths.path_utils import _MAGIC
-
     path.write_bytes(_MAGIC + b"\x00" * 60)
 
 
@@ -530,7 +529,7 @@ def test_build_dataset_download_ignores_appledouble_companions(tmp_path: Path, m
     _write_parquet_rows(parquet_dir, [{"i": 0}, {"i": 1}])
     _write_appledouble_companion(parquet_dir / "._batch_00000.parquet")
     images_dir = dataset_path / "images"
-    images_dir.mkdir(parents=True)
+    images_dir.mkdir(parents = True)
     (images_dir / "pic.png").write_bytes(b"png-bytes")
     _write_appledouble_companion(images_dir / "._pic.png")
 
@@ -543,21 +542,21 @@ def test_build_dataset_download_ignores_appledouble_companions(tmp_path: Path, m
 
     streamed = tmp_path / "streamed.jsonl"
     _write_jsonl_from_parquet(
-        parquet_dir=parquet_dir,
-        destination=streamed,
+        parquet_dir = parquet_dir,
+        destination = streamed,
     )
     assert [json.loads(line)["i"] for line in streamed.read_text().splitlines()] == [0, 1]
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="parquet",
-        filename_stem="macos",
+        artifact_path = str(dataset_path),
+        export_format = "parquet",
+        filename_stem = "macos",
     )
     try:
         with zipfile.ZipFile(file_path) as archive:
             names = archive.namelist()
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
     assert names == ["batch_00000.parquet", "images/pic.png"]
 
 
@@ -576,14 +575,14 @@ def test_build_dataset_download_keeps_a_real_file_named_like_a_companion(
     )
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="dotunder",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "dotunder",
     )
     try:
         assert [json.loads(line)["i"] for line in file_path.read_text().splitlines()] == [0]
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_jsonl_reader_preserves_a_high_precision_decimal_number(tmp_path: Path, monkeypatch):
@@ -595,20 +594,20 @@ def test_jsonl_reader_preserves_a_high_precision_decimal_number(tmp_path: Path, 
     from core.data_recipe.export import _write_jsonl_from_parquet
 
     parquet_dir = tmp_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     expected = Decimal("0.1234567890123456789012345678")
     pyarrow_parquet.write_table(
-        pyarrow.table({"price": pyarrow.array([expected], type=pyarrow.decimal128(28, 28))}),
+        pyarrow.table({"price": pyarrow.array([expected], type = pyarrow.decimal128(28, 28))}),
         parquet_dir / "batch_00000.parquet",
     )
 
     streamed = tmp_path / "streamed.jsonl"
     _write_jsonl_from_parquet(
-        parquet_dir=parquet_dir,
-        destination=streamed,
+        parquet_dir = parquet_dir,
+        destination = streamed,
     )
 
-    assert json.loads(streamed.read_text().strip(), parse_float=Decimal) == {"price": expected}
+    assert json.loads(streamed.read_text().strip(), parse_float = Decimal) == {"price": expected}
 
 
 def test_to_jsonable_maps_pandas_missing_sentinels_to_none():
@@ -628,13 +627,13 @@ def test_build_dataset_download_writes_a_missing_timestamp_as_null(tmp_path: Pat
 
     dataset_path = tmp_path / "recipe-datasets" / "job-nat"
     parquet_dir = dataset_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     pd.DataFrame(
         {
             "seen_at": pd.to_datetime(["2020-01-01", None]),
-            "score": pd.array([1, None], dtype="Int64"),
+            "score": pd.array([1, None], dtype = "Int64"),
         }
-    ).to_parquet(parquet_dir / "batch_00000.parquet", index=False)
+    ).to_parquet(parquet_dir / "batch_00000.parquet", index = False)
 
     monkeypatch.setattr(
         "core.data_recipe.export._resolve_recipe_artifact_path",
@@ -642,14 +641,14 @@ def test_build_dataset_download_writes_a_missing_timestamp_as_null(tmp_path: Pat
     )
 
     file_path, _, _ = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="nat",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "nat",
     )
     try:
-        rows = [json.loads(line) for line in file_path.read_text(encoding="utf-8").splitlines()]
+        rows = [json.loads(line) for line in file_path.read_text(encoding = "utf-8").splitlines()]
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
     assert rows[0]["seen_at"].startswith("2020-01-01")
     assert rows[1] == {"seen_at": None, "score": None}
 
@@ -659,7 +658,7 @@ def test_jsonl_export_ships_the_images_its_rows_reference(tmp_path: Path, monkey
     dataset_path = tmp_path / "recipe-datasets" / "job-multimodal"
     _write_parquet_rows(dataset_path / "parquet-files", [{"image": "images/nested/pic.png"}])
     nested = dataset_path / "images" / "nested"
-    nested.mkdir(parents=True)
+    nested.mkdir(parents = True)
     (nested / "pic.png").write_bytes(b"png-bytes")
 
     monkeypatch.setattr(
@@ -670,14 +669,14 @@ def test_jsonl_export_ships_the_images_its_rows_reference(tmp_path: Path, monkey
     from core.data_recipe.export import download_filename
 
     assert (
-        download_filename(artifact_path=str(dataset_path), export_format="jsonl", stem="run")
+        download_filename(artifact_path = str(dataset_path), export_format = "jsonl", stem = "run")
         == "run.jsonl.zip"
     )
 
     file_path, media_type, download_name = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="run",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "run",
     )
     try:
         assert media_type == "application/zip"
@@ -687,7 +686,7 @@ def test_jsonl_export_ships_the_images_its_rows_reference(tmp_path: Path, monkey
             rows = archive.read("run.jsonl").decode("utf-8")
             assert archive.read("images/nested/pic.png") == b"png-bytes"
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
     assert names == ["images/nested/pic.png", "run.jsonl"]
     assert json.loads(rows.strip()) == {"image": "images/nested/pic.png"}
 
@@ -703,18 +702,18 @@ def test_jsonl_export_stays_a_plain_file_without_images(tmp_path: Path, monkeypa
     from core.data_recipe.export import download_filename
 
     assert (
-        download_filename(artifact_path=str(dataset_path), export_format="jsonl", stem="run")
+        download_filename(artifact_path = str(dataset_path), export_format = "jsonl", stem = "run")
         == "run.jsonl"
     )
     file_path, media_type, download_name = build_dataset_download(
-        artifact_path=str(dataset_path),
-        export_format="jsonl",
-        filename_stem="run",
+        artifact_path = str(dataset_path),
+        export_format = "jsonl",
+        filename_stem = "run",
     )
     try:
         assert (media_type, download_name) == ("application/x-ndjson", "run.jsonl")
     finally:
-        file_path.unlink(missing_ok=True)
+        file_path.unlink(missing_ok = True)
 
 
 def test_jsonl_reader_preserves_columns_named_like_old_reader_helpers(tmp_path: Path):
@@ -732,7 +731,7 @@ def test_minting_refuses_a_run_whose_shards_are_gone(tmp_path: Path, monkeypatch
     """A historical run's artifact path comes from the client, and nothing confirmed it still held
     anything: the link minted fine and the browser then failed invisibly against it."""
     dataset_path = tmp_path / "recipe-datasets" / "job-swept"
-    (dataset_path / "parquet-files").mkdir(parents=True)
+    (dataset_path / "parquet-files").mkdir(parents = True)
     monkeypatch.setattr(
         "core.data_recipe.export._resolve_recipe_artifact_path",
         lambda artifact_path: dataset_path,
@@ -740,8 +739,8 @@ def test_minting_refuses_a_run_whose_shards_are_gone(tmp_path: Path, monkeypatch
 
     from core.data_recipe.export import download_filename
 
-    with pytest.raises(RecipeDatasetExportError, match="parquet"):
-        download_filename(artifact_path=str(dataset_path), export_format="jsonl", stem="swept")
+    with pytest.raises(RecipeDatasetExportError, match = "parquet"):
+        download_filename(artifact_path = str(dataset_path), export_format = "jsonl", stem = "swept")
 
 
 def test_minting_is_refused_for_a_keyless_caller(monkeypatch, tmp_path: Path):
@@ -756,7 +755,7 @@ def test_minting_is_refused_for_a_keyless_caller(monkeypatch, tmp_path: Path):
     app.dependency_overrides[jobs_route.request_admitted_without_credential] = lambda: True
     refused = TestClient(app).get(
         "/api/data-recipe/jobs/job-1/download-url",
-        headers={"Authorization": f"Bearer {token}"},
+        headers = {"Authorization": f"Bearer {token}"},
     )
     assert refused.status_code == 403
     app.dependency_overrides.clear()
@@ -779,12 +778,12 @@ def test_jsonl_reader_streams_a_merged_shard_by_row_group(tmp_path: Path):
     from core.data_recipe.export import _JSONL_EXPORT_BATCH_ROWS, _write_jsonl_from_parquet
 
     parquet_dir = tmp_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     rows = _JSONL_EXPORT_BATCH_ROWS * 2 + 5
     pd.DataFrame({"i": range(rows)}).to_parquet(
         parquet_dir / "batch_00000.parquet",
-        index=False,
-        row_group_size=1_000,
+        index = False,
+        row_group_size = 1_000,
     )
     assert pyarrow_parquet.ParquetFile(parquet_dir / "batch_00000.parquet").num_row_groups > 1
 
@@ -803,7 +802,7 @@ def test_jsonl_reader_preserves_arrow_value_types(tmp_path: Path):
     from core.data_recipe.export import _write_jsonl_from_parquet
 
     parquet_dir = tmp_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     pyarrow_parquet.write_table(
         pyarrow.table(
             {
@@ -819,8 +818,8 @@ def test_jsonl_reader_preserves_arrow_value_types(tmp_path: Path):
 
     destination = tmp_path / "out.jsonl"
     _write_jsonl_from_parquet(
-        parquet_dir=parquet_dir,
-        destination=destination,
+        parquet_dir = parquet_dir,
+        destination = destination,
     )
 
     first = json.loads(destination.read_text().splitlines()[0])
@@ -840,17 +839,17 @@ def test_jsonl_reader_preserves_hugging_face_image_struct_bytes(tmp_path: Path):
     from core.data_recipe.export import _write_jsonl_from_parquet
 
     buffer = io.BytesIO()
-    Image.new("RGBA", (2, 2), (10, 20, 30, 40)).save(buffer, format="PNG")
+    Image.new("RGBA", (2, 2), (10, 20, 30, 40)).save(buffer, format = "PNG")
     original = buffer.getvalue()
     image_type = pyarrow.struct([("bytes", pyarrow.binary()), ("path", pyarrow.string())])
     parquet_dir = tmp_path / "parquet-files"
-    parquet_dir.mkdir(parents=True)
+    parquet_dir.mkdir(parents = True)
     pyarrow_parquet.write_table(
         pyarrow.table(
             {
                 "image": pyarrow.array(
                     [{"bytes": original, "path": "images/source.png"}],
-                    type=image_type,
+                    type = image_type,
                 ),
                 "label": pyarrow.array(["keep-me"]),
             }
@@ -860,8 +859,8 @@ def test_jsonl_reader_preserves_hugging_face_image_struct_bytes(tmp_path: Path):
 
     destination = tmp_path / "out.jsonl"
     _write_jsonl_from_parquet(
-        parquet_dir=parquet_dir,
-        destination=destination,
+        parquet_dir = parquet_dir,
+        destination = destination,
     )
 
     row = json.loads(destination.read_text().strip())
@@ -893,8 +892,8 @@ def test_a_row_is_not_mistaken_for_an_image(tmp_path: Path):
 
         destination = tmp_path / "out.jsonl"
         _write_jsonl_from_parquet(
-            parquet_dir=parquet_dir,
-            destination=destination,
+            parquet_dir = parquet_dir,
+            destination = destination,
         )
         row = json.loads(destination.read_text().splitlines()[0])
         assert row["label"] == "keep-me"

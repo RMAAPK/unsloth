@@ -36,7 +36,7 @@ _TOOL_LOOP_REFUSAL_MESSAGE = (
 )
 
 
-def _refusal(message=_NO_GRAMMAR_ENGINE):
+def _refusal(message = _NO_GRAMMAR_ENGINE):
     return {
         "error": {
             "message": message,
@@ -53,7 +53,7 @@ _REFUSAL = _refusal()
 @pytest.fixture
 def research_call(monkeypatch):
     supervisor = research_runs.ResearchSupervisor(
-        SimpleNamespace(state=SimpleNamespace(server_port=1))
+        SimpleNamespace(state = SimpleNamespace(server_port = 1))
     )
 
     async def noop(*args, **kwargs):
@@ -78,7 +78,7 @@ def research_call(monkeypatch):
         monkeypatch.setattr(
             research_runs.httpx,
             "AsyncClient",
-            lambda **kwargs: real_client(transport=transport, **kwargs),
+            lambda **kwargs: real_client(transport = transport, **kwargs),
         )
 
     def complete(**kwargs):
@@ -86,34 +86,34 @@ def research_call(monkeypatch):
             supervisor._stream_completion(
                 run,
                 [{"role": "user", "content": "Return only JSON."}],
-                json_mode=kwargs.pop("json_mode", True),
-                report_progress=False,
+                json_mode = kwargs.pop("json_mode", True),
+                report_progress = False,
                 **kwargs,
             )
         )
 
     return SimpleNamespace(
-        supervisor=supervisor,
-        run=run,
-        install=install_transport,
-        complete=complete,
-        revoked=revoked,
+        supervisor = supervisor,
+        run = run,
+        install = install_transport,
+        complete = complete,
+        revoked = revoked,
     )
 
 
-@pytest.mark.parametrize("forced_tools", [False, True], ids=["default-tools", "forced-tools"])
-@pytest.mark.parametrize("is_mlx", [True, False], ids=["mlx", "transformers"])
+@pytest.mark.parametrize("forced_tools", [False, True], ids = ["default-tools", "forced-tools"])
+@pytest.mark.parametrize("is_mlx", [True, False], ids = ["mlx", "transformers"])
 @pytest.mark.parametrize("phase", ["planning", "decision", "synthesis_audit"])
 def test_local_json_research_recovers_through_the_real_route(
     monkeypatch, research_call, is_mlx, phase, forced_tools
 ):
     backend = _ScriptedBackend(_fixed('{"ok": true}'))
     backend.models[backend.active_model_name]["is_mlx"] = is_mlx
-    _install(monkeypatch, backend, supports_tools=forced_tools)
+    _install(monkeypatch, backend, supports_tools = forced_tools)
     if forced_tools:
         monkeypatch.setattr(tool_policy, "_tool_policy", True)
     app = FastAPI()
-    app.include_router(inference_route.router, prefix="/v1")
+    app.include_router(inference_route.router, prefix = "/v1")
     install_api_error_handlers(app)
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     sent = []
@@ -126,8 +126,8 @@ def test_local_json_research_recovers_through_the_real_route(
             statuses.append(response.status_code)
             return response
 
-    research_call.install(RecordingTransport(app=app))
-    report, _, finish, _ = research_call.complete(phase=phase, max_tokens=32)
+    research_call.install(RecordingTransport(app = app))
+    report, _, finish, _ = research_call.complete(phase = phase, max_tokens = 32)
     assert json.loads(report) == {"ok": True}
     assert finish == "stop"
     assert statuses == [400, 200]
@@ -143,10 +143,10 @@ def test_local_json_research_recovers_through_the_real_route(
 
 def _completion():
     chunk = {"choices": [{"delta": {"content": '{"ok": true}'}, "finish_reason": "stop"}]}
-    return httpx.Response(200, text=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n")
+    return httpx.Response(200, text = f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n")
 
 
-@pytest.mark.parametrize("provider", [False, True], ids=["local", "provider"])
+@pytest.mark.parametrize("provider", [False, True], ids = ["local", "provider"])
 def test_supported_json_mode_keeps_the_format(research_call, provider):
     if provider:
         research_call.run["config"]["inferenceRequest"] = {
@@ -187,7 +187,7 @@ def test_supported_json_mode_keeps_the_format(research_call, provider):
         (400, _refusal(""), False, True),
         (400, _refusal(None), False, True),
     ],
-    ids=[
+    ids = [
         "other-param",
         "other-code",
         "string-error",
@@ -215,11 +215,11 @@ def test_unrelated_errors_and_provider_contracts_are_not_retried(
 
     def serve(request):
         sent.append(request)
-        return httpx.Response(status, content=body if isinstance(body, str) else json.dumps(body))
+        return httpx.Response(status, content = body if isinstance(body, str) else json.dumps(body))
 
     research_call.install(httpx.MockTransport(serve))
     with pytest.raises(httpx.HTTPStatusError) as caught:
-        research_call.complete(json_mode=json_mode)
+        research_call.complete(json_mode = json_mode)
     assert caught.value.response.status_code == status
     assert len(sent) == 1
     assert research_call.revoked == [1]
@@ -228,10 +228,10 @@ def test_unrelated_errors_and_provider_contracts_are_not_retried(
 def test_an_audio_model_is_refused_rather_than_re_sent(monkeypatch, research_call):
     """Audio refusal must remain distinct from unavailable grammar support."""
     backend = _ScriptedBackend(_fixed('{"ok": true}'))
-    backend.models[backend.active_model_name].update(is_audio=True, audio_type="tts")
+    backend.models[backend.active_model_name].update(is_audio = True, audio_type = "tts")
     _install(monkeypatch, backend)
     app = FastAPI()
-    app.include_router(inference_route.router, prefix="/v1")
+    app.include_router(inference_route.router, prefix = "/v1")
     install_api_error_handlers(app)
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     statuses = []
@@ -242,9 +242,9 @@ def test_an_audio_model_is_refused_rather_than_re_sent(monkeypatch, research_cal
             statuses.append(response.status_code)
             return response
 
-    research_call.install(RecordingTransport(app=app))
+    research_call.install(RecordingTransport(app = app))
     with pytest.raises(httpx.HTTPStatusError) as caught:
-        research_call.complete(phase="planning", max_tokens=32)
+        research_call.complete(phase = "planning", max_tokens = 32)
     assert caught.value.response.status_code == 400
     assert statuses == [400], "the guided-decoding refusal is the answer, not a retry"
     assert not backend.calls
@@ -256,12 +256,12 @@ def test_fallback_uses_the_refused_request_not_an_intervening_model(
     monkeypatch, research_call, requested_audio
 ):
     backend = _ScriptedBackend(_fixed('{"ok": true}'))
-    backend.models["sf-model"].update(is_audio=requested_audio, audio_type="tts")
+    backend.models["sf-model"].update(is_audio = requested_audio, audio_type = "tts")
     backend.models["intervening"] = {"is_audio": not requested_audio, "audio_type": "tts"}
     _install(monkeypatch, backend)
     monkeypatch.setattr(research_runs, "_peek_inference_backend", lambda: backend)
     app = FastAPI()
-    app.include_router(inference_route.router, prefix="/v1")
+    app.include_router(inference_route.router, prefix = "/v1")
     install_api_error_handlers(app)
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     statuses = []
@@ -283,7 +283,7 @@ def test_fallback_uses_the_refused_request_not_an_intervening_model(
                 backend.active_model_name = "intervening"
             return response
 
-    research_call.install(SwitchingTransport(app=app))
+    research_call.install(SwitchingTransport(app = app))
     if requested_audio:
         with pytest.raises(httpx.HTTPStatusError):
             research_call.complete()
@@ -295,14 +295,14 @@ def test_fallback_uses_the_refused_request_not_an_intervening_model(
     assert research_call.revoked == [1]
 
 
-@pytest.mark.parametrize("gguf", [False, True], ids=["non-gguf", "gguf"])
+@pytest.mark.parametrize("gguf", [False, True], ids = ["non-gguf", "gguf"])
 def test_text_requirement_survives_a_manual_switch_before_resend(monkeypatch, research_call, gguf):
     backend = _ScriptedBackend(_fixed('{"ok": true}'))
     backend.models["audio-model"] = {"is_audio": True, "audio_type": "tts"}
     _install(monkeypatch, backend)
     monkeypatch.setattr(research_runs, "_peek_inference_backend", lambda: backend)
     app = FastAPI()
-    app.include_router(inference_route.router, prefix="/v1")
+    app.include_router(inference_route.router, prefix = "/v1")
     install_api_error_handlers(app)
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     audio_calls = []
@@ -314,7 +314,7 @@ def test_text_requirement_survives_a_manual_switch_before_resend(monkeypatch, re
             monkeypatch.setattr(
                 inference_route,
                 "get_llama_cpp_backend",
-                lambda: SimpleNamespace(is_loaded=True, _is_audio=True, context_length=8192),
+                lambda: SimpleNamespace(is_loaded = True, _is_audio = True, context_length = 8192),
             )
 
     async def audio(*args, **kwargs):
@@ -330,7 +330,7 @@ def test_text_requirement_survives_a_manual_switch_before_resend(monkeypatch, re
             statuses.append(response.status_code)
             return response
 
-    research_call.install(RecordingTransport(app=app))
+    research_call.install(RecordingTransport(app = app))
     with pytest.raises(httpx.HTTPStatusError) as caught:
         research_call.complete()
     assert "text output" in caught.value.response.text
@@ -343,7 +343,7 @@ def test_ordinary_audio_request_retains_audio_dispatch(monkeypatch):
     from .test_sf_client_tools_passthrough import _call, _request
 
     backend = _ScriptedBackend(_fixed("unused"))
-    backend.models["sf-model"].update(is_audio=True, audio_type="tts")
+    backend.models["sf-model"].update(is_audio = True, audio_type = "tts")
     audio_calls = []
 
     async def audio(*args, **kwargs):
@@ -356,12 +356,12 @@ def test_ordinary_audio_request_retains_audio_dispatch(monkeypatch):
     assert audio_calls == [True]
 
 
-@pytest.mark.parametrize("gguf", [True, False], ids=["gguf", "non-gguf"])
+@pytest.mark.parametrize("gguf", [True, False], ids = ["gguf", "non-gguf"])
 def test_a_request_without_headers_still_reaches_audio(monkeypatch, gguf):
     """The durable-run producer builds its own request without headers, so reading the
     opt-out off request.headers turned every audio reply there into an AttributeError."""
     backend = _ScriptedBackend(_fixed("unused"))
-    backend.models["sf-model"].update(is_audio=True, audio_type="tts")
+    backend.models["sf-model"].update(is_audio = True, audio_type = "tts")
     audio_calls = []
 
     async def audio(*args, **kwargs):
@@ -369,17 +369,17 @@ def test_a_request_without_headers_still_reaches_audio(monkeypatch, gguf):
         return JSONResponse({"audio": "scripted"})
 
     monkeypatch.setattr(inference_route, "generate_audio", audio)
-    monkeypatch.setattr(inference_route, "api_monitor", ApiMonitor(max_entries=4))
+    monkeypatch.setattr(inference_route, "api_monitor", ApiMonitor(max_entries = 4))
     monkeypatch.setattr(
         inference_route,
         "get_llama_cpp_backend",
         lambda: SimpleNamespace(
-            is_loaded=gguf,
-            _is_audio=gguf,
-            supports_tools=False,
-            is_vision=False,
-            model_identifier="gguf-tts",
-            context_length=2048,
+            is_loaded = gguf,
+            _is_audio = gguf,
+            supports_tools = False,
+            is_vision = False,
+            model_identifier = "gguf-tts",
+            context_length = 2048,
         ),
     )
     monkeypatch.setattr(inference_route, "get_inference_backend", lambda: backend)
@@ -387,18 +387,18 @@ def test_a_request_without_headers_still_reaches_audio(monkeypatch, gguf):
         inference_route, "_detect_safetensors_features", lambda *a, **k: {"supports_tools": False}
     )
     headerless = SimpleNamespace(
-        state=SimpleNamespace(),
-        url=SimpleNamespace(path="/v1/chat/completions"),
-        method="POST",
+        state = SimpleNamespace(),
+        url = SimpleNamespace(path = "/v1/chat/completions"),
+        method = "POST",
     )
     asyncio.run(
         inference_route.openai_chat_completions(
             ChatCompletionRequest(
-                model="default",
-                messages=[ChatMessage(role="user", content="say hello")],
+                model = "default",
+                messages = [ChatMessage(role = "user", content = "say hello")],
             ),
-            request=headerless,
-            current_subject="test",
+            request = headerless,
+            current_subject = "test",
         )
     )
     assert audio_calls == [True]
@@ -410,7 +410,7 @@ def test_format_fallback_is_attempted_only_once(research_call):
 
     def serve(request):
         sent.append(json.loads(request.content))
-        return httpx.Response(400, json=_REFUSAL)
+        return httpx.Response(400, json = _REFUSAL)
 
     research_call.install(httpx.MockTransport(serve))
     with pytest.raises(httpx.HTTPStatusError):
@@ -424,7 +424,7 @@ def test_cancellation_before_fallback_releases_response_and_key(monkeypatch, res
     responses = []
 
     def serve(request):
-        response = httpx.Response(400, json=_REFUSAL)
+        response = httpx.Response(400, json = _REFUSAL)
         responses.append(response)
         return response
 
@@ -450,7 +450,7 @@ def test_cancellation_before_fallback_releases_response_and_key(monkeypatch, res
 )
 def test_planning_after_fallback_still_validates_before_saving(monkeypatch, research_call, output):
     run = research_call.run
-    run.update(threadId="thread", userMessageId="message")
+    run.update(threadId = "thread", userMessageId = "message")
     run["config"]["budgets"]["maxSteps"] = 3
     monkeypatch.setattr(
         research_runs, "_research_question_context", lambda *args: ("Research MLX JSON", "[]")
@@ -469,16 +469,16 @@ def test_planning_after_fallback_still_validates_before_saving(monkeypatch, rese
         payload = json.loads(request.content)
         sent.append(payload)
         if len(sent) == 1:
-            return httpx.Response(400, json=_REFUSAL)
+            return httpx.Response(400, json = _REFUSAL)
         chunk = {"choices": [{"delta": {"content": output}, "finish_reason": "stop"}]}
-        return httpx.Response(200, text=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n")
+        return httpx.Response(200, text = f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n")
 
     research_call.install(httpx.MockTransport(serve))
     if "Check docs" in output:
         asyncio.run(research_call.supervisor._plan(run))
         assert saved == [json.loads(output)]
     else:
-        with pytest.raises(ValueError, match="Planner"):
+        with pytest.raises(ValueError, match = "Planner"):
             asyncio.run(research_call.supervisor._plan(run))
         assert saved == []
     assert len(sent) == 2
@@ -494,7 +494,7 @@ def test_json_fallback_does_not_restart_the_total_timeout(research_call):
     async def serve(request):
         sent.append(json.loads(request.content))
         await asyncio.sleep(1.0)
-        return httpx.Response(400, json=_REFUSAL) if len(sent) == 1 else _completion()
+        return httpx.Response(400, json = _REFUSAL) if len(sent) == 1 else _completion()
 
     research_call.install(httpx.MockTransport(serve))
     with pytest.raises(research_runs.ModelWallClockTimeout):
@@ -519,7 +519,7 @@ def test_json_fallback_does_not_refund_transport_retries(monkeypatch, research_c
     def serve(request):
         sent.append(json.loads(request.content))
         status = next(statuses)
-        return httpx.Response(status, json=_REFUSAL if status == 400 else {"error": "server"})
+        return httpx.Response(status, json = _REFUSAL if status == 400 else {"error": "server"})
 
     research_call.install(httpx.MockTransport(serve))
     with pytest.raises(httpx.HTTPStatusError) as caught:
@@ -538,11 +538,11 @@ def test_json_fallback_never_replays_a_started_generation(research_call):
         chunk = {"choices": [{"delta": {"content": "partial"}}]}
         error = {"error": {**_REFUSAL["error"], "message": "late format error"}}
         return httpx.Response(
-            200, text=f"data: {json.dumps(chunk)}\n\ndata: {json.dumps(error)}\n\ndata: [DONE]\n\n"
+            200, text = f"data: {json.dumps(chunk)}\n\ndata: {json.dumps(error)}\n\ndata: [DONE]\n\n"
         )
 
     research_call.install(httpx.MockTransport(serve))
-    with pytest.raises(RuntimeError, match="late format error"):
+    with pytest.raises(RuntimeError, match = "late format error"):
         research_call.complete()
     assert len(sent) == 1
     assert research_call.revoked == [1]

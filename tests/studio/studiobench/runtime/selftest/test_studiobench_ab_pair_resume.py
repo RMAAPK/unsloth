@@ -35,7 +35,7 @@ SIDES = [
 
 
 def _target(label):
-    return Target(label=label, ref=label, base_url=f"http://x/{label}", seeder=None, runner=None)
+    return Target(label = label, ref = label, base_url = f"http://x/{label}", seeder = None, runner = None)
 
 
 #: Each rung needs its OWN token count: `measures_by_cell` keys on `(rung_tokens, rep)`, so two rungs
@@ -43,7 +43,7 @@ def _target(label):
 RUNG_TOKENS = {"1K": 1_000, "10K": 10_000, "100K": 100_000, "500K": 500_000, "1M": 1_000_000}
 
 
-def _work(reps=1, rungs=("10K",)):
+def _work(reps = 1, rungs = ("10K",)):
     """The real `interleave` over real cells: exactly what `run()` iterates."""
 
     cells = []
@@ -52,10 +52,10 @@ def _work(reps=1, rungs=("10K",)):
             cells.append(
                 (
                     Cell(
-                        cell_id=make_cell_id(rung, "A0", rep),
-                        rung=rung,
-                        rung_tokens=RUNG_TOKENS.get(rung, 10_000),
-                        rep=rep,
+                        cell_id = make_cell_id(rung, "A0", rep),
+                        rung = rung,
+                        rung_tokens = RUNG_TOKENS.get(rung, 10_000),
+                        rep = rep,
                     ),
                     None,
                 )
@@ -66,8 +66,8 @@ def _work(reps=1, rungs=("10K",)):
 def _cell_row(
     cell_id,
     arm,
-    rep=0,
-    tokens=10_000,
+    rep = 0,
+    tokens = 10_000,
 ):
     return {
         "row_type": "cell",
@@ -122,7 +122,7 @@ def test_a_comparison_with_work_left_re_runs_every_pair():
     table: re-run both arms of every pair, adjacent in time, in one session.
     """
 
-    work = _work(reps=2)
+    work = _work(reps = 2)
     done = {"r10K.base.rep0", "r10K.treatment.rep0", "r10K.base.rep1"}
 
     assert skippable_cells(work, done) == set()
@@ -132,7 +132,7 @@ def test_a_comparison_with_nothing_left_still_skips_everything():
     """The control that keeps `--resume` on a finished A/B free: nothing runs, and `_render_ab`
     keeps the table that run already wrote rather than replacing it with NO READING."""
 
-    work = _work(reps=2)
+    work = _work(reps = 2)
     done = {
         "r10K.base.rep0",
         "r10K.treatment.rep0",
@@ -147,7 +147,7 @@ def test_a_run_without_ab_skips_exactly_what_it_recorded():
     """The other control. Without `--ab` every pair holds one cell, so nothing changes."""
 
     work = [
-        (None, Cell(cell_id=make_cell_id(rung, "A0", 0), rung=rung, rung_tokens=1), None)
+        (None, Cell(cell_id = make_cell_id(rung, "A0", 0), rung = rung, rung_tokens = 1), None)
         for rung in ("1K", "10K", "100K")
     ]
     done = {"r1K.A0.rep0", "r100K.A0.rep0"}
@@ -182,11 +182,11 @@ def _resumed_table(tmp_path, *, pair_granular: bool) -> str:
     resumed.close()
 
     _render_ab(paths, SIDES, "sess-2", "c0ffee")
-    return (paths.out / "ab.md").read_text(encoding="utf-8")
+    return (paths.out / "ab.md").read_text(encoding = "utf-8")
 
 
 def test_the_resumed_session_measures_both_arms_and_gets_a_table(tmp_path):
-    table = _resumed_table(tmp_path, pair_granular=True)
+    table = _resumed_table(tmp_path, pair_granular = True)
 
     # Both arms measured, so the pair exists and the table has a reading. One pair carries no bootstrap
     # CI, so the verdict is INCONCLUSIVE; the contrast with the test below, where the arms never pair
@@ -199,7 +199,7 @@ def test_without_pair_granularity_the_same_resume_reports_nothing(tmp_path):
     """What the fix is for, driven through the same path: skipping the recorded base arm leaves
     the treatment arm with nothing to pair against and the table says NO READING."""
 
-    table = _resumed_table(tmp_path, pair_granular=False)
+    table = _resumed_table(tmp_path, pair_granular = False)
 
     assert "VERDICT: NO READING" in table
 
@@ -218,11 +218,11 @@ def _two_rung_resumed_table(tmp_path, *, whole_table: bool) -> str:
         ("r10K.treatment.rep0", "treatment", "10K", 130.0),
         ("r100K.base.rep0", "base", "100K", 100.0),
     ):
-        interrupted.emit(_cell_row(cell_id, arm, tokens=RUNG_TOKENS[rung]))
+        interrupted.emit(_cell_row(cell_id, arm, tokens = RUNG_TOKENS[rung]))
         interrupted.emit(_keystroke(cell_id, p95))
     interrupted.close()
 
-    work = _work(rungs=("10K", "100K"))
+    work = _work(rungs = ("10K", "100K"))
     recorded = _resume_set(paths)
     if whole_table:
         done = skippable_cells(work, recorded)
@@ -238,20 +238,20 @@ def _two_rung_resumed_table(tmp_path, *, whole_table: bool) -> str:
     for target, cell, _plan in work:
         if cell.cell_id in done:
             continue
-        resumed.emit(_cell_row(cell.cell_id, target.label, tokens=RUNG_TOKENS[cell.rung]))
+        resumed.emit(_cell_row(cell.cell_id, target.label, tokens = RUNG_TOKENS[cell.rung]))
         p95 = 100.0 if target.label == "base" else (130.0 if cell.rung == "10K" else 80.0)
         resumed.emit(_keystroke(cell.cell_id, p95))
     resumed.close()
 
     _render_ab(paths, SIDES, "sess-2", "c0ffee")
-    return (paths.out / "ab.md").read_text(encoding="utf-8")
+    return (paths.out / "ab.md").read_text(encoding = "utf-8")
 
 
 def test_a_resumed_comparison_publishes_a_verdict_over_every_rung(tmp_path):
     """THE CONSEQUENCE. Both pairs are re-measured in the new session, so both are in the table
     and the verdict is computed over the ladder rather than over its remainder."""
 
-    table = _two_rung_resumed_table(tmp_path, whole_table=True)
+    table = _two_rung_resumed_table(tmp_path, whole_table = True)
 
     assert "keystroke_p95_ms         2" in table, table
     assert "0.800-1.300" in table, table
@@ -262,7 +262,7 @@ def test_skipping_the_recorded_pair_publishes_a_verdict_over_the_remainder(tmp_p
     """What the fix is for, driven through the same path. The 30% regression the run had already
     measured is dropped by the session filter and nothing in the file mentions the missing rung."""
 
-    table = _two_rung_resumed_table(tmp_path, whole_table=False)
+    table = _two_rung_resumed_table(tmp_path, whole_table = False)
 
     assert "keystroke_p95_ms         1" in table, table
     # The remainder is a single pair, so it can no longer be published as a direction; the bug this
@@ -294,7 +294,7 @@ def test_a_resume_killed_inside_a_cell_does_not_read_as_a_finished_run(tmp_path)
     first.emit(_keystroke("r10K.treatment.rep0", 41.0))
     for arm in ("base", "treatment"):
         cid = f"r100K.{arm}.rep0"
-        first.emit(_cell_row(cid, arm, tokens=RUNG_TOKENS["100K"]))
+        first.emit(_cell_row(cid, arm, tokens = RUNG_TOKENS["100K"]))
         first.emit(_keystroke(cid, 50.0))
     first.close()
 
@@ -309,5 +309,5 @@ def test_a_resume_killed_inside_a_cell_does_not_read_as_a_finished_run(tmp_path)
     done = _resume_set(paths)
     assert "r100K.base.rep0" not in done
 
-    work = _work(rungs=("10K", "100K"))
+    work = _work(rungs = ("10K", "100K"))
     assert skippable_cells(work, done) == set()

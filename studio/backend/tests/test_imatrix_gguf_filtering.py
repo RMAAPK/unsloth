@@ -77,13 +77,13 @@ def test_the_three_copies_of_the_predicate_agree(name):
 
 def test_remote_listing_drops_the_imatrix_row(monkeypatch):
     info = SimpleNamespace(
-        siblings=[
-            SimpleNamespace(rfilename="Qwen3.8-27B-UD-Q4_K_XL.gguf", size=17_559_178_144),
-            SimpleNamespace(rfilename="imatrix_unsloth.gguf", size=13_642_656),
+        siblings = [
+            SimpleNamespace(rfilename = "Qwen3.8-27B-UD-Q4_K_XL.gguf", size = 17_559_178_144),
+            SimpleNamespace(rfilename = "imatrix_unsloth.gguf", size = 13_642_656),
         ]
     )
-    api = SimpleNamespace(model_info=lambda *a, **k: info)
-    monkeypatch.setattr("huggingface_hub.HfApi", lambda token=None: api)
+    api = SimpleNamespace(model_info = lambda *a, **k: info)
+    monkeypatch.setattr("huggingface_hub.HfApi", lambda token = None: api)
 
     variants, _has_vision, _siblings = list_gguf_variants("unsloth/Qwen3.8-27B-GGUF")
     assert [v.quant for v in variants] == ["UD-Q4_K_XL"]
@@ -91,8 +91,8 @@ def test_remote_listing_drops_the_imatrix_row(monkeypatch):
 
 def test_the_imatrix_is_neither_planned_nor_downloaded():
     siblings = [
-        SimpleNamespace(rfilename="Qwen3.8-27B-UD-Q4_K_XL.gguf", size=17_559_178_144),
-        SimpleNamespace(rfilename="imatrix_unsloth.gguf", size=13_642_656),
+        SimpleNamespace(rfilename = "Qwen3.8-27B-UD-Q4_K_XL.gguf", size = 17_559_178_144),
+        SimpleNamespace(rfilename = "imatrix_unsloth.gguf", size = 13_642_656),
     ]
     plans = build_gguf_variant_plans(siblings)
 
@@ -109,7 +109,7 @@ def test_local_listing_and_load_path_skip_the_imatrix(tmp_path):
     (tmp_path / "Qwen3.8-27B-UD-Q4_K_XL.gguf").write_bytes(b"GGUF" + b"0" * 64)
     imatrix = tmp_path / "imatrix_unsloth.gguf"
     imatrix.write_bytes(b"GGUF" + b"0" * 8)
-    (tmp_path / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "config.json").write_text("{}", encoding = "utf-8")
 
     variants, _has_vision = list_local_gguf_variants(os.fspath(tmp_path))
     assert [v.quant for v in variants] == ["UD-Q4_K_XL"]
@@ -134,7 +134,7 @@ def test_the_local_models_route_does_not_list_an_imatrix(tmp_path):
     assert not _is_main_gguf_filename("imatrix_unsloth.gguf")
 
     (tmp_path / "imatrix_unsloth.gguf").write_bytes(b"GGUF" + b"0" * 8)
-    (tmp_path / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "config.json").write_text("{}", encoding = "utf-8")
     assert not _is_model_directory(tmp_path)
     assert _dir_model_format(tmp_path) is None
 
@@ -202,7 +202,7 @@ def test_a_config_beside_an_imatrix_lists_for_the_reason_a_lone_config_does(tmp_
 
     for name in ("config-only", "config-and-imatrix"):
         (tmp_path / name).mkdir()
-        (tmp_path / name / "config.json").write_text("{}", encoding="utf-8")
+        (tmp_path / name / "config.json").write_text("{}", encoding = "utf-8")
     (tmp_path / "config-and-imatrix" / "imatrix_unsloth.gguf").write_bytes(b"GGUF" + b"0" * 8)
 
     rows = {Path(r.path).name: r.model_format for r in _scan_models_dir(tmp_path)}
@@ -214,7 +214,7 @@ def test_the_lmstudio_scanner_does_not_publish_an_imatrix_only_model_dir(tmp_pat
     from routes.models import _scan_lmstudio_dir
 
     model_dir = tmp_path / "unsloth" / "Qwen3.8-27B-GGUF"
-    model_dir.mkdir(parents=True)
+    model_dir.mkdir(parents = True)
     (model_dir / "imatrix_unsloth.gguf").write_bytes(b"GGUF" + b"0" * 8)
     assert _scan_lmstudio_dir(tmp_path) == []
 
@@ -235,11 +235,11 @@ def test_a_downloaded_imatrix_is_not_a_downloaded_gguf_repo(tmp_path):
     sha = "a" * 40
     repo_dir = tmp_path / f"models--{repo_id.replace('/', '--')}"
     blobs = repo_dir / "blobs"
-    blobs.mkdir(parents=True)
-    (repo_dir / "refs").mkdir(parents=True)
-    (repo_dir / "refs" / "main").write_text(sha, encoding="utf-8")
+    blobs.mkdir(parents = True)
+    (repo_dir / "refs").mkdir(parents = True)
+    (repo_dir / "refs" / "main").write_text(sha, encoding = "utf-8")
     snapshot = repo_dir / "snapshots" / sha
-    snapshot.mkdir(parents=True)
+    snapshot.mkdir(parents = True)
     blob = blobs / ("0" * 40)
     blob.write_bytes(b"GGUF" + b"\0" * 13_642_656)
     try:
@@ -263,7 +263,7 @@ def test_a_lora_repo_weight_named_like_an_imatrix_is_still_picked(monkeypatch):
         sys.modules,
         "huggingface_hub",
         SimpleNamespace(
-            HfApi=lambda token=None: SimpleNamespace(list_repo_files=lambda _repo: list(files))
+            HfApi = lambda token = None: SimpleNamespace(list_repo_files = lambda _repo: list(files))
         ),
     )
 
@@ -276,7 +276,7 @@ def test_an_imatrix_is_never_the_lora_gguf_fallback(monkeypatch):
         sys.modules,
         "huggingface_hub",
         SimpleNamespace(
-            HfApi=lambda token=None: SimpleNamespace(list_repo_files=lambda _repo: list(files))
+            HfApi = lambda token = None: SimpleNamespace(list_repo_files = lambda _repo: list(files))
         ),
     )
     from core.inference import diffusion_lora
@@ -310,13 +310,13 @@ def test_interrupted_imatrix_state_does_not_come_back_as_a_row(monkeypatch):
     # synthetic "<variant>.gguf" fallback put the row back at zero bytes on exactly the
     # offline path this listing serves.
     manifest = SimpleNamespace(
-        expected_files=[SimpleNamespace(path="imatrix_unsloth.gguf", size=13_642_656)]
+        expected_files = [SimpleNamespace(path = "imatrix_unsloth.gguf", size = 13_642_656)]
     )
     _state_sources(
         monkeypatch,
-        manifests=["imatrix_unsloth"],
-        markers=[],
-        manifest_for=lambda _variant: manifest,
+        manifests = ["imatrix_unsloth"],
+        markers = [],
+        manifest_for = lambda _variant: manifest,
     )
 
     variants, _has_vision = list_partial_gguf_variants_from_state("unsloth/Qwen3.8-27B-GGUF")
@@ -329,9 +329,9 @@ def test_a_marker_only_imatrix_variant_is_dropped_but_a_real_quant_survives(monk
     # must keep its synthetic row, or an interrupted download becomes unresumable.
     _state_sources(
         monkeypatch,
-        manifests=[],
-        markers=["imatrix_unsloth", "UD-Q4_K_XL"],
-        manifest_for=lambda _variant: None,
+        manifests = [],
+        markers = ["imatrix_unsloth", "UD-Q4_K_XL"],
+        manifest_for = lambda _variant: None,
     )
 
     variants, _has_vision = list_partial_gguf_variants_from_state("unsloth/Qwen3.8-27B-GGUF")

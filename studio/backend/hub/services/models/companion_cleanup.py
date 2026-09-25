@@ -29,7 +29,7 @@ from utils.paths.path_utils import is_appledouble_metadata
 logger = get_logger(__name__)
 
 
-def _repo_blob_bytes(repo_info, *, only=None) -> int:
+def _repo_blob_bytes(repo_info, *, only = None) -> int:
     """On-disk bytes of *repo_info*, deduped by blob so a file shared across revisions counts once. ``only`` is an optional predicate on the snapshot-relative file name."""
     unique: dict[str, int] = {}
     for revision in getattr(repo_info, "revisions", ()) or ():
@@ -62,7 +62,7 @@ def _account_scans() -> list:
     if not access.managed_account():
         return scans
     return [
-        replace(scan, repos=frozenset(access.filter_model_rows(list(scan.repos or ()))))
+        replace(scan, repos = frozenset(access.filter_model_rows(list(scan.repos or ()))))
         for scan in scans
     ]
 
@@ -85,7 +85,6 @@ def _repos_by_id(cache_scans) -> dict[str, list]:
 def _variant_keys(repo_info, variant: str) -> set[str]:
     """The variant keys *variant* names in *repo_info*, from the destructive path's own resolver. The inventory and the delete both identify a row by ``gguf_variant_key``, which for a path-qualified checkpoint (``distilled/ltx-2.3-22b-distilled-Q6_K``) is not the bare quant label. Comparing labels here made the preview miss the file entirely: 0 B reclaimed, and the last checkpoint of a repo read as if a sibling survived, so its companions were described as retained rather than freed."""
     from hub.services.models.deletion import _variant_keys_to_delete
-
     return {key.lower() for key in _variant_keys_to_delete(repo_info, variant)}
 
 
@@ -95,7 +94,7 @@ def _variant_bytes(repo_info, variant: str) -> int:
     def _matches(name: str) -> bool:
         return _is_main_gguf_filename(name) and gguf_variant_key(name).lower() in wanted
 
-    return _repo_blob_bytes(repo_info, only=_matches)
+    return _repo_blob_bytes(repo_info, only = _matches)
 
 
 def _remaining_main_gguf_variants(repo_info, *, excluding: Optional[str] = None) -> set[str]:
@@ -124,20 +123,19 @@ def _remaining_main_gguf_variants(repo_info, *, excluding: Optional[str] = None)
 
 def companion_dependents(
     base_repo_id: str,
-    cache_scans=None,
+    cache_scans = None,
     *,
-    ignore_repo_ids=(),
+    ignore_repo_ids = (),
 ) -> list[str]:
     """Installed checkpoints that would still need *base_repo_id* after ignoring *ignore_repo_ids*, sorted for a stable message. Empty means the base is safe to remove."""
     scans = cache_scans if cache_scans is not None else cache_inventory.all_hf_cache_scans()
-    required = companion_assets.required_companion_bases(scans, ignore_repo_ids=ignore_repo_ids)
+    required = companion_assets.required_companion_bases(scans, ignore_repo_ids = ignore_repo_ids)
     return sorted(required.get((base_repo_id or "").strip().lower(), set()))
 
 
 def _variant_is_a_required_companion_asset(repo_id: str, variant: str) -> bool:
     """The deletion guard's predicate, shared so the preview and the refusal cannot disagree."""
     from hub.services.models.deletion import _variant_is_a_required_companion_asset as _impl
-
     return _impl(repo_id, variant)
 
 
@@ -155,12 +153,12 @@ def _delete_impact_blocking(repo_id: str, variant: Optional[str]) -> dict:
     removes_last_checkpoint = True
     if variant:
         for repo_info in repos:
-            if _remaining_main_gguf_variants(repo_info, excluding=variant):
+            if _remaining_main_gguf_variants(repo_info, excluding = variant):
                 removes_last_checkpoint = False
                 break
 
     ignore = [repo_id] if removes_last_checkpoint else []
-    required_after = companion_assets.required_companion_bases(scans, ignore_repo_ids=ignore)
+    required_after = companion_assets.required_companion_bases(scans, ignore_repo_ids = ignore)
 
     # Companion bases THIS pick uses, from the same derivation the loader's resolver feeds.
     own_bases = companion_assets.required_companion_bases(
@@ -192,7 +190,7 @@ def _delete_impact_blocking(repo_id: str, variant: Optional[str]) -> dict:
         "freeable_companions": freeable,
         # Same predicate the destructive path uses: the native Qwen-Image encoder is a named quant inside a chat GGUF repo, so previewing only whole-repo deletes left Delete enabled and the refusal arriving after the user confirmed.
         "blocked_by": (
-            companion_dependents(repo_id, scans, ignore_repo_ids=[repo_id])
+            companion_dependents(repo_id, scans, ignore_repo_ids = [repo_id])
             if companion_assets.is_companion_base(repo_id)
             and (variant is None or _variant_is_a_required_companion_asset(repo_id, variant))
             else []
@@ -210,10 +208,10 @@ class _SingleRepoScan:
 async def delete_impact_response(repo_id: str, variant: Optional[str] = None) -> dict:
     """What a delete of *repo_id* (/*variant*) would reclaim, retain, and be blocked by."""
     if not _is_valid_repo_id(repo_id):
-        raise HTTPException(status_code=400, detail="Invalid repo_id format")
+        raise HTTPException(status_code = 400, detail = "Invalid repo_id format")
     variant = (variant or "").strip() or None
     if variant is not None and not _is_valid_gguf_variant(variant):
-        raise HTTPException(status_code=400, detail=f"Invalid gguf_variant: {variant!r}")
+        raise HTTPException(status_code = 400, detail = f"Invalid gguf_variant: {variant!r}")
     return await asyncio.to_thread(_delete_impact_blocking, repo_id, variant)
 
 

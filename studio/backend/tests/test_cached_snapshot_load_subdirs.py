@@ -43,14 +43,14 @@ def _snapshot(
     """Build a real models--org--name/snapshots/<rev> cache layout."""
     repo_dir = cache_root / f"models--{repo_id.replace('/', '--')}"
     snapshot = repo_dir / "snapshots" / revision
-    snapshot.mkdir(parents=True)
-    (repo_dir / "refs").mkdir(parents=True, exist_ok=True)
-    (repo_dir / "refs" / "main").write_text(revision, encoding="utf-8")
+    snapshot.mkdir(parents = True)
+    (repo_dir / "refs").mkdir(parents = True, exist_ok = True)
+    (repo_dir / "refs" / "main").write_text(revision, encoding = "utf-8")
     return repo_dir, snapshot
 
 
 def _write_model(directory, *, weights: bool = True):
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     (directory / "config.json").write_text(json.dumps({"model_type": "qwen2"}))
     if weights:
         (directory / "model.safetensors").write_bytes(b"\x00" * 512)
@@ -63,8 +63,8 @@ def bicodec_subdirs(monkeypatch):
 
     def fake_subdirs(
         model_name,
-        hf_token=None,
-        local_files_only=False,
+        hf_token = None,
+        local_files_only = False,
     ):
         return ("LLM",) if model_name == _REPO else ()
 
@@ -113,7 +113,7 @@ def test_a_snapshot_with_neither_root_nor_subdir_weights_still_fails(cache_root,
 def test_a_subdir_snapshot_survives_the_metadata_only_second_pass(cache_root, bicodec_subdirs):
     """Pass 2 keeps caches that never held weights resolvable; subdirs count there too."""
     _, snapshot = _snapshot(cache_root, _REPO)
-    _write_model(snapshot / "LLM", weights=False)
+    _write_model(snapshot / "LLM", weights = False)
 
     assert training_mod._resolve_model_snapshot(_REPO, str(snapshot)) == str(snapshot)
 
@@ -124,8 +124,8 @@ def test_load_subdir_lookup_failure_degrades_to_root_only(cache_root, monkeypatc
 
     def boom(
         model_name,
-        hf_token=None,
-        local_files_only=False,
+        hf_token = None,
+        local_files_only = False,
     ):
         raise RuntimeError("hub unreachable")
 

@@ -21,12 +21,11 @@ def _cuda_target():
     a stub missing either reads as a card that cannot, and refuses loads a real one accepts.
     """
     import torch
-
     return types.SimpleNamespace(
-        device="cuda",
-        dtype=torch.bfloat16,
-        _cc=(10, 0),
-        supports_default_torch_compile=True,
+        device = "cuda",
+        dtype = torch.bfloat16,
+        _cc = (10, 0),
+        supports_default_torch_compile = True,
     )
 
 
@@ -61,10 +60,10 @@ class _FakeBackend:
         self,
         model_path,
         *,
-        gguf_filename=None,
-        family_override=None,
-        model_kind=None,
-        base_repo=None,
+        gguf_filename = None,
+        family_override = None,
+        model_kind = None,
+        base_repo = None,
     ):
         # Mirror the real backend cheap validation so the route validate-before-evict ordering is exercised.
         from core.inference.diffusion import resolve_model_kind
@@ -133,10 +132,10 @@ class _FakeBackend:
     def generate(
         self,
         *,
-        seed=None,
-        batch_size=1,
-        prompts=None,
-        seeds=None,
+        seed = None,
+        batch_size = 1,
+        prompts = None,
+        seeds = None,
         **kwargs,
     ):
         if not self.loaded:
@@ -244,16 +243,16 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(gallery_module, "image_b64", lambda i: "QUJD" if i in store else None)
 
     def _list_images(
-        limit=None,
-        offset=0,
+        limit = None,
+        offset = 0,
         *,
-        valid=None,
-        archived=False,
+        valid = None,
+        archived = False,
     ):
         # Model the real shelf split and pinned-first order, not just the signature: a double that
         # ignored them would pass while the route paged the wrong set.
         ordered = [r for r in store.values() if bool(r.get("archived")) == archived]
-        ordered.sort(key=lambda r: (bool(r.get("pinned")), r.get("created_at", 0.0)), reverse=True)
+        ordered.sort(key = lambda r: (bool(r.get("pinned")), r.get("created_at", 0.0)), reverse = True)
         if valid is not None:
             ordered = [r for r in ordered if valid(r)]
         return ordered[offset:] if limit is None else ordered[offset : offset + limit]
@@ -274,7 +273,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(gallery_module, "clear", _clear)
 
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     # A browser session: the status routes redact host paths for an API-key caller.
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
@@ -283,25 +282,25 @@ def client(monkeypatch, tmp_path):
 
 def _post_load(client, **body):
     """POST the image-model load route with ``body`` as the request payload."""
-    return client.post("/api/inference/images/load", json=body)
+    return client.post("/api/inference/images/load", json = body)
 
 
 def _post_generate(client, **body):
     """POST the image-generation route with ``body`` as the request payload."""
-    return client.post("/api/inference/images/generate", json=body)
+    return client.post("/api/inference/images/generate", json = body)
 
 
 def _post_download_plan(client, **body):
     """POST the image download-plan route with ``body`` as the request payload."""
-    return client.post("/api/inference/images/download-plan", json=body)
+    return client.post("/api/inference/images/download-plan", json = body)
 
 
 def test_load_generate_status_unload_roundtrip(client):
     loaded = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_S.gguf",
-        base_repo="unsloth/Z-Image-base",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_S.gguf",
+        base_repo = "unsloth/Z-Image-base",
     )
     assert loaded.status_code == 200
     body = loaded.json()
@@ -309,7 +308,7 @@ def test_load_generate_status_unload_roundtrip(client):
 
     assert client.get("/api/inference/images/status").json()["loaded"] is True
 
-    gen = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    gen = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
     assert gen.status_code == 200
     # One persisted record carrying the full recipe back.
     images = gen.json()["images"]
@@ -338,9 +337,9 @@ def test_generate_holds_progress_active_during_persist(client, monkeypatch):
     # generate-progress must stay active while a finished generation is still writing its gallery record. Probe the persist counter from inside save.
     _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_S.gguf",
-        base_repo="unsloth/Z-Image-base",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_S.gguf",
+        base_repo = "unsloth/Z-Image-base",
     )
 
     # Idle before any generation.
@@ -355,7 +354,7 @@ def test_generate_holds_progress_active_during_persist(client, monkeypatch):
 
     monkeypatch.setattr(gallery_module, "save", _probe_save)
 
-    gen = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    gen = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
     assert gen.status_code == 200
     # Active while the record was being persisted, and back to idle once the route returned.
     assert seen["during"] >= 1
@@ -393,7 +392,7 @@ def test_generate_resets_the_progress_stream_before_the_run(client, monkeypatch)
     # one stopped logs nothing. The image routes must rearm like video, and before generate().
     client.post(
         "/api/inference/images/load",
-        json={
+        json = {
             "model_path": "unsloth/Z-Image-Turbo-GGUF",
             "gguf_filename": "z-image-turbo-Q4_K_S.gguf",
             "base_repo": "unsloth/Z-Image-base",
@@ -413,7 +412,7 @@ def test_generate_resets_the_progress_stream_before_the_run(client, monkeypatch)
 
     monkeypatch.setattr(gallery_module, "save", _probe_save)
 
-    gen = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    gen = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
 
     assert gen.status_code == 200
     assert order == [("reset", "image"), ("generated", "image")]
@@ -423,9 +422,9 @@ def test_load_rejects_untrusted_base_repo(client):
     # A trusted GGUF paired with an untrusted remote base_repo is rejected at the route, so a client cannot make the server fetch an arbitrary companion repo.
     r = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_S.gguf",
-        base_repo="evil/companions",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_S.gguf",
+        base_repo = "evil/companions",
     )
     assert r.status_code == 400
     assert "base_repo" in r.json()["detail"]
@@ -469,7 +468,7 @@ def test_idle_unload_frees_the_pipeline_and_the_user_can_reload(client, monkeypa
     monkeypatch.setattr(tracker, "_pending", 0)
     load = {"model_path": "x/z-image", "gguf_filename": "q.gguf"}
 
-    assert client.post("/api/inference/images/load", json=load).json()["loaded"] is True
+    assert client.post("/api/inference/images/load", json = load).json()["loaded"] is True
     asyncio.run(media_keepwarm.idle_unload_step())  # the fresh load survives this tick
     assert client.get("/api/inference/images/status").json()["loaded"] is True
 
@@ -478,8 +477,8 @@ def test_idle_unload_frees_the_pipeline_and_the_user_can_reload(client, monkeypa
     assert client.get("/api/inference/images/status").json()["loaded"] is False
     assert gpu_arbiter.current_owner() is None
 
-    assert client.post("/api/inference/images/load", json=load).json()["loaded"] is True
-    gen = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    assert client.post("/api/inference/images/load", json = load).json()["loaded"] is True
+    gen = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
     assert gen.status_code == 200 and gen.json()["images"][0]["seed"] == 7
 
 
@@ -499,8 +498,8 @@ def test_unload_keeps_ownership_when_a_load_is_in_flight(client, monkeypatch):
 
 
 def test_generate_batch_size_persists_each_image(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    resp = _post_generate(client, prompt="p", batch_size=3, seed=5)
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    resp = _post_generate(client, prompt = "p", batch_size = 3, seed = 5)
     assert resp.status_code == 200
     images = resp.json()["images"]
     assert len(images) == 3
@@ -511,8 +510,8 @@ def test_generate_batch_size_persists_each_image(client):
 
 def test_generate_seed_list_records_replay_from_each_own_seed(client):
     # A seeds LIST sets each image's own seed, so the recipe must NOT claim the base seed + request batch_size: restore prefers batch_seed.
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    resp = _post_generate(client, prompt="p", seeds=[5, 99])
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    resp = _post_generate(client, prompt = "p", seeds = [5, 99])
     assert resp.status_code == 200
     images = resp.json()["images"]
     assert [i["seed"] for i in images] == [5, 99]
@@ -521,8 +520,8 @@ def test_generate_seed_list_records_replay_from_each_own_seed(client):
 
 
 def test_generate_prompt_list_records_each_prompt_and_seed(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    resp = _post_generate(client, prompt="unused", prompts=["a cat", "a dog"], seed=10)
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    resp = _post_generate(client, prompt = "unused", prompts = ["a cat", "a dog"], seed = 10)
     assert resp.status_code == 200
     images = resp.json()["images"]
     assert [i["prompt"] for i in images] == ["a cat", "a dog"]
@@ -533,8 +532,8 @@ def test_generate_prompt_list_records_each_prompt_and_seed(client):
 
 def test_generate_legacy_batch_still_records_the_base_seed_and_size(client):
     # The batch_size path is unchanged: those images DO share one base seed, so restore replays the whole batch.
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    resp = _post_generate(client, prompt="p", batch_size=3, seed=5)
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    resp = _post_generate(client, prompt = "p", batch_size = 3, seed = 5)
     images = resp.json()["images"]
     assert all(i["batch_seed"] == 5 for i in images)
     assert all(i["batch_size"] == 3 for i in images)
@@ -548,15 +547,15 @@ def test_generate_request_rejects_zero_denoise_strength():
     from models.inference import DiffusionGenerateRequest
 
     with pytest.raises(pydantic.ValidationError):
-        DiffusionGenerateRequest(prompt="x", strength=0.0)
-    assert DiffusionGenerateRequest(prompt="x", strength=0.1).strength == 0.1
-    assert DiffusionGenerateRequest(prompt="x", strength=1.0).strength == 1.0
-    assert DiffusionGenerateRequest(prompt="x").strength is None  # unset stays the pipe default
+        DiffusionGenerateRequest(prompt = "x", strength = 0.0)
+    assert DiffusionGenerateRequest(prompt = "x", strength = 0.1).strength == 0.1
+    assert DiffusionGenerateRequest(prompt = "x", strength = 1.0).strength == 1.0
+    assert DiffusionGenerateRequest(prompt = "x").strength is None  # unset stays the pipe default
 
 
 def test_gallery_pagination(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    client.post("/api/inference/images/generate", json={"prompt": "p", "batch_size": 5, "seed": 1})
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    client.post("/api/inference/images/generate", json = {"prompt": "p", "batch_size": 5, "seed": 1})
     page1 = client.get("/api/inference/images/gallery?limit=2&offset=0").json()
     assert len(page1["images"]) == 2 and page1["has_more"] is True
     last = client.get("/api/inference/images/gallery?limit=2&offset=4").json()
@@ -564,29 +563,29 @@ def test_gallery_pagination(client):
 
 
 def test_generate_rejects_non_multiple_of_16(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     # Odd, and a multiple of 8 that is not a multiple of 16: both rejected, since Z-Image requires dimensions divisible by 16.
     for bad in (1001, 1000):
-        resp = client.post("/api/inference/images/generate", json={"prompt": "p", "width": bad})
+        resp = client.post("/api/inference/images/generate", json = {"prompt": "p", "width": bad})
         assert resp.status_code == 422, bad
     # A multiple of 16 is accepted.
-    ok = client.post("/api/inference/images/generate", json={"prompt": "p", "width": 1024})
+    ok = client.post("/api/inference/images/generate", json = {"prompt": "p", "width": 1024})
     assert ok.status_code == 200
 
 
 def test_generate_rejects_batch_seed_past_json_safe_range(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     # A seed at the cap with a batch derives per-image seeds past the JSON-safe range, so the request is rejected.
-    over = _post_generate(client, prompt="p", seed=2**53 - 1, batch_size=2)
+    over = _post_generate(client, prompt = "p", seed = 2**53 - 1, batch_size = 2)
     assert over.status_code == 422
     # The top-of-batch seed lands exactly on the cap: still JSON-safe, so accepted.
-    ok = _post_generate(client, prompt="p", seed=2**53 - 2, batch_size=2)
+    ok = _post_generate(client, prompt = "p", seed = 2**53 - 2, batch_size = 2)
     assert ok.status_code == 200
 
 
 def test_non_gguf_load_restricted_to_unsloth(client):
     # gguf_filename is optional; with none the load is a full-pipeline kind gated to unsloth/*, so a non-unsloth repo is a 400.
-    resp = client.post("/api/inference/images/load", json={"model_path": "x/z-image"})
+    resp = client.post("/api/inference/images/load", json = {"model_path": "x/z-image"})
     assert resp.status_code == 400
     assert "unsloth" in resp.json()["detail"].lower()
 
@@ -605,7 +604,7 @@ def test_a_too_old_diffusers_is_a_400_on_both_load_and_download_plan(client, mon
         # The real gate, run against a diffusers that predates the class.
         assert_pipeline_class_available("Flux2KleinPipeline", "flux.2-klein")
 
-    monkeypatch.setitem(sys.modules, "diffusers", types.SimpleNamespace(__version__="0.36.0"))
+    monkeypatch.setitem(sys.modules, "diffusers", types.SimpleNamespace(__version__ = "0.36.0"))
     monkeypatch.setattr(backend, "validate_load_request", _refuse)
     body = {
         "model_path": "unsloth/FLUX.2-klein-4B-GGUF",
@@ -613,18 +612,18 @@ def test_a_too_old_diffusers_is_a_400_on_both_load_and_download_plan(client, mon
         "model_kind": "gguf",
     }
 
-    load = client.post("/api/inference/images/load", json=body)
+    load = client.post("/api/inference/images/load", json = body)
     assert load.status_code == 400
     assert "Flux2KleinPipeline" in load.json()["detail"]
 
-    plan = client.post("/api/inference/images/download-plan", json=body)
+    plan = client.post("/api/inference/images/download-plan", json = body)
     assert plan.status_code == 400
     assert "Flux2KleinPipeline" in plan.json()["detail"]
 
 
 def test_pipeline_load_allowed_for_unsloth_repo(client):
     # An unsloth/* repo with no filename loads as a full diffusers pipeline, so the route forwards model_kind="pipeline".
-    resp = _post_load(client, model_path="unsloth/Z-Image-Turbo-unsloth-bnb-4bit")
+    resp = _post_load(client, model_path = "unsloth/Z-Image-Turbo-unsloth-bnb-4bit")
     assert resp.status_code == 200
     backend = diffusion_module.get_diffusion_backend()
     assert backend.last_load_kwargs["model_kind"] == "pipeline"
@@ -632,7 +631,7 @@ def test_pipeline_load_allowed_for_unsloth_repo(client):
 
 
 def test_generate_without_load_returns_409(client):
-    resp = client.post("/api/inference/images/generate", json={"prompt": "p"})
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "p"})
     assert resp.status_code == 409
 
 
@@ -648,7 +647,7 @@ def test_generate_pipeline_error_returns_sanitized_500(client, monkeypatch):
         )
 
     monkeypatch.setattr(backend, "generate", _oom)
-    resp = client.post("/api/inference/images/generate", json={"prompt": "p"})
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "p"})
     assert resp.status_code == 500
     detail = resp.json()["detail"]
     assert detail.startswith("Image generation failed.")
@@ -669,7 +668,7 @@ def test_generate_native_process_death_names_the_engine_not_its_output(client, m
         )
 
     monkeypatch.setattr(backend, "generate", _abort)
-    resp = client.post("/api/inference/images/generate", json={"prompt": "p"})
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "p"})
     assert resp.status_code == 500
     detail = resp.json()["detail"]
     assert "native image renderer stopped" in detail
@@ -686,7 +685,7 @@ def test_generate_execution_error_with_cancelled_substring_is_sanitized_500(clie
         raise RuntimeError("sd-cli exited 1. Last output:\nop cancelled at /home/u/models/x.gguf")
 
     monkeypatch.setattr(backend, "generate", _fail)
-    resp = client.post("/api/inference/images/generate", json={"prompt": "p"})
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "p"})
     assert resp.status_code == 500
     detail = resp.json()["detail"]
     assert detail.startswith("Image generation failed.")
@@ -702,7 +701,7 @@ def test_generate_user_cancellation_returns_409(client, monkeypatch):
         raise RuntimeError("Diffusion generation was cancelled.")
 
     monkeypatch.setattr(backend, "generate", _cancel)
-    resp = client.post("/api/inference/images/generate", json={"prompt": "p"})
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "p"})
     assert resp.status_code == 409
     assert resp.json()["detail"] == "Diffusion generation was cancelled."
 
@@ -715,7 +714,7 @@ def test_load_unknown_family_returns_400(client, monkeypatch):
     # Validation runs in the pre-flight (before the GPU is taken), so that is where an unsupported model is rejected now.
     backend.validate_load_request = _raise
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
-    resp = _post_load(client, model_path="x/y", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/y", gguf_filename = "q.gguf")
     assert resp.status_code == 400
     assert "isn't a supported image-generation model" in resp.json()["detail"]
 
@@ -733,7 +732,7 @@ def test_load_validation_failure_does_not_evict_chat(client, monkeypatch):
 
     backend.validate_load_request = _raise
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
-    resp = _post_load(client, model_path="x/y", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/y", gguf_filename = "q.gguf")
     assert resp.status_code == 400
     assert evicted == []  # chat backend was never evicted
     assert gpu_arbiter.current_owner() == gpu_arbiter.CHAT
@@ -752,7 +751,7 @@ def test_gated_base_load_returns_400_without_evicting_chat(client, monkeypatch):
     monkeypatch.setitem(gpu_arbiter._EVICTORS, gpu_arbiter.CHAT, lambda: evicted.append(True))
     # The arbiter is only taken for a non-CPU load, which is exactly where an eviction is at stake.
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="cuda")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "cuda")
     )
     backend = diffusion_module.get_diffusion_backend()
     detail = (
@@ -763,9 +762,9 @@ def test_gated_base_load_returns_400_without_evicting_chat(client, monkeypatch):
     def _refuse(model_path, fam, **kwargs):
         raise ValueError(detail)
 
-    monkeypatch.setattr(backend, "preflight_base_access", _refuse, raising=False)
+    monkeypatch.setattr(backend, "preflight_base_access", _refuse, raising = False)
 
-    resp = _post_load(client, model_path="unsloth/Z-Image-Turbo-GGUF", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "unsloth/Z-Image-Turbo-GGUF", gguf_filename = "q.gguf")
 
     assert resp.status_code == 400
     assert resp.json()["detail"] == detail
@@ -782,7 +781,7 @@ def test_cpu_load_skips_the_gated_preflight(client, monkeypatch):
     import core.inference.diffusion_device as devmod
 
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="cpu")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "cpu")
     )
     backend = diffusion_module.get_diffusion_backend()
     calls: list = []
@@ -790,10 +789,10 @@ def test_cpu_load_skips_the_gated_preflight(client, monkeypatch):
         backend,
         "preflight_base_access",
         lambda *a, **k: calls.append(a),
-        raising=False,
+        raising = False,
     )
 
-    resp = _post_load(client, model_path="unsloth/Z-Image-Turbo-GGUF", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "unsloth/Z-Image-Turbo-GGUF", gguf_filename = "q.gguf")
 
     assert resp.status_code == 200
     assert calls == []
@@ -813,7 +812,7 @@ def test_a_cpu_mispredicted_engine_is_still_preflighted(monkeypatch):
 
     # Native is unavailable, so the selection lands on diffusers however the prediction went.
     monkeypatch.setenv("UNSLOTH_DIFFUSION_SD_CPP", "0")
-    monkeypatch.delenv("UNSLOTH_DIFFUSION_ENGINE", raising=False)
+    monkeypatch.delenv("UNSLOTH_DIFFUSION_ENGINE", raising = False)
     monkeypatch.setattr(engine_router, "_active_engine_name", ENGINE_DIFFUSERS)
     monkeypatch.setattr(engine_router, "_fallback_reason", None)
     # ...but the prediction says native, so a preflight is owed and it is owed on the wrong engine.
@@ -836,14 +835,14 @@ def test_a_cpu_mispredicted_engine_is_still_preflighted(monkeypatch):
     monkeypatch.setattr(
         engine_router,
         "resolve_diffusion_device_target",
-        lambda: SimpleNamespace(backend="cpu", device="cpu"),
+        lambda: SimpleNamespace(backend = "cpu", device = "cpu"),
     )
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: SimpleNamespace(device="cpu")
+        devmod, "resolve_diffusion_device_target", lambda: SimpleNamespace(device = "cpu")
     )
 
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     # A browser session: the status routes redact host paths for an API-key caller.
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
@@ -851,7 +850,7 @@ def test_a_cpu_mispredicted_engine_is_still_preflighted(monkeypatch):
 
     resp = local.post(
         "/api/inference/images/load",
-        json={"model_path": "unsloth/Z-Image-Turbo-GGUF", "gguf_filename": "q.gguf"},
+        json = {"model_path": "unsloth/Z-Image-Turbo-GGUF", "gguf_filename": "q.gguf"},
     )
 
     assert resp.status_code == 400
@@ -881,7 +880,7 @@ def test_gated_pick_on_an_engine_switch_keeps_the_previous_model(monkeypatch, de
         "UNSLOTH_DIFFUSION_SD_CPP_MPS",
         "UNSLOTH_DIFFUSION_SD_CPP_INSTALL",
     ):
-        monkeypatch.delenv(e, raising=False)
+        monkeypatch.delenv(e, raising = False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
@@ -906,10 +905,10 @@ def test_gated_pick_on_an_engine_switch_keeps_the_previous_model(monkeypatch, de
     monkeypatch.setattr(
         engine_router,
         "resolve_diffusion_device_target",
-        lambda: SimpleNamespace(backend=device, device=device),
+        lambda: SimpleNamespace(backend = device, device = device),
     )
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: SimpleNamespace(device=device)
+        devmod, "resolve_diffusion_device_target", lambda: SimpleNamespace(device = device)
     )
     monkeypatch.setattr(gpu_arbiter, "_owner", gpu_arbiter.CHAT)
     evicted: list = []
@@ -917,7 +916,7 @@ def test_gated_pick_on_an_engine_switch_keeps_the_previous_model(monkeypatch, de
     monkeypatch.setitem(gpu_arbiter._EVICTORS, gpu_arbiter.DIFFUSION, lambda: None)
 
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     # A browser session: the status routes redact host paths for an API-key caller.
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
@@ -925,7 +924,7 @@ def test_gated_pick_on_an_engine_switch_keeps_the_previous_model(monkeypatch, de
 
     resp = local.post(
         "/api/inference/images/load",
-        json={"model_path": "unsloth/Z-Image-Turbo-GGUF", "gguf_filename": "q.gguf"},
+        json = {"model_path": "unsloth/Z-Image-Turbo-GGUF", "gguf_filename": "q.gguf"},
     )
 
     assert resp.status_code == 400
@@ -952,7 +951,7 @@ def test_load_refused_during_training_does_not_evict_chat(client, monkeypatch):
 
     monkeypatch.setattr(core_training, "get_training_backend", lambda: _Training())
 
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     assert resp.status_code == 409
     assert "training" in resp.json()["detail"].lower()
     assert evicted == []  # chat backend was never evicted
@@ -966,7 +965,7 @@ def test_load_progress_route(client, monkeypatch):
     idle = client.get("/api/inference/images/load-progress")
     assert idle.status_code == 200 and idle.json()["phase"] is None
     # After load: the fake reports ready.
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     ready = client.get("/api/inference/images/load-progress")
     assert ready.json()["phase"] == "ready"
     assert resets == ["image"]
@@ -997,14 +996,14 @@ def test_load_progress_route_logs_backend_snapshot(client, monkeypatch):
 def test_routes_require_auth():
     # No dependency override: the auth dependency must reject the request.
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     unauth = TestClient(app)
     assert unauth.get("/api/inference/images/status").status_code in (401, 403)
 
 
 def test_invalid_family_returns_400_without_evicting_chat(client):
     # An undetectable family fails validation BEFORE the GPU handoff, so the arbiter is never acquired.
-    resp = _post_load(client, model_path="x/y", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/y", gguf_filename = "q.gguf")
     assert resp.status_code == 400
     assert "family" in resp.json()["detail"]
     assert gpu_arbiter._owner is None
@@ -1017,7 +1016,7 @@ def test_validate_filenotfound_maps_to_400_without_eviction(client, monkeypatch)
     backend = _FakeBackend()
     backend.validate_load_request = _raise_fnf
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
-    resp = _post_load(client, model_path="/models/x", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "/models/x", gguf_filename = "q.gguf")
     assert resp.status_code == 400
     assert gpu_arbiter._owner is None
 
@@ -1027,9 +1026,9 @@ def test_memory_mode_threads_through_to_backend(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        memory_mode="low_vram",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        memory_mode = "low_vram",
     )
     assert resp.status_code == 200
     assert resp.json()["memory_mode"] == "low_vram"
@@ -1041,9 +1040,9 @@ def test_transformer_quant_threads_through_to_backend(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_quant="auto",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_quant = "auto",
     )
     assert resp.status_code == 200
     assert backend.last_load_kwargs.get("transformer_quant") == "auto"
@@ -1054,10 +1053,10 @@ def test_transformer_quant_fast_accum_threads_through(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_quant="fp8",
-        transformer_quant_fast_accum=False,
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_quant = "fp8",
+        transformer_quant_fast_accum = False,
     )
     assert resp.status_code == 200
     assert backend.last_load_kwargs.get("transformer_quant_fast_accum") is False
@@ -1068,10 +1067,10 @@ def test_transformer_prequant_path_threads_through(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_quant="fp8",
-        transformer_prequant_path="/data/zimage_fp8.pt",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_quant = "fp8",
+        transformer_prequant_path = "/data/zimage_fp8.pt",
     )
     assert resp.status_code == 200
     assert backend.last_load_kwargs.get("transformer_prequant_path") == "/data/zimage_fp8.pt"
@@ -1082,9 +1081,9 @@ def test_attention_backend_threads_through(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        attention_backend="cudnn",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        attention_backend = "cudnn",
     )
     assert resp.status_code == 200
     assert backend.last_load_kwargs.get("attention_backend") == "cudnn"
@@ -1093,9 +1092,9 @@ def test_attention_backend_threads_through(client, monkeypatch):
 def test_invalid_attention_backend_returns_422(client):
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        attention_backend="bogus",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        attention_backend = "bogus",
     )
     assert resp.status_code == 422
 
@@ -1115,10 +1114,10 @@ def test_transformer_cache_threads_through(client, monkeypatch):
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: backend)
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_cache="fbcache",
-        transformer_cache_threshold=0.1,
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_cache = "fbcache",
+        transformer_cache_threshold = 0.1,
     )
     assert resp.status_code == 200
     assert backend.last_load_kwargs.get("transformer_cache") == "fbcache"
@@ -1128,9 +1127,9 @@ def test_transformer_cache_threads_through(client, monkeypatch):
 def test_invalid_transformer_cache_returns_422(client):
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_cache="deepcache",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_cache = "deepcache",
     )
     assert resp.status_code == 422
 
@@ -1138,9 +1137,9 @@ def test_invalid_transformer_cache_returns_422(client):
 def test_out_of_range_cache_threshold_returns_422(client):
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_cache_threshold=1.5,
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_cache_threshold = 1.5,
     )
     assert resp.status_code == 422
 
@@ -1159,7 +1158,7 @@ def test_load_routes_to_sd_cpp_on_cpu(monkeypatch, tmp_path):
         "UNSLOTH_DIFFUSION_SD_CPP_MPS",
         "UNSLOTH_DIFFUSION_SD_CPP_INSTALL",
     ):
-        monkeypatch.delenv(e, raising=False)
+        monkeypatch.delenv(e, raising = False)
 
     validator = _FakeBackend()  # supplies validate_load_request (and is the diffusers fallback)
     monkeypatch.setattr(diffusion_module, "get_diffusion_backend", lambda: validator)
@@ -1167,7 +1166,7 @@ def test_load_routes_to_sd_cpp_on_cpu(monkeypatch, tmp_path):
     monkeypatch.setattr(
         engine_router,
         "resolve_diffusion_device_target",
-        lambda: SimpleNamespace(backend="cpu", device="cpu"),
+        lambda: SimpleNamespace(backend = "cpu", device = "cpu"),
     )
     # Stubbed because select_and_activate_engine probes THIS first with allow_install on. Unstubbed it ran the real installer,
     # downloading 108 MB into the developer's own ~/.unsloth root. Returning None also keeps this test on the sd-cli path.
@@ -1175,7 +1174,7 @@ def test_load_routes_to_sd_cpp_on_cpu(monkeypatch, tmp_path):
     monkeypatch.setattr(engine_router, "ensure_sd_cpp_binary", lambda **_: "/x/sd-cli")
     # The router probes runnability before committing to native; treat the stub binary as executable.
     monkeypatch.setattr(
-        engine_router, "SdCppEngine", lambda **_: SimpleNamespace(version=lambda: "sd-cli v0")
+        engine_router, "SdCppEngine", lambda **_: SimpleNamespace(version = lambda: "sd-cli v0")
     )
     monkeypatch.setattr(engine_router, "_active_engine_name", "diffusers")
     monkeypatch.setattr(engine_router, "_fallback_reason", None)
@@ -1188,13 +1187,13 @@ def test_load_routes_to_sd_cpp_on_cpu(monkeypatch, tmp_path):
     monkeypatch.setitem(gpu_arbiter._EVICTORS, gpu_arbiter.DIFFUSION, lambda: None)
 
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     # A browser session: the status routes redact host paths for an API-key caller.
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
     client = TestClient(app)
 
-    resp = _post_load(client, model_path="unsloth/Z-Image-Turbo-GGUF", gguf_filename="z.gguf")
+    resp = _post_load(client, model_path = "unsloth/Z-Image-Turbo-GGUF", gguf_filename = "z.gguf")
     assert resp.status_code == 200
     body = resp.json()
     assert body["engine"] == "sd_cpp"
@@ -1206,9 +1205,9 @@ def test_invalid_transformer_quant_returns_422_without_eviction(client):
     # An unsupported transformer_quant is rejected by the request schema, so the GPU is never acquired.
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        transformer_quant="int2",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        transformer_quant = "int2",
     )
     assert resp.status_code == 422
     assert gpu_arbiter._owner is None
@@ -1218,9 +1217,9 @@ def test_invalid_memory_mode_returns_422_without_eviction(client):
     # An unsupported memory_mode is rejected by the request schema, so the GPU is never acquired.
     resp = _post_load(
         client,
-        model_path="x/z-image",
-        gguf_filename="q.gguf",
-        memory_mode="ultra",
+        model_path = "x/z-image",
+        gguf_filename = "q.gguf",
+        memory_mode = "ultra",
     )
     assert resp.status_code == 422
     assert gpu_arbiter._owner is None
@@ -1241,9 +1240,9 @@ def test_in_progress_returns_409_after_validation_passes(client, monkeypatch):
     monkeypatch.setattr(
         devmod,
         "resolve_diffusion_device_target",
-        lambda: _types.SimpleNamespace(device="cuda"),
+        lambda: _types.SimpleNamespace(device = "cuda"),
     )
-    resp = _post_load(client, model_path="unsloth/Z-Image-Turbo-GGUF", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "unsloth/Z-Image-Turbo-GGUF", gguf_filename = "q.gguf")
     assert resp.status_code == 409
     # Validation passed first, so the GPU WAS acquired before begin_load reported busy.
     assert gpu_arbiter._owner == gpu_arbiter.DIFFUSION
@@ -1259,11 +1258,11 @@ def _force_engine(monkeypatch, backend, *, engine_name, device):
     monkeypatch.setattr(router, "select_and_activate_engine", lambda fam, **kw: backend)
     monkeypatch.setattr(router, "active_engine_name", lambda: engine_name)
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device=device)
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = device)
     )
     acquired: list = []
 
-    def _fake_acquire(role, register=None):
+    def _fake_acquire(role, register = None):
         # Mirror the real arbiter: record the handoff and run the (registered) load under it.
         acquired.append(role)
         return register() if register is not None else None
@@ -1277,8 +1276,8 @@ def test_cpu_native_load_skips_gpu_arbiter(client, monkeypatch):
     from core.inference.sd_cpp_engine import ENGINE_SD_CPP
 
     backend = diffusion_module.get_diffusion_backend()
-    acquired = _force_engine(monkeypatch, backend, engine_name=ENGINE_SD_CPP, device="cpu")
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    acquired = _force_engine(monkeypatch, backend, engine_name = ENGINE_SD_CPP, device = "cpu")
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     assert resp.status_code == 200
     assert acquired == []  # no arbiter handoff for a CPU native load
 
@@ -1288,8 +1287,8 @@ def test_gpu_native_load_takes_arbiter(client, monkeypatch):
     from core.inference.sd_cpp_engine import ENGINE_SD_CPP
 
     backend = diffusion_module.get_diffusion_backend()
-    acquired = _force_engine(monkeypatch, backend, engine_name=ENGINE_SD_CPP, device="cuda")
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    acquired = _force_engine(monkeypatch, backend, engine_name = ENGINE_SD_CPP, device = "cuda")
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     assert resp.status_code == 200
     assert acquired == [gpu_arbiter.DIFFUSION]
 
@@ -1298,11 +1297,11 @@ def test_load_forwards_the_gpu_selection(client, monkeypatch):
     # The bug this fixes: the UI's card pick reached chat and training but never the image load,
     # so both engines pinned every module to ordinal 0 whatever was selected.
     backend = diffusion_module.get_diffusion_backend()
-    _force_engine(monkeypatch, backend, engine_name="diffusers", device="cuda")
+    _force_engine(monkeypatch, backend, engine_name = "diffusers", device = "cuda")
     import core.inference.diffusion_device as devmod
 
     monkeypatch.setattr(devmod, "resolve_selected_cuda_ordinal", lambda ids: max(ids))
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf", gpu_ids=[1])
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf", gpu_ids = [1])
     assert resp.status_code == 200
     assert backend.last_load_kwargs["gpu_ids"] == [1]
 
@@ -1310,14 +1309,14 @@ def test_load_forwards_the_gpu_selection(client, monkeypatch):
 def test_load_refuses_a_gpu_index_this_host_does_not_have(client, monkeypatch):
     # Refused BEFORE the arbiter evicts chat, so a bad pick costs a resident model nothing.
     backend = diffusion_module.get_diffusion_backend()
-    acquired = _force_engine(monkeypatch, backend, engine_name="diffusers", device="cuda")
+    acquired = _force_engine(monkeypatch, backend, engine_name = "diffusers", device = "cuda")
     import core.inference.diffusion_device as devmod
 
     def _refuse(_ids):
         raise ValueError("Requested GPU [7] but this host has 2 CUDA device(s).")
 
     monkeypatch.setattr(devmod, "resolve_selected_cuda_ordinal", _refuse)
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf", gpu_ids=[7])
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf", gpu_ids = [7])
     assert resp.status_code == 400
     assert "2 CUDA device" in resp.json()["detail"]
     assert acquired == []
@@ -1327,14 +1326,14 @@ def test_load_ignores_a_gpu_selection_off_cuda(client, monkeypatch):
     # The request contract says physical ids are dropped on XPU / MPS / CPU, so validating them
     # there turned a documented no-op into a 400.
     backend = diffusion_module.get_diffusion_backend()
-    _force_engine(monkeypatch, backend, engine_name="diffusers", device="mps")
+    _force_engine(monkeypatch, backend, engine_name = "diffusers", device = "mps")
     import core.inference.diffusion_device as devmod
 
     def _never(_ids):
         raise AssertionError("the CUDA resolver must not run off a CUDA target")
 
     monkeypatch.setattr(devmod, "resolve_selected_cuda_ordinal", _never)
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf", gpu_ids=[1])
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf", gpu_ids = [1])
     assert resp.status_code == 200
 
 
@@ -1350,11 +1349,11 @@ def test_native_load_accepts_the_resolved_ordinal(client, monkeypatch):
     from core.inference.sd_cpp_engine import ENGINE_SD_CPP
 
     backend = diffusion_module.get_diffusion_backend()
-    _force_engine(monkeypatch, backend, engine_name=ENGINE_SD_CPP, device="cuda")
+    _force_engine(monkeypatch, backend, engine_name = ENGINE_SD_CPP, device = "cuda")
     import core.inference.diffusion_device as devmod
 
     monkeypatch.setattr(devmod, "resolve_selected_cuda_ordinal", lambda ids: max(ids))
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf", gpu_ids=[1])
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf", gpu_ids = [1])
     assert resp.status_code == 200
 
 
@@ -1444,7 +1443,7 @@ def test_load_refuses_an_unusable_explicit_precision_with_409(client, monkeypatc
         "transformer_quant",
         "fp8",
         "this device cannot run a dense torchao quant (it needs a CUDA GPU in bf16)",
-        off_label="Off to run the checkpoint as-is",
+        off_label = "Off to run the checkpoint as-is",
     )
 
     def _refuse(model_path, **kwargs):
@@ -1453,9 +1452,9 @@ def test_load_refuses_an_unusable_explicit_precision_with_409(client, monkeypatc
     monkeypatch.setattr(backend, "begin_load", _refuse)
     resp = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409
     detail = resp.json()["detail"]
@@ -1487,7 +1486,7 @@ def test_precision_refusal_precedes_eviction_and_engine_selection(client, monkey
         "transformer_quant",
         "fp8",
         "this device cannot run a dense torchao quant (it needs a CUDA GPU in bf16)",
-        off_label="Off to run the checkpoint as-is",
+        off_label = "Off to run the checkpoint as-is",
     )
 
     def _refuse(fam, **kwargs):
@@ -1502,9 +1501,9 @@ def test_precision_refusal_precedes_eviction_and_engine_selection(client, monkey
     )
     resp = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409
     assert "transformer_quant='fp8' could not be used" in resp.json()["detail"]
@@ -1525,9 +1524,9 @@ def test_the_native_engine_refuses_an_explicit_precision_it_cannot_honour(client
     monkeypatch.setattr(engine_router, "predict_engine", lambda fam, **kw: ENGINE_SD_CPP)
     resp = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409, resp.text
     assert "native engine" in resp.json()["detail"]
@@ -1561,9 +1560,9 @@ def test_a_failed_engine_prediction_still_gates_the_precision_after_selection(cl
     )
     resp = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409, resp.text
     assert "native engine" in resp.json()["detail"]
@@ -1583,7 +1582,7 @@ def test_the_native_engine_still_loads_when_nothing_was_promised(client, monkeyp
     }
     if quant is not None:
         payload["transformer_quant"] = quant
-    resp = client.post("/api/inference/images/load", json=payload)
+    resp = client.post("/api/inference/images/load", json = payload)
     assert resp.status_code == 200, resp.text
 
 
@@ -1599,7 +1598,7 @@ def test_the_plan_refuses_an_impossible_precision_before_anything_is_staged(clie
         "transformer_quant",
         "fp8",
         "this device cannot run a dense torchao quant (it needs a CUDA GPU in bf16)",
-        off_label="Off to run the checkpoint as-is",
+        off_label = "Off to run the checkpoint as-is",
     )
 
     def _refuse(fam, **kwargs):
@@ -1613,9 +1612,9 @@ def test_the_plan_refuses_an_impossible_precision_before_anything_is_staged(clie
     )
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409, resp.text
     assert "transformer_quant='fp8' could not be used" in resp.json()["detail"]
@@ -1639,9 +1638,9 @@ def test_the_plan_does_not_probe_the_gpu_while_training_holds_it(client, monkeyp
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 200, resp.text
 
@@ -1653,9 +1652,9 @@ def test_the_native_plan_refuses_the_same_request_the_native_load_would(client, 
     monkeypatch.setattr(engine_router, "predict_engine", lambda fam, **kw: ENGINE_SD_CPP)
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 409, resp.text
     assert "native engine" in resp.json()["detail"]
@@ -1664,8 +1663,8 @@ def test_the_native_plan_refuses_the_same_request_the_native_load_would(client, 
 def test_the_plan_still_answers_when_nothing_was_promised(client):
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
     )
     assert resp.status_code == 200, resp.text
 
@@ -1680,9 +1679,9 @@ def test_the_native_refusal_is_waived_by_the_fallback_escape_hatch(client, monke
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ALLOW_PRECISION_FALLBACK", "1")
     resp = _post_load(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        transformer_quant="fp8",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        transformer_quant = "fp8",
     )
     assert resp.status_code == 200, resp.text
 
@@ -1705,20 +1704,20 @@ def test_download_plan_forwards_the_load_time_controls(client, monkeypatch):
         seen.update(kwargs)
         return {"entries": [], "total_bytes": 0}
 
-    monkeypatch.setattr(backend, "download_plan", _plan, raising=False)
+    monkeypatch.setattr(backend, "download_plan", _plan, raising = False)
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
-        hf_token="hf_secret",
-        speed_mode="off",
-        transformer_quant="int8",
-        memory_mode="low_vram",
-        cpu_offload=True,
-        transformer_quant_fast_accum=False,
-        loras=[{"id": "unsloth/some-lora", "weight": 0.8}],
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
+        hf_token = "hf_secret",
+        speed_mode = "off",
+        transformer_quant = "int8",
+        memory_mode = "low_vram",
+        cpu_offload = True,
+        transformer_quant_fast_accum = False,
+        loras = [{"id": "unsloth/some-lora", "weight": 0.8}],
     )
 
     assert resp.status_code == 200
@@ -1752,7 +1751,7 @@ def test_download_plan_suppresses_only_the_verdict_while_training_runs(client, m
         seen.update(kwargs)
         return {"entries": [], "total_bytes": 0}
 
-    monkeypatch.setattr(backend, "download_plan", _plan, raising=False)
+    monkeypatch.setattr(backend, "download_plan", _plan, raising = False)
     body = {
         "model_path": "unsloth/FLUX.1-dev-GGUF",
         "gguf_filename": "flux1-dev-Q4_K_M.gguf",
@@ -1762,7 +1761,7 @@ def test_download_plan_suppresses_only_the_verdict_while_training_runs(client, m
 
     for training, expected in ((True, False), (False, True)):
         monkeypatch.setattr(routes_inference, "_training_is_active", lambda: training)
-        assert client.post("/api/inference/images/download-plan", json=body).status_code == 200
+        assert client.post("/api/inference/images/download-plan", json = body).status_code == 200
         assert seen["memory_verdict"] is expected, training
         # The file scope is never the thing that changes with training state.
         assert "allow_device_probe" not in seen, training
@@ -1805,13 +1804,13 @@ def test_download_plan_response_keeps_the_planners_checkpoint_marker(
             "checkpoint_bytes": 10,
         }
 
-    monkeypatch.setattr(backend, "download_plan", _plan, raising=False)
+    monkeypatch.setattr(backend, "download_plan", _plan, raising = False)
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
     )
 
     assert resp.status_code == 200
@@ -1834,14 +1833,14 @@ def test_download_plan_defaults_the_checkpoint_marker_for_an_older_planner(clien
             "entries": [{"repo_id": "a/b", "files": ["f"], "bytes": 1}],
             "total_bytes": 1,
         },
-        raising=False,
+        raising = False,
     )
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
     )
 
     assert resp.status_code == 200
@@ -1866,13 +1865,13 @@ def test_download_plan_surfaces_a_gated_base_as_a_400(client, monkeypatch):
     def _plan(model_path, **kwargs):
         raise ValueError(detail)
 
-    monkeypatch.setattr(backend, "download_plan", _plan, raising=False)
+    monkeypatch.setattr(backend, "download_plan", _plan, raising = False)
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
     )
 
     assert resp.status_code == 400
@@ -1912,15 +1911,15 @@ def test_download_plan_uses_the_engine_the_load_will_pick(client, monkeypatch):
         diffusers_backend,
         "download_plan",
         lambda *a, **k: pytest.fail("planned with diffusers for a native-routed load"),
-        raising=False,
+        raising = False,
     )
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        model_kind="gguf",
-        hf_token="hf_secret",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        model_kind = "gguf",
+        hf_token = "hf_secret",
     )
 
     assert resp.status_code == 200
@@ -1948,14 +1947,14 @@ def test_download_plan_stays_on_diffusers_when_the_load_will(client, monkeypatch
         backend,
         "download_plan",
         lambda *a, **k: {"entries": [], "total_bytes": 11},
-        raising=False,
+        raising = False,
     )
 
     resp = _post_download_plan(
         client,
-        model_path="unsloth/Z-Image-Turbo-GGUF",
-        gguf_filename="z-image-turbo-Q4_K_M.gguf",
-        model_kind="gguf",
+        model_path = "unsloth/Z-Image-Turbo-GGUF",
+        gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+        model_kind = "gguf",
     )
     assert resp.status_code == 200 and resp.json()["total_bytes"] == 11
 
@@ -1972,13 +1971,13 @@ def test_load_refused_when_only_the_diffusion_probe_can_be_read(client, monkeypa
     monkeypatch.setattr(core_training, "get_training_backend", lambda: _Broken())
     monkeypatch.setattr(inference_routes, "_diffusion_training_active", lambda: True)
 
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     assert resp.status_code == 409
     assert "training" in resp.json()["detail"].lower()
 
     # With neither trainer active the unreadable LLM probe still must not block the load.
     monkeypatch.setattr(inference_routes, "_diffusion_training_active", lambda: False)
-    resp = _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    resp = _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     assert resp.status_code == 200
 
 
@@ -1990,24 +1989,24 @@ def test_recipe_records_the_conditioned_workflow_settings(client, monkeypatch):
 
     from PIL import Image
 
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     buf = io.BytesIO()
-    Image.new("RGB", (8, 8), (120, 30, 90)).save(buf, format="PNG")
+    Image.new("RGB", (8, 8), (120, 30, 90)).save(buf, format = "PNG")
     px = base64.b64encode(buf.getvalue()).decode()
     gen = _post_generate(
         client,
-        prompt="a sloth",
-        seed=7,
-        init_image=px,
-        mask_image=px,
-        strength=0.42,
+        prompt = "a sloth",
+        seed = 7,
+        init_image = px,
+        mask_image = px,
+        strength = 0.42,
     )
     assert gen.status_code == 200
     img = gen.json()["images"][0]
     assert img["workflow"] == "inpaint"
     assert img["strength"] == 0.42
     # A plain txt2img still records its own workflow and leaves the conditioning fields empty.
-    plain = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    plain = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
     assert plain.status_code == 200
     plain_img = plain.json()["images"][0]
     assert plain_img["workflow"] == "txt2img"
@@ -2038,10 +2037,10 @@ def test_recipe_records_the_load_time_build(client, monkeypatch):
             "workflow": "txt2img",
         }
 
-    monkeypatch.setattr(backend, "generate", _generate, raising=False)
+    monkeypatch.setattr(backend, "generate", _generate, raising = False)
 
-    _post_load(client, model_path="unsloth/Z-Image-Turbo-GGUF", gguf_filename="q.gguf")
-    resp = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 777})
+    _post_load(client, model_path = "unsloth/Z-Image-Turbo-GGUF", gguf_filename = "q.gguf")
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 777})
     assert resp.status_code == 200
     img = resp.json()["images"][0]
     assert img["model"] == "unsloth/Z-Image-Turbo-GGUF"
@@ -2061,8 +2060,8 @@ def test_recipe_records_the_load_time_build(client, monkeypatch):
 
 def test_recipe_build_fields_absent_on_an_engine_that_omits_them(client):
     # The native path and older records report no build keys; the record must degrade to nulls rather than 500 the persist.
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    resp = client.post("/api/inference/images/generate", json={"prompt": "a sloth", "seed": 7})
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    resp = client.post("/api/inference/images/generate", json = {"prompt": "a sloth", "seed": 7})
     assert resp.status_code == 200
     img = resp.json()["images"][0]
     assert img["model_kind"] is None
@@ -2129,9 +2128,9 @@ def test_cancel_generation_route_stops_an_in_flight_generation(client):
     result: dict = {}
 
     def _run():
-        result["resp"] = client.post("/api/inference/images/generate", json={"prompt": "p"})
+        result["resp"] = client.post("/api/inference/images/generate", json = {"prompt": "p"})
 
-    worker = threading.Thread(target=_run, daemon=True)
+    worker = threading.Thread(target = _run, daemon = True)
     worker.start()
     assert started.wait(5)
 
@@ -2148,7 +2147,7 @@ def test_cancel_generation_route_stops_an_in_flight_generation(client):
 def test_cancel_generation_route_requires_auth():
     # The cancel route stops a multi-GB job, so it must sit behind the same auth as every other route.
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     unauth = TestClient(app)
     assert unauth.post("/api/inference/images/generate/cancel").status_code in (401, 403)
 
@@ -2177,7 +2176,7 @@ def test_an_offloading_memory_request_refuses_an_explicit_precision(monkeypatch,
     )
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            None, model_kind="gguf", transformer_quant="fp8", **memory
+            None, model_kind = "gguf", transformer_quant = "fp8", **memory
         )
     assert "transformer_quant='fp8' could not be used" in str(excinfo.value)
     assert "offload" in str(excinfo.value)
@@ -2209,10 +2208,10 @@ def test_fast_and_auto_memory_do_not_refuse_a_precision(client, monkeypatch):
     for mode in ("fast", "auto"):
         resp = _post_load(
             client,
-            model_path="unsloth/Z-Image-Turbo-GGUF",
-            gguf_filename="z-image-turbo-Q4_K_M.gguf",
-            transformer_quant="fp8",
-            memory_mode=mode,
+            model_path = "unsloth/Z-Image-Turbo-GGUF",
+            gguf_filename = "z-image-turbo-Q4_K_M.gguf",
+            transformer_quant = "fp8",
+            memory_mode = mode,
         )
         assert resp.status_code != 409, resp.text
     # And the gate was told about the memory request either way, so the decision is its to make.
@@ -2239,10 +2238,10 @@ def test_an_offloading_memory_request_refuses_a_torchao_text_encoder(monkeypatch
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
             # A family WITH an int8 schedule, so the int8 case is not downgraded to fp8 first.
-            types.SimpleNamespace(name="qwen-image"),
-            model_kind="gguf",
-            text_encoder_quant=mode,
-            memory_mode="low_vram",
+            types.SimpleNamespace(name = "qwen-image"),
+            model_kind = "gguf",
+            text_encoder_quant = mode,
+            memory_mode = "low_vram",
         )
     assert "text_encoder_quant" in str(excinfo.value)
     assert "offload" in str(excinfo.value)
@@ -2262,10 +2261,10 @@ def test_layerwise_fp8_survives_an_offloading_memory_request(monkeypatch):
     monkeypatch.setattr(diffusion_module, "te_quant_supported", lambda target, m: True)
     monkeypatch.setattr(diffusion_module, "torchao_quantize_importable", lambda: True)
     backend.assert_precision_available(
-        types.SimpleNamespace(name="qwen-image"),
-        model_kind="gguf",
-        text_encoder_quant="fp8",
-        memory_mode="low_vram",
+        types.SimpleNamespace(name = "qwen-image"),
+        model_kind = "gguf",
+        text_encoder_quant = "fp8",
+        memory_mode = "low_vram",
     )
 
 
@@ -2287,9 +2286,9 @@ def test_a_broken_torchao_refuses_a_torchao_text_encoder_before_the_download(mon
     monkeypatch.setattr(diffusion_module, "torchao_quantize_importable", lambda: False)
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="qwen-image"),
-            model_kind="gguf",
-            text_encoder_quant=mode,
+            types.SimpleNamespace(name = "qwen-image"),
+            model_kind = "gguf",
+            text_encoder_quant = mode,
         )
     assert "torchao is not importable" in str(excinfo.value)
 
@@ -2308,7 +2307,7 @@ def test_layerwise_fp8_does_not_need_torchao(monkeypatch):
     monkeypatch.setattr(diffusion_module, "te_quant_supported", lambda target, m: True)
     monkeypatch.setattr(diffusion_module, "torchao_quantize_importable", lambda: False)
     backend.assert_precision_available(
-        types.SimpleNamespace(name="qwen-image"), model_kind="gguf", text_encoder_quant="fp8"
+        types.SimpleNamespace(name = "qwen-image"), model_kind = "gguf", text_encoder_quant = "fp8"
     )
 
 
@@ -2323,7 +2322,7 @@ def test_download_plan_sizes_its_file_set_for_the_selected_card(client, monkeypa
 
     monkeypatch.setattr(router, "predict_engine", lambda fam, **_: ENGINE_DIFFUSERS)
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="cuda")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "cuda")
     )
     ranked: list = []
 
@@ -2339,13 +2338,13 @@ def test_download_plan_sizes_its_file_set_for_the_selected_card(client, monkeypa
         seen.update(kwargs)
         return {"entries": [], "total_bytes": 0}
 
-    monkeypatch.setattr(backend, "download_plan", _plan, raising=False)
+    monkeypatch.setattr(backend, "download_plan", _plan, raising = False)
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
-        gpu_ids=[0, 1],
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
+        gpu_ids = [0, 1],
     )
     assert resp.status_code == 200
     assert seen["gpu_ordinal"] == 1
@@ -2365,7 +2364,7 @@ def test_download_plan_refuses_a_gpu_index_this_host_does_not_have(client, monke
 
     monkeypatch.setattr(router, "predict_engine", lambda fam, **_: ENGINE_DIFFUSERS)
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="cuda")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "cuda")
     )
 
     def _refuse(_ids):
@@ -2374,10 +2373,10 @@ def test_download_plan_refuses_a_gpu_index_this_host_does_not_have(client, monke
     monkeypatch.setattr(devmod, "resolve_selected_cuda_ordinal", _refuse)
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
-        gpu_ids=[7],
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
+        gpu_ids = [7],
     )
     assert resp.status_code == 400
     assert "visible to this process" in resp.json()["detail"]
@@ -2394,7 +2393,7 @@ def test_download_plan_ignores_a_gpu_selection_off_cuda(client, monkeypatch):
 
     monkeypatch.setattr(router, "predict_engine", lambda fam, **_: ENGINE_DIFFUSERS)
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="mps")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "mps")
     )
 
     def _never(_ids):
@@ -2407,14 +2406,14 @@ def test_download_plan_ignores_a_gpu_selection_off_cuda(client, monkeypatch):
         backend,
         "download_plan",
         lambda model_path, **kwargs: (seen.update(kwargs), {"entries": [], "total_bytes": 0})[1],
-        raising=False,
+        raising = False,
     )
     resp = _post_download_plan(
         client,
-        model_path="unsloth/FLUX.1-dev-GGUF",
-        gguf_filename="flux1-dev-Q4_K_M.gguf",
-        model_kind="gguf",
-        gpu_ids=[1],
+        model_path = "unsloth/FLUX.1-dev-GGUF",
+        gguf_filename = "flux1-dev-Q4_K_M.gguf",
+        model_kind = "gguf",
+        gpu_ids = [1],
     )
     assert resp.status_code == 200
     assert seen["gpu_ordinal"] is None
@@ -2433,12 +2432,12 @@ def test_download_plan_still_refuses_a_bad_gpu_while_training_holds_the_cards(cl
 
     monkeypatch.setattr(router, "predict_engine", lambda fam, **_: ENGINE_DIFFUSERS)
     monkeypatch.setattr(
-        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device="cuda")
+        devmod, "resolve_diffusion_device_target", lambda: _types.SimpleNamespace(device = "cuda")
     )
     monkeypatch.setattr(routes_inference, "_training_is_active", lambda: True)
     seen: dict = {}
 
-    def _resolve(ids, *, allow_ranking=True):
+    def _resolve(ids, *, allow_ranking = True):
         seen["ids"], seen["allow_ranking"] = list(ids), allow_ranking
         if ids == [7]:
             raise ValueError("Requested GPU [7] but none of them are visible to this process")
@@ -2451,7 +2450,7 @@ def test_download_plan_still_refuses_a_bad_gpu_while_training_holds_the_cards(cl
         backend,
         "download_plan",
         lambda model_path, **kwargs: (planned.update(kwargs), {"entries": [], "total_bytes": 0})[1],
-        raising=False,
+        raising = False,
     )
     body = {
         "model_path": "unsloth/FLUX.1-dev-GGUF",
@@ -2459,7 +2458,7 @@ def test_download_plan_still_refuses_a_bad_gpu_while_training_holds_the_cards(cl
         "model_kind": "gguf",
     }
     # A card that exists: honoured, and the plan is sized for it, without a ranking probe.
-    resp = client.post("/api/inference/images/download-plan", json={**body, "gpu_ids": [1]})
+    resp = client.post("/api/inference/images/download-plan", json = {**body, "gpu_ids": [1]})
     assert resp.status_code == 200
     assert seen == {"ids": [1], "allow_ranking": False}
     assert planned["gpu_ordinal"] == 1
@@ -2467,7 +2466,7 @@ def test_download_plan_still_refuses_a_bad_gpu_while_training_holds_the_cards(cl
     assert getattr(backend, "last_precision_kwargs", None) is None
 
     # And one that does not: refused here rather than after the download.
-    resp = client.post("/api/inference/images/download-plan", json={**body, "gpu_ids": [7]})
+    resp = client.post("/api/inference/images/download-plan", json = {**body, "gpu_ids": [7]})
     assert resp.status_code == 400
     assert "visible to this process" in resp.json()["detail"]
 
@@ -2484,9 +2483,9 @@ def test_a_pipeline_pick_may_pin_a_precision(monkeypatch):
     monkeypatch.setattr(diffusion_module, "dense_transformer_supported", lambda target: True)
     monkeypatch.setattr(diffusion_module, "select_transformer_quant_scheme", lambda *a, **k: "fp8")
     backend.assert_precision_available(
-        types.SimpleNamespace(name="z-image"),
-        model_kind="pipeline",
-        transformer_quant="fp8",
+        types.SimpleNamespace(name = "z-image"),
+        model_kind = "pipeline",
+        transformer_quant = "fp8",
     )
 
 
@@ -2502,9 +2501,9 @@ def test_a_single_file_pick_still_cannot_pin_a_precision(monkeypatch):
     monkeypatch.setattr(diffusion_module, "dense_transformer_supported", lambda target: True)
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="ltx-2.3"),
-            model_kind="single_file",
-            transformer_quant="fp8",
+            types.SimpleNamespace(name = "ltx-2.3"),
+            model_kind = "single_file",
+            transformer_quant = "fp8",
         )
     assert "transformer_quant='fp8' could not be used" in str(excinfo.value)
     assert "single_file" in str(excinfo.value)
@@ -2523,9 +2522,9 @@ def test_a_pipeline_pick_is_still_refused_on_a_device_that_cannot_quantise(monke
     monkeypatch.setattr(diffusion_module, "dense_transformer_supported", lambda target: False)
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="z-image"),
-            model_kind="pipeline",
-            transformer_quant="fp8",
+            types.SimpleNamespace(name = "z-image"),
+            model_kind = "pipeline",
+            transformer_quant = "fp8",
         )
     assert "transformer_quant='fp8' could not be used" in str(excinfo.value)
 
@@ -2548,9 +2547,9 @@ def test_a_unet_family_is_refused_before_the_eviction_and_the_download(monkeypat
     )
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="sdxl", denoiser_attr="unet"),
-            model_kind="pipeline",
-            transformer_quant="fp8",
+            types.SimpleNamespace(name = "sdxl", denoiser_attr = "unet"),
+            model_kind = "pipeline",
+            transformer_quant = "fp8",
         )
     message = str(excinfo.value)
     assert "transformer_quant='fp8' could not be used" in message
@@ -2576,9 +2575,9 @@ def test_a_transformer_family_still_reaches_the_scheme_check(monkeypatch):
     )
     # denoiser_attr defaults to "transformer" on every DiT family.
     backend.assert_precision_available(
-        types.SimpleNamespace(name="z-image"),
-        model_kind="pipeline",
-        transformer_quant="fp8",
+        types.SimpleNamespace(name = "z-image"),
+        model_kind = "pipeline",
+        transformer_quant = "fp8",
     )
     assert seen
 
@@ -2599,10 +2598,10 @@ def test_an_eager_pipeline_precision_is_refused_before_the_eviction(monkeypatch)
     )
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="z-image"),
-            model_kind="pipeline",
-            transformer_quant="fp8",
-            speed_mode="eager",
+            types.SimpleNamespace(name = "z-image"),
+            model_kind = "pipeline",
+            transformer_quant = "fp8",
+            speed_mode = "eager",
         )
     assert "eager" in str(excinfo.value)
 
@@ -2618,10 +2617,10 @@ def test_a_gguf_pick_still_accepts_an_eager_precision(monkeypatch):
     monkeypatch.setattr(diffusion_module, "dense_transformer_supported", lambda target: True)
     monkeypatch.setattr(diffusion_module, "select_transformer_quant_scheme", lambda *a, **k: "fp8")
     backend.assert_precision_available(
-        types.SimpleNamespace(name="z-image"),
-        model_kind="gguf",
-        transformer_quant="fp8",
-        speed_mode="eager",
+        types.SimpleNamespace(name = "z-image"),
+        model_kind = "gguf",
+        transformer_quant = "fp8",
+        speed_mode = "eager",
     )
 
 
@@ -2637,9 +2636,9 @@ def test_a_process_that_cannot_compile_refuses_a_pipeline_precision_up_front(mon
     monkeypatch.setattr(diffusion_module, "compile_eligible", lambda target, **kw: False)
     with pytest.raises(RuntimeError) as excinfo:
         backend.assert_precision_available(
-            types.SimpleNamespace(name="z-image"),
-            model_kind="pipeline",
-            transformer_quant="fp8",
+            types.SimpleNamespace(name = "z-image"),
+            model_kind = "pipeline",
+            transformer_quant = "fp8",
         )
     assert "compile" in str(excinfo.value)
 
@@ -2650,9 +2649,9 @@ def test_the_plan_route_refuses_an_unrecognised_model_before_planning(client):
     and Download only surfaces the reason instead of fetching a model nothing can open."""
     resp = _post_download_plan(
         client,
-        model_path="someone/mixed-gguf-collection",
-        gguf_filename="totally-unknown-thing-Q4_K_M.gguf",
-        model_kind="gguf",
+        model_path = "someone/mixed-gguf-collection",
+        gguf_filename = "totally-unknown-thing-Q4_K_M.gguf",
+        model_kind = "gguf",
     )
 
     assert resp.status_code == 400, resp.text
@@ -2662,7 +2661,7 @@ def test_the_plan_route_refuses_an_unrecognised_model_before_planning(client):
 def test_edit_without_a_size_lets_the_backend_match_image_1(client, monkeypatch):
     """An edit that names no size must not be pinned to the schema's 1024 square: the route hands
     the backend None so it sizes from Image 1 on the family grid. A named size passes through."""
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
     backend = diffusion_module.get_diffusion_backend()
     seen = []
     original = backend.generate
@@ -2670,19 +2669,19 @@ def test_edit_without_a_size_lets_the_backend_match_image_1(client, monkeypatch)
     def _record(**kwargs):
         seen.append(kwargs)
         out = original(**kwargs)
-        out.update(workflow="edit", reference_resolution=512, localized_edit="mask")
+        out.update(workflow = "edit", reference_resolution = 512, localized_edit = "mask")
         return out
 
     monkeypatch.setattr(backend, "generate", _record)
     layer = {"mode": "mask", "image": "QUJD"}
     resp = _post_generate(
         client,
-        prompt="p",
-        workflow="edit",
-        init_image="QUJD",
-        reference_images=["QUJD", "QUJD"],
-        reference_resolution=512,
-        localized_edit=layer,
+        prompt = "p",
+        workflow = "edit",
+        init_image = "QUJD",
+        reference_images = ["QUJD", "QUJD"],
+        reference_resolution = 512,
+        localized_edit = layer,
     )
     assert resp.status_code == 200
     assert seen[-1]["width"] is None and seen[-1]["height"] is None
@@ -2693,18 +2692,18 @@ def test_edit_without_a_size_lets_the_backend_match_image_1(client, monkeypatch)
     assert record["reference_resolution"] == 512
     assert record["localized_edit"] == "mask"
     assert record["reference_image_count"] == 2
-    _post_generate(client, prompt="p", workflow="edit", init_image="QUJD", width=1024)
+    _post_generate(client, prompt = "p", workflow = "edit", init_image = "QUJD", width = 1024)
     assert seen[-1]["width"] == 1024 and seen[-1]["height"] == 1024
 
 
 def test_generate_schema_bounds_for_unified_editing(client):
-    _post_load(client, model_path="x/z-image", gguf_filename="q.gguf")
-    nine = _post_generate(client, prompt="p", init_image="QUJD", reference_images=["QUJD"] * 9)
+    _post_load(client, model_path = "x/z-image", gguf_filename = "q.gguf")
+    nine = _post_generate(client, prompt = "p", init_image = "QUJD", reference_images = ["QUJD"] * 9)
     assert nine.status_code == 200
-    ten = _post_generate(client, prompt="p", init_image="QUJD", reference_images=["QUJD"] * 10)
+    ten = _post_generate(client, prompt = "p", init_image = "QUJD", reference_images = ["QUJD"] * 10)
     assert ten.status_code == 422
-    assert _post_generate(client, prompt="p", workflow="inpaint").status_code == 422
-    assert _post_generate(client, prompt="p", width=2752, height=1536).status_code == 200
-    assert _post_generate(client, prompt="p", width=2768).status_code == 422
-    bad_mode = _post_generate(client, prompt="p", localized_edit={"mode": "lasso", "image": "QUJD"})
+    assert _post_generate(client, prompt = "p", workflow = "inpaint").status_code == 422
+    assert _post_generate(client, prompt = "p", width = 2752, height = 1536).status_code == 200
+    assert _post_generate(client, prompt = "p", width = 2768).status_code == 422
+    bad_mode = _post_generate(client, prompt = "p", localized_edit = {"mode": "lasso", "image": "QUJD"})
     assert bad_mode.status_code == 422

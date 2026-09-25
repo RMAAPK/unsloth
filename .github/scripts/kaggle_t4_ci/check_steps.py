@@ -28,13 +28,13 @@ from legs import LEGS  # noqa: E402
 
 
 def _log(msg: str) -> None:
-    print(f"[steps] {msg}", flush=True)
+    print(f"[steps] {msg}", flush = True)
 
 
 def _out(key: str, value: str) -> None:
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
-        with open(path, "a", encoding="utf-8") as fh:
+        with open(path, "a", encoding = "utf-8") as fh:
             fh.write(f"{key}={value}\n")
     _log(f"{key}={value}")
 
@@ -62,7 +62,7 @@ def reference_steps(payload_dir: Path, leg: str = "control") -> int | None:
         sys.path.insert(0, str(payload_dir))
         from run_t4_smoke import reference_step_count
 
-        data = json.loads((payload_dir / "references" / name).read_text(encoding="utf-8"))
+        data = json.loads((payload_dir / "references" / name).read_text(encoding = "utf-8"))
         return reference_step_count(data)
     except Exception:  # noqa: BLE001
         return None
@@ -74,7 +74,7 @@ def reference_metrics(payload_dir: Path, leg: str = "control") -> list[dict]:
     if not name:
         return []
     path = payload_dir / "references" / name
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding = "utf-8"))
     metrics = data.get("metrics")
     return metrics if isinstance(metrics, list) else []
 
@@ -138,15 +138,15 @@ def decide(raw: str, payload_dir: Path) -> tuple[bool, str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--max-steps", required=True, help="the dispatched value, unvalidated")
-    ap.add_argument("--payload-dir", required=True)
+    ap.add_argument("--max-steps", required = True, help = "the dispatched value, unvalidated")
+    ap.add_argument("--payload-dir", required = True)
     args = ap.parse_args()
 
     stand_down, reason = decide(args.max_steps, Path(args.payload_dir))
     if stand_down:
         print(
             f"::warning title=Stood down on the dispatched step count::{reason}",
-            flush=True,
+            flush = True,
         )
     else:
         _log(reason)

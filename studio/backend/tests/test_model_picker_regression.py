@@ -31,8 +31,8 @@ if "structlog" not in sys.modules:
             return lambda *args, **kwargs: None
 
     sys.modules["structlog"] = types.SimpleNamespace(
-        BoundLogger=_DummyLogger,
-        get_logger=lambda *args, **kwargs: _DummyLogger(),
+        BoundLogger = _DummyLogger,
+        get_logger = lambda *args, **kwargs: _DummyLogger(),
     )
 
 import routes.models as models_route
@@ -44,12 +44,12 @@ from picker.service import _read_bounded_text
 from utils.hidden_models import is_hidden_model
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _pin_default_embedder(monkeypatch):
     """Pin the effective embedder to Unsloth's static default so hiding is
     deterministic and cannot depend on ambient RAG config / env."""
     default = "unsloth/bge-small-en-v1.5"
-    monkeypatch.setattr(rag_config, "EMBEDDING_MODEL", default, raising=False)
+    monkeypatch.setattr(rag_config, "EMBEDDING_MODEL", default, raising = False)
     monkeypatch.setattr(rag_config, "effective_embedding_model", lambda: default)
     monkeypatch.setattr(rag_config, "effective_gguf_repo", lambda: default)
     monkeypatch.setattr(rag_config, "default_gguf_repo", lambda: default)
@@ -122,7 +122,7 @@ def test_hidden_model_matchers_local_owner_name_path_is_exact_path(monkeypatch, 
     # A local embedder shaped like owner/name that exists on disk must be an
     # exact resolved path, not a Hub repo id (mirroring is_hidden_model), so the
     # local row stays hidden instead of showing as a chat model.
-    (tmp_path / "models" / "embedder").mkdir(parents=True)
+    (tmp_path / "models" / "embedder").mkdir(parents = True)
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(rag_config, "effective_embedding_model", lambda: "models/embedder")
     monkeypatch.setattr(rag_config, "effective_gguf_repo", lambda: "ggml-org/models")
@@ -179,25 +179,25 @@ def _load_request(**overrides):
 
 
 def test_blank_chat_template_override_normalizes_to_none():
-    assert _load_request(chat_template_override="   \n\t").chat_template_override is None
+    assert _load_request(chat_template_override = "   \n\t").chat_template_override is None
 
 
 def test_nonblank_chat_template_override_preserved_verbatim():
     template = "  {{ messages }}  "
-    assert _load_request(chat_template_override=template).chat_template_override == template
+    assert _load_request(chat_template_override = template).chat_template_override == template
 
 
 def test_chat_template_at_byte_limit_is_accepted():
     template = "a" * MAX_CHAT_TEMPLATE_BYTES  # exactly the limit, 1 byte/char
     assert (
-        len(_load_request(chat_template_override=template).chat_template_override)
+        len(_load_request(chat_template_override = template).chat_template_override)
         == MAX_CHAT_TEMPLATE_BYTES
     )
 
 
 def test_chat_template_over_char_limit_is_rejected():
     with pytest.raises(Exception):  # pydantic ValidationError wrapping ValueError
-        _load_request(chat_template_override="a" * (MAX_CHAT_TEMPLATE_BYTES + 1))
+        _load_request(chat_template_override = "a" * (MAX_CHAT_TEMPLATE_BYTES + 1))
 
 
 def test_chat_template_over_byte_limit_is_rejected():
@@ -207,12 +207,12 @@ def test_chat_template_over_byte_limit_is_rejected():
     assert len(multibyte) <= MAX_CHAT_TEMPLATE_BYTES
     assert len(multibyte.encode("utf-8")) > MAX_CHAT_TEMPLATE_BYTES
     with pytest.raises(Exception):
-        _load_request(chat_template_override=multibyte)
+        _load_request(chat_template_override = multibyte)
 
 
 def test_read_bounded_text_reads_within_limit(tmp_path):
     p = tmp_path / "t.json"
-    p.write_text("hello", encoding="utf-8")
+    p.write_text("hello", encoding = "utf-8")
     assert _read_bounded_text(p, 16) == "hello"
 
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 class DataConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     dataset: Optional[str] = None
     local_dataset: Optional[List[str]] = None
@@ -17,7 +17,7 @@ class DataConfig(BaseModel):
 
 
 class TrainingConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     training_type: Literal["lora", "full"] = "lora"
     max_seq_length: int = 2048
@@ -38,7 +38,7 @@ class TrainingConfig(BaseModel):
 
 
 class LoraConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     lora_r: int = 64
     lora_alpha: int = 16
@@ -55,7 +55,7 @@ class LoraConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     enable_wandb: bool = False
     wandb_project: str = "unsloth-training"
@@ -66,13 +66,13 @@ class LoggingConfig(BaseModel):
 
 
 class Config(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     model: Optional[str] = None
-    data: DataConfig = Field(default_factory=DataConfig)
-    training: TrainingConfig = Field(default_factory=TrainingConfig)
-    lora: LoraConfig = Field(default_factory=LoraConfig)
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    data: DataConfig = Field(default_factory = DataConfig)
+    training: TrainingConfig = Field(default_factory = TrainingConfig)
+    lora: LoraConfig = Field(default_factory = LoraConfig)
+    logging: LoggingConfig = Field(default_factory = LoggingConfig)
 
     def apply_overrides(self, **kwargs):
         """Apply CLI overrides by matching arg names to config fields."""
@@ -199,7 +199,7 @@ def load_config(path: Optional[Path]) -> Config:
 
     # utf-8-sig: drops a Notepad BOM, identical to utf-8 when there is none.
     try:
-        text = path.read_text(encoding="utf-8-sig")
+        text = path.read_text(encoding = "utf-8-sig")
     except UnicodeDecodeError as error:
         raise ConfigError(
             f"Could not read config file: {path}\n"
@@ -216,7 +216,6 @@ def load_config(path: Optional[Path]) -> Config:
             raise ConfigError(f"Could not parse config file: {path}\n  - {error}") from None
     else:
         import json
-
         try:
             data = json.loads(text.strip() or "{}")
         except json.JSONDecodeError as error:

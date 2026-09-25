@@ -61,17 +61,17 @@ def test_q_galore_refuses_a_model_with_no_projectable_parameters():
     flattened = nn.Module()
     flattened.register_parameter("_flat_param", nn.Parameter(torch.ones(64)))
     args = SimpleNamespace(
-        learning_rate=1e-3,
-        weight_decay=0.0,
-        adam_beta1=0.9,
-        adam_beta2=0.999,
-        adam_epsilon=1e-8,
+        learning_rate = 1e-3,
+        weight_decay = 0.0,
+        adam_beta1 = 0.9,
+        adam_beta2 = 0.999,
+        adam_epsilon = 1e-8,
     )
-    trainer = SimpleNamespace(args=args, model=flattened, optimizer=None)
-    with pytest.raises(ValueError, match="no parameter matched"):
+    trainer = SimpleNamespace(args = args, model = flattened, optimizer = None)
+    with pytest.raises(ValueError, match = "no parameter matched"):
         UnslothTrainer._create_q_galore_optimizer(
             trainer,
-            QGaloreConfig(rank=8, weight_quant=False),
+            QGaloreConfig(rank = 8, weight_quant = False),
             None,
         )
 
@@ -84,18 +84,18 @@ def test_q_galore_still_builds_when_parameters_are_projectable():
     from unsloth.trainer import QGaloreConfig
 
     model = nn.Sequential()
-    model.add_module("q_proj", nn.Linear(64, 64, bias=False))
+    model.add_module("q_proj", nn.Linear(64, 64, bias = False))
     args = SimpleNamespace(
-        learning_rate=1e-3,
-        weight_decay=0.0,
-        adam_beta1=0.9,
-        adam_beta2=0.999,
-        adam_epsilon=1e-8,
+        learning_rate = 1e-3,
+        weight_decay = 0.0,
+        adam_beta1 = 0.9,
+        adam_beta2 = 0.999,
+        adam_epsilon = 1e-8,
     )
-    trainer = SimpleNamespace(args=args, model=model, optimizer=None)
+    trainer = SimpleNamespace(args = args, model = model, optimizer = None)
     optimizer = UnslothTrainer._create_q_galore_optimizer(
         trainer,
-        QGaloreConfig(rank=8, weight_quant=False),
+        QGaloreConfig(rank = 8, weight_quant = False),
         None,
     )
     assert any("rank" in group for group in optimizer.param_groups)
@@ -113,13 +113,13 @@ def test_embedding_lr_is_rejected_when_wrapping_hid_the_embeddings():
     wrapped = nn.Module()
     wrapped.add_module("_fsdp_wrapped_module", inner)
     assert [n for n, _ in wrapped.named_parameters()] == ["_fsdp_wrapped_module._flat_param"]
-    with pytest.raises(ValueError, match="no embedding parameter matched"):
+    with pytest.raises(ValueError, match = "no embedding parameter matched"):
         _create_unsloth_optimizer(
             wrapped,
             torch.optim.AdamW,
             {"lr": 1e-3},
             5e-5,
-            require_embedding_match=True,
+            require_embedding_match = True,
         )
 
 
@@ -130,7 +130,7 @@ def test_embedding_lr_without_embeddings_is_still_fine_off_the_delayed_path():
     import torch.nn as nn
     from unsloth.trainer import _create_unsloth_optimizer
 
-    plain = nn.Linear(8, 8, bias=False)
+    plain = nn.Linear(8, 8, bias = False)
     optimizer = _create_unsloth_optimizer(plain, torch.optim.AdamW, {"lr": 1e-3}, 5e-5)
     # Asserted by meaning rather than by group index: empty groups are dropped, so
     # there is no embedding group at all, and the one weight trains at the ordinary lr.

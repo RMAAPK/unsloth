@@ -21,11 +21,10 @@ BOB = AccountContext("22222222222222222222222222222222", "bob")
 ACCOUNTS = (OWNER, ALICE, BOB)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def fresh_retirement_tombstones(monkeypatch):
     # Tombstones are process-global; one test retiring ALICE would fence the later ones.
     from core.training import account_jobs
-
     monkeypatch.setattr(account_jobs, "_retired", set())
 
 
@@ -103,7 +102,7 @@ def test_wal_keepers_can_close_one_account(account_home):
     paths = {account: run_as(account, roots.studio_db_path) for account in ACCOUNTS}
     alice = studio_db._wal_keepers[paths[ALICE]]
     studio_db.close_wal_keeper_for(paths[ALICE])
-    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+    with pytest.raises(sqlite3.ProgrammingError, match = "closed"):
         alice.execute("SELECT 1")
     for account in (OWNER, BOB):
         assert studio_db._wal_keepers[paths[account]].execute("SELECT 1").fetchone()[0] == 1
@@ -141,21 +140,21 @@ def test_retiring_an_account_releases_its_wal_keeper(account_home):
     keeper = studio_db._wal_keepers[alice_db]
     retire_account_roots(ALICE)
     assert alice_db not in studio_db._wal_keepers
-    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+    with pytest.raises(sqlite3.ProgrammingError, match = "closed"):
         keeper.execute("SELECT 1")
 
 
 def _receipt() -> api_usage_db.ApiUsageReceipt:
     return api_usage_db.ApiUsageReceipt(
-        id="same-receipt",
-        subject="same-subject",
-        endpoint="/v1/chat/completions",
-        model="model",
-        status="completed",
-        prompt_tokens=2,
-        completion_tokens=3,
-        total_tokens=5,
-        created_at=1,
+        id = "same-receipt",
+        subject = "same-subject",
+        endpoint = "/v1/chat/completions",
+        model = "model",
+        status = "completed",
+        prompt_tokens = 2,
+        completion_tokens = 3,
+        total_tokens = 5,
+        created_at = 1,
     )
 
 
@@ -172,12 +171,12 @@ def test_usage_writer_retains_account_through_retries(account_home, monkeypatch)
         return api_usage_db.record_api_usage(receipt)
 
     monkeypatch.setattr(api_usage_db, "_sleep_after_busy", lambda delay: None)
-    writer = api_usage_db.ApiUsageWriter(sink=sink)
+    writer = api_usage_db.ApiUsageWriter(sink = sink)
     try:
         for account in ACCOUNTS:
             assert run_as(account, writer.submit, _receipt())
     finally:
-        assert writer.stop(timeout=10)
+        assert writer.stop(timeout = 10)
     assert seen == [OWNER.account_id, ALICE.account_id, ALICE.account_id, BOB.account_id]
     for account in ACCOUNTS:
         conn = run_as(account, studio_db.get_connection)
@@ -246,7 +245,7 @@ def test_embedding_resolution_memo_is_private(account_home):
 
     settings._resolved_gguf_memo.clear()
     for account, repo in ((OWNER, "org/owner-GGUF"), (ALICE, "org/alice-GGUF")):
-        run_as(account, settings.set_rag_embedding_model, "org/embed", gguf_repo=repo)
+        run_as(account, settings.set_rag_embedding_model, "org/embed", gguf_repo = repo)
         assert run_as(account, settings.get_stored_gguf_repo, "org/embed") == repo
         run_as(account, settings.set_rag_embedding_model, "org/other")
     assert run_as(OWNER, settings.remembered_gguf_repo, "org/embed") == "org/owner-GGUF"
@@ -264,7 +263,7 @@ def test_hf_validation_cache_and_budget_are_private(monkeypatch):
         validation,
         "_check_remote",
         lambda token: (
-            calls.append(current_account_id()) or validation.TokenValidationResult(status="valid")
+            calls.append(current_account_id()) or validation.TokenValidationResult(status = "valid")
         ),
     )
     monkeypatch.setattr(validation, "_MAX_ATTEMPTS", 1)
@@ -272,19 +271,19 @@ def test_hf_validation_cache_and_budget_are_private(monkeypatch):
         for account in ACCOUNTS:
             assert (
                 run_as(
-                    account, validation.validate_hf_token, "same-token", rate_key="same-client"
+                    account, validation.validate_hf_token, "same-token", rate_key = "same-client"
                 ).status
                 == "valid"
             )
             assert (
                 run_as(
-                    account, validation.validate_hf_token, "same-token", rate_key="same-client"
+                    account, validation.validate_hf_token, "same-token", rate_key = "same-client"
                 ).status
                 == "valid"
             )
             assert (
                 run_as(
-                    account, validation.validate_hf_token, "another-token", rate_key="same-client"
+                    account, validation.validate_hf_token, "another-token", rate_key = "same-client"
                 ).status
                 == "rate_limited"
             )
@@ -295,7 +294,6 @@ def test_hf_validation_cache_and_budget_are_private(monkeypatch):
 
 def test_hub_reexports_the_canonical_owner_and_account_roots(account_home):
     from hub.utils import paths as hub
-
     expected = {
         "studio_root": account_home,
         "cache_root": account_home / "cache",
@@ -354,7 +352,7 @@ def test_legacy_root_names_resolve_at_use(account_home, filename, names):
     import ast
 
     source = Path(__file__).resolve().parents[1] / filename
-    tree = ast.parse(source.read_text(encoding="utf-8"))
+    tree = ast.parse(source.read_text(encoding = "utf-8"))
     assignments = [
         node
         for node in tree.body
@@ -362,7 +360,7 @@ def test_legacy_root_names_resolve_at_use(account_home, filename, names):
         and any(isinstance(target, ast.Name) and target.id in names for target in node.targets)
     ]
     namespace = {"LazyPath": LazyPath, **{fn.__name__: fn for fn in names.values()}}
-    exec(compile(ast.Module(body=assignments, type_ignores=[]), str(source), "exec"), namespace)
+    exec(compile(ast.Module(body = assignments, type_ignores = []), str(source), "exec"), namespace)
     for name, root in names.items():
         accessor = namespace[name]
         for account in ACCOUNTS:
@@ -412,21 +410,21 @@ def test_hf_inflight_checks_do_not_join_another_account(monkeypatch):
     results = []
 
     def remote(token):
-        entered.wait(timeout=5)
-        return validation.TokenValidationResult(status="valid")
+        entered.wait(timeout = 5)
+        return validation.TokenValidationResult(status = "valid")
 
     monkeypatch.setattr(validation, "_check_remote", remote)
     monkeypatch.setattr(validation, "_INFLIGHT_WAIT_SECONDS", 0.1)
 
     def check():
-        results.append(validation.validate_hf_token("same-token", rate_key="same-client").status)
+        results.append(validation.validate_hf_token("same-token", rate_key = "same-client").status)
 
-    threads = [account_thread(account=account, target=check) for account in (ALICE, BOB)]
+    threads = [account_thread(account = account, target = check) for account in (ALICE, BOB)]
     try:
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join(timeout=6)
+            thread.join(timeout = 6)
         assert results == ["valid", "valid"]
     finally:
         validation.reset_hf_token_validation_state()
@@ -434,10 +432,9 @@ def test_hf_inflight_checks_do_not_join_another_account(monkeypatch):
 
 def test_local_dataset_list_uses_the_acting_accounts_uploads(account_home):
     from hub.services.datasets import local
-
     for account in ACCOUNTS:
         directory = run_as(account, roots.dataset_uploads_root)
-        directory.mkdir(parents=True)
+        directory.mkdir(parents = True)
         (directory / f"{account.username}.csv").write_text("value\n1\n")
     for account in ACCOUNTS:
         items = run_as(account, local._build_uploaded_dataset_items)
@@ -496,8 +493,8 @@ def test_a_symlinked_database_resolves_its_path_once(account_home, tmp_path):
     studio_db.reset_schema_state_for_tests()
     db_path = roots.studio_db_path()
     target = tmp_path / "elsewhere" / "studio.db"
-    target.parent.mkdir(parents=True)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    target.parent.mkdir(parents = True)
+    db_path.parent.mkdir(parents = True, exist_ok = True)
     db_path.symlink_to(target)
     studio_db.get_connection().close()
     assert db_path in studio_db._schema_ready

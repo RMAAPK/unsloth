@@ -38,15 +38,14 @@ _GPU_TABLE = _table([444_000, 1_398_000])
 
 def _scpufreq(
     current,
-    minimum=0.0,
-    maximum=0.0,
+    minimum = 0.0,
+    maximum = 0.0,
 ):
     import psutil
-
     return psutil._ntuples.scpufreq(current, minimum, maximum)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _reset_probe_cache():
     IF._apple_cpu_freq_range = "unprobed"
     yield
@@ -62,10 +61,9 @@ def fake_m4(monkeypatch):
 
 def _fake_ioreg(monkeypatch, entries):
     import subprocess
-
     def run(cmd, **kwargs):
         assert cmd[0] == "ioreg"
-        return types.SimpleNamespace(stdout=plistlib.dumps(entries), returncode=0)
+        return types.SimpleNamespace(stdout = plistlib.dumps(entries), returncode = 0)
 
     monkeypatch.setattr(subprocess, "run", run)
 
@@ -74,7 +72,7 @@ def _install_fake_psutil(monkeypatch, sample):
     """Swap psutil.cpu_freq for one returning `sample` (value or callable)."""
     import psutil
 
-    def cpu_freq(percpu=False):
+    def cpu_freq(percpu = False):
         return sample(percpu) if callable(sample) else sample
 
     monkeypatch.setattr(psutil, "cpu_freq", cpu_freq)
@@ -153,7 +151,7 @@ class TestPatchApplication:
         # GitHub's Apple Silicon runners ship exactly this psutil: no cpu_freq attribute at all.
         import psutil
 
-        monkeypatch.delattr(psutil, "cpu_freq", raising=False)
+        monkeypatch.delattr(psutil, "cpu_freq", raising = False)
         IF.patch_psutil_cpu_freq()
         assert not hasattr(psutil, "cpu_freq")
 
@@ -162,7 +160,7 @@ class TestPatchApplication:
         # call must not be mistaken for psutil declining to read the clock.
         import psutil
 
-        def cpu_freq(percpu=False):
+        def cpu_freq(percpu = False):
             raise RuntimeError("psutil declines")
 
         monkeypatch.setattr(psutil, "cpu_freq", cpu_freq)
@@ -170,14 +168,13 @@ class TestPatchApplication:
         IF.patch_psutil_cpu_freq()
         assert psutil.cpu_freq().current == 4512.0
         with pytest.raises(TypeError):
-            psutil.cpu_freq(unknown=True)
+            psutil.cpu_freq(unknown = True)
         with pytest.raises(TypeError):
             psutil.cpu_freq(False, False)
 
     def test_probe_lock_exists_before_any_call(self):
         # A lazily built lock is two locks when two threads reach it at once, and then neither excludes the other.
         import threading
-
         assert isinstance(IF._apple_cpu_freq_lock, type(threading.Lock()))
 
     def test_patch_is_idempotent(self, monkeypatch, fake_m4):
@@ -231,7 +228,7 @@ class TestPatchApplication:
         )
         _fake_ioreg(monkeypatch, [{"voltage-states5-sram": _M4_PERF_TABLE}])
         IF.patch_psutil_cpu_freq()
-        percpu = psutil.cpu_freq(percpu=True)
+        percpu = psutil.cpu_freq(percpu = True)
         assert isinstance(percpu, list) and len(percpu) == 2
         assert all(sample.current == 4512.0 for sample in percpu)
         assert psutil.cpu_freq().current == 4512.0
@@ -254,7 +251,7 @@ class TestPatchApplication:
         assert psutil.cpu_freq() == value
 
     def test_psutil_exception_is_covered_by_ioreg(self, monkeypatch, fake_m4):
-        def boom(percpu=False):
+        def boom(percpu = False):
             raise RuntimeError("no voltage-states table at the expected index")
 
         import psutil
@@ -270,7 +267,7 @@ class TestPatchApplication:
         import subprocess
 
         # psutil raises on M5, where the table indexes it hardcodes are absent.
-        def boom(percpu=False):
+        def boom(percpu = False):
             raise RuntimeError("no voltage-states table at the expected index")
 
         monkeypatch.setattr(psutil, "cpu_freq", boom)
@@ -284,13 +281,13 @@ class TestPatchApplication:
         # that shape for both call forms.
         import psutil
 
-        def boom(percpu=False):
+        def boom(percpu = False):
             raise RuntimeError("no voltage-states table at the expected index")
 
         monkeypatch.setattr(psutil, "cpu_freq", boom)
         _fake_ioreg(monkeypatch, [{"voltage-states5-sram": _M4_PERF_TABLE}])
         IF.patch_psutil_cpu_freq()
-        for call in (lambda: psutil.cpu_freq(percpu=True), lambda: psutil.cpu_freq(True)):
+        for call in (lambda: psutil.cpu_freq(percpu = True), lambda: psutil.cpu_freq(True)):
             result = call()
             assert isinstance(result, list) and len(result) == 1
             assert result[0].current == 4512.0
@@ -301,7 +298,7 @@ class TestPatchApplication:
         _fake_ioreg(monkeypatch, [{"voltage-states5-sram": _M4_PERF_TABLE}])
         IF.patch_psutil_cpu_freq()
         assert psutil.cpu_freq().current == 4512.0
-        percpu = psutil.cpu_freq(percpu=True)
+        percpu = psutil.cpu_freq(percpu = True)
         assert isinstance(percpu, list) and percpu[0].current == 4512.0
 
     def test_none_stays_none_without_tables(self, monkeypatch, fake_m4):
@@ -311,7 +308,7 @@ class TestPatchApplication:
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(OSError()))
         IF.patch_psutil_cpu_freq()
         assert psutil.cpu_freq() is None
-        assert psutil.cpu_freq(percpu=True) == []
+        assert psutil.cpu_freq(percpu = True) == []
 
     @pytest.mark.parametrize("bogus", [0.0, -1.0, float("nan")])
     def test_unusable_apple_reading_recovers_from_tables(self, monkeypatch, fake_m4, bogus):
@@ -343,13 +340,13 @@ class TestPatchApplication:
                 calls.append(cmd)
             time.sleep(0.05)
             return types.SimpleNamespace(
-                stdout=plistlib.dumps([{"voltage-states5-sram": _M4_PERF_TABLE}]), returncode=0
+                stdout = plistlib.dumps([{"voltage-states5-sram": _M4_PERF_TABLE}]), returncode = 0
             )
 
         psutil = _install_fake_psutil(monkeypatch, _scpufreq(4.0, 1.0, 4.0))
         monkeypatch.setattr(subprocess, "run", run)
         IF.patch_psutil_cpu_freq()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers = 12) as pool:
             results = list(pool.map(lambda _: psutil.cpu_freq().current, range(12)))
         assert results == [4512.0] * 12
         assert len(calls) == 1
@@ -362,7 +359,7 @@ class TestPatchApplication:
         def run(cmd, **kwargs):
             calls.append(cmd)
             return types.SimpleNamespace(
-                stdout=plistlib.dumps([{"voltage-states5-sram": _M4_PERF_TABLE}]), returncode=0
+                stdout = plistlib.dumps([{"voltage-states5-sram": _M4_PERF_TABLE}]), returncode = 0
             )
 
         psutil = _install_fake_psutil(monkeypatch, _scpufreq(4.0, 1.0, 4.0))
@@ -375,7 +372,7 @@ class TestPatchApplication:
 
 @pytest.mark.skipif(
     not (sys.platform == "darwin" and platform.machine() == "arm64"),
-    reason="Apple Silicon only: reads this host's real IORegistry tables",
+    reason = "Apple Silicon only: reads this host's real IORegistry tables",
 )
 def _raw_apple_reading():
     """This host's own psutil reading, or None when it has none to give.
@@ -427,4 +424,4 @@ class TestOnRealAppleSilicon:
         if raw is None:
             pytest.skip("psutil has no reading of its own on this host to compare against")
         expected = raw if raw >= IF._APPLE_MIN_PLAUSIBLE_CPU_MHZ else raw * 1000
-        assert freq_range[1] == pytest.approx(expected, rel=0.15)
+        assert freq_range[1] == pytest.approx(expected, rel = 0.15)

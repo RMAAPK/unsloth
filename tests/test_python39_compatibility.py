@@ -73,7 +73,7 @@ STUDIO_UNION_DEBT_FILES = frozenset(
 
 def declared_floor():
     """The ``>=X.Y`` in requires-python, as a tuple for ast.parse(feature_version=)."""
-    text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    text = (REPO_ROOT / "pyproject.toml").read_text(encoding = "utf-8")
     match = re.search(r"^requires-python\s*=\s*[\"']([^\"']+)[\"']", text, re.MULTILINE)
     assert match, "no requires-python in pyproject.toml"
     floor = re.search(r">=\s*(\d+)\.(\d+)", match.group(1))
@@ -92,7 +92,7 @@ def guarded_floor(init_path):
     Returns ``(3, 10)`` there, ``None`` when no such guard exists.
     """
     try:
-        tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
+        tree = ast.parse(init_path.read_text(encoding = "utf-8"), filename = str(init_path))
     except (OSError, SyntaxError):
         return None
     for node in tree.body:
@@ -138,7 +138,7 @@ def floor_guarded_dirs(root):
     return guarded
 
 
-def package_files(root=PACKAGE_ROOT, minimum=50):
+def package_files(root = PACKAGE_ROOT, minimum = 50):
     skip = floor_guarded_dirs(root)
     files = sorted(
         p
@@ -157,7 +157,7 @@ def packaged_roots():
     Read rather than hardcoded so a newly packaged directory cannot silently escape the
     floor guarantee.
     """
-    text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    text = (REPO_ROOT / "pyproject.toml").read_text(encoding = "utf-8")
     block = re.search(r"^include\s*=\s*\[(.*?)\]", text, re.MULTILINE | re.DOTALL)
     assert block, "no packages.find include list in pyproject.toml"
     roots = []
@@ -173,8 +173,8 @@ def packaged_roots():
 def evaluated_union_files(root):
     """Files under `root` that would raise on the floor, i.e. need the future import."""
     offenders = set()
-    for path in package_files(root, minimum=1):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for path in package_files(root, minimum = 1):
+        tree = ast.parse(path.read_text(encoding = "utf-8"), filename = str(path))
         if has_future_annotations(tree):
             continue
         for expression in evaluated_annotations(tree):
@@ -346,12 +346,12 @@ def test_every_packaged_module_parses_on_the_declared_floor():
     floor = declared_floor()
     broken = []
     for root in packaged_roots():
-        for path in package_files(root, minimum=1):
+        for path in package_files(root, minimum = 1):
             try:
                 ast.parse(
-                    path.read_text(encoding="utf-8"),
-                    filename=str(path),
-                    feature_version=floor,
+                    path.read_text(encoding = "utf-8"),
+                    filename = str(path),
+                    feature_version = floor,
                 )
             except SyntaxError as error:
                 broken.append(f"{path.relative_to(REPO_ROOT)}:{error.lineno}: {error.msg}")
@@ -371,9 +371,9 @@ def test_every_packaged_module_compiles():
     """
     broken = []
     for root in packaged_roots():
-        for path in package_files(root, minimum=1):
+        for path in package_files(root, minimum = 1):
             try:
-                compile(path.read_text(encoding="utf-8"), str(path), "exec", dont_inherit=True)
+                compile(path.read_text(encoding = "utf-8"), str(path), "exec", dont_inherit = True)
             except SyntaxError as error:
                 broken.append(f"{path.relative_to(REPO_ROOT)}:{error.lineno}: {error.msg}")
     assert not broken, "these modules do not compile:\n  " + "\n  ".join(broken)
@@ -420,9 +420,9 @@ def test_no_pep604_unions_are_evaluated_on_the_declared_floor():
     if declared_floor() >= (3, 10):
         pytest.skip("floor is 3.10+, PEP 604 evaluates fine")
     offenders = []
-    scanned = [p for root in packaged_roots() for p in package_files(root, minimum=1)]
+    scanned = [p for root in packaged_roots() for p in package_files(root, minimum = 1)]
     for path in scanned:
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        tree = ast.parse(path.read_text(encoding = "utf-8"), filename = str(path))
         where = path.relative_to(REPO_ROOT)
         known_typing_names = typing_names(tree)
         # The future import defers annotations only; an assigned value still runs.
@@ -465,7 +465,7 @@ def test_the_truststore_guard_is_what_exempts_it():
 
 def test_unguarded_code_in_the_same_vendor_directory_is_still_scanned(tmp_path):
     vendor = tmp_path / "vendor"
-    (vendor / "guarded").mkdir(parents=True)
+    (vendor / "guarded").mkdir(parents = True)
     (vendor / "plain").mkdir()
     (vendor / "guarded" / "__init__.py").write_text(
         "import sys\nif sys.version_info < (3, 10):\n    raise ImportError('nope')\n"

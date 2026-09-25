@@ -304,21 +304,21 @@ class TraceCapture:
 
         if self.level == L0:
             return TraceResult(
-                level=L0,
-                categories=(),
-                text="",
-                path=None,
-                data_loss_occurred=False,
-                max_percent_full=0.0,
-                buffer_polls=0,
-                buffer_kb=0,
-                wall_ms=wall_ms,
-                drain_ms=0.0,
-                drain_chunks=0,
-                trace_format="",
-                stream_compression="",
-                started_at_wall=self._t_start,
-                ended_at_wall=t_end,
+                level = L0,
+                categories = (),
+                text = "",
+                path = None,
+                data_loss_occurred = False,
+                max_percent_full = 0.0,
+                buffer_polls = 0,
+                buffer_kb = 0,
+                wall_ms = wall_ms,
+                drain_ms = 0.0,
+                drain_chunks = 0,
+                trace_format = "",
+                stream_compression = "",
+                started_at_wall = self._t_start,
+                ended_at_wall = t_end,
             )
 
         self.cdp.send("Tracing.end")
@@ -350,27 +350,27 @@ class TraceCapture:
 
         path = None
         if save_to:
-            os.makedirs(os.path.dirname(os.path.abspath(save_to)) or ".", exist_ok=True)
-            with open(save_to, "w", encoding="utf-8") as fh:
+            os.makedirs(os.path.dirname(os.path.abspath(save_to)) or ".", exist_ok = True)
+            with open(save_to, "w", encoding = "utf-8") as fh:
                 fh.write(text)
             path = save_to
 
         return TraceResult(
-            level=self.level,
-            categories=self.categories,
-            text=text,
-            path=path,
-            data_loss_occurred=data_loss,
-            max_percent_full=max(self._usage) if self._usage else 0.0,
-            buffer_polls=len(self._usage),
-            buffer_kb=self.buffer_kb,
-            wall_ms=wall_ms,
-            drain_ms=drain_ms,
-            drain_chunks=chunks,
-            trace_format=str(self._complete.get("traceFormat") or "json"),
-            stream_compression=str(self._complete.get("streamCompression") or "none"),
-            started_at_wall=self._t_start,
-            ended_at_wall=t_end,
+            level = self.level,
+            categories = self.categories,
+            text = text,
+            path = path,
+            data_loss_occurred = data_loss,
+            max_percent_full = max(self._usage) if self._usage else 0.0,
+            buffer_polls = len(self._usage),
+            buffer_kb = self.buffer_kb,
+            wall_ms = wall_ms,
+            drain_ms = drain_ms,
+            drain_chunks = chunks,
+            trace_format = str(self._complete.get("traceFormat") or "json"),
+            stream_compression = str(self._complete.get("streamCompression") or "none"),
+            started_at_wall = self._t_start,
+            ended_at_wall = t_end,
         )
 
     def _drain(self, handle: str, compression: str) -> tuple[str, int]:
@@ -402,7 +402,7 @@ class TraceCapture:
         raw = base64.b64decode(blob) if binary else blob.encode("utf-8")
         if compression == "gzip":
             raw = gzip.decompress(raw)
-        return raw.decode("utf-8", errors="strict"), chunks
+        return raw.decode("utf-8", errors = "strict"), chunks
 
 
 @dataclass
@@ -427,7 +427,7 @@ class OverheadLedger:
 
     # rung label -> level -> observed cost of the identical cell (ms, or any single consistent
     # scalar such as median frame time)
-    cells: dict[str, dict[str, float]] = field(default_factory=dict)
+    cells: dict[str, dict[str, float]] = field(default_factory = dict)
     # A level whose overhead ratio rises by more than this across the ladder is disqualified from exponent claims.
     growth_tolerance: float = 0.15
 
@@ -588,8 +588,8 @@ def enable_metrics(cdp: Any, *, time_domain: str = "timeTicks") -> None:
 
 
 def save_trace(result: TraceResult, path: str) -> str:
-    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
+    os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok = True)
+    with open(path, "w", encoding = "utf-8") as fh:
         fh.write(result.text)
     return path
 
@@ -663,8 +663,8 @@ class TracingInstrument:
         t0 = time.perf_counter()
         self.capture = TraceCapture(
             self.cdp,
-            level=self.trace_level,
-            wait=self._wait,
+            level = self.trace_level,
+            wait = self._wait,
         )
         try:
             self.capture.start()
@@ -699,7 +699,7 @@ class TracingInstrument:
         try:
             if self.metrics is not None:
                 self.metrics.close()
-            result = self.capture.stop(save_to=self._trace_path(window))
+            result = self.capture.stop(save_to = self._trace_path(window))
             result.assert_intact()
             payload = self._analyse(result, window)
         except CellFailure as exc:
@@ -828,7 +828,7 @@ class TracingInstrument:
             rows, diag = C.self_time_in_windows(
                 prof,
                 [(prof.chunk_ts_first, prof.chunk_ts_last)],
-                limit=12,
+                limit = 12,
             )
             payload.update(
                 measured(
@@ -843,6 +843,6 @@ class TracingInstrument:
         return payload
 
 
-@register_instrument(name="tracing", level=1)
+@register_instrument(name = "tracing", level = 1)
 def _make_tracing() -> TracingInstrument:
     return TracingInstrument()

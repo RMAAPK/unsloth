@@ -62,7 +62,7 @@ async def _unload_gate(cancel_event: threading.Event | None = None):
     # the gate is not held, so it never leaks (mirrors the auto-switch swap gate).
     acquired = False
     try:
-        while not _lifecycle_lock.acquire(blocking=False):
+        while not _lifecycle_lock.acquire(blocking = False):
             if cancel_event is not None and cancel_event.is_set():
                 raise asyncio.CancelledError()
             await asyncio.sleep(0.02)
@@ -337,7 +337,6 @@ def _claim_non_preview_slot() -> None:
     Lazily imported: routes.inference imports this module."""
     try:
         from routes.inference import _set_preview_resident
-
         _set_preview_resident(None)
     except Exception as exc:  # never let ownership bookkeeping break a response
         logger.debug("preview-slot claim on completion failed: %s", exc)
@@ -384,7 +383,7 @@ def mark_response_failed(scope) -> None:
 # threading the scope through every yield site. The middleware shares the streaming body's task, so the contextvar
 # reaches those generators.
 _current_response_scope: contextvars.ContextVar = contextvars.ContextVar(
-    "_unsloth_current_response_scope", default=None
+    "_unsloth_current_response_scope", default = None
 )
 
 
@@ -477,7 +476,7 @@ async def resume_preview_after_serializer(scope) -> None:
         async with _unload_gate():
             if not scope.get(_PREVIEW_SERIALIZER_WAIT_SCOPE_KEY):
                 return
-            _note_start(is_preview=True)
+            _note_start(is_preview = True)
             scope.pop(_PREVIEW_SERIALIZER_WAIT_SCOPE_KEY, None)
     except BaseException:
         cancel_preview_serializer_wait(scope)
@@ -489,7 +488,7 @@ def cancel_preview_serializer_wait(scope) -> None:
     if not isinstance(scope, dict) or not scope.get(_PREVIEW_SERIALIZER_WAIT_SCOPE_KEY):
         return
     scope.pop(_PREVIEW_SERIALIZER_WAIT_SCOPE_KEY, None)
-    _note_unpending(is_preview=True)
+    _note_unpending(is_preview = True)
     # Middleware must not run the normal active-request decrement after this pending request was removed, or it would
     # stamp activity for a preview that never ran.
     scope[_UNTRACKED_SCOPE_KEY] = True
@@ -501,7 +500,7 @@ def inference_lifecycle_gate():
     return _unload_gate()
 
 
-def note_model_loaded(backend=None) -> None:
+def note_model_loaded(backend = None) -> None:
     """Stamp activity and synchronously drop any reload stash."""
     _note_activity()
     resume = take_kv_resume()
@@ -598,7 +597,6 @@ def restore_kv_resume(backend, manifest) -> None:
 def sweep_slot_save_dir() -> None:
     try:
         from utils.paths.storage_roots import llama_slot_cache_root
-
         for path in llama_slot_cache_root().glob("resume-*.bin"):
             with contextlib.suppress(OSError):
                 path.unlink()
@@ -719,7 +717,7 @@ class LlamaKeepWarmMiddleware:
             ended["done"] = True
             code = status["code"]
             if media_owner is not None:
-                media_keepwarm.end_request(media_owner, counted=code not in (401, 403))
+                media_keepwarm.end_request(media_owner, counted = code not in (401, 403))
             if not chat_tracked:
                 return
             # A non-preview 2xx that completed cleanly ran against the local model and adopts it for Unsloth, so clear
@@ -805,7 +803,7 @@ def _note_idle_unload_event(freed) -> None:
         label = public_model_id(advertised or identifier) or "model"
         if variant and ":" not in label:
             label = f"{label}:{variant}"
-        api_monitor.record_lifecycle(event="unload", model=label, reason="idle")
+        api_monitor.record_lifecycle(event = "unload", model = label, reason = "idle")
     except Exception as exc:
         logger.debug("idle unload monitor event failed: %s", exc)
 
@@ -831,7 +829,6 @@ async def idle_unload_loop(poll_seconds: float = 15.0) -> None:
         # unless the media TTL is set.
         try:
             from core.inference.media_keepwarm import idle_unload_step
-
             await idle_unload_step()
         except Exception as exc:
             logger.debug("media idle_unload_step failed: %s", exc)

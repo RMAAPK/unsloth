@@ -121,7 +121,7 @@ def snapshot(account_id: Optional[str] = None) -> list[dict[str, Any]]:
         entries = [
             e for e in _ACTIVE.values() if account_id is None or e["account_id"] == account_id
         ]
-    entries.sort(key=lambda e: e["started_at"])
+    entries.sort(key = lambda e: e["started_at"])
     return [
         {
             "handle": e["handle"],

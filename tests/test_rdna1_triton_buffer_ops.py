@@ -62,7 +62,7 @@ def test_workaround_sets_knob_and_a_separate_cache_dir():
     XT: the same run trained cleanly with empty caches and went -inf / nan once a
     buffer-ops-on process had populated them."""
     env = {}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is True
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is True
     assert env["AMDGCN_USE_BUFFER_OPS"] == "0"
     assert env["TRITON_CACHE_DIR"].replace("\\", "/") == "/th/.triton/cache-no-buffer-ops"
     # Inductor caches the Triton kernels it generates on its own, keyed the same blind way.
@@ -72,12 +72,12 @@ def test_workaround_sets_knob_and_a_separate_cache_dir():
 
 def test_workaround_honours_a_user_who_already_chose():
     env = {"AMDGCN_USE_BUFFER_OPS": "1"}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is False
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is False
     assert env == {
         "AMDGCN_USE_BUFFER_OPS": "1"
     }, "an explicit choice is not overridden and no cache dir is forced"
     env = {"TRITON_CACHE_DIR": "/mine", "TORCHINDUCTOR_CACHE_DIR": "/mine-inductor"}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is True
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is True
     assert env["TRITON_CACHE_DIR"] == "/mine"
     assert env["TORCHINDUCTOR_CACHE_DIR"] == "/mine-inductor"
 
@@ -95,7 +95,7 @@ def test_a_user_who_already_turned_buffer_ops_off_still_gets_clean_caches(preset
     """AMDGCN_USE_BUFFER_OPS=0 is the manual workaround from #11614. Without separate caches
     that user keeps loading the kernels an earlier buffer-ops-on run left behind."""
     env = {"AMDGCN_USE_BUFFER_OPS": preset}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is True
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is True
     assert env["AMDGCN_USE_BUFFER_OPS"] == preset
     assert env["TRITON_CACHE_DIR"].replace("\\", "/") == "/th/.triton/cache-no-buffer-ops"
     assert env["TORCHINDUCTOR_CACHE_DIR"].endswith("_no_buffer_ops")
@@ -104,7 +104,7 @@ def test_a_user_who_already_turned_buffer_ops_off_still_gets_clean_caches(preset
 @pytest.mark.parametrize("preset", ["1", "true", "ON", "yes", "y"])
 def test_every_spelling_triton_reads_as_on_is_left_alone(preset):
     env = {"AMDGCN_USE_BUFFER_OPS": preset}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is False
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is False
     assert env == {"AMDGCN_USE_BUFFER_OPS": preset}
 
 
@@ -113,7 +113,7 @@ def test_inductor_default_already_in_environ_is_still_redirected():
     unsloth gets here, so "already set" usually means "torch set the shared default"."""
     default = device_type._default_inductor_cache_dir()
     env = {"TORCHINDUCTOR_CACHE_DIR": default}
-    device_type.apply_gfx101x_triton_workaround(env, triton_home="/th")
+    device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th")
     assert env["TORCHINDUCTOR_CACHE_DIR"] == default + "_no_buffer_ops"
 
 
@@ -121,8 +121,8 @@ def test_import_time_env_is_redirected_after_torch_dynamo_import(monkeypatch):
     import torch._dynamo  # noqa: F401  populates TORCHINDUCTOR_CACHE_DIR as a side effect
     import os
 
-    monkeypatch.delenv("AMDGCN_USE_BUFFER_OPS", raising=False)
-    monkeypatch.delenv("TRITON_CACHE_DIR", raising=False)
+    monkeypatch.delenv("AMDGCN_USE_BUFFER_OPS", raising = False)
+    monkeypatch.delenv("TRITON_CACHE_DIR", raising = False)
     monkeypatch.setenv("TORCHINDUCTOR_CACHE_DIR", device_type._default_inductor_cache_dir())
     assert device_type.apply_gfx101x_triton_workaround() is True
     assert os.environ["TORCHINDUCTOR_CACHE_DIR"].endswith("_no_buffer_ops")
@@ -139,7 +139,7 @@ def test_missing_passwd_entry_does_not_break_import(monkeypatch):
     monkeypatch.setattr(getpass, "getuser", boom)
     monkeypatch.setitem(sys.modules, "torch._inductor.runtime.cache_dir_utils", None)
     env = {}
-    assert device_type.apply_gfx101x_triton_workaround(env, triton_home="/th") is True
+    assert device_type.apply_gfx101x_triton_workaround(env, triton_home = "/th") is True
     assert "torchinductor_" in env["TORCHINDUCTOR_CACHE_DIR"]
 
 
@@ -150,7 +150,7 @@ def test_reapplying_after_patch_torch_compile_restores_the_inductor_dir(monkeypa
     import os
 
     for name in ("AMDGCN_USE_BUFFER_OPS", "TRITON_CACHE_DIR", "TORCHINDUCTOR_CACHE_DIR"):
-        monkeypatch.delenv(name, raising=False)
+        monkeypatch.delenv(name, raising = False)
     monkeypatch.setattr(device_type, "_GFX101X_TRITON_WORKAROUND_APPLIED", False)
     assert device_type.gfx101x_triton_workaround_applied() is False
     assert device_type.apply_gfx101x_triton_workaround() is True
@@ -166,5 +166,5 @@ def test_reapplying_after_patch_torch_compile_restores_the_inductor_dir(monkeypa
 
 def test_a_dict_environ_does_not_mark_the_process():
     before = device_type.gfx101x_triton_workaround_applied()
-    device_type.apply_gfx101x_triton_workaround({}, triton_home="/th")
+    device_type.apply_gfx101x_triton_workaround({}, triton_home = "/th")
     assert device_type.gfx101x_triton_workaround_applied() is before

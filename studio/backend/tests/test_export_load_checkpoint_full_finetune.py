@@ -35,7 +35,7 @@ def _load_via_orchestrator(
     monkeypatch,
     checkpoint_path,
     load_in_4bit,
-    hf_token=None,
+    hf_token = None,
 ):
     from core.export.orchestrator import ExportOrchestrator
 
@@ -46,7 +46,7 @@ def _load_via_orchestrator(
     monkeypatch.setattr(
         backend, "_wait_response", lambda *a, **k: {"success": True, "message": "loaded"}
     )
-    assert backend.load_checkpoint(checkpoint_path, load_in_4bit=load_in_4bit, hf_token=hf_token)[0]
+    assert backend.load_checkpoint(checkpoint_path, load_in_4bit = load_in_4bit, hf_token = hf_token)[0]
     return spawned["load_in_4bit"]
 
 
@@ -60,7 +60,7 @@ def _load_via_orchestrator(
         (_BNB_QUANTIZED, None, True),
         (_MALFORMED_CONFIG, None, True),
     ],
-    ids=[
+    ids = [
         "full_finetune",
         "full_finetune_explicit_4bit",
         "lora_adapter",
@@ -74,7 +74,7 @@ def test_load_checkpoint_uses_16bit_for_unquantized_full_finetunes(
 ):
     for name, content in files.items():
         text = content if isinstance(content, str) else json.dumps(content)
-        (tmp_path / name).write_text(text, encoding="utf-8")
+        (tmp_path / name).write_text(text, encoding = "utf-8")
 
     assert _load_via_orchestrator(monkeypatch, str(tmp_path), load_in_4bit) is expected
 
@@ -90,7 +90,7 @@ def test_load_checkpoint_uses_16bit_for_unquantized_full_finetunes(
         ),
         (True, {"model_type": "llama"}, True),
     ],
-    ids=["remote_full_finetune", "remote_bnb_quantized", "remote_lora_adapter"],
+    ids = ["remote_full_finetune", "remote_bnb_quantized", "remote_lora_adapter"],
 )
 def test_load_checkpoint_resolves_hub_ids_before_choosing_4bit(
     monkeypatch, tmp_path, adapter_on_hub, hub_config, expected
@@ -99,13 +99,13 @@ def test_load_checkpoint_resolves_hub_ids_before_choosing_4bit(
     import huggingface_hub
 
     config_file = tmp_path / "config.json"
-    config_file.write_text(json.dumps(hub_config), encoding="utf-8")
+    config_file.write_text(json.dumps(hub_config), encoding = "utf-8")
     tokens = []
 
     def _file_exists(
         repo_id,
         filename,
-        token=None,
+        token = None,
     ):
         tokens.append(token)
         return adapter_on_hub and filename == "adapter_config.json"
@@ -113,7 +113,7 @@ def test_load_checkpoint_resolves_hub_ids_before_choosing_4bit(
     def _hf_hub_download(
         repo_id,
         filename,
-        token=None,
+        token = None,
     ):
         tokens.append(token)
         return str(config_file)
@@ -123,7 +123,7 @@ def test_load_checkpoint_resolves_hub_ids_before_choosing_4bit(
 
     # False is the "ambient token denied" sentinel; it must reach the Hub unchanged.
     load_in_4bit = _load_via_orchestrator(
-        monkeypatch, "unsloth/Llama-3.2-1B-Instruct", None, hf_token=False
+        monkeypatch, "unsloth/Llama-3.2-1B-Instruct", None, hf_token = False
     )
     assert load_in_4bit is expected
     assert tokens and all(token is False for token in tokens)
@@ -132,7 +132,7 @@ def test_load_checkpoint_resolves_hub_ids_before_choosing_4bit(
 @pytest.mark.parametrize(
     "extra,expected",
     [({}, None), ({"load_in_4bit": True}, True), ({"load_in_4bit": False}, False)],
-    ids=["unset", "explicit_4bit", "explicit_16bit"],
+    ids = ["unset", "explicit_4bit", "explicit_16bit"],
 )
 def test_route_leaves_unset_load_in_4bit_to_the_backend(monkeypatch, tmp_path, extra, expected):
     monkeypatch.setattr(export_routes, "_ensure_export_supported", _fake_ensure_export_supported)
@@ -141,13 +141,13 @@ def test_route_leaves_unset_load_in_4bit_to_the_backend(monkeypatch, tmp_path, e
     monkeypatch.setattr(export_routes, "get_export_backend", lambda: backend)
 
     app = FastAPI()
-    app.include_router(export_routes.router, prefix="/api/export")
+    app.include_router(export_routes.router, prefix = "/api/export")
     app.dependency_overrides[get_current_subject] = lambda: "alice"
     app.dependency_overrides[allow_ambient_hf_token] = lambda: True
 
     response = TestClient(app).post(
         "/api/export/load-checkpoint",
-        json={"checkpoint_path": str(tmp_path), "hf_token": None, **extra},
+        json = {"checkpoint_path": str(tmp_path), "hf_token": None, **extra},
     )
 
     assert response.status_code == 200
@@ -161,12 +161,12 @@ def test_hub_lookup_failure_keeps_the_old_default(monkeypatch):
     def _boom(
         repo_id,
         filename,
-        token=None,
+        token = None,
     ):
         raise OSError("no network")
 
     import huggingface_hub
 
-    monkeypatch.setattr(huggingface_hub, "file_exists", _boom, raising=False)
+    monkeypatch.setattr(huggingface_hub, "file_exists", _boom, raising = False)
     assert checkpoints._hub_model_config("org/model", None) is None
     assert checkpoints.is_unquantized_full_finetune("org/model", None) is False

@@ -10,16 +10,16 @@ from routes import settings as settings_routes
 from storage import studio_db
 
 
-def _client(monkeypatch, stored=None) -> TestClient:
+def _client(monkeypatch, stored = None) -> TestClient:
     stored = {} if stored is None else stored
     monkeypatch.setattr(
         studio_db,
         "get_app_setting",
-        lambda key, default=None: stored.get(key, default),
+        lambda key, default = None: stored.get(key, default),
     )
     monkeypatch.setattr(studio_db, "upsert_app_settings", stored.update)
     app = FastAPI()
-    app.include_router(settings_routes.router, prefix="/api/settings")
+    app.include_router(settings_routes.router, prefix = "/api/settings")
     app.dependency_overrides[get_current_subject] = lambda: "preset-test-user"
     return TestClient(app)
 
@@ -39,12 +39,12 @@ def test_image_and_video_presets_persist_independently(monkeypatch):
         "activePreset": "Default",
     }
 
-    assert client.put("/api/settings/generation-presets/image", json=image_state).status_code == 200
+    assert client.put("/api/settings/generation-presets/image", json = image_state).status_code == 200
     assert (
-        client.put("/api/settings/generation-presets/image/custom", json=image_preset).status_code
+        client.put("/api/settings/generation-presets/image/custom", json = image_preset).status_code
         == 200
     )
-    assert client.put("/api/settings/generation-presets/video", json=video_state).status_code == 200
+    assert client.put("/api/settings/generation-presets/video", json = video_state).status_code == 200
     image = client.get("/api/settings/generation-presets/image").json()
     video = client.get("/api/settings/generation-presets/video").json()
     assert image["saved"] is True
@@ -61,7 +61,7 @@ def test_preset_payload_rejects_per_run_or_unknown_fields(monkeypatch):
         "currentParams": {"prompt": "must not be persisted"},
         "activePreset": "Default",
     }
-    response = client.put("/api/settings/generation-presets/image", json=payload)
+    response = client.put("/api/settings/generation-presets/image", json = payload)
     assert response.status_code == 422
 
 
@@ -69,7 +69,7 @@ def test_preset_payload_bounds_names_and_values(monkeypatch):
     client = _client(monkeypatch)
     response = client.put(
         "/api/settings/generation-presets/video",
-        json={
+        json = {
             "currentParams": {"durationSeconds": 0},
             "activePreset": "Default",
         },
@@ -81,7 +81,7 @@ def test_image_preset_payload_accepts_generation_control_limits(monkeypatch):
     client = _client(monkeypatch)
     response = client.put(
         "/api/settings/generation-presets/image",
-        json={
+        json = {
             "currentParams": {"batchSize": 32, "runs": 129},
             "activePreset": "Default",
         },
@@ -95,7 +95,7 @@ def test_preset_negative_prompts_match_the_unbounded_generation_contract(monkeyp
     for kind in ("image", "video"):
         response = client.put(
             f"/api/settings/generation-presets/{kind}",
-            json={
+            json = {
                 "currentParams": {"negativePrompt": negative_prompt},
                 "activePreset": "Default",
             },
@@ -112,14 +112,14 @@ def test_state_writes_cannot_add_or_remove_named_presets(monkeypatch):
     }
     preset_x = {"name": "X", "params": params}
 
-    assert client.put("/api/settings/generation-presets/image", json=settings).status_code == 200
+    assert client.put("/api/settings/generation-presets/image", json = settings).status_code == 200
     assert (
-        client.put("/api/settings/generation-presets/image/custom", json=preset_x).status_code
+        client.put("/api/settings/generation-presets/image/custom", json = preset_x).status_code
         == 200
     )
     stale_snapshot = {**settings, "customPresets": []}
     assert (
-        client.put("/api/settings/generation-presets/image", json=stale_snapshot).status_code == 422
+        client.put("/api/settings/generation-presets/image", json = stale_snapshot).status_code == 422
     )
     saved = client.get("/api/settings/generation-presets/image").json()
     assert [preset["name"] for preset in saved["customPresets"]] == ["X"]
@@ -130,14 +130,14 @@ def test_custom_preset_schema_is_selected_from_the_path_kind(monkeypatch):
     assert (
         client.put(
             "/api/settings/generation-presets/video/custom",
-            json={"name": "Video", "params": {}},
+            json = {"name": "Video", "params": {}},
         ).status_code
         == 200
     )
     assert (
         client.put(
             "/api/settings/generation-presets/image/custom",
-            json={"name": "Image", "params": {}},
+            json = {"name": "Image", "params": {}},
         ).status_code
         == 200
     )
@@ -152,14 +152,14 @@ def test_custom_preset_names_are_canonical_and_cannot_replace_default(monkeypatc
     assert (
         client.put(
             "/api/settings/generation-presets/image/custom",
-            json={"name": "  Landscape  ", "params": {}},
+            json = {"name": "  Landscape  ", "params": {}},
         ).status_code
         == 200
     )
     assert (
         client.put(
             "/api/settings/generation-presets/image/custom",
-            json={"name": "Default", "params": {}},
+            json = {"name": "Default", "params": {}},
         ).status_code
         == 422
     )
@@ -173,14 +173,14 @@ def test_the_preset_list_is_capped_and_says_why(monkeypatch):
         assert (
             client.put(
                 "/api/settings/generation-presets/image/custom",
-                json={"name": f"P{index}", "params": {}},
+                json = {"name": f"P{index}", "params": {}},
             ).status_code
             == 200
         )
 
     refused = client.put(
         "/api/settings/generation-presets/image/custom",
-        json={"name": "P100", "params": {}},
+        json = {"name": "P100", "params": {}},
     )
     assert refused.status_code == 409
     assert refused.json()["detail"] == "Delete a preset before saving another one"
@@ -189,7 +189,7 @@ def test_the_preset_list_is_capped_and_says_why(monkeypatch):
     assert (
         client.put(
             "/api/settings/generation-presets/image/custom",
-            json={"name": "P0", "params": {"steps": 24}},
+            json = {"name": "P0", "params": {"steps": 24}},
         ).status_code
         == 200
     )
@@ -232,7 +232,7 @@ def test_unreadable_presets_do_not_consume_the_write_cap(monkeypatch):
 
     response = client.put(
         "/api/settings/generation-presets/image/custom",
-        json={"name": "Readable", "params": {"steps": 20}},
+        json = {"name": "Readable", "params": {"steps": 20}},
     )
 
     assert response.status_code == 200
@@ -256,7 +256,7 @@ def test_unreadable_presets_do_not_expand_the_readable_write_cap(monkeypatch):
 
     response = client.put(
         "/api/settings/generation-presets/image/custom",
-        json={"name": "One too many", "params": {"steps": 20}},
+        json = {"name": "One too many", "params": {"steps": 20}},
     )
 
     assert response.status_code == 409
@@ -378,11 +378,11 @@ def test_one_unreadable_state_field_does_not_reset_the_recipe(monkeypatch):
     assert [preset["name"] for preset in body["customPresets"]] == ["Keep"]
 
     echoed = {"activePreset": body["activePreset"], "currentParams": body["currentParams"]}
-    assert client.put("/api/settings/generation-presets/image", json=echoed).status_code == 200
+    assert client.put("/api/settings/generation-presets/image", json = echoed).status_code == 200
     assert stored["image_generation_presets"]["activePreset"] == "X" * 200
 
     echoed["activePreset"] = "Keep"
-    assert client.put("/api/settings/generation-presets/image", json=echoed).status_code == 200
+    assert client.put("/api/settings/generation-presets/image", json = echoed).status_code == 200
     assert stored["image_generation_presets"]["activePreset"] == "Keep"
 
 
@@ -410,14 +410,14 @@ def test_one_unreadable_nested_recipe_field_does_not_reset_its_siblings(
     # guidance default must not replace the raw value merely because this older schema was opened.
     body["currentParams"]["steps"] = 30
     echoed = {"activePreset": body["activePreset"], "currentParams": body["currentParams"]}
-    assert client.put(f"/api/settings/generation-presets/{kind}", json=echoed).status_code == 200
+    assert client.put(f"/api/settings/generation-presets/{kind}", json = echoed).status_code == 200
     kept = stored[f"{kind}_generation_presets"]["currentParams"]
     assert kept["steps"] == 30
     assert kept["guidance"] == 100
 
     # An actual edit to the recovered field still replaces the unreadable value.
     echoed["currentParams"]["guidance"] = 5
-    assert client.put(f"/api/settings/generation-presets/{kind}", json=echoed).status_code == 200
+    assert client.put(f"/api/settings/generation-presets/{kind}", json = echoed).status_code == 200
     assert stored[f"{kind}_generation_presets"]["currentParams"]["guidance"] == 5
 
 
@@ -436,7 +436,7 @@ def test_preset_bounds_match_the_generation_request(monkeypatch):
         assert (
             client.put(
                 "/api/settings/generation-presets/image/custom",
-                json={"name": "Out of bounds", "params": params},
+                json = {"name": "Out of bounds", "params": params},
             ).status_code
             == 422
         ), params
@@ -444,14 +444,14 @@ def test_preset_bounds_match_the_generation_request(monkeypatch):
         assert (
             client.put(
                 "/api/settings/generation-presets/image/custom",
-                json={"name": "In bounds", "params": params},
+                json = {"name": "In bounds", "params": params},
             ).status_code
             == 200
         ), params
     assert (
         client.put(
             "/api/settings/generation-presets/video/custom",
-            json={"name": "Video bounds", "params": {"steps": 500}},
+            json = {"name": "Video bounds", "params": {"steps": 500}},
         ).status_code
         == 422
     )
@@ -478,7 +478,7 @@ def test_a_downgraded_read_does_not_erase_newer_stored_fields(monkeypatch):
         "activePreset": body["activePreset"],
         "currentParams": body["currentParams"],
     }
-    assert client.put("/api/settings/generation-presets/image", json=echoed).status_code == 200
+    assert client.put("/api/settings/generation-presets/image", json = echoed).status_code == 200
 
     kept = stored["image_generation_presets"]
     assert kept["currentParams"]["aFieldFromLater"] == 7
@@ -517,7 +517,7 @@ def test_a_store_holding_load_options_is_read_without_them_and_keeps_them(monkey
     assert (
         client.put(
             "/api/settings/generation-presets/image",
-            json={"activePreset": "Landscape", "currentParams": body["currentParams"]},
+            json = {"activePreset": "Landscape", "currentParams": body["currentParams"]},
         ).status_code
         == 200
     )

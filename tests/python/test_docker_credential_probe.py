@@ -21,9 +21,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "docker-credential-probe.yml"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def delete_step() -> str:
-    doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    doc = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
     steps = [
         s
         for job in doc["jobs"].values()
@@ -63,7 +63,7 @@ def _run(
         "  *-X\\ DELETE*) printf '204' ;;\n"
         f"  *) printf '{200 if still_there else 404}' ;;\n"
         "esac\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     (bin_dir / "curl").chmod(0o755)
     script = step["run"].replace("${{ secrets.DOCKER_API_KEY }}", SECRET)
@@ -71,7 +71,7 @@ def _run(
     env = dict(os.environ)
     env["PATH"] = f"{bin_dir}{os.pathsep}" + env["PATH"]
     env.update(
-        REGISTRY_USERNAME="unsloth", IMAGE_NAME="unsloth/unsloth", PROBE_TAG="credential-probe"
+        REGISTRY_USERNAME = "unsloth", IMAGE_NAME = "unsloth/unsloth", PROBE_TAG = "credential-probe"
     )
     # Whatever the step declares in its own `env:`, bound here too. #11511 moved the
     # secret out of the run body and into `env: DOCKER_API_KEY`, read with
@@ -90,19 +90,19 @@ def _run(
         )
     res = subprocess.run(
         ["bash", "-e", "-c", script],
-        capture_output=True,
-        text=True,
-        env=env,
-        cwd=str(tmp_path),
-        timeout=60,
+        capture_output = True,
+        text = True,
+        env = env,
+        cwd = str(tmp_path),
+        timeout = 60,
     )
-    return res, log.read_text(encoding="utf-8") if log.exists() else ""
+    return res, log.read_text(encoding = "utf-8") if log.exists() else ""
 
 
 def test_the_delete_uses_the_namespace_route_the_org_token_is_allowed_on(
     delete_step: dict, tmp_path: Path
 ):
-    res, log = _run(delete_step, tmp_path, still_there=False)
+    res, log = _run(delete_step, tmp_path, still_there = False)
     assert res.returncode == 0, res.stdout + res.stderr
     assert (
         "-X DELETE https://hub.docker.com/v2/namespaces/unsloth/repositories/unsloth/tags/credential-probe"
@@ -121,13 +121,13 @@ def test_the_delete_uses_the_namespace_route_the_org_token_is_allowed_on(
 
 
 def test_a_tag_that_survives_the_delete_fails_the_step(delete_step: dict, tmp_path: Path):
-    res, _ = _run(delete_step, tmp_path, still_there=True)
+    res, _ = _run(delete_step, tmp_path, still_there = True)
     assert res.returncode != 0
     assert "still resolves" in res.stdout + res.stderr
 
 
 def test_no_token_means_no_delete_and_a_failure(delete_step: dict, tmp_path: Path):
-    res, log = _run(delete_step, tmp_path, still_there=True, token="")
+    res, log = _run(delete_step, tmp_path, still_there = True, token = "")
     assert res.returncode != 0
     assert "DELETE" not in log
 
@@ -148,7 +148,7 @@ def test_every_step_that_reads_the_key_is_given_the_key():
     """
     offenders = []
     for path in sorted(WORKFLOW.parent.glob("docker-*.yml")):
-        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        doc = yaml.safe_load(path.read_text(encoding = "utf-8"))
         for job_name, job in (doc.get("jobs") or {}).items():
             job_env = set(job.get("env") or {})
             for step in job.get("steps") or []:

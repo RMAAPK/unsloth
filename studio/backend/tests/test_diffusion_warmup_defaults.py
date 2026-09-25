@@ -27,10 +27,10 @@ def _cfg(family, **overrides):
     kwargs = {k: v for k, v in d.items() if k in DiffusionLoraConfig.__dataclass_fields__}
     kwargs.update(overrides)
     return DiffusionLoraConfig(
-        base_model=f"stub/{family}",
-        data_dir="/tmp/data",
-        output_dir="/tmp/out",
-        model_family=family,
+        base_model = f"stub/{family}",
+        data_dir = "/tmp/data",
+        output_dir = "/tmp/out",
+        model_family = family,
         **kwargs,
     )
 
@@ -56,10 +56,10 @@ def test_no_warmup_families_are_untouched():
 
 def test_normalized_leaves_the_requested_scheduler_alone():
     for scheduler in ("constant", "constant_with_warmup", "cosine", "linear"):
-        cfg = _cfg("sdxl", lr_scheduler=scheduler, lr_warmup_steps=20).normalized()
+        cfg = _cfg("sdxl", lr_scheduler = scheduler, lr_warmup_steps = 20).normalized()
         assert cfg.lr_scheduler == scheduler
         assert cfg.lr_warmup_steps == 20
-    cfg = _cfg("sdxl", lr_scheduler="constant", lr_warmup_steps=0).normalized()
+    cfg = _cfg("sdxl", lr_scheduler = "constant", lr_warmup_steps = 0).normalized()
     assert cfg.lr_scheduler == "constant"
 
 
@@ -67,7 +67,7 @@ def test_a_constant_schedule_with_warmup_still_resumes_its_own_bundle():
     """Scheduler normalization must preserve legacy checkpoint identity."""
     from core.training.diffusion_checkpoint import CheckpointIdentity, identity_for_config
 
-    cfg = _cfg("sdxl", lr_scheduler="constant", lr_warmup_steps=20).normalized()
+    cfg = _cfg("sdxl", lr_scheduler = "constant", lr_warmup_steps = 20).normalized()
     incoming = identity_for_config(cfg)
     assert incoming.lr_scheduler == "constant"
     stored = CheckpointIdentity.from_dict(
@@ -78,5 +78,5 @@ def test_a_constant_schedule_with_warmup_still_resumes_its_own_bundle():
 
 
 def test_negative_warmup_is_rejected():
-    with pytest.raises(ValueError, match="lr_warmup_steps"):
-        _cfg("sdxl", lr_warmup_steps=-1).normalized()
+    with pytest.raises(ValueError, match = "lr_warmup_steps"):
+        _cfg("sdxl", lr_warmup_steps = -1).normalized()

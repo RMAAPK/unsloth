@@ -18,7 +18,7 @@ def _run(workflows_dir: Path, require_host: bool = False) -> subprocess.Complete
     cmd = [sys.executable, str(SCRIPT), "--workflows-dir", str(workflows_dir)]
     if require_host:
         cmd.append("--require-host")
-    return subprocess.run(cmd, capture_output=True, text=True)
+    return subprocess.run(cmd, capture_output = True, text = True)
 
 
 def test_lint_passes_on_current_workflows():
@@ -104,7 +104,7 @@ def test_lint_rejects_a_narrowed_host(tmp_path, key, value):
     wf = tmp_path / "wf"
     wf.mkdir()
     (wf / "host.yml").write_text(_host_workflow(f"    {key}:\n{value}"))
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert key in proc.stderr
     assert "host.yml" in proc.stderr
@@ -126,14 +126,14 @@ def test_lint_rejects_a_host_that_cannot_fail(tmp_path, where, key, value, expec
     wf = tmp_path / "wf"
     wf.mkdir()
     if where == "step":
-        body = _host_workflow(step_extra=f"        {key}: {value}\n")
+        body = _host_workflow(step_extra = f"        {key}: {value}\n")
     else:
         body = _host_workflow().replace(
             "    runs-on: ubuntu-latest\n",
             f"    runs-on: ubuntu-latest\n    {key}: {value}\n",
         )
     (wf / "host.yml").write_text(body)
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert expected in proc.stderr
 
@@ -157,7 +157,7 @@ def test_lint_rejects_a_host_that_cannot_fail(tmp_path, where, key, value, expec
         ("python3 scripts/lint_workflow_triggers.py --workflows-d /tmp/empty", "--workflows-d"),
         ("python3 scripts/lint_workflow_triggers.py --help", "--help"),
     ],
-    ids=[
+    ids = [
         "or-true",
         "semi-true",
         "pipe-tee",
@@ -183,7 +183,7 @@ def test_lint_rejects_a_defanged_invocation(tmp_path, command, expected):
             f"run: |\n          {command}",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert expected in proc.stderr
 
@@ -197,7 +197,7 @@ def test_lint_rejects_a_defanged_invocation(tmp_path, command, expected):
         # A decoy with the right basename but not this repository's script.
         "python3 /tmp/lint_workflow_triggers.py",
     ],
-    ids=["dash-c", "dash-m", "echo", "decoy-path"],
+    ids = ["dash-c", "dash-m", "echo", "decoy-path"],
 )
 def test_lint_does_not_count_a_non_running_command_as_a_host(tmp_path, command):
     """None of these execute the repository's lint, so none is a host."""
@@ -208,7 +208,7 @@ def test_lint_does_not_count_a_non_running_command_as_a_host(tmp_path, command):
             "run: python3 scripts/lint_workflow_triggers.py", f"run: {command}"
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -223,7 +223,7 @@ def test_lint_does_not_count_a_non_running_command_as_a_host(tmp_path, command):
         # A here-document is data, not a command.
         "cat <<'EOF'\n          python3 scripts/lint_workflow_triggers.py\n          EOF",
     ],
-    ids=["prefixed-decoy", "uncalled-function", "heredoc"],
+    ids = ["prefixed-decoy", "uncalled-function", "heredoc"],
 )
 def test_lint_rejects_an_unexecuted_lint_command(tmp_path, body):
     """Text that looks like the invocation but never runs it is not a host."""
@@ -235,7 +235,7 @@ def test_lint_rejects_an_unexecuted_lint_command(tmp_path, body):
             f"run: |\n          {body}",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -262,7 +262,7 @@ def test_lint_rejects_a_custom_shell(tmp_path, where):
         body = body.replace("jobs:\n", f"defaults:\n  run:\n    shell: {evil}\njobs:\n")
     (wf := tmp_path / "wf").mkdir()
     (wf / "host.yml").write_text(body)
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "shell" in proc.stderr
 
@@ -276,7 +276,7 @@ def test_lint_accepts_an_explicit_plain_shell(tmp_path):
             "      - run: python3 scripts/lint_workflow_triggers.py\n        shell: bash\n",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 0, proc.stderr
 
 
@@ -290,7 +290,7 @@ def test_lint_accepts_an_explicit_plain_shell(tmp_path):
         "python3 -V scripts/lint_workflow_triggers.py",
         "python3 --help scripts/lint_workflow_triggers.py",
     ],
-    ids=["fake-interpreter", "version-long", "version-short", "help-before-path"],
+    ids = ["fake-interpreter", "version-long", "version-short", "help-before-path"],
 )
 def test_lint_rejects_a_non_running_interpreter(tmp_path, command):
     """The interpreter must be a python that actually executes the file."""
@@ -300,7 +300,7 @@ def test_lint_rejects_a_non_running_interpreter(tmp_path, command):
             "run: python3 scripts/lint_workflow_triggers.py", f"run: {command}"
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -325,7 +325,7 @@ def test_lint_rejects_a_changed_working_directory(tmp_path, where):
         body = body.replace("jobs:\n", "defaults:\n  run:\n    working-directory: /tmp\njobs:\n")
     (wf := tmp_path / "wf").mkdir()
     (wf / "host.yml").write_text(body)
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "working-directory" in proc.stderr
 
@@ -375,7 +375,7 @@ def test_publish_cache_key_collision_found_under_both_suffixes(tmp_path, suffix)
         "python3 -d scripts/lint_workflow_triggers.py",
         "python3 -uB scripts/lint_workflow_triggers.py",
     ],
-    ids=["interactive", "unknown-flag", "combined-flag"],
+    ids = ["interactive", "unknown-flag", "combined-flag"],
 )
 def test_lint_rejects_flags_outside_the_allowlist(tmp_path, command):
     """Only flags that leave run-this-file-and-return-its-status intact count."""
@@ -385,7 +385,7 @@ def test_lint_rejects_flags_outside_the_allowlist(tmp_path, command):
             "run: python3 scripts/lint_workflow_triggers.py", f"run: {command}"
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -400,7 +400,7 @@ def test_lint_accepts_allowlisted_flags(tmp_path, flag):
             f"run: python3 {flag} scripts/lint_workflow_triggers.py",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 0, proc.stderr
 
 
@@ -425,7 +425,7 @@ def test_lint_rejects_execution_redirecting_env(tmp_path, scope, key):
         body = body.replace("jobs:\n", entry + "jobs:\n")
     (wf := tmp_path / "wf").mkdir()
     (wf / "host.yml").write_text(body)
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert key in proc.stderr
 
@@ -437,7 +437,7 @@ def test_lint_rejects_a_non_mapping_pull_request_value(tmp_path, value):
     (wf / "host.yml").write_text(
         _host_workflow().replace("  pull_request:\n", f"  pull_request: {value}\n")
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "not a valid event configuration" in proc.stderr
 
@@ -451,7 +451,7 @@ def test_lint_rejects_a_non_mapping_pull_request_value(tmp_path, value):
         # A substitution in an option value runs before python does.
         'python3 -W "$(touch pwned)" scripts/lint_workflow_triggers.py',
     ],
-    ids=["relative-interpreter", "repo-path-interpreter", "expansion-in-value"],
+    ids = ["relative-interpreter", "repo-path-interpreter", "expansion-in-value"],
 )
 def test_lint_rejects_pr_controlled_interpreters(tmp_path, command):
     """The interpreter and its option values must not come from the checkout."""
@@ -461,7 +461,7 @@ def test_lint_rejects_pr_controlled_interpreters(tmp_path, command):
             "run: python3 scripts/lint_workflow_triggers.py", f"run: {command}"
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -476,7 +476,7 @@ def test_lint_accepts_trusted_interpreters(tmp_path, interpreter):
             f"run: {interpreter} scripts/lint_workflow_triggers.py",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 0, proc.stderr
 
 
@@ -491,7 +491,7 @@ def test_lint_rejects_python_startup_env(tmp_path, key):
             f"        env:\n          {key}: ./pr-controlled\n",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert key in proc.stderr
 
@@ -505,7 +505,7 @@ def test_lint_rejects_expansion_in_the_interpreter_token(tmp_path):
             'run: |\n          "/usr/$(printf bin)/python3" ' "scripts/lint_workflow_triggers.py",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -519,7 +519,7 @@ def test_lint_rejects_a_containerized_host(tmp_path):
             "    runs-on: ubuntu-latest\n    container: alpine:latest\n",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "container" in proc.stderr
 
@@ -541,7 +541,7 @@ def test_lint_rejects_a_host_job_with_needs(tmp_path):
             "    needs: setup\n",
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "needs:" in proc.stderr
 
@@ -554,7 +554,7 @@ def test_lint_rejects_a_host_job_with_needs(tmp_path):
         "python scripts/lint_workflow_triggers.py",
         "python3 -X utf8 scripts/lint_workflow_triggers.py",
     ],
-    ids=["plain", "dash-u", "python", "dash-X-with-value"],
+    ids = ["plain", "dash-u", "python", "dash-X-with-value"],
 )
 def test_lint_accepts_ordinary_invocations(tmp_path, command):
     """Tightening host detection must not reject normal ways to run it."""
@@ -565,7 +565,7 @@ def test_lint_accepts_ordinary_invocations(tmp_path, command):
             "run: python3 scripts/lint_workflow_triggers.py", f"run: {command}"
         )
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 0, proc.stderr
 
 
@@ -574,7 +574,7 @@ def test_lint_accepts_unfiltered_host(tmp_path):
     wf = tmp_path / "wf"
     wf.mkdir()
     (wf / "host.yml").write_text(_host_workflow())
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 0, proc.stderr
 
 
@@ -592,7 +592,7 @@ def test_lint_rejects_missing_host(tmp_path):
         "    steps:\n"
         "      - run: echo hi\n"
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
@@ -603,7 +603,7 @@ def test_lint_rejects_missing_host(tmp_path):
         "      # scripts/lint_workflow_triggers.py needs PyYAML\n",
         "      # - run: python3 scripts/lint_workflow_triggers.py\n",
     ],
-    ids=["prose", "commented-run-step"],
+    ids = ["prose", "commented-run-step"],
 )
 def test_commented_mention_is_not_a_host(tmp_path, mention):
     """A mention that executes nothing must not register as a host.
@@ -622,14 +622,14 @@ def test_commented_mention_is_not_a_host(tmp_path, mention):
         "    runs-on: ubuntu-latest\n"
         "    steps:\n" + mention + "      - run: echo hi\n"
     )
-    proc = _run(wf, require_host=True)
+    proc = _run(wf, require_host = True)
     assert proc.returncode == 1
     assert "does not cover every PR" in proc.stderr
 
 
 def test_workflow_trigger_lint_host_exists_and_is_unfiltered():
     """End to end on the live tree, with the host requirement forced on."""
-    proc = _run(REPO_ROOT / ".github" / "workflows", require_host=True)
+    proc = _run(REPO_ROOT / ".github" / "workflows", require_host = True)
     assert (
         proc.returncode == 0
     ), f"live tree failed lint:\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
@@ -747,7 +747,7 @@ def test_workflow_changes_require_code_owner_review():
     just the lint host. Delegating a workflow to another maintainer is fine;
     leaving one unowned is not.
     """
-    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
+    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding = "utf-8")
     workflows = sorted(
         p.relative_to(REPO_ROOT).as_posix()
         for p in (REPO_ROOT / ".github" / "workflows").iterdir()
@@ -823,7 +823,7 @@ def test_owner_token_validity(token, valid):
 
 def test_invalid_owner_does_not_count_as_ownership():
     """The realistic mistake: a later rule naming a non-owner."""
-    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
+    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding = "utf-8")
     probe = CODEOWNERS_PROBES[0]
     owners = _effective_owners(f"{text}\n/{probe} not-an-owner\n", probe)
     assert owners == ["not-an-owner"]
@@ -845,7 +845,7 @@ def test_invalid_owner_does_not_count_as_ownership():
         # `**/` may match zero directories.
         ("/.github/**/workflows/ @someone-else", ["@someone-else"]),
     ],
-    ids=[
+    ids = [
         "catch-all",
         "parent-dir",
         "narrower-file",
@@ -858,7 +858,7 @@ def test_invalid_owner_does_not_count_as_ownership():
 )
 def test_codeowners_guard_catches_a_later_rule(override, expected):
     """The guard must fail whichever way a trailing rule takes precedence."""
-    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
+    text = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding = "utf-8")
     owners = _effective_owners(f"{text}\n{override}\n", CODEOWNERS_PROBES[0])
     assert owners == expected, f"{override!r} should win, got {owners}"
 
@@ -1035,8 +1035,8 @@ def test_lint_sees_cache_keys_declared_in_composite_actions(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pip-cache-restore"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pip cache restore\n"
         "runs:\n"
@@ -1198,8 +1198,8 @@ def test_a_composite_that_builds_its_key_in_shell_is_read(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pip-cache-restore"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pip cache restore\n"
         "outputs:\n"
@@ -1249,8 +1249,8 @@ def test_a_publish_only_composite_is_not_treated_as_a_pr_namespace(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "release-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: release cache\n"
         "runs:\n"
@@ -1321,7 +1321,7 @@ def test_a_cache_key_in_a_local_reusable_workflow_is_seen(tmp_path):
     """
     root = tmp_path / ".github"
     wf = root / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "shared-build.yml").write_text(
         "name: shared-build\n"
         "on:\n"
@@ -1365,8 +1365,8 @@ def test_a_composite_key_equal_to_a_publish_key_is_caught(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "shared-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: shared cache\n"
         "runs:\n"
@@ -1420,8 +1420,8 @@ def test_a_shell_built_namespace_is_narrowed_by_the_inputs_callers_pass(tmp_path
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pip-cache-restore"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pip cache restore\n"
         "inputs:\n"
@@ -1482,8 +1482,8 @@ def test_a_publish_composite_that_restores_a_pr_namespace_is_caught(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "publish-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: publish cache\n"
         "runs:\n"
@@ -1528,8 +1528,8 @@ def test_narrowing_keeps_the_broad_head_when_a_caller_is_dynamic(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pip-cache-restore"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pip cache restore\n"
         "inputs:\n"
@@ -1696,8 +1696,8 @@ def test_a_flow_style_local_uses_is_followed(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "shared-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: shared cache\n"
         "runs:\n"
@@ -1740,7 +1740,7 @@ def test_a_caller_supplied_key_is_resolved_not_dismissed(tmp_path):
     """
     root = tmp_path / ".github"
     wf = root / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "shared-build.yml").write_text(
         "name: shared-build\n"
         "on:\n"
@@ -1791,8 +1791,8 @@ def test_a_key_delegated_to_a_step_output_is_still_accepted(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "cache-save"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: cache save\n"
         "inputs:\n"
@@ -1842,9 +1842,9 @@ def test_inputs_are_collected_through_a_wrapper_action(tmp_path):
     wf = root / "workflows"
     inner = root / "actions" / "pip-cache-restore"
     wrapper = root / "actions" / "setup-wrapper"
-    wf.mkdir(parents=True)
-    inner.mkdir(parents=True)
-    wrapper.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    inner.mkdir(parents = True)
+    wrapper.mkdir(parents = True)
     (inner / "action.yml").write_text(
         "name: pip cache restore\n"
         "inputs:\n"
@@ -1910,8 +1910,8 @@ def test_an_omission_before_the_first_literal_is_counted(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pipc"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pipc\n"
         "inputs:\n"
@@ -1966,8 +1966,8 @@ def test_a_prefix_that_opens_with_a_variable_is_recovered(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "varfirst"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: varfirst\n"
         "inputs:\n"
@@ -2025,7 +2025,7 @@ def test_an_input_backed_key_is_resolved_before_the_exact_comparison(tmp_path):
     """
     root = tmp_path / ".github"
     wf = root / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "shared-build.yml").write_text(
         "name: shared-build\n"
         "on:\n"
@@ -2145,8 +2145,8 @@ def test_a_declared_input_default_is_part_of_the_namespace(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "defaulted-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: defaulted cache\n"
         "inputs:\n"
@@ -2203,8 +2203,8 @@ def test_a_declared_default_does_not_settle_an_explicit_dynamic_value(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "defaulted-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: defaulted cache\n"
         "inputs:\n"
@@ -2267,7 +2267,7 @@ def test_a_shell_key_that_never_leaves_the_step_is_not_a_namespace(tmp_path):
     can actually become a key.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n"
@@ -2315,8 +2315,8 @@ def test_an_input_embedded_in_a_key_is_expanded(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "embedded"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: embedded\n"
         "inputs:\n  name:\n    description: n\n"
@@ -2361,7 +2361,7 @@ def test_runner_os_is_expanded_before_the_exact_comparison(tmp_path):
     with no `restore-keys` never benefited.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2394,7 +2394,7 @@ def test_an_unresolvable_pr_key_is_reported_against_an_exact_publish_key(tmp_pat
     and the lint exited 0.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2448,9 +2448,9 @@ def test_two_targets_sharing_an_input_name_keep_their_own_namespaces(tmp_path):
     wf = root / "workflows"
     caching = root / "actions" / "caching"
     unrelated = root / "actions" / "unrelated"
-    wf.mkdir(parents=True)
-    caching.mkdir(parents=True)
-    unrelated.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    caching.mkdir(parents = True)
+    unrelated.mkdir(parents = True)
     (caching / "action.yml").write_text(
         "name: caching\n"
         "inputs:\n  cache_key:\n    description: k\n"
@@ -2546,8 +2546,8 @@ def test_an_unresolvable_publish_key_is_reported_too(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pub-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pub cache\n"
         "inputs:\n  cache_key:\n    description: k\n"
@@ -2588,7 +2588,7 @@ def test_two_identically_spelled_unresolved_keys_collide(tmp_path):
     the publish run restores.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     body = (
         "    steps:\n"
         "      - uses: actions/cache@v4\n"
@@ -2624,9 +2624,9 @@ def test_a_publish_key_is_expanded_with_its_own_targets_inputs(tmp_path):
     wf = root / "workflows"
     caching = root / "actions" / "pub-caching"
     unrelated = root / "actions" / "pub-unrelated"
-    wf.mkdir(parents=True)
-    caching.mkdir(parents=True)
-    unrelated.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    caching.mkdir(parents = True)
+    unrelated.mkdir(parents = True)
     (caching / "action.yml").write_text(
         "name: pub caching\n"
         "inputs:\n  cache_key:\n    description: k\n"
@@ -2677,8 +2677,8 @@ def test_a_composite_key_is_not_counted_a_second_time_without_its_inputs(tmp_pat
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "decided"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: decided\n"
         "inputs:\n  name:\n    description: n\n"
@@ -2719,7 +2719,7 @@ def test_two_differently_spelled_unresolved_keys_are_paired(tmp_path):
     unresolved side at a time.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2773,7 +2773,7 @@ def test_a_delegated_key_whose_producer_was_not_read_stays_undecided(tmp_path):
     a publish `restore-keys: shared-` through.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2804,7 +2804,7 @@ def test_a_literal_producer_output_is_read_as_a_key(tmp_path):
     cache key, so it joins the comparison rather than only vouching for the step.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2855,7 +2855,7 @@ def test_a_publish_side_delegated_key_is_resolved_from_its_own_shell(tmp_path):
     passed an exact collision.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -2892,9 +2892,9 @@ def test_two_actions_sharing_a_directory_name_keep_their_call_sites(tmp_path):
     wf = root / "workflows"
     first = root / "actions" / "a" / "cache"
     second = root / "actions" / "b" / "cache"
-    wf.mkdir(parents=True)
-    first.mkdir(parents=True)
-    second.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    first.mkdir(parents = True)
+    second.mkdir(parents = True)
     (first / "action.yml").write_text(
         "name: a cache\n"
         "inputs:\n  name:\n    description: n\n"
@@ -2943,7 +2943,7 @@ def test_one_readable_producer_does_not_vouch_for_an_unreadable_one(tmp_path):
     in the workflow to do the vouching.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3021,7 +3021,7 @@ def test_a_readable_namesake_in_another_job_vouches_for_nothing(tmp_path):
     key was then dismissed on the strength of a step that has nothing to do with it.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3061,8 +3061,8 @@ def test_an_inline_key_input_does_not_certify_an_unrelated_output(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "sneaky"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: sneaky\n"
         "inputs:\n  key:\n    description: unrelated\n"
@@ -3109,8 +3109,8 @@ def test_a_top_level_publish_input_is_not_resolved_by_a_child_targets_value(tmp_
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "unrelated"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: unrelated\n"
         "inputs:\n  cache_key:\n    description: k\n"
@@ -3159,8 +3159,8 @@ def test_an_action_used_from_a_checkout_subdirectory_is_reachable(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "nested-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: nested cache\n"
         "runs:\n  using: composite\n  steps:\n"
@@ -3198,7 +3198,7 @@ def test_a_commented_out_output_does_not_certify_a_producer(tmp_path):
     its delegated key was dismissed, and a publish `restore-keys: shared-` passed.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3229,7 +3229,7 @@ def test_an_unquoted_scalar_key_is_compared(tmp_path):
     workflows sharing it were reported as collision-free.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3261,9 +3261,9 @@ def test_a_wrapper_forwarding_its_own_input_is_resolved(tmp_path):
     wf = root / "workflows"
     inner = root / "actions" / "inner-cache"
     wrapper = root / "actions" / "wrapper"
-    wf.mkdir(parents=True)
-    inner.mkdir(parents=True)
-    wrapper.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    inner.mkdir(parents = True)
+    wrapper.mkdir(parents = True)
     (inner / "action.yml").write_text(
         "name: inner cache\n"
         "inputs:\n  name:\n    description: n\n"
@@ -3324,7 +3324,7 @@ def test_one_readable_output_does_not_certify_another_from_the_same_step(tmp_pat
     use.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3356,7 +3356,7 @@ def test_an_unrelated_assignment_does_not_certify_the_output(tmp_path):
     nothing about it had been understood.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3386,7 +3386,7 @@ def test_two_publish_jobs_sharing_a_raw_key_keep_their_own_scopes(tmp_path):
     first job's readable one, and a PR cache matching the unread producer passed.
     """
     wf = tmp_path / ".github" / "workflows"
-    wf.mkdir(parents=True)
+    wf.mkdir(parents = True)
     (wf / "pr-build.yml").write_text(
         "name: pr-build\n"
         "on:\n  pull_request:\n"
@@ -3431,8 +3431,8 @@ def test_a_key_passed_to_a_non_cache_action_is_not_a_cache_namespace(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "signer"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: signer\n"
         "runs:\n  using: composite\n  steps:\n"
@@ -3470,8 +3470,8 @@ def test_a_call_site_reached_through_a_checkout_prefix_is_matched(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "prefixed-cache"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: prefixed cache\n"
         "inputs:\n  name:\n    description: n\n"
@@ -3512,8 +3512,8 @@ def test_a_publish_restore_prefix_is_expanded_with_its_own_inputs(tmp_path):
     root = tmp_path / ".github"
     wf = root / "workflows"
     action = root / "actions" / "pub-restore"
-    wf.mkdir(parents=True)
-    action.mkdir(parents=True)
+    wf.mkdir(parents = True)
+    action.mkdir(parents = True)
     (action / "action.yml").write_text(
         "name: pub restore\n"
         "inputs:\n  name:\n    description: n\n"

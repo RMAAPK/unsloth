@@ -25,9 +25,9 @@ from scripts import scan_npm_packages as snp  # noqa: E402
 def _run_scanner(lockfile: Path, *, timeout: int = 30) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(SCRIPT), "--lockfile", str(lockfile)],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
+        capture_output = True,
+        text = True,
+        timeout = timeout,
     )
 
 
@@ -78,7 +78,7 @@ _BLOCKED_AVAILABLE = hasattr(snp, "BLOCKED_NPM_VERSIONS")
 
 @pytest.mark.skipif(
     not _BLOCKED_AVAILABLE,
-    reason="Fork 1 (BLOCKED_NPM_VERSIONS constant) not merged yet",
+    reason = "Fork 1 (BLOCKED_NPM_VERSIONS constant) not merged yet",
 )
 def test_blocked_npm_versions_complete():
     table = snp.BLOCKED_NPM_VERSIONS
@@ -140,12 +140,12 @@ def test_blocked_npm_versions_complete():
 
 @pytest.mark.skipif(
     not _BLOCKED_AVAILABLE,
-    reason="Fork 1 (BLOCKED_NPM_VERSIONS pre-fetch hook) not merged yet",
+    reason = "Fork 1 (BLOCKED_NPM_VERSIONS pre-fetch hook) not merged yet",
 )
 def test_blocked_npm_versions_short_circuits_download():
     """Pre-fetch hook flags the malicious tanstack entry (exit 1) without hitting the npm registry."""
     fixture = FIXTURES / "malicious_lockfile.json"
-    proc = _run_scanner(fixture, timeout=10)
+    proc = _run_scanner(fixture, timeout = 10)
     assert proc.returncode == 1
     combined = proc.stdout + proc.stderr
     assert "blocked-known-malicious" in combined or "BLOCKED_NPM_VERSIONS" in combined
@@ -164,10 +164,10 @@ def _extract_pkg_with_ioc(ioc: str, tmp_path: Path) -> Path:
         "description": f"contains literal: {ioc}",
     }
     root = tmp_path / f"pkg_{abs(hash(ioc)) % 10**8}"
-    (root / "package").mkdir(parents=True)
+    (root / "package").mkdir(parents = True)
     (root / "package" / "package.json").write_text(
         json.dumps(pkg_json),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     return root
 
@@ -178,16 +178,16 @@ def test_every_known_ioc_string_caught(tmp_path):
     assert iocs, "KNOWN_IOC_STRINGS unexpectedly empty"
 
     pkg = snp.PackageEntry(
-        name="ioc-fixture",
-        version="0.0.1",
-        resolved="https://registry.npmjs.org/ioc-fixture/-/ioc-fixture-0.0.1.tgz",
-        integrity="sha512-stub",
-        lockfile_key="node_modules/ioc-fixture",
+        name = "ioc-fixture",
+        version = "0.0.1",
+        resolved = "https://registry.npmjs.org/ioc-fixture/-/ioc-fixture-0.0.1.tgz",
+        integrity = "sha512-stub",
+        lockfile_key = "node_modules/ioc-fixture",
     )
 
     for ioc in iocs:
         root = _extract_pkg_with_ioc(ioc, tmp_path)
-        findings = snp.scan_extracted_tree(pkg=pkg, root=root)
+        findings = snp.scan_extracted_tree(pkg = pkg, root = root)
         hit = any(ioc in f.evidence or ioc in f.detail for f in findings)
         assert hit, (
             f"KNOWN_IOC_STRINGS[{ioc!r}] not detected by scan_extracted_tree; "
@@ -260,11 +260,11 @@ def test_strip_fails_open_on_unterminated_block_comment():
 def test_strip_only_applies_to_js_family():
     # A `//`-containing JSON/YAML string must be left intact (JS lexer must not apply).
     PKG = snp.PackageEntry(
-        name="x",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/x/-/x-1.0.0.tgz",
-        integrity="sha512-z",
-        lockfile_key="node_modules/x",
+        name = "x",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/x/-/x-1.0.0.tgz",
+        integrity = "sha512-z",
+        lockfile_key = "node_modules/x",
     )
     # scan_text_blob strips for .js but not for .json.
     yaml_like = 'url: "http://h"  # a yaml comment, not JS\n'
@@ -278,11 +278,11 @@ def test_strip_only_applies_to_js_family():
 # ---------------------------------------------------------------------------
 
 _PKG = snp.PackageEntry(
-    name="x",
-    version="1.0.0",
-    resolved="https://registry.npmjs.org/x/-/x-1.0.0.tgz",
-    integrity="sha512-z",
-    lockfile_key="node_modules/x",
+    name = "x",
+    version = "1.0.0",
+    resolved = "https://registry.npmjs.org/x/-/x-1.0.0.tgz",
+    integrity = "sha512-z",
+    lockfile_key = "node_modules/x",
 )
 _BLOB = "QWxhZGRpbg" * 240  # ~2.4 KiB base64-ish
 
@@ -322,10 +322,10 @@ def _finding(
     pkg,
     fn,
     pattern,
-    sev=snp.HIGH,
-    evidence="",
+    sev = snp.HIGH,
+    evidence = "",
 ):
-    return snp.Finding(severity=sev, package=pkg, filename=fn, pattern=pattern, evidence=evidence)
+    return snp.Finding(severity = sev, package = pkg, filename = fn, pattern = pattern, evidence = evidence)
 
 
 def test_norm_pkg_name_strips_version_keeps_scope():
@@ -366,7 +366,7 @@ def test_baseline_suppresses_listed_but_not_new_pattern(tmp_path):
                 ],
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     baseline = snp._load_baseline(str(bl))
 
@@ -398,21 +398,21 @@ def test_baseline_reopens_on_changed_evidence(tmp_path):
     # evidence hash, so a new payload cannot ride a reviewed entry.
     bl = tmp_path / "bl.json"
     listed = _finding(
-        "left-pad@1.0.0", "package/dist/index.js", "obfuscated-blob", evidence="fetch('http://ok')"
+        "left-pad@1.0.0", "package/dist/index.js", "obfuscated-blob", evidence = "fetch('http://ok')"
     )
     snp._write_baseline(str(bl), [listed], snp._SEVERITY_RANK[snp.HIGH])
     baseline = snp._load_baseline(str(bl))
 
     # The reviewed finding stays suppressed across a version bump (same evidence).
     same = _finding(
-        "left-pad@9.9.9", "package/dist/index.js", "obfuscated-blob", evidence="fetch('http://ok')"
+        "left-pad@9.9.9", "package/dist/index.js", "obfuscated-blob", evidence = "fetch('http://ok')"
     )
     # A changed payload under the same package/file/pattern stays active.
     changed = _finding(
         "left-pad@9.9.9",
         "package/dist/index.js",
         "obfuscated-blob",
-        evidence="fetch('http://evil')",
+        evidence = "fetch('http://evil')",
     )
     active, suppressed = snp._partition_baseline([same, changed], baseline)
     assert same in suppressed
@@ -423,11 +423,11 @@ def test_obfuscated_blob_key_reopens_on_changed_tail():
     # A large blob's evidence hash binds the full match (via a digest when the snippet is truncated), so changing only
     # the payload tail reopens the key.
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     head = "A" * 2300
     old = f'eval("{head}{"B" * 300}")'
@@ -451,11 +451,11 @@ def test_js_fetch_eval_payload_tail_reopens_key():
     # The js-fetch-eval evidence digests the full containing line when the shown window truncates it, so a changed
     # payload tail beyond the window reopens the key instead of riding the unchanged decoder head.
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     head = "A" * 40
     old = "(0,eval)(atob('" + head + "X" * 80 + "'))\n"
@@ -474,11 +474,11 @@ def test_outbound_host_multiline_options_reopen():
     # A multi-line outbound call binds its option/header lines, so changing the headers/body on a continuation line
     # reopens the cred-surface-host key.
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     url = "fetch('http://169.254.169.254/latest/meta-data/iam/security-credentials/role',\n"
     old = url + "  {headers: {a: 'old'}})\n"
@@ -501,11 +501,11 @@ def test_outbound_host_config_multiline_object_reopens():
     # A host-config object whose `{` is on a prior line still binds the whole object, so changing the path/headers on a
     # following line reopens the key rather than riding the unchanged hostname line.
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     obj = (
         "const opts = {\n  hostname: '169.254.169.254',\n  path: '%s',\n};\nhttps.request(opts);\n"
@@ -527,11 +527,11 @@ def test_outbound_host_config_multiline_object_reopens():
 
 def _host_config_pkg():
     return snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
 
 
@@ -624,11 +624,11 @@ def test_cred_env_lifecycle_binds_whole_body():
     # reopens even with the token line unchanged.
     def life(body):
         pkg = snp.PackageEntry(
-            name="e",
-            version="1.0.0",
-            resolved="https://registry.npmjs.org/e/-/e-1.0.0.tgz",
-            integrity="sha512-x",
-            lockfile_key="node_modules/e",
+            name = "e",
+            version = "1.0.0",
+            resolved = "https://registry.npmjs.org/e/-/e-1.0.0.tgz",
+            integrity = "sha512-x",
+            lockfile_key = "node_modules/e",
         )
         text = json.dumps({"scripts": {"postinstall": body}})
         return [
@@ -645,11 +645,11 @@ def test_cred_env_lifecycle_binds_whole_body():
 
 def _lifecycle_finding(body, frag):
     pkg = snp.PackageEntry(
-        name="e",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/e/-/e-1.0.0.tgz",
-        integrity="sha512-x",
-        lockfile_key="node_modules/e",
+        name = "e",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/e/-/e-1.0.0.tgz",
+        integrity = "sha512-x",
+        lockfile_key = "node_modules/e",
     )
     text = json.dumps({"scripts": {"postinstall": body}})
     return [
@@ -736,11 +736,11 @@ def test_evidence_streams_overflow_count_is_exact():
 
 def _ioc_pkg():
     return snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-x",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-x",
+        lockfile_key = "node_modules/evil",
     )
 
 
@@ -797,11 +797,11 @@ def test_evidence_preserves_intra_string_whitespace():
 
 def test_outbound_cred_surface_binds_context():
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     old = "fetch('http://169.254.169.254/latest/meta-data/iam/security-credentials/old')\n"
     new = (
@@ -832,13 +832,13 @@ def test_load_baseline_skips_non_dict_entries(tmp_path):
                 "entries": ["oops", 123, {"package": "p", "file": "package/a.js", "pattern": "x"}],
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     keys = snp._load_baseline(str(bl))
     assert keys == {("p", "a.js", "x", snp._evidence_hash(""))}
     # A non-object root is rejected with a warning, not a crash.
     arr = tmp_path / "arr.json"
-    arr.write_text("[1, 2, 3]", encoding="utf-8")
+    arr.write_text("[1, 2, 3]", encoding = "utf-8")
     assert snp._load_baseline(str(arr)) == set()
 
 
@@ -855,7 +855,7 @@ def test_legacy_schema_baseline_is_ignored(tmp_path):
                 ],
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert snp._load_baseline(str(bl)) == set()
 
@@ -880,10 +880,10 @@ def test_v2_baseline_migrates_by_recomputing_hash(tmp_path):
                 ],
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     finding = _finding(
-        "left-pad@9.9.9", "package/dist/index.js", "obfuscated-blob", evidence=evidence
+        "left-pad@9.9.9", "package/dist/index.js", "obfuscated-blob", evidence = evidence
     )
     assert snp._finding_key(finding) in snp._load_baseline(str(bl))
 
@@ -892,11 +892,11 @@ def test_outbound_cred_surface_host_config_binds_full_context():
     # The host-config branch captures the whole line (path + headers), so changing the outbound headers/body on the
     # same hostname line reopens the key instead of letting an approved finding suppress a newly credentialed request.
     pkg = snp.PackageEntry(
-        name="evil",
-        version="1.0.0",
-        resolved="https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
-        integrity="sha512-test",
-        lockfile_key="node_modules/evil",
+        name = "evil",
+        version = "1.0.0",
+        resolved = "https://registry.npmjs.org/evil/-/evil-1.0.0.tgz",
+        integrity = "sha512-test",
+        lockfile_key = "node_modules/evil",
     )
     path = "/latest/meta-data/iam/security-credentials/role-name"
     old = (
@@ -924,6 +924,6 @@ def test_committed_baseline_is_empty_and_valid():
     # Shipped baseline must parse and (by design) suppress nothing: the live corpus is clean.
     path = REPO_ROOT / "scripts" / "scan_npm_packages_baseline.json"
     assert path.is_file()
-    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc = json.loads(path.read_text(encoding = "utf-8"))
     assert doc.get("entries") == []
     assert snp._load_baseline(str(path)) == set()

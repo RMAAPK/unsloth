@@ -20,7 +20,7 @@ from fastapi.testclient import TestClient
 from auth import storage
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def isolated_auth_db(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "auth.db")
     monkeypatch.setattr(storage, "_BOOTSTRAP_PW_PATH", tmp_path / ".bootstrap_password")
@@ -31,12 +31,12 @@ def isolated_auth_db(tmp_path, monkeypatch):
     yield
 
 
-def seed_user(*, must_change_password=False):
+def seed_user(*, must_change_password = False):
     storage.create_initial_user(
-        username=storage.DEFAULT_ADMIN_USERNAME,
-        password="human-password-123",
-        jwt_secret=secrets.token_urlsafe(64),
-        must_change_password=must_change_password,
+        username = storage.DEFAULT_ADMIN_USERNAME,
+        password = "human-password-123",
+        jwt_secret = secrets.token_urlsafe(64),
+        must_change_password = must_change_password,
     )
 
 
@@ -50,10 +50,10 @@ def auth_route_module():
     return auth_route
 
 
-def auth_client(auth_route=None):
+def auth_client(auth_route = None):
     auth_route = auth_route or auth_route_module()
     app = FastAPI()
-    app.include_router(auth_route.router, prefix="/api/auth")
+    app.include_router(auth_route.router, prefix = "/api/auth")
     return TestClient(app)
 
 
@@ -76,17 +76,17 @@ def local_recipe():
 
 def local_recipe_request(token):
     return SimpleNamespace(
-        headers={"authorization": f"Bearer {token}"},
-        app=SimpleNamespace(state=SimpleNamespace(server_port=8888)),
-        scope={},
-        base_url="http://testserver/",
+        headers = {"authorization": f"Bearer {token}"},
+        app = SimpleNamespace(state = SimpleNamespace(server_port = 8888)),
+        scope = {},
+        base_url = "http://testserver/",
     )
 
 
 @pytest.fixture
 def loaded_local_model(monkeypatch):
     inference_module = SimpleNamespace(
-        get_llama_cpp_backend=lambda: SimpleNamespace(is_loaded=True),
+        get_llama_cpp_backend = lambda: SimpleNamespace(is_loaded = True),
     )
     monkeypatch.setitem(sys.modules, "routes.inference", inference_module)
 
@@ -130,7 +130,7 @@ def test_ensure_default_admin_does_not_recreate_bootstrap_for_existing_admin():
 
 def test_ensure_default_admin_loads_existing_bootstrap_after_restart(monkeypatch):
     created = storage.ensure_default_admin()
-    bootstrap_pw = storage._BOOTSTRAP_PW_PATH.read_text(encoding="utf-8").strip()
+    bootstrap_pw = storage._BOOTSTRAP_PW_PATH.read_text(encoding = "utf-8").strip()
 
     monkeypatch.setattr(storage, "_bootstrap_password", None)
     created_again = storage.ensure_default_admin()
@@ -235,7 +235,7 @@ def test_normalising_never_recreates_a_cleared_bootstrap_file(monkeypatch):
 
     def clear_then_open(path, flags, *args, **kwargs):
         if str(path) == str(storage._BOOTSTRAP_PW_PATH):
-            storage._BOOTSTRAP_PW_PATH.unlink(missing_ok=True)
+            storage._BOOTSTRAP_PW_PATH.unlink(missing_ok = True)
         return real_open(path, flags, *args, **kwargs)
 
     monkeypatch.setattr(storage.os, "open", clear_then_open)
@@ -281,7 +281,7 @@ def test_normalising_opens_the_file_in_binary_mode(monkeypatch):
     # Without O_BINARY, Windows text mode turns the written LF back into CRLF.
     seed_user()
     storage._BOOTSTRAP_PW_PATH.write_bytes(b"legacy-bootstrap-secret")
-    monkeypatch.setattr(storage.os, "O_BINARY", 0x8000, raising=False)
+    monkeypatch.setattr(storage.os, "O_BINARY", 0x8000, raising = False)
     seen = []
     real_open = storage.os.open
 
@@ -308,7 +308,7 @@ def test_clearing_by_truncation_mid_normalisation_is_not_undone(monkeypatch):
     def truncate_then_open(path, flags, *args, **kwargs):
         fd = real_open(path, flags, *args, **kwargs)
         if str(path) == str(storage._BOOTSTRAP_PW_PATH):
-            storage._BOOTSTRAP_PW_PATH.write_text("", encoding="utf-8")
+            storage._BOOTSTRAP_PW_PATH.write_text("", encoding = "utf-8")
         return fd
 
     monkeypatch.setattr(storage.os, "open", truncate_then_open)
@@ -325,7 +325,7 @@ def test_normalising_works_without_fchmod(monkeypatch):
     # os.fchmod only reached Windows in 3.13; its absence must not raise.
     seed_user()
     storage._BOOTSTRAP_PW_PATH.write_bytes(b"legacy-bootstrap-secret")
-    monkeypatch.delattr(storage.os, "fchmod", raising=False)
+    monkeypatch.delattr(storage.os, "fchmod", raising = False)
 
     storage.ensure_default_admin()
 
@@ -355,22 +355,22 @@ def test_persisting_the_bootstrap_password_is_atomic(monkeypatch, tmp_path):
 
 def test_ensure_default_admin_does_not_generate_for_empty_existing_bootstrap():
     seed_user()
-    storage._BOOTSTRAP_PW_PATH.write_text(" \n", encoding="utf-8")
+    storage._BOOTSTRAP_PW_PATH.write_text(" \n", encoding = "utf-8")
 
     created = storage.ensure_default_admin()
 
     assert created is False
-    assert storage._BOOTSTRAP_PW_PATH.read_text(encoding="utf-8") == " \n"
+    assert storage._BOOTSTRAP_PW_PATH.read_text(encoding = "utf-8") == " \n"
     assert storage.get_bootstrap_password() is None
 
 
 def test_web_login_token_has_no_desktop_marker_and_keeps_password_gate():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     client = auth_client()
 
     response = client.post(
         "/api/auth/login",
-        json={
+        json = {
             "username": storage.DEFAULT_ADMIN_USERNAME,
             "password": "human-password-123",
         },
@@ -382,25 +382,25 @@ def test_web_login_token_has_no_desktop_marker_and_keeps_password_gate():
     payload = jwt.decode(
         body["access_token"],
         storage.get_jwt_secret(storage.DEFAULT_ADMIN_USERNAME),
-        algorithms=["HS256"],
+        algorithms = ["HS256"],
     )
     assert payload["sub"] == storage.DEFAULT_ADMIN_USERNAME
     assert "desktop" not in payload
 
     gated = client.post(
         "/api/auth/api-keys",
-        headers={"Authorization": f"Bearer {body['access_token']}"},
-        json={"name": "web"},
+        headers = {"Authorization": f"Bearer {body['access_token']}"},
+        json = {"name": "web"},
     )
     assert gated.status_code == 403
 
 
 def test_desktop_login_mints_admin_token_without_clearing_web_password_change():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     raw = storage.create_desktop_secret()
     client = auth_client()
 
-    response = client.post("/api/auth/desktop-login", json={"secret": raw})
+    response = client.post("/api/auth/desktop-login", json = {"secret": raw})
 
     assert response.status_code == 200
     body = response.json()
@@ -413,21 +413,21 @@ def test_desktop_login_mints_admin_token_without_clearing_web_password_change():
     payload = jwt.decode(
         body["access_token"],
         storage.get_jwt_secret(storage.DEFAULT_ADMIN_USERNAME),
-        algorithms=["HS256"],
+        algorithms = ["HS256"],
     )
     assert payload["sub"] == storage.DEFAULT_ADMIN_USERNAME
     assert payload["desktop"] is True
 
 
 def test_desktop_refresh_preserves_desktop_marker():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     raw = storage.create_desktop_secret()
     client = auth_client()
-    login_body = client.post("/api/auth/desktop-login", json={"secret": raw}).json()
+    login_body = client.post("/api/auth/desktop-login", json = {"secret": raw}).json()
 
     response = client.post(
         "/api/auth/refresh",
-        json={"refresh_token": login_body["refresh_token"]},
+        json = {"refresh_token": login_body["refresh_token"]},
     )
 
     assert response.status_code == 200
@@ -436,7 +436,7 @@ def test_desktop_refresh_preserves_desktop_marker():
     payload = jwt.decode(
         body["access_token"],
         storage.get_jwt_secret(storage.DEFAULT_ADMIN_USERNAME),
-        algorithms=["HS256"],
+        algorithms = ["HS256"],
     )
     assert payload["sub"] == storage.DEFAULT_ADMIN_USERNAME
     assert payload["desktop"] is True
@@ -448,7 +448,7 @@ def test_consume_refresh_token_second_call_returns_none():
     from datetime import datetime, timedelta, timezone
 
     raw = secrets.token_urlsafe(48)
-    expires = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    expires = (datetime.now(timezone.utc) + timedelta(days = 30)).isoformat()
     storage.save_refresh_token(raw, storage.DEFAULT_ADMIN_USERNAME, expires)
 
     first = storage.consume_refresh_token(raw)
@@ -464,7 +464,7 @@ def test_consume_refresh_token_concurrent_only_one_succeeds(tmp_path, monkeypatc
     from datetime import datetime, timedelta, timezone
 
     raw = secrets.token_urlsafe(48)
-    expires = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    expires = (datetime.now(timezone.utc) + timedelta(days = 30)).isoformat()
     storage.save_refresh_token(raw, storage.DEFAULT_ADMIN_USERNAME, expires)
 
     workers = 64
@@ -476,7 +476,7 @@ def test_consume_refresh_token_concurrent_only_one_succeeds(tmp_path, monkeypatc
             # "database is locked" under contention; treat as losing the race.
             return None
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
+    with ThreadPoolExecutor(max_workers = workers) as pool:
         results = list(pool.map(attempt, range(workers)))
 
     successes = [r for r in results if r is not None]
@@ -489,21 +489,21 @@ def test_consume_refresh_token_expired_returns_none():
     from datetime import datetime, timedelta, timezone
 
     raw = secrets.token_urlsafe(48)
-    expires = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    expires = (datetime.now(timezone.utc) - timedelta(hours = 1)).isoformat()
     storage.save_refresh_token(raw, storage.DEFAULT_ADMIN_USERNAME, expires)
     assert storage.consume_refresh_token(raw) is None
 
 
 def test_desktop_session_uses_real_admin_identity_for_api_keys():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     raw = storage.create_desktop_secret()
     client = auth_client()
-    token = client.post("/api/auth/desktop-login", json={"secret": raw}).json()["access_token"]
+    token = client.post("/api/auth/desktop-login", json = {"secret": raw}).json()["access_token"]
 
     response = client.post(
         "/api/auth/api-keys",
-        headers={"Authorization": f"Bearer {token}"},
-        json={"name": "desktop"},
+        headers = {"Authorization": f"Bearer {token}"},
+        json = {"name": "desktop"},
     )
 
     assert response.status_code == 200
@@ -513,25 +513,25 @@ def test_desktop_session_uses_real_admin_identity_for_api_keys():
 
 def web_bearer(client) -> str:
     payload = {"username": storage.DEFAULT_ADMIN_USERNAME, "password": "human-password-123"}
-    return client.post("/api/auth/login", json=payload).json()["access_token"]
+    return client.post("/api/auth/login", json = payload).json()["access_token"]
 
 
 def is_desktop_token(token: str) -> bool:
     payload = jwt.decode(
-        token, storage.get_jwt_secret(storage.DEFAULT_ADMIN_USERNAME), algorithms=["HS256"]
+        token, storage.get_jwt_secret(storage.DEFAULT_ADMIN_USERNAME), algorithms = ["HS256"]
     )
     return payload.get("desktop") is True
 
 
 def test_desktop_sets_the_remote_password_without_the_seeded_one():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     raw = storage.create_desktop_secret()
     client = auth_client()
-    token = client.post("/api/auth/desktop-login", json={"secret": raw}).json()["access_token"]
+    token = client.post("/api/auth/desktop-login", json = {"secret": raw}).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     body = {"new_password": "remote-password-123"}
 
-    response = client.post("/api/auth/desktop-initial-password", headers=headers, json=body)
+    response = client.post("/api/auth/desktop-initial-password", headers = headers, json = body)
 
     assert response.status_code == 200
     assert response.json()["must_change_password"] is False
@@ -541,28 +541,28 @@ def test_desktop_sets_the_remote_password_without_the_seeded_one():
     assert storage.validate_desktop_secret(raw) == storage.DEFAULT_ADMIN_USERNAME
     remote_login = client.post(
         "/api/auth/login",
-        json={"username": storage.DEFAULT_ADMIN_USERNAME, "password": "remote-password-123"},
+        json = {"username": storage.DEFAULT_ADMIN_USERNAME, "password": "remote-password-123"},
     )
     assert remote_login.status_code == 200
     # The seeded credential is gone, so change-password owns every later change.
     repeat = client.post(
         "/api/auth/desktop-initial-password",
-        headers={"Authorization": f"Bearer {response.json()['access_token']}"},
-        json=body,
+        headers = {"Authorization": f"Bearer {response.json()['access_token']}"},
+        json = body,
     )
     assert repeat.status_code == 409
 
 
 def test_remote_password_refuses_credentials_that_are_not_the_desktop_app():
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     client = auth_client()
     api_key, _row = storage.create_api_key(storage.DEFAULT_ADMIN_USERNAME, "cli")
 
     for bearer in (web_bearer(client), api_key):
         response = client.post(
             "/api/auth/desktop-initial-password",
-            headers={"Authorization": f"Bearer {bearer}"},
-            json={"new_password": "remote-password-123"},
+            headers = {"Authorization": f"Bearer {bearer}"},
+            json = {"new_password": "remote-password-123"},
         )
         # Distinguishable from the pre-existing "Password change required" refusal.
         assert response.status_code == 403
@@ -572,11 +572,11 @@ def test_remote_password_refuses_credentials_that_are_not_the_desktop_app():
 
 @pytest.mark.parametrize("desktop", [True, False])
 def test_change_password_revokes_the_desktop_secret_only_for_browsers(desktop):
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     raw = storage.create_desktop_secret()
     client = auth_client()
     bearer = (
-        client.post("/api/auth/desktop-login", json={"secret": raw}).json()["access_token"]
+        client.post("/api/auth/desktop-login", json = {"secret": raw}).json()["access_token"]
         if desktop
         else web_bearer(client)
     )
@@ -589,8 +589,8 @@ def test_change_password_revokes_the_desktop_secret_only_for_browsers(desktop):
 
     response = client.post(
         "/api/auth/change-password",
-        headers={"Authorization": f"Bearer {bearer}"},
-        json={"current_password": "human-password-123", "new_password": "remote-password-123"},
+        headers = {"Authorization": f"Bearer {bearer}"},
+        json = {"current_password": "human-password-123", "new_password": "remote-password-123"},
     )
 
     assert response.status_code == 200
@@ -607,11 +607,11 @@ def test_local_recipe_token_authenticates_as_admin_for_desktop_user(loaded_local
     # forwarded JWT) that validates as admin whether the session was desktop or web.
     from auth.authentication import create_access_token, get_current_subject
 
-    seed_user(must_change_password=True)
+    seed_user(must_change_password = True)
     jobs_route = data_recipe_jobs_module()
     incoming_token = create_access_token(
-        subject=storage.DEFAULT_ADMIN_USERNAME,
-        desktop=True,
+        subject = storage.DEFAULT_ADMIN_USERNAME,
+        desktop = True,
     )
     recipe = local_recipe()
 
@@ -620,8 +620,8 @@ def test_local_recipe_token_authenticates_as_admin_for_desktop_user(loaded_local
     local_token = recipe["model_providers"][0]["api_key"]
     assert local_token.startswith(storage.API_KEY_PREFIX)
     credentials = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials=local_token,
+        scheme = "Bearer",
+        credentials = local_token,
     )
     assert asyncio.run(get_current_subject(credentials)) == storage.DEFAULT_ADMIN_USERNAME
 
@@ -630,9 +630,9 @@ def test_local_recipe_token_authenticates_as_admin_for_web_user(loaded_local_mod
     # Mirror of the desktop variant: API-key issuance is identical for web/desktop tokens.
     from auth.authentication import create_access_token, get_current_subject
 
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     jobs_route = data_recipe_jobs_module()
-    incoming_token = create_access_token(subject=storage.DEFAULT_ADMIN_USERNAME)
+    incoming_token = create_access_token(subject = storage.DEFAULT_ADMIN_USERNAME)
     recipe = local_recipe()
 
     jobs_route._inject_local_providers(recipe, local_recipe_request(incoming_token))
@@ -640,8 +640,8 @@ def test_local_recipe_token_authenticates_as_admin_for_web_user(loaded_local_mod
     local_token = recipe["model_providers"][0]["api_key"]
     assert local_token.startswith(storage.API_KEY_PREFIX)
     credentials = HTTPAuthorizationCredentials(
-        scheme="Bearer",
-        credentials=local_token,
+        scheme = "Bearer",
+        credentials = local_token,
     )
     assert asyncio.run(get_current_subject(credentials)) == storage.DEFAULT_ADMIN_USERNAME
 
@@ -662,19 +662,19 @@ def test_rotated_credential_job_start_is_401_not_500(loaded_local_model):
         raise storage.CredentialRotated("revoked")
 
     jobs_route._inject_local_providers = _boom
-    payload = SimpleNamespace(recipe=local_recipe(), run={})
+    payload = SimpleNamespace(recipe = local_recipe(), run = {})
     with pytest.raises(HTTPException) as excinfo:
         jobs_route.create_job(payload, local_recipe_request("t"), ("unsloth", stale_gen))
     assert excinfo.value.status_code == 401
 
 
 def test_desktop_login_rejects_invalid_secret():
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     client = auth_client()
 
     response = client.post(
         "/api/auth/desktop-login",
-        json={"secret": "desktop-invalid"},
+        json = {"secret": "desktop-invalid"},
     )
 
     assert response.status_code == 401
@@ -794,7 +794,7 @@ def _routers_main_imports() -> set[str]:
     from pathlib import Path
 
     backend = Path(__file__).resolve().parent.parent
-    main_src = (backend / "main.py").read_text(encoding="utf-8")
+    main_src = (backend / "main.py").read_text(encoding = "utf-8")
     block = re.search(r"from routes import \(([^)]*)\)", main_src, re.S)
     assert block is not None, "main.py no longer has a parenthesised routes import; re-derive this"
     names = set(re.findall(r"(\w+_router)", block.group(1)))
@@ -869,7 +869,7 @@ def test_health_response_reports_desktop_capability_fields(monkeypatch):
     token = create_access_token(storage.DEFAULT_ADMIN_USERNAME)
 
     app = FastAPI()
-    app.add_api_route("/api/health", backend_main.health_check, methods=["GET"])
+    app.add_api_route("/api/health", backend_main.health_check, methods = ["GET"])
     client = TestClient(app)
 
     unauthenticated = client.get("/api/health")
@@ -880,7 +880,7 @@ def test_health_response_reports_desktop_capability_fields(monkeypatch):
 
     response = client.get(
         "/api/health",
-        headers={"Authorization": f"Bearer {token}"},
+        headers = {"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
     body = response.json()
@@ -927,10 +927,10 @@ if result.exit_code != 0:
 """
     result = subprocess.run(
         [sys.executable, "-c", code, str(tmp_path)],
-        cwd=Path(__file__).resolve().parents[3],
-        env={**os.environ, "PYTHONPATH": "."},
-        text=True,
-        capture_output=True,
+        cwd = Path(__file__).resolve().parents[3],
+        env = {**os.environ, "PYTHONPATH": "."},
+        text = True,
+        capture_output = True,
     )
     assert result.returncode == 0, result.stderr + result.stdout
     # Strip like the src-tauri readers do.
@@ -1059,7 +1059,7 @@ def test_desktop_auth_provision_has_bounded_timeout():
     rs_path = (
         Path(__file__).resolve().parents[3] / "studio" / "src-tauri" / "src" / "desktop_auth.rs"
     )
-    src = rs_path.read_text(encoding="utf-8")
+    src = rs_path.read_text(encoding = "utf-8")
     start = src.index("async fn provision_desktop_auth(")
     depth = 0
     body_start = src.index("{", start)
@@ -1095,7 +1095,7 @@ def test_the_router_stub_covers_every_router_main_imports():
     backend = Path(__file__).resolve().parent.parent
     imported = _routers_main_imports()
 
-    init_src = (backend / "routes" / "__init__.py").read_text(encoding="utf-8")
+    init_src = (backend / "routes" / "__init__.py").read_text(encoding = "utf-8")
     all_block = re.search(r"__all__\s*=\s*\[([^\]]*)\]", init_src, re.S)
     assert all_block is not None, "routes/__init__.py no longer has a literal __all__"
     exported = set(re.findall(r'"(\w+_router)"', all_block.group(1)))
@@ -1110,7 +1110,7 @@ def test_the_router_stub_covers_every_router_main_imports():
     # Same drift for submodule imports, which need a sys.modules entry and are still hand-listed.
     import inspect
 
-    main_src = (backend / "main.py").read_text(encoding="utf-8")
+    main_src = (backend / "main.py").read_text(encoding = "utf-8")
     own_src = inspect.getsource(test_health_response_reports_desktop_capability_fields)
     submodules = set(re.findall(r"^from routes\.(\w+) import", main_src, re.M))
     assert submodules, "main.py imports no routes submodule; re-derive this"
@@ -1143,44 +1143,44 @@ _SHIPPED_PROBE_SECRETS = (
 )
 
 
-def well_formed_wrong_secret(body="A"):
+def well_formed_wrong_secret(body = "A"):
     """A candidate shaped exactly like a real secret, and not one. What a KDF flood would send."""
     return storage.DESKTOP_SECRET_PREFIX + body * 64
 
 
 def test_desktop_login_throttles_unauthenticated_attempts():
     """The route takes no credential and pays the KDF before it can reject the secret."""
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     secret = well_formed_wrong_secret()
     codes = [
-        client.post("/api/auth/desktop-login", json={"secret": secret}).status_code
+        client.post("/api/auth/desktop-login", json = {"secret": secret}).status_code
         for _ in range(auth_route._LOGIN_MAX_FAILS + 3)
     ]
 
     assert codes[0] == 401
     assert 429 in codes
-    blocked = client.post("/api/auth/desktop-login", json={"secret": secret})
+    blocked = client.post("/api/auth/desktop-login", json = {"secret": secret})
     assert blocked.status_code == 429
     assert blocked.headers["Retry-After"]
 
 
 def test_desktop_login_still_admits_the_real_shell_after_a_miss():
     """A stale secret from a restarted shell must not lock the retry out."""
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     stale = storage.create_desktop_secret()
     raw = storage.create_desktop_secret()  # rotation makes the first one a real, well formed miss
-    assert client.post("/api/auth/desktop-login", json={"secret": stale}).status_code == 401
-    admitted = client.post("/api/auth/desktop-login", json={"secret": raw})
+    assert client.post("/api/auth/desktop-login", json = {"secret": stale}).status_code == 401
+    admitted = client.post("/api/auth/desktop-login", json = {"secret": raw})
     assert admitted.status_code == 200
     assert admitted.json()["access_token"]
     # The success clears the bucket, so the shell is not throttled by its own earlier miss.
-    assert client.post("/api/auth/desktop-login", json={"secret": raw}).status_code == 200
+    assert client.post("/api/auth/desktop-login", json = {"secret": raw}).status_code == 200
 
 
 @pytest.mark.parametrize("probe", _SHIPPED_PROBE_SECRETS)
@@ -1192,12 +1192,12 @@ def test_the_shipped_desktop_probes_never_consume_the_login_budget(probe):
     them means the next probe, and the valid secret exchange that follows it, both get a 429, which
     the shell reads as its own healthy backend being unmanageable.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     codes = [
-        client.post("/api/auth/desktop-login", json={"secret": probe}).status_code
+        client.post("/api/auth/desktop-login", json = {"secret": probe}).status_code
         for _ in range(auth_route._LOGIN_MAX_FAILS * 3)
     ]
 
@@ -1205,7 +1205,7 @@ def test_the_shipped_desktop_probes_never_consume_the_login_budget(probe):
     assert not auth_route._LOGIN_BUCKETS
     assert not auth_route._LOGIN_IP_BUCKETS
     raw = storage.create_desktop_secret()
-    assert client.post("/api/auth/desktop-login", json={"secret": raw}).status_code == 200
+    assert client.post("/api/auth/desktop-login", json = {"secret": raw}).status_code == 200
 
 
 def test_the_shipped_desktop_probe_is_answered_during_a_real_lockout():
@@ -1215,19 +1215,19 @@ def test_the_shipped_desktop_probe_is_answered_during_a_real_lockout():
     ``desktop_login_not_found`` or ``desktop_login_probe_failed``. So the shape check has to come
     before the bucket is read, not just before it is written.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
     guess = well_formed_wrong_secret()
 
     for _ in range(auth_route._LOGIN_MAX_FAILS):
-        client.post("/api/auth/desktop-login", json={"secret": guess})
-    assert client.post("/api/auth/desktop-login", json={"secret": guess}).status_code == 429
+        client.post("/api/auth/desktop-login", json = {"secret": guess})
+    assert client.post("/api/auth/desktop-login", json = {"secret": guess}).status_code == 429
 
     for probe in _SHIPPED_PROBE_SECRETS:
-        assert client.post("/api/auth/desktop-login", json={"secret": probe}).status_code == 401
+        assert client.post("/api/auth/desktop-login", json = {"secret": probe}).status_code == 401
     # And the probes did not clear the lockout they were answered through.
-    assert client.post("/api/auth/desktop-login", json={"secret": guess}).status_code == 429
+    assert client.post("/api/auth/desktop-login", json = {"secret": guess}).status_code == 429
 
 
 def test_a_malformed_desktop_secret_never_reaches_the_kdf(monkeypatch):
@@ -1236,7 +1236,7 @@ def test_a_malformed_desktop_secret_never_reaches_the_kdf(monkeypatch):
     This is what makes the probes free rather than merely uncounted: the route is unauthenticated,
     so anything it spends before it can reject an attacker-chosen string, an attacker can spend.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
@@ -1257,14 +1257,14 @@ def test_a_malformed_desktop_secret_never_reaches_the_kdf(monkeypatch):
         storage.DESKTOP_SECRET_PREFIX + "é" * 64,
     ]
     for secret in malformed:
-        response = client.post("/api/auth/desktop-login", json={"secret": secret})
+        response = client.post("/api/auth/desktop-login", json = {"secret": secret})
         assert response.status_code == 401, secret
         assert response.json()["detail"] == "Desktop authentication failed", secret
 
 
 def test_a_well_formed_guess_still_pays_the_kdf_and_still_throttles(monkeypatch):
     """The DoS fix is preserved: a shaped guess costs a KDF, and stops costing one once blocked."""
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     storage.create_desktop_secret()
     auth_route = auth_route_module()
     client = auth_client(auth_route)
@@ -1280,7 +1280,7 @@ def test_a_well_formed_guess_still_pays_the_kdf_and_still_throttles(monkeypatch)
 
     guess = well_formed_wrong_secret()
     codes = [
-        client.post("/api/auth/desktop-login", json={"secret": guess}).status_code
+        client.post("/api/auth/desktop-login", json = {"secret": guess}).status_code
         for _ in range(auth_route._LOGIN_MAX_FAILS + 3)
     ]
 
@@ -1298,16 +1298,16 @@ def test_a_minute_of_watchdog_ticks_does_not_lock_the_shell_out():
     bucket. The preflight that follows is the one that sends the real secret, and it is the one
     that has to still work.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     raw = storage.create_desktop_secret()
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     for _ in range(8):  # two windows' worth of watchdog ticks, no success in between
         probe = _SHIPPED_PROBE_SECRETS[1]
-        assert client.post("/api/auth/desktop-login", json={"secret": probe}).status_code == 401
+        assert client.post("/api/auth/desktop-login", json = {"secret": probe}).status_code == 401
 
-    admitted = client.post("/api/auth/desktop-login", json={"secret": raw})
+    admitted = client.post("/api/auth/desktop-login", json = {"secret": raw})
     assert admitted.status_code == 200, "the shell's own valid secret was throttled out"
     assert admitted.json()["access_token"]
 
@@ -1322,22 +1322,22 @@ def test_desktop_login_failures_do_not_lock_everyone_out_of_login():
     a tunnel UNSLOTH_STUDIO_TRUST_FORWARDED is off by default, so every visitor arrives as the
     same cloudflared peer and one caller locks out the whole installation.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
     good = {"username": storage.DEFAULT_ADMIN_USERNAME, "password": "human-password-123"}
 
-    assert client.post("/api/auth/login", json=good).status_code == 200
+    assert client.post("/api/auth/login", json = good).status_code == 200
 
     guess = well_formed_wrong_secret()
     for _ in range(auth_route._LOGIN_MAX_FAILS + 1):
-        client.post("/api/auth/desktop-login", json={"secret": guess})
+        client.post("/api/auth/desktop-login", json = {"secret": guess})
 
     assert (
-        client.post("/api/auth/login", json=good).status_code == 200
+        client.post("/api/auth/login", json = good).status_code == 200
     ), "unauthenticated desktop-login attempts rejected a correct password"
     # Its own throttle still works, on its own slot.
-    assert client.post("/api/auth/desktop-login", json={"secret": guess}).status_code == 429
+    assert client.post("/api/auth/desktop-login", json = {"secret": guess}).status_code == 429
     assert auth_route._desktop_login_key(None)[1] != auth_route._unknown_user_key(None)[1]
 
 
@@ -1351,22 +1351,22 @@ def test_a_password_spray_does_not_lock_the_desktop_shell_out():
     being unmanageable. On main this route consulted no bucket at all, so the coupling arrived
     with the throttle.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     raw = storage.create_desktop_secret()
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
-    assert client.post("/api/auth/desktop-login", json={"secret": raw}).status_code == 200
+    assert client.post("/api/auth/desktop-login", json = {"secret": raw}).status_code == 200
 
     for i in range(auth_route._LOGIN_IP_MAX_FAILS):
-        client.post("/api/auth/login", json={"username": f"sprayed{i}", "password": "wrong-pw-1"})
+        client.post("/api/auth/login", json = {"username": f"sprayed{i}", "password": "wrong-pw-1"})
 
-    admitted = client.post("/api/auth/desktop-login", json={"secret": raw})
+    admitted = client.post("/api/auth/desktop-login", json = {"secret": raw})
     assert admitted.status_code == 200, "a password spray locked the shell out of its own backend"
     assert admitted.json()["access_token"]
     # /login is still throttled by its own aggregate, which is the point of that aggregate.
     blocked = client.post(
-        "/api/auth/login", json={"username": "sprayed0", "password": "wrong-pw-1"}
+        "/api/auth/login", json = {"username": "sprayed0", "password": "wrong-pw-1"}
     )
     assert blocked.status_code == 429
 
@@ -1379,18 +1379,18 @@ def test_a_desktop_exchange_does_not_reset_the_shared_password_throttle():
     secret a fresh aggregate budget for every account behind the same NAT, and in multi-user mode it
     does so while returning no session at all.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     raw = storage.create_desktop_secret()
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     sprayed = auth_route._LOGIN_IP_MAX_FAILS - 1
     for i in range(sprayed):
-        client.post("/api/auth/login", json={"username": f"sprayed{i}", "password": "wrong"})
+        client.post("/api/auth/login", json = {"username": f"sprayed{i}", "password": "wrong"})
     ip = next(iter(auth_route._LOGIN_IP_BUCKETS))
     assert len(auth_route._LOGIN_IP_BUCKETS[ip]) == sprayed
 
-    assert client.post("/api/auth/desktop-login", json={"secret": raw}).status_code == 200
+    assert client.post("/api/auth/desktop-login", json = {"secret": raw}).status_code == 200
 
     assert (
         len(auth_route._LOGIN_IP_BUCKETS.get(ip, [])) == sprayed
@@ -1409,22 +1409,22 @@ def test_a_desktop_success_clears_its_own_ip_aggregate():
     password-spray budget, and leaving it would let repeated rotate-then-reconnect cycles reach
     _LOGIN_IP_MAX_FAILS and 429 a valid secret.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     auth_route = auth_route_module()
     client = auth_client(auth_route)
 
     for _ in range(auth_route._LOGIN_IP_MAX_FAILS):
         stale = storage.create_desktop_secret()
         raw = storage.create_desktop_secret()  # rotation makes `stale` a real well formed miss
-        assert client.post("/api/auth/desktop-login", json={"secret": stale}).status_code == 401
-        assert client.post("/api/auth/desktop-login", json={"secret": raw}).status_code == 200
+        assert client.post("/api/auth/desktop-login", json = {"secret": stale}).status_code == 401
+        assert client.post("/api/auth/desktop-login", json = {"secret": raw}).status_code == 200
 
     assert auth_route._desktop_login_key(None)[0] not in auth_route._LOGIN_IP_BUCKETS
 
 
 def test_multi_user_desktop_exchange_grants_no_session_and_clears_no_aggregate(monkeypatch):
     """The sharpest case: multi-user returns login_required, so nothing was authenticated at all."""
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     raw = storage.create_desktop_secret()
     auth_route = auth_route_module()
     monkeypatch.setattr(auth_route.policy, "installation_is_multi_user", lambda: True)
@@ -1435,10 +1435,10 @@ def test_multi_user_desktop_exchange_grants_no_session_and_clears_no_aggregate(m
 
     sprayed = auth_route._LOGIN_IP_MAX_FAILS - 1
     for i in range(sprayed):
-        client.post("/api/auth/login", json={"username": f"sprayed{i}", "password": "wrong"})
+        client.post("/api/auth/login", json = {"username": f"sprayed{i}", "password": "wrong"})
     ip = next(iter(auth_route._LOGIN_IP_BUCKETS))
 
-    response = client.post("/api/auth/desktop-login", json={"secret": raw})
+    response = client.post("/api/auth/desktop-login", json = {"secret": raw})
     assert response.json() == {"login_required": True, "login_mode": "multi"}
     assert len(auth_route._LOGIN_IP_BUCKETS.get(ip, [])) == sprayed
 
@@ -1448,7 +1448,7 @@ def test_storage_rejects_a_malformed_desktop_secret_before_the_kdf(monkeypatch):
 
     main.py's shell health probe validates the same secret on a separate path.
     """
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     storage.create_desktop_secret()
 
     def no_kdf(raw_secret):
@@ -1463,7 +1463,7 @@ def test_storage_rejects_a_malformed_desktop_secret_before_the_kdf(monkeypatch):
 
 def test_every_minted_desktop_secret_is_well_formed():
     """The gate is keyed to the one shape the minters produce, so it has to track them."""
-    seed_user(must_change_password=False)
+    seed_user(must_change_password = False)
     for _ in range(16):
         assert storage.desktop_secret_is_well_formed(storage.create_desktop_secret())
     for probe in _SHIPPED_PROBE_SECRETS:

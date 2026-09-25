@@ -44,12 +44,12 @@ def is_deepseek_harness_executable(executable: str, *, allow_execution: bool = T
     try:
         result = subprocess.run(
             [executable, "--help"],
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=5,
+            check = False,
+            capture_output = True,
+            text = True,
+            encoding = "utf-8",
+            errors = "replace",
+            timeout = 5,
         )
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -67,7 +67,7 @@ def deepseek_harness_executables_on_path(path: Optional[str] = None) -> list[str
     seen = set()
     for directory in path.split(os.pathsep):
         try:
-            executable = shutil.which("dsh", path=directory)
+            executable = shutil.which("dsh", path = directory)
         except OSError:
             continue
         if executable is None:
@@ -92,10 +92,10 @@ def _is_on_path(agent: str) -> bool:
             # arbitrary same-named program. Official npm/pnpm launchers contain one of
             # the package or product markers above; explicit launches may additionally
             # use the bounded --help probe for custom wrappers.
-            if is_deepseek_harness_executable(executable, allow_execution=False):
+            if is_deepseek_harness_executable(executable, allow_execution = False):
                 return True
             return any(
-                is_deepseek_harness_executable(candidate, allow_execution=False)
+                is_deepseek_harness_executable(candidate, allow_execution = False)
                 for candidate in deepseek_harness_executables_on_path()
                 if os.path.normcase(os.path.abspath(candidate))
                 != os.path.normcase(os.path.abspath(executable))

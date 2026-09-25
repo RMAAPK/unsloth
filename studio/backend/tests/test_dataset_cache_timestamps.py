@@ -30,7 +30,7 @@ def _cached_repo(**overrides):
             "repo_path": "/cache/datasets--Org--Data",
             "size_on_disk": 100,
             "last_modified": 1_700_000_000.0,
-            "revisions": [SimpleNamespace(files=[], commit_hash="abc")],
+            "revisions": [SimpleNamespace(files = [], commit_hash = "abc")],
             **overrides,
         }
     )
@@ -40,7 +40,7 @@ def _stub_hf_scan(monkeypatch, repos):
     monkeypatch.setattr(
         cache_inventory,
         "_collect_hf_cache_scans",
-        lambda: ([SimpleNamespace(repos=repos)], {"/cache"}),
+        lambda: ([SimpleNamespace(repos = repos)], {"/cache"}),
     )
     monkeypatch.setattr(
         cache_inventory.hf_cache_scan,
@@ -60,13 +60,13 @@ def _stub_hf_scan(monkeypatch, repos):
 def test_schema_carries_the_timestamp():
     assert "last_modified" in CachedDatasetItem.__annotations__
     # Unset rather than 0, or an unreadable cache sorts as 1970.
-    assert CachedDatasetItem(repo_id="Org/Data").last_modified is None
+    assert CachedDatasetItem(repo_id = "Org/Data").last_modified is None
 
 
 def test_hf_scan_reports_the_repo_timestamp_in_seconds(monkeypatch):
     _stub_hf_scan(
         monkeypatch,
-        [_cached_repo(last_modified=1_700_000_000.5)],
+        [_cached_repo(last_modified = 1_700_000_000.5)],
     )
 
     rows = cache_inventory._scan_hf_dataset_caches()
@@ -83,11 +83,11 @@ def test_the_key_is_omitted_when_no_mtime_is_readable(monkeypatch):
         monkeypatch,
         [
             SimpleNamespace(
-                repo_id="Org/Data",
-                repo_type="dataset",
-                repo_path="/definitely/not/on/disk/datasets--Org--Data",
-                size_on_disk=100,
-                revisions=[SimpleNamespace(files=[], commit_hash="abc")],
+                repo_id = "Org/Data",
+                repo_type = "dataset",
+                repo_path = "/definitely/not/on/disk/datasets--Org--Data",
+                size_on_disk = 100,
+                revisions = [SimpleNamespace(files = [], commit_hash = "abc")],
             )
         ],
     )
@@ -101,7 +101,7 @@ def test_the_key_is_omitted_when_no_mtime_is_readable(monkeypatch):
 def test_a_non_positive_mtime_is_dropped_rather_than_reported_as_1970(monkeypatch):
     _stub_hf_scan(
         monkeypatch,
-        [_cached_repo(repo_path="/definitely/not/on/disk/datasets--Org--Data", last_modified=0.0)],
+        [_cached_repo(repo_path = "/definitely/not/on/disk/datasets--Org--Data", last_modified = 0.0)],
     )
 
     assert "last_modified" not in cache_inventory._scan_hf_dataset_caches()[0]
@@ -109,7 +109,7 @@ def test_a_non_positive_mtime_is_dropped_rather_than_reported_as_1970(monkeypatc
 
 def test_falls_back_to_stat_when_the_library_reports_nothing(monkeypatch, tmp_path):
     cache_dir = tmp_path / "datasets--Org--Data"
-    (cache_dir / "snapshots").mkdir(parents=True)
+    (cache_dir / "snapshots").mkdir(parents = True)
     # Both candidates: the fallback takes the newest, or a freshly created parent
     # directory would dominate.
     os.utime(cache_dir / "snapshots", (1_700_000_000, 1_700_000_000))
@@ -119,18 +119,18 @@ def test_falls_back_to_stat_when_the_library_reports_nothing(monkeypatch, tmp_pa
         monkeypatch,
         [
             SimpleNamespace(
-                repo_id="Org/Data",
-                repo_type="dataset",
-                repo_path=str(cache_dir),
-                size_on_disk=100,
-                revisions=[SimpleNamespace(files=[], commit_hash="abc")],
+                repo_id = "Org/Data",
+                repo_type = "dataset",
+                repo_path = str(cache_dir),
+                size_on_disk = 100,
+                revisions = [SimpleNamespace(files = [], commit_hash = "abc")],
             )
         ],
     )
 
     rows = cache_inventory._scan_hf_dataset_caches()
 
-    assert rows[0]["last_modified"] == pytest.approx(1_700_000_000, abs=2)
+    assert rows[0]["last_modified"] == pytest.approx(1_700_000_000, abs = 2)
 
 
 def test_a_merge_keeps_the_newer_of_the_two_timestamps(monkeypatch):
@@ -186,10 +186,10 @@ def test_a_merge_does_not_lose_a_timestamp_the_other_row_lacks(monkeypatch):
 def test_hf_scan_keeps_a_newer_timestamp_from_a_smaller_duplicate(monkeypatch):
     def repo(size, last_modified):
         return _cached_repo(
-            repo_path=f"/cache-{size}/datasets--Org--Data",
-            size_on_disk=size,
-            last_modified=last_modified,
-            revisions=[SimpleNamespace(files=[], commit_hash=str(size))],
+            repo_path = f"/cache-{size}/datasets--Org--Data",
+            size_on_disk = size,
+            last_modified = last_modified,
+            revisions = [SimpleNamespace(files = [], commit_hash = str(size))],
         )
 
     _stub_hf_scan(
@@ -212,7 +212,7 @@ def test_fallback_scan_keeps_a_newer_timestamp_from_a_smaller_duplicate(monkeypa
     ):
         cache_dir = root / "datasets--Org--Data"
         snapshots = cache_dir / "snapshots"
-        snapshots.mkdir(parents=True)
+        snapshots.mkdir(parents = True)
         os.utime(cache_dir, (modified, modified))
         os.utime(snapshots, (modified, modified))
 
@@ -249,7 +249,7 @@ def test_fallback_scan_uses_the_newest_payload_mtime(monkeypatch, tmp_path):
     cache_dir = root / "datasets--Org--Data"
     snapshots = cache_dir / "snapshots"
     blobs = cache_dir / "blobs"
-    snapshots.mkdir(parents=True)
+    snapshots.mkdir(parents = True)
     blobs.mkdir()
     payload = blobs / "sha256"
     payload.write_bytes(b"payload")
@@ -287,7 +287,7 @@ def test_processed_scan_keeps_a_newer_timestamp_from_a_smaller_duplicate(monkeyp
         (newer_root, 100, 1_900_000_000),
     ):
         cache_dir = root / "Org___Data"
-        cache_dir.mkdir(parents=True)
+        cache_dir.mkdir(parents = True)
         (cache_dir / "data.arrow").write_bytes(b"x" * size)
         os.utime(cache_dir, (modified, modified))
 
@@ -312,7 +312,7 @@ def test_processed_scan_uses_the_newest_nested_artifact_mtime(monkeypatch, tmp_p
     root = tmp_path / "processed"
     cache_dir = root / "Org___Data"
     build_dir = cache_dir / "default" / "1.0.0" / "build"
-    build_dir.mkdir(parents=True)
+    build_dir.mkdir(parents = True)
     artifact = build_dir / "data.arrow"
     artifact.write_bytes(b"payload")
     os.utime(artifact, (1_900_000_000, 1_900_000_000))
@@ -340,20 +340,20 @@ def test_recent_order_is_now_derivable_from_the_payload(monkeypatch):
         monkeypatch,
         [
             _cached_repo(
-                repo_id="Org/Older",
-                repo_path="/cache/datasets--Org--Older",
-                revisions=[SimpleNamespace(files=[], commit_hash="a")],
+                repo_id = "Org/Older",
+                repo_path = "/cache/datasets--Org--Older",
+                revisions = [SimpleNamespace(files = [], commit_hash = "a")],
             ),
             _cached_repo(
-                repo_id="Org/Newer",
-                repo_path="/cache/datasets--Org--Newer",
-                last_modified=1_900_000_000.0,
-                revisions=[SimpleNamespace(files=[], commit_hash="b")],
+                repo_id = "Org/Newer",
+                repo_path = "/cache/datasets--Org--Newer",
+                last_modified = 1_900_000_000.0,
+                revisions = [SimpleNamespace(files = [], commit_hash = "b")],
             ),
         ],
     )
 
     rows = cache_inventory._scan_hf_dataset_caches()
-    by_recent = sorted(rows, key=lambda row: -(row.get("last_modified") or 0.0))
+    by_recent = sorted(rows, key = lambda row: -(row.get("last_modified") or 0.0))
 
     assert [row["repo_id"] for row in by_recent] == ["Org/Newer", "Org/Older"]

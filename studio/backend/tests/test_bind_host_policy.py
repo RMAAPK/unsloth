@@ -72,8 +72,8 @@ def test_a_mapped_wildcard_is_bindable_through_asyncio_after_normalization():
     async def bind():
         server = await asyncio.start_server(
             lambda _reader, _writer: None,
-            host=normalize_wildcard_bind_host("::ffff:0.0.0.0"),
-            port=0,
+            host = normalize_wildcard_bind_host("::ffff:0.0.0.0"),
+            port = 0,
         )
         try:
             return server.sockets[0].family
@@ -88,8 +88,8 @@ def test_a_mapped_specific_bind_is_bindable_through_asyncio_after_normalization(
     async def bind():
         server = await asyncio.start_server(
             lambda _reader, _writer: None,
-            host=normalize_wildcard_bind_host("::ffff:127.0.0.1"),
-            port=0,
+            host = normalize_wildcard_bind_host("::ffff:127.0.0.1"),
+            port = 0,
         )
         try:
             return server.sockets[0].family
@@ -114,8 +114,8 @@ def test_a_resolved_mapped_bind_is_bindable_through_asyncio_after_normalization(
     async def bind():
         server = await asyncio.start_server(
             lambda _reader, _writer: None,
-            host=normalized_host,
-            port=0,
+            host = normalized_host,
+            port = 0,
         )
         try:
             return server.sockets[0].family
@@ -137,7 +137,7 @@ def test_ambiguous_resolved_mapped_binds_are_rejected(monkeypatch):
         ],
     )
 
-    with pytest.raises(ValueError, match="resolves to ambiguous IPv4-mapped addresses"):
+    with pytest.raises(ValueError, match = "resolves to ambiguous IPv4-mapped addresses"):
         normalize_wildcard_bind_host("ambiguous-mapped.test")
 
 
@@ -181,7 +181,7 @@ def test_a_mixed_family_wildcard_hostname_is_rejected(monkeypatch):
         ],
     )
 
-    with pytest.raises(ValueError, match="mixes wildcard and specific address families"):
+    with pytest.raises(ValueError, match = "mixes wildcard and specific address families"):
         normalize_wildcard_bind_host("mixed-wildcard.test")
 
 
@@ -200,9 +200,8 @@ def test_scoped_ipv6_endpoints_count_as_distinct_binds(monkeypatch):
 
 def test_run_server_rejects_an_empty_bind_before_startup():
     from run import run_server
-
-    with pytest.raises(SystemExit, match="--host cannot be empty"):
-        run_server(host="")
+    with pytest.raises(SystemExit, match = "--host cannot be empty"):
+        run_server(host = "")
 
 
 def test_run_server_rejects_a_mixed_family_wildcard_before_startup(monkeypatch):
@@ -215,9 +214,8 @@ def test_run_server_rejects_a_mixed_family_wildcard_before_startup(monkeypatch):
         ],
     )
     from run import run_server
-
-    with pytest.raises(SystemExit, match="mixes wildcard and specific address families"):
-        run_server(host="mixed-wildcard.test")
+    with pytest.raises(SystemExit, match = "mixes wildcard and specific address families"):
+        run_server(host = "mixed-wildcard.test")
 
 
 def test_run_server_rejects_an_ephemeral_multi_address_bind(monkeypatch):
@@ -230,9 +228,8 @@ def test_run_server_rejects_an_ephemeral_multi_address_bind(monkeypatch):
         ],
     )
     from run import run_server
-
-    with pytest.raises(SystemExit, match="--port 0 cannot be used"):
-        run_server(host="dual-wildcard.test", port=0)
+    with pytest.raises(SystemExit, match = "--port 0 cannot be used"):
+        run_server(host = "dual-wildcard.test", port = 0)
 
 
 @pytest.mark.parametrize(
@@ -253,7 +250,6 @@ def test_published_url_host_builds_a_url_authority(host, expected):
 
 def test_run_server_publishes_urls_through_the_shared_formatter():
     import run
-
     assert run._url_host is published_url_host
 
 
@@ -262,20 +258,19 @@ def test_run_server_publishes_urls_through_the_shared_formatter():
 
 def _resolve_recipe_endpoint(request):
     from routes.data_recipe.jobs import _resolve_local_v1_endpoint
-
     return _resolve_local_v1_endpoint(request)
 
 
 def _recipe_request(
     *,
-    state=None,
-    server=None,
-    base_url="http://testserver/",
+    state = None,
+    server = None,
+    base_url = "http://testserver/",
 ):
     return SimpleNamespace(
-        app=SimpleNamespace(state=state if state is not None else SimpleNamespace()),
-        scope={"server": server},
-        base_url=base_url,
+        app = SimpleNamespace(state = state if state is not None else SimpleNamespace()),
+        scope = {"server": server},
+        base_url = base_url,
     )
 
 
@@ -292,13 +287,13 @@ def test_the_data_recipe_endpoint_dials_the_address_the_server_is_bound_to(
     bound_host, expected_authority
 ):
     request = _recipe_request(
-        state=SimpleNamespace(server_port=8889, server_request_host=bound_host),
+        state = SimpleNamespace(server_port = 8889, server_request_host = bound_host),
     )
     assert _resolve_recipe_endpoint(request) == f"http://{expected_authority}/v1"
 
 
 def test_the_data_recipe_endpoint_falls_back_to_the_accepting_address_outside_run_server():
-    request = _recipe_request(server=("192.168.1.239", 8889))
+    request = _recipe_request(server = ("192.168.1.239", 8889))
     assert _resolve_recipe_endpoint(request) == "http://192.168.1.239:8889/v1"
 
 
@@ -310,30 +305,30 @@ def test_the_data_recipe_endpoint_maps_a_wildcard_bind_back_to_loopback(
     wildcard, expected_authority
 ):
     # The IPv6 family carries this: loopback is also the fallback.
-    request = _recipe_request(server=(wildcard, 8889), base_url="http://testserver:1234/")
+    request = _recipe_request(server = (wildcard, 8889), base_url = "http://testserver:1234/")
     assert _resolve_recipe_endpoint(request) == f"http://{expected_authority}/v1"
 
 
 @pytest.mark.parametrize("server", [None, (), ("",), ("192.168.1.239",)])
 def test_the_data_recipe_endpoint_ignores_scope_values_that_carry_no_address(server):
-    request = _recipe_request(server=server, base_url="http://testserver:8888/")
+    request = _recipe_request(server = server, base_url = "http://testserver:8888/")
     assert _resolve_recipe_endpoint(request) == "http://127.0.0.1:8888/v1"
 
 
 def test_a_data_recipe_scope_address_that_is_unusable_still_yields_its_port():
-    request = _recipe_request(server=("", 8889), base_url="http://testserver:8888/")
+    request = _recipe_request(server = ("", 8889), base_url = "http://testserver:8888/")
     assert _resolve_recipe_endpoint(request) == "http://127.0.0.1:8889/v1"
 
 
 def test_the_data_recipe_endpoint_prefers_the_bound_host_over_the_accepting_address():
     request = _recipe_request(
-        state=SimpleNamespace(server_port=8889, server_request_host="192.168.1.239"),
-        server=("127.0.0.1", 9999),
+        state = SimpleNamespace(server_port = 8889, server_request_host = "192.168.1.239"),
+        server = ("127.0.0.1", 9999),
     )
     assert _resolve_recipe_endpoint(request) == "http://192.168.1.239:8889/v1"
 
 
 def test_the_data_recipe_endpoint_uses_loopback_when_no_address_is_available():
-    assert _resolve_recipe_endpoint(_recipe_request(base_url="http://testserver:8888/")) == (
+    assert _resolve_recipe_endpoint(_recipe_request(base_url = "http://testserver:8888/")) == (
         "http://127.0.0.1:8888/v1"
     )

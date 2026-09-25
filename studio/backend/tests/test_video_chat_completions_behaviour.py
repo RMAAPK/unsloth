@@ -41,7 +41,7 @@ class _VideoGguf(FakeLlamaCppBackend):
     is_vision = True
     _has_video_input = True
 
-    def __init__(self, *, has_video=True):
+    def __init__(self, *, has_video = True):
         self._has_video_input = has_video
         self.dispatched: list[dict] = []
 
@@ -54,15 +54,15 @@ class _VideoGguf(FakeLlamaCppBackend):
 def _no_gguf():
     """The resident backend is transformers or MLX, so ``using_gguf`` is False."""
     return SimpleNamespace(
-        is_loaded=False, supports_tools=False, is_vision=False, context_length=None
+        is_loaded = False, supports_tools = False, is_vision = False, context_length = None
     )
 
 
 def _client(
     monkeypatch,
-    backend=None,
+    backend = None,
     *,
-    prefix="/v1",
+    prefix = "/v1",
 ):
     async def _no_switch(*_a, **_k):
         return None
@@ -73,14 +73,14 @@ def _client(
     monkeypatch.setattr(inference_route, "_maybe_auto_switch_model", _no_switch)
 
     app = FastAPI()
-    app.include_router(inference_route.router, prefix=prefix)
+    app.include_router(inference_route.router, prefix = prefix)
     app.dependency_overrides[get_current_subject] = lambda: "tester"
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions = False)
 
 
 def _part_body(
     *urls,
-    text="what happens here?",
+    text = "what happens here?",
     **extra,
 ):
     parts = [{"type": "video_url", "video_url": {"url": u}} for u in urls]
@@ -94,8 +94,8 @@ def _part_body(
 
 
 def _field_body(
-    clip=_DATA_URI,
-    text="what happens here?",
+    clip = _DATA_URI,
+    text = "what happens here?",
     **extra,
 ):
     return {
@@ -125,7 +125,7 @@ def _detail(response) -> str:
     return str(detail)
 
 
-def _sent_parts(backend, index=-1):
+def _sent_parts(backend, index = -1):
     """Parts of a dispatched user turn. A system turn is prepended, so index from the user ones."""
     user_turns = [
         m
@@ -160,7 +160,7 @@ def _sent_media(backend):
 def test_a_clip_reaches_llama_server_as_input_video(monkeypatch, url, expected):
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        response = client.post("/v1/chat/completions", json=_part_body(url))
+        response = client.post("/v1/chat/completions", json = _part_body(url))
     assert response.status_code == 200
     assert _sent_media(backend) == [{"type": "input_video", "input_video": expected}]
 
@@ -170,7 +170,7 @@ def test_the_translated_part_is_the_only_video_key_left(monkeypatch):
     it accepts image_url, input_audio and input_video, and nothing else."""
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        client.post("/v1/chat/completions", json=_part_body(_DATA_URI))
+        client.post("/v1/chat/completions", json = _part_body(_DATA_URI))
     types = [p.get("type") for p in _sent_parts(backend)]
     assert "video_url" not in types
     assert len(_sent_media(backend)) == 1
@@ -179,7 +179,7 @@ def test_the_translated_part_is_the_only_video_key_left(monkeypatch):
 def test_the_text_of_the_turn_survives_translation(monkeypatch):
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        client.post("/v1/chat/completions", json=_part_body(_DATA_URI, text="what colour?"))
+        client.post("/v1/chat/completions", json = _part_body(_DATA_URI, text = "what colour?"))
     assert {"type": "text", "text": "what colour?"} in _sent_parts(backend)
 
 
@@ -187,7 +187,7 @@ def test_every_clip_in_a_turn_is_translated(monkeypatch):
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
         client.post(
-            "/v1/chat/completions", json=_part_body(_DATA_URI, "data:video/webm;base64,REVG")
+            "/v1/chat/completions", json = _part_body(_DATA_URI, "data:video/webm;base64,REVG")
         )
     assert [p["input_video"] for p in _sent_media(backend)] == [
         {"data": _CLIP_B64},
@@ -209,7 +209,7 @@ def test_a_clip_in_an_older_turn_is_translated_too(monkeypatch):
         ],
     }
     with _client(monkeypatch, backend) as client:
-        client.post("/v1/chat/completions", json=body)
+        client.post("/v1/chat/completions", json = body)
     # Translated in place, on the turn that carried it.
     assert _sent_parts(backend, 0)[0]["type"] == "input_video"
     assert len(_sent_media(backend)) == 1
@@ -219,7 +219,7 @@ def test_the_legacy_field_still_rides_the_newest_user_turn(monkeypatch):
     """Backwards compatibility: the spelling the Studio frontend sends is unchanged."""
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        response = client.post("/v1/chat/completions", json=_field_body())
+        response = client.post("/v1/chat/completions", json = _field_body())
     assert response.status_code == 200
     assert _sent_parts(backend)[-1] == {"type": "input_video", "input_video": {"data": _CLIP_B64}}
 
@@ -228,17 +228,17 @@ def test_both_spellings_of_the_same_clip_produce_the_same_wire_shape(monkeypatch
     """The invariant the whole change rests on, asserted on the dispatched body itself."""
     part_backend, field_backend = _VideoGguf(), _VideoGguf()
     with _client(monkeypatch, part_backend) as client:
-        client.post("/v1/chat/completions", json=_part_body(_DATA_URI))
+        client.post("/v1/chat/completions", json = _part_body(_DATA_URI))
     with _client(monkeypatch, field_backend) as client:
-        client.post("/v1/chat/completions", json=_field_body())
+        client.post("/v1/chat/completions", json = _field_body())
 
     assert _sent_media(part_backend) == _sent_media(field_backend)
 
 
 @pytest.mark.parametrize("body", [_part_body(_DATA_URI), _field_body()])
 def test_a_gguf_without_a_video_projector_refuses_either_spelling(monkeypatch, body):
-    with _client(monkeypatch, _VideoGguf(has_video=False)) as client:
-        response = client.post("/v1/chat/completions", json=body)
+    with _client(monkeypatch, _VideoGguf(has_video = False)) as client:
+        response = client.post("/v1/chat/completions", json = body)
     assert response.status_code == 400
     assert "cannot take video input" in _detail(response)
 
@@ -259,13 +259,13 @@ def test_a_non_gguf_backend_is_offered_the_clip_rather_than_refused_outright(mon
         inference_route,
         "get_inference_backend",
         lambda: SimpleNamespace(
-            active_model_name="mlx-model",
-            models={"mlx-model": {"is_vision": True, "has_video_input": True}},
+            active_model_name = "mlx-model",
+            models = {"mlx-model": {"is_vision": True, "has_video_input": True}},
         ),
     )
     monkeypatch.setattr(inference_route, "_local_video_clip", _gate)
     with _client(monkeypatch, None) as client:
-        response = client.post("/v1/chat/completions", json=body)
+        response = client.post("/v1/chat/completions", json = body)
 
     # Reached-the-gate alone cannot tell the regression from the fix: a blanket refusal placed
     # after the gate still lets the gate run.
@@ -280,7 +280,7 @@ def test_the_non_gguf_gate_reads_both_spellings(monkeypatch):
     from models.inference import ChatCompletionRequest
 
     info = {"is_vision": True, "has_video_input": True}
-    field = ChatCompletionRequest(model="m", messages=[], video_base64=_DATA_URI)
+    field = ChatCompletionRequest(model = "m", messages = [], video_base64 = _DATA_URI)
     part = ChatCompletionRequest.model_validate(_part_body(_DATA_URI))
     assert inference_route._local_video_clip(field, info) == _CLIP_B64
     assert inference_route._local_video_clip(part, info) == _CLIP_B64
@@ -392,14 +392,14 @@ def test_an_unsupported_scheme_is_refused_by_name(monkeypatch, url):
     not neutralise the scheme, so refuse it here.
     """
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=_part_body(url))
+        response = client.post("/v1/chat/completions", json = _part_body(url))
     assert response.status_code == 400
     assert "Unsupported video URL scheme" in _detail(response)
 
 
 def test_a_bare_path_is_refused_without_naming_a_scheme(monkeypatch):
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=_part_body("/tmp/clip.mp4"))
+        response = client.post("/v1/chat/completions", json = _part_body("/tmp/clip.mp4"))
     # No colon: indistinguishable from base64 payload, so llama-server owns the verdict.
     assert response.status_code == 200
 
@@ -409,7 +409,7 @@ def test_bare_base64_is_not_mistaken_for_a_scheme(monkeypatch):
     check that scanned the whole string would refuse legitimate clips."""
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        response = client.post("/v1/chat/completions", json=_part_body("QUJDREVGR0hJSktM"))
+        response = client.post("/v1/chat/completions", json = _part_body("QUJDREVGR0hJSktM"))
     assert response.status_code == 200
     assert _sent_media(backend) == [
         {"type": "input_video", "input_video": {"data": "QUJDREVGR0hJSktM"}}
@@ -442,7 +442,7 @@ def test_a_clip_of_exactly_the_cap_is_admitted():
 
 def test_a_data_uri_with_no_payload_is_refused(monkeypatch):
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=_part_body("data:video/mp4;base64,"))
+        response = client.post("/v1/chat/completions", json = _part_body("data:video/mp4;base64,"))
     assert response.status_code == 400
     assert "Could not read the provided video file" in _detail(response)
 
@@ -453,7 +453,7 @@ def test_an_external_provider_refuses_either_spelling(monkeypatch, body):
     and the provider answers a prompt the caller did not send."""
     body = {**body, "provider_type": "openai", "provider_api_key": "sk-test"}
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=body)
+        response = client.post("/v1/chat/completions", json = body)
     assert response.status_code == 400
     assert response.json()["detail"] == inference_route._VIDEO_INPUT_REFUSAL
 
@@ -462,8 +462,8 @@ def test_an_external_provider_refuses_either_spelling(monkeypatch, body):
 def test_token_counting_refuses_either_spelling(monkeypatch, body):
     """llama-server samples the frames at completion time, so counting here undercounts."""
     body = {k: v for k, v in body.items() if k != "stream"}
-    with _client(monkeypatch, _VideoGguf(), prefix="") as client:
-        response = client.post("/chat/count_tokens", json=body)
+    with _client(monkeypatch, _VideoGguf(), prefix = "") as client:
+        response = client.post("/chat/count_tokens", json = body)
     assert response.status_code == 503
     assert "video" in _detail(response)
 
@@ -473,8 +473,8 @@ def test_the_speech_route_refuses_a_clip_rather_than_speaking_past_it(monkeypatc
     """/audio/generate keeps only text, so without this the clip was dropped in silence.
     Registering video_url as a known tag removed the unknown-part guard that covered it."""
     body = {k: v for k, v in body.items() if k != "stream"}
-    with _client(monkeypatch, _VideoGguf(), prefix="") as client:
-        response = client.post("/audio/generate", json=body)
+    with _client(monkeypatch, _VideoGguf(), prefix = "") as client:
+        response = client.post("/audio/generate", json = body)
     assert response.status_code == 400
     assert "Video input is not supported here" in _detail(response)
 
@@ -482,8 +482,8 @@ def test_the_speech_route_refuses_a_clip_rather_than_speaking_past_it(monkeypatc
 def test_the_speech_route_still_speaks_a_plain_text_turn(monkeypatch):
     """The control for the refusal above: it must not swallow ordinary requests."""
     body = {"model": "default", "messages": [{"role": "user", "content": "read this out"}]}
-    with _client(monkeypatch, _VideoGguf(), prefix="") as client:
-        response = client.post("/audio/generate", json=body)
+    with _client(monkeypatch, _VideoGguf(), prefix = "") as client:
+        response = client.post("/audio/generate", json = body)
     assert "Video input is not supported here" not in _detail(response)
 
 
@@ -504,7 +504,7 @@ def test_the_tool_passthrough_path_refuses_either_spelling(monkeypatch, body):
         supports_tools = True
 
     with _client(monkeypatch, _ToolGguf()) as client:
-        response = client.post("/v1/chat/completions", json=body)
+        response = client.post("/v1/chat/completions", json = body)
     assert response.status_code == 400
     assert "guided decoding" in _detail(response)
 
@@ -517,11 +517,11 @@ def test_a_durable_chat_run_refuses_a_clip_in_either_spelling():
 
     for body in (_part_body(_DATA_URI), _field_body()):
         run = CreateChatGenerationRun(
-            runId="run-1",
-            threadId="thread-1",
-            userMessageId="user-1",
-            assistantMessageId="assistant-1",
-            requestPayload={k: v for k, v in body.items() if k != "stream"},
+            runId = "run-1",
+            threadId = "thread-1",
+            userMessageId = "user-1",
+            assistantMessageId = "assistant-1",
+            requestPayload = {k: v for k, v in body.items() if k != "stream"},
         )
         with pytest.raises(HTTPException) as exc:
             _sanitize_request(run)
@@ -534,11 +534,11 @@ def test_a_durable_chat_run_still_takes_a_plain_text_turn():
     from routes.chat_generation_runs import CreateChatGenerationRun, _sanitize_request
 
     run = CreateChatGenerationRun(
-        runId="run-1",
-        threadId="thread-1",
-        userMessageId="user-1",
-        assistantMessageId="assistant-1",
-        requestPayload={"model": "m", "messages": [{"role": "user", "content": "hi"}]},
+        runId = "run-1",
+        threadId = "thread-1",
+        userMessageId = "user-1",
+        assistantMessageId = "assistant-1",
+        requestPayload = {"model": "m", "messages": [{"role": "user", "content": "hi"}]},
     )
     assert _sanitize_request(run) is not None
 
@@ -556,14 +556,14 @@ def test_a_clip_on_a_non_user_turn_is_refused(monkeypatch, role):
         ],
     }
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=body)
+        response = client.post("/v1/chat/completions", json = body)
     assert response.status_code == 422
 
 
 def test_a_clip_on_a_user_turn_is_accepted(monkeypatch):
     """The control: the role rule must not refuse the placement it exists to protect."""
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=_part_body(_DATA_URI))
+        response = client.post("/v1/chat/completions", json = _part_body(_DATA_URI))
     assert response.status_code == 200
 
 
@@ -576,10 +576,10 @@ def test_admission_charges_each_clip_once_and_not_as_prompt_text():
     two = ChatCompletionRequest.model_validate(_part_body(big, big))
     charge_one = inference_route._openai_llama_admission_media_tokens(one)
     charge_two = inference_route._openai_llama_admission_media_tokens(two)
-    assert charge_two - charge_one == pytest.approx(charge_one, rel=0.05)
+    assert charge_two - charge_one == pytest.approx(charge_one, rel = 0.05)
 
     estimate, _ = inference_route._openai_llama_admission_messages_for_estimate(
-        [m.model_dump(exclude_none=True) for m in one.messages]
+        [m.model_dump(exclude_none = True) for m in one.messages]
     )
     assert "A" * 40_000 not in str(estimate)
 
@@ -599,7 +599,6 @@ def test_the_rolling_context_does_not_price_a_clip_as_text():
     """Trimming counts a turn to decide what to drop; a clip counted as text would evict the
     conversation around it."""
     from core.inference.context_window import _UNPRICED_MEDIA_TYPES
-
     assert {"video_url", "input_video"} <= set(_UNPRICED_MEDIA_TYPES)
 
 
@@ -614,7 +613,7 @@ def test_an_unknown_part_type_is_still_refused_by_name(monkeypatch):
         ],
     }
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=body)
+        response = client.post("/v1/chat/completions", json = body)
     assert response.status_code == 400
     assert "hologram_url" in _detail(response)
 
@@ -636,7 +635,7 @@ def test_a_remote_video_url_is_refused(monkeypatch, url):
     (set_follow_location in common/http.h), so a public URL redirecting to a private address
     defeats any host check made here. The shape is refused rather than guarded."""
     with _client(monkeypatch, _VideoGguf()) as client:
-        response = client.post("/v1/chat/completions", json=_part_body(url))
+        response = client.post("/v1/chat/completions", json = _part_body(url))
     assert response.status_code == 400
     assert "Remote video URLs are not supported" in _detail(response)
 
@@ -645,7 +644,7 @@ def test_no_url_ever_reaches_llama_server_as_a_video(monkeypatch):
     """The refusal is the point: input_video must always carry bytes, never something to dial."""
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        client.post("/v1/chat/completions", json=_part_body(_DATA_URI))
+        client.post("/v1/chat/completions", json = _part_body(_DATA_URI))
     assert all("data" in part["input_video"] for part in _sent_media(backend))
     assert not any("url" in part["input_video"] for part in _sent_media(backend))
 
@@ -664,13 +663,13 @@ def test_the_dispatch_boundary_refuses_a_remote_url_on_its_own():
 
 def test_both_spellings_refuse_a_remote_clip_alike(monkeypatch):
     with _client(monkeypatch, _VideoGguf()) as client:
-        part = client.post("/v1/chat/completions", json=_part_body(_REMOTE))
-        field = client.post("/v1/chat/completions", json=_field_body(_REMOTE))
+        part = client.post("/v1/chat/completions", json = _part_body(_REMOTE))
+        field = client.post("/v1/chat/completions", json = _field_body(_REMOTE))
     assert part.status_code == field.status_code == 400
     assert _detail(part) == _detail(field)
 
 
-def _older_turn_body(clip=_DATA_URI):
+def _older_turn_body(clip = _DATA_URI):
     return {
         "model": "test/model.gguf",
         "stream": False,
@@ -704,7 +703,6 @@ def test_a_clip_on_an_older_turn_is_refused_on_a_non_gguf_backend():
 
 def test_a_clip_on_the_latest_turn_is_still_served_on_a_non_gguf_backend():
     from models.inference import ChatCompletionRequest
-
     payload = ChatCompletionRequest.model_validate(_part_body(_DATA_URI))
     assert (
         inference_route._local_video_clip(payload, {"is_vision": True, "has_video_input": True})
@@ -728,7 +726,7 @@ def test_gguf_still_keeps_a_clip_on_the_turn_that_carried_it(monkeypatch):
     """The refusal above is a non-GGUF limit, not a new rule for everyone."""
     backend = _VideoGguf()
     with _client(monkeypatch, backend) as client:
-        response = client.post("/v1/chat/completions", json=_older_turn_body())
+        response = client.post("/v1/chat/completions", json = _older_turn_body())
     assert response.status_code == 200
     turns = [
         m
@@ -793,7 +791,7 @@ def test_a_part_carried_clip_is_transcoded_like_the_legacy_field(monkeypatch):
         clip,
         cap,
         *,
-        sampled_fps=None,
+        sampled_fps = None,
     ):
         seen.append(clip)
         return "SHRUNK"
@@ -802,10 +800,10 @@ def test_a_part_carried_clip_is_transcoded_like_the_legacy_field(monkeypatch):
 
     part_backend = _VideoGguf()
     with _client(monkeypatch, part_backend) as client:
-        assert client.post("/v1/chat/completions", json=_part_body(_DATA_URI)).status_code == 200
+        assert client.post("/v1/chat/completions", json = _part_body(_DATA_URI)).status_code == 200
     field_backend = _VideoGguf()
     with _client(monkeypatch, field_backend) as client:
-        assert client.post("/v1/chat/completions", json=_field_body()).status_code == 200
+        assert client.post("/v1/chat/completions", json = _field_body()).status_code == 200
 
     assert seen == [_CLIP_B64, _CLIP_B64], "both spellings must reach the transcoder"
     assert _sent_media(part_backend) == _sent_media(field_backend)
@@ -848,7 +846,7 @@ def test_recosting_drops_a_clip_the_conversation_has_evicted():
     assert opening > 1000
 
     evicted = inference_route._openai_llama_admission_media_tokens(
-        payload, message_video_clips=inference_route._conversation_video_clips([])
+        payload, message_video_clips = inference_route._conversation_video_clips([])
     )
     assert evicted == 0
 
@@ -863,7 +861,7 @@ def test_recosting_still_charges_a_clip_the_conversation_kept():
         {"role": "user", "content": [{"type": "input_video", "input_video": {"data": clip}}]}
     ]
     kept = inference_route._openai_llama_admission_media_tokens(
-        payload, message_video_clips=inference_route._conversation_video_clips(conversation)
+        payload, message_video_clips = inference_route._conversation_video_clips(conversation)
     )
     assert kept == len(clip) // 4
 
@@ -876,7 +874,7 @@ def test_the_legacy_field_is_not_charged_twice_during_recosting():
 
     clip = "A" * 40_000
     payload = ChatCompletionRequest.model_validate(
-        _field_body("data:video/mp4;base64," + clip, text="hi")
+        _field_body("data:video/mp4;base64," + clip, text = "hi")
     )
     conversation = [{"role": "user", "content": [{"type": "text", "text": "hi"}]}]
     inference_route._inject_video_part(conversation, clip)
@@ -884,9 +882,9 @@ def test_the_legacy_field_is_not_charged_twice_during_recosting():
     opening = inference_route._openai_llama_admission_media_tokens(payload)
     recost = inference_route._openai_llama_admission_media_tokens(
         payload,
-        message_video_clips=inference_route._conversation_video_clips(conversation),
+        message_video_clips = inference_route._conversation_video_clips(conversation),
     )
-    assert recost == pytest.approx(opening, rel=0.01)
+    assert recost == pytest.approx(opening, rel = 0.01)
 
 
 def test_audio_is_still_charged_from_the_field_during_recosting():
@@ -897,7 +895,7 @@ def test_audio_is_still_charged_from_the_field_during_recosting():
     body["audio_base64"] = "B" * 4000
     payload = ChatCompletionRequest.model_validate(body)
     assert (
-        inference_route._openai_llama_admission_media_tokens(payload, message_video_clips=[])
+        inference_route._openai_llama_admission_media_tokens(payload, message_video_clips = [])
         == 1000
     )
 

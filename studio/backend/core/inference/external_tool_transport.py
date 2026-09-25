@@ -84,11 +84,11 @@ class OAICompatTransport:
         )
         return self._cancellable(
             self._client.stream_chat_completion(
-                messages=messages,
-                model=self._model,
-                tools=tools,
-                tool_choice=tool_choice,
-                continue_final_message=continue_final_message,
+                messages = messages,
+                model = self._model,
+                tools = tools,
+                tool_choice = tool_choice,
+                continue_final_message = continue_final_message,
                 **self._request_kwargs,
             ),
             cancel_event,
@@ -117,7 +117,7 @@ class OAICompatTransport:
             while not cancel_event.is_set():
                 read = asyncio.ensure_future(iterator.__anext__())
                 try:
-                    await asyncio.wait({read, watcher}, return_when=asyncio.FIRST_COMPLETED)
+                    await asyncio.wait({read, watcher}, return_when = asyncio.FIRST_COMPLETED)
                 except BaseException:
                     read.cancel()
                     raise

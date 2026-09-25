@@ -36,7 +36,7 @@ except ImportError:
 _HOST_PLATFORM = sys.platform
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _fork_platform(monkeypatch):
     """Pin a platform where workers are possible.
 
@@ -47,7 +47,7 @@ def _fork_platform(monkeypatch):
     monkeypatch.setattr(sys, "platform", "linux")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _memory_headroom(monkeypatch):
     """Pin the memory ceiling the shared policy applies.
 
@@ -107,7 +107,6 @@ def _torch_module(monkeypatch):
     """
     try:
         import torch
-
         return torch
     except ImportError:
         stub = types.ModuleType("torch")
@@ -128,7 +127,7 @@ def _patch_runtime(monkeypatch, name, *, is_initialized):
     else:
         probe = lambda: is_initialized  # noqa: E731
 
-    monkeypatch.setattr(torch, name, types.SimpleNamespace(is_initialized=probe), raising=False)
+    monkeypatch.setattr(torch, name, types.SimpleNamespace(is_initialized = probe), raising = False)
 
 
 # ---------- CUDA: initialization must NOT disable workers ----------
@@ -143,14 +142,14 @@ def test_dataset_map_num_proc_parallelizes_on_initialized_cuda(monkeypatch):
     not added back without new evidence.
     """
     _patch_device(monkeypatch, hw.DeviceType.CUDA)
-    _patch_runtime(monkeypatch, "cuda", is_initialized=True)
+    _patch_runtime(monkeypatch, "cuda", is_initialized = True)
     assert hw.dataset_map_num_proc(4) == 4
 
 
 def test_dataset_map_num_proc_cuda_respects_multi_gpu_cap(monkeypatch):
     # CUDA still routes through safe_num_proc, which caps to 4 on multi-GPU.
     _patch_device(monkeypatch, hw.DeviceType.CUDA)
-    _patch_runtime(monkeypatch, "cuda", is_initialized=True)
+    _patch_runtime(monkeypatch, "cuda", is_initialized = True)
     monkeypatch.setattr(hw, "get_visible_gpu_count", lambda: 2)
     assert hw.dataset_map_num_proc(16) == 4
 
@@ -160,13 +159,13 @@ def test_dataset_map_num_proc_cuda_respects_multi_gpu_cap(monkeypatch):
 
 def test_dataset_map_num_proc_none_after_xpu_init(monkeypatch):
     _patch_device(monkeypatch, hw.DeviceType.XPU)
-    _patch_runtime(monkeypatch, "xpu", is_initialized=True)
+    _patch_runtime(monkeypatch, "xpu", is_initialized = True)
     assert hw.dataset_map_num_proc(4) is None
 
 
 def test_dataset_map_num_proc_parallel_before_xpu_init(monkeypatch):
     _patch_device(monkeypatch, hw.DeviceType.XPU)
-    _patch_runtime(monkeypatch, "xpu", is_initialized=False)
+    _patch_runtime(monkeypatch, "xpu", is_initialized = False)
     assert hw.dataset_map_num_proc(4) == 4
 
 
@@ -207,17 +206,17 @@ def test_none_builds_no_pool_but_a_count_does(monkeypatch):
         return real_pool(*args, **kwargs)
 
     monkeypatch.setattr(multiprocess, "Pool", _spy_pool)
-    monkeypatch.setattr(datasets.arrow_dataset, "Pool", _spy_pool, raising=False)
+    monkeypatch.setattr(datasets.arrow_dataset, "Pool", _spy_pool, raising = False)
 
     dataset = datasets.Dataset.from_dict({"text": [f"row {i}" for i in range(8)]})
     _count = lambda batch: {"n": [len(t) for t in batch["text"]]}  # noqa: E731
 
-    mapped = dataset.map(_count, batched=True, num_proc=None)
+    mapped = dataset.map(_count, batched = True, num_proc = None)
     assert len(mapped) == 8
     assert pools_built == [], f"Dataset.map built a worker pool: {pools_built}"
 
     # Control: the spy is live, so the assertion above means something.
-    dataset.map(_count, batched=True, num_proc=2)
+    dataset.map(_count, batched = True, num_proc = 2)
     assert len(pools_built) == 1, "Pool spy never fired; the no-pool check is vacuous"
 
 
@@ -252,10 +251,10 @@ def test_num_proc_one_is_not_a_disable_sentinel():
 
     multiprocess.pool.Pool.__init__ = _spy_init
     try:
-        dataset.map(_count, batched=True, num_proc=None)
+        dataset.map(_count, batched = True, num_proc = None)
         assert pools_built == [], "num_proc=None must always run in-process"
 
-        dataset.map(_count, batched=True, num_proc=1)
+        dataset.map(_count, batched = True, num_proc = 1)
         built_for_one = len(pools_built)
     finally:
         multiprocess.pool.Pool.__init__ = real_init
@@ -359,7 +358,7 @@ def test_a_serial_request_survives_the_config_round_trip(monkeypatch):
     # runner with no unsloth_zoo reads 1 rather than None.
     _policy_or_skip()
     _patch_device(monkeypatch, hw.DeviceType.CPU)
-    assert hw.dataset_map_num_proc(1, serial_as_none=False) == 1
+    assert hw.dataset_map_num_proc(1, serial_as_none = False) == 1
     # The map-site default is what turns it back into "no pool" at the call.
     assert hw.dataset_map_num_proc(1) is None
 
@@ -369,10 +368,10 @@ def test_the_config_value_is_still_in_process_after_the_layer_reads_it(monkeypat
     policy = _policy_or_skip()
     _patch_device(monkeypatch, hw.DeviceType.CPU)
 
-    stored = hw.dataset_map_num_proc(1, serial_as_none=False)
+    stored = hw.dataset_map_num_proc(1, serial_as_none = False)
     # rl.py generates serial_as_none = False for sft_trainer, then the map-site
     # rewrite converts the config value for the actual Dataset.map call.
-    from_config = policy.get_dataset_num_proc(stored, serial_as_none=False)
+    from_config = policy.get_dataset_num_proc(stored, serial_as_none = False)
     at_the_map_site = policy.get_dataset_num_proc(from_config)
     assert (stored, from_config, at_the_map_site) == (1, 1, None)
 
@@ -385,8 +384,8 @@ def test_xpu_initialized_stays_serial_through_a_config(monkeypatch):
     guard exists to protect.
     """
     _patch_device(monkeypatch, hw.DeviceType.XPU)
-    _patch_runtime(monkeypatch, "xpu", is_initialized=True)
-    assert hw.dataset_map_num_proc(4, serial_as_none=False) == 1
+    _patch_runtime(monkeypatch, "xpu", is_initialized = True)
+    assert hw.dataset_map_num_proc(4, serial_as_none = False) == 1
     assert hw.dataset_map_num_proc(4) is None
 
 
@@ -400,7 +399,7 @@ def test_spawn_platforms_keep_none_at_either_layer(monkeypatch, platform):
     re-imports the user's __main__ (#3211 / #3397).
     """
     monkeypatch.setattr(sys, "platform", platform)
-    assert hw.dataset_map_num_proc(4, serial_as_none=False) is None
+    assert hw.dataset_map_num_proc(4, serial_as_none = False) is None
 
 
 def test_every_other_caller_keeps_the_map_site_default(monkeypatch):
@@ -421,7 +420,7 @@ def test_the_trainer_config_asks_for_the_config_sentinel():
     from pathlib import Path
 
     source = (Path(__file__).resolve().parents[1] / "core" / "training" / "trainer.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     tree = ast.parse(source)
 
@@ -448,7 +447,7 @@ def test_the_trainer_config_asks_for_the_config_sentinel():
 # ---------- the request reaches the policy as the caller wrote it ----------
 
 
-def _unexpected_auto_sizing(desired=None):
+def _unexpected_auto_sizing(desired = None):
     if desired is None:
         raise AssertionError("the auto request was materialized before the policy saw it")
     return desired
@@ -475,7 +474,7 @@ def test_an_auto_request_is_sized_by_the_policy_not_by_the_host_cpu_count(monkey
 def test_studio_caps_still_apply_to_a_policy_chosen_count(monkeypatch):
     """The multi-GPU fork-deadlock cap is knowledge the policy does not have."""
     policy = _policy_or_skip()
-    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus=2)
+    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus = 2)
     monkeypatch.setattr(policy, "multiprocessing_start_method", lambda: "fork")
     monkeypatch.setattr(policy, "_usable_cpus", lambda: 64)
     monkeypatch.setattr(policy, "_affordable_workers", lambda: 64)
@@ -507,7 +506,7 @@ def test_the_override_is_not_capped_by_the_studio_heuristics(monkeypatch):
     """Uncapped by contract, including by the multi-GPU cap Unsloth adds after."""
     policy = _policy_or_skip()
     policy.reset_warning_state()
-    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus=4)
+    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus = 4)
     monkeypatch.setenv("UNSLOTH_DATASET_NUM_PROC", "16")
     assert hw.dataset_map_num_proc(2) == 16
 
@@ -526,7 +525,7 @@ def test_an_older_zoo_falls_back_to_the_unsloth_copy(monkeypatch):
     calls = []
     stub = types.ModuleType("unsloth.dataset_num_proc")
     stub.NUM_PROC_ENV_VAR = "UNSLOTH_DATASET_NUM_PROC"
-    stub.get_dataset_num_proc = lambda desired=None, *, serial_as_none=True: (
+    stub.get_dataset_num_proc = lambda desired = None, *, serial_as_none = True: (
         calls.append((desired, serial_as_none)) or 3
     )
     package = types.ModuleType("unsloth")
@@ -553,7 +552,7 @@ def test_no_policy_anywhere_keeps_the_previous_behaviour(monkeypatch):
     """Neither module importable: the pre-policy Unsloth count, not a crash."""
     import builtins
 
-    monkeypatch.delitem(sys.modules, "unsloth", raising=False)
+    monkeypatch.delitem(sys.modules, "unsloth", raising = False)
     real_import = builtins.__import__
 
     def _no_policy(name, *args, **kwargs):
@@ -575,7 +574,7 @@ def test_the_override_is_honoured_after_xpu_init(monkeypatch):
     policy = _policy_or_skip()
     policy.reset_warning_state()
     _patch_device(monkeypatch, hw.DeviceType.XPU)
-    _patch_runtime(monkeypatch, "xpu", is_initialized=True)
+    _patch_runtime(monkeypatch, "xpu", is_initialized = True)
 
     monkeypatch.setenv("UNSLOTH_DATASET_NUM_PROC", "2")
     assert hw.dataset_map_num_proc(8) == 2
@@ -583,7 +582,7 @@ def test_the_override_is_honoured_after_xpu_init(monkeypatch):
     # Unset, the veto stands at both layers.
     monkeypatch.delenv("UNSLOTH_DATASET_NUM_PROC")
     assert hw.dataset_map_num_proc(8) is None
-    assert hw.dataset_map_num_proc(8, serial_as_none=False) == 1
+    assert hw.dataset_map_num_proc(8, serial_as_none = False) == 1
 
 
 @pytest.mark.parametrize("raw", ["-1", "not-a-number"])
@@ -597,7 +596,7 @@ def test_an_ignored_override_does_not_skip_the_studio_caps(monkeypatch, raw):
     policy.reset_warning_state()
     monkeypatch.setattr(policy, "multiprocessing_start_method", lambda: "fork")
     monkeypatch.setattr(policy, "_affordable_workers", lambda: 64)
-    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus=4)
+    _patch_device(monkeypatch, hw.DeviceType.CUDA, visible_gpus = 4)
 
     monkeypatch.setenv("UNSLOTH_DATASET_NUM_PROC", raw)
     assert hw.dataset_map_num_proc(16) == 4
@@ -615,7 +614,7 @@ def test_the_trainer_leaves_the_ordinary_case_to_the_policy():
     from pathlib import Path
 
     source = (Path(__file__).resolve().parents[1] / "core" / "training" / "trainer.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
 
     calls = [

@@ -77,9 +77,9 @@ def null_run(
         rows.append(action_row(f"{rung}.base.{rep}", action, base))
         rows.append(action_row(f"{rung}.treatment.{rep}", action, treat))
     out = tmp_path / name
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents = True, exist_ok = True)
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -196,7 +196,7 @@ def test_a_payload_with_no_parity_data_is_not_a_decided_null(tmp_path):
     out = tmp_path / "empty"
     out.mkdir()
     (out / "payload.jsonl").write_text(
-        json.dumps({"row_type": "run_meta", "tier": "fast"}) + "\n", encoding="utf-8"
+        json.dumps({"row_type": "run_meta", "tier": "fast"}) + "\n", encoding = "utf-8"
     )
     assert U.audit_null([out / "payload.jsonl"])[0] == 2
 
@@ -230,7 +230,7 @@ def test_the_parity_workflow_audits_the_null_with_the_tool(tmp_path):
     # Twice now a guard written as a regex over this tool's printed prose has been wrong: a real
     # payload spells its rung `r100K` where a fixture spells it `100K`, and the literal
     # `action@rung` appears in the explanatory text whether or not anything was measured.
-    text = WORKFLOW.read_text(encoding="utf-8")
+    text = WORKFLOW.read_text(encoding = "utf-8")
     assert "--audit-null" in text
     assert "--allow-undecided image_upload" in text
     # The prose may still EXPLAIN the two regexes that were wrong; what it may not do is run one.
@@ -249,8 +249,8 @@ def test_a_difference_in_one_repetition_of_two_is_not_counted(tmp_path):
             ("r100K", "rep1", "settings", "A", "A"),
         ],
     )
-    assert U.report([mine], "t", frozenset(), min_reps=1) == 1
-    assert U.report([mine], "t", frozenset(), min_reps=2) == 0
+    assert U.report([mine], "t", frozenset(), min_reps = 1) == 1
+    assert U.report([mine], "t", frozenset(), min_reps = 2) == 0
 
 
 def test_a_difference_in_every_repetition_still_fails(tmp_path):
@@ -265,7 +265,7 @@ def test_a_difference_in_every_repetition_still_fails(tmp_path):
             ("r100K", "rep1", "settings", "A", "B"),
         ],
     )
-    assert U.report([mine], "t", frozenset(), min_reps=2) == 1
+    assert U.report([mine], "t", frozenset(), min_reps = 2) == 1
 
 
 def test_the_headline_count_is_the_one_the_exit_code_uses(tmp_path, capsys):
@@ -277,7 +277,7 @@ def test_the_headline_count_is_the_one_the_exit_code_uses(tmp_path, capsys):
             ("r100K", "rep1", "settings", "A", "A"),
         ],
     )
-    rc = U.report([mine], "t", frozenset(), min_reps=2)
+    rc = U.report([mine], "t", frozenset(), min_reps = 2)
     out = capsys.readouterr().out
     assert rc == 0
     assert "stable actions differing:   0" in out
@@ -289,7 +289,7 @@ def test_one_repetition_seen_twice_is_not_two_observations(tmp_path):
     # single flake recorded twice would corroborate itself.
     a = null_run(tmp_path, "sh1", [("r100K", "rep0", "settings", "A", "B")])
     b = null_run(tmp_path, "sh2", [("r100K", "rep0", "settings", "A", "B")])
-    assert U.report([a, b], "t", frozenset(), min_reps=2) == 0
+    assert U.report([a, b], "t", frozenset(), min_reps = 2) == 0
 
 
 # ── a cell that never completed: dropped on the null, kept on the result ──
@@ -309,9 +309,9 @@ def run_with_completion(tmp_path: Path, name: str, specs: list[tuple]) -> Path:
             rows.append(action_row(cid, "settings", digest))
             cell_rows(rows, cid, done)
     out = tmp_path / name
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents = True, exist_ok = True)
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -348,7 +348,7 @@ def test_a_result_still_reports_a_difference_from_a_cell_that_died(tmp_path):
         [("rep0", "A", "B", False), ("rep1", "A", "B", False)],
     )
     assert U.compare_all([mine])[0] != []
-    assert U.report([mine], "t", frozenset(), min_reps=2) == 1
+    assert U.report([mine], "t", frozenset(), min_reps = 2) == 1
 
 
 def test_a_payload_with_no_cell_rows_says_it_could_not_check(tmp_path, capsys):
@@ -367,9 +367,9 @@ def corpus_run(tmp_path: Path, name: str, corpus: str, rep: str) -> Path:
         rows.append(action_row(cid, "settings", "A" if arm == "base" else "B"))
         rows.append({"row_type": "cell", "cell_id": cid, "completed": True})
     out = tmp_path / name
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents = True, exist_ok = True)
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -421,8 +421,8 @@ def test_a_missed_slot_on_both_arms_cannot_turn_a_clean_verdict_red(tmp_path):
     out = tmp_path / "missed"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-    assert U.report([path], "t", frozenset(), min_reps=2) == 0
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
+    assert U.report([path], "t", frozenset(), min_reps = 2) == 0
 
 
 def test_a_run_that_compared_almost_nothing_does_not_pass(tmp_path, capsys):
@@ -435,9 +435,9 @@ def test_a_run_that_compared_almost_nothing_does_not_pass(tmp_path, capsys):
     out = tmp_path / "thin"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=0) == 0
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 3
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 0) == 0
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 3
     assert "TOO LITTLE COMPARED" in capsys.readouterr().out
 
 
@@ -456,7 +456,7 @@ def test_the_audit_ignores_an_action_the_result_never_compared(tmp_path):
     result = null_run(tmp_path, "r", two_reps("settings", "AAA", "BBB"))
 
     assert U.audit_null([null], frozenset())[0] == 1
-    scope = U.actions_needing_an_excuse([result], min_reps=2)
+    scope = U.actions_needing_an_excuse([result], min_reps = 2)
     assert scope == {("r100K", "settings")}
     assert U.audit_null([null], frozenset(), scope)[0] == 0
 
@@ -500,8 +500,8 @@ def test_matching_sides_and_unrecorded_sides_are_both_allowed():
 def test_the_refusal_exits_two_not_one_through_the_cli(tmp_path, monkeypatch, capsys):
     # Exit 2 is the tool declining to answer; exit 1 would read as a parity failure and send
     # somebody hunting for a UI change that was never measured.
-    null = null_run(tmp_path, "tier_null", two_reps("settings", "SAME", "SAME"), tier="fast")
-    result = null_run(tmp_path, "tier_res", two_reps("settings", "SAME", "SAME"), tier="standard")
+    null = null_run(tmp_path, "tier_null", two_reps("settings", "SAME", "SAME"), tier = "fast")
+    result = null_run(tmp_path, "tier_res", two_reps("settings", "SAME", "SAME"), tier = "standard")
     monkeypatch.setattr(
         sys,
         "argv",
@@ -546,7 +546,7 @@ def one_sided_payload(
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -556,7 +556,7 @@ def test_an_action_the_head_can_no_longer_perform_fails_the_verdict(tmp_path, ca
     # longer opens shipped green with 64 of 68 pairs still compared, comfortably above the
     # workflow's --min-compared 16.
     path = one_sided_payload(tmp_path, "regressed", "settings", ("rep0", "rep1"))
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 1
     printed = capsys.readouterr().out
     assert "RAN ON ONE ARM ONLY" in printed
     assert "settings" in printed
@@ -567,7 +567,7 @@ def test_one_arms_missed_slot_in_one_repetition_is_still_only_a_warning(tmp_path
     # slot once, so it is held to the SAME corroboration bar as a differing digest. A build that
     # cannot open a control cannot open it on either pass.
     path = one_sided_payload(tmp_path, "flake", "settings", ("rep0",))
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 0
     assert "UNCORROBORATED one-arm-only" in capsys.readouterr().out
 
 
@@ -579,9 +579,9 @@ def test_an_action_expected_to_vary_is_not_failed_for_reaching_one_arm_only(tmp_
         "racy",
         "stop_generation",
         ("rep0", "rep1"),
-        reason="nothing was generating and a new turn did not start within 8s",
+        reason = "nothing was generating and a new turn did not start within 8s",
     )
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
     assert "expected to vary between runs" in capsys.readouterr().out
 
 
@@ -596,8 +596,8 @@ def test_both_arms_missing_the_same_action_is_coverage_and_not_a_verdict(tmp_pat
     out = tmp_path / "symmetric"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-    assert U.report([path], "t", frozenset(), min_reps=2) == 0
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
+    assert U.report([path], "t", frozenset(), min_reps = 2) == 0
 
 
 # ── the audit's scope: what an excuse would actually move ─────────────
@@ -609,7 +609,7 @@ def test_an_undecided_action_the_result_only_matched_does_not_fail_the_audit(tmp
     # be asked. Requiring an opinion made the gate unsatisfiable on a shared runner.
     result = null_run(tmp_path, "result", two_reps("settings", "SAME", "SAME"))
     null = null_run(tmp_path, "null", [("r100K", "rep0", "settings", "SAME", "SAME")])
-    scope = U.actions_needing_an_excuse([result], min_reps=2)
+    scope = U.actions_needing_an_excuse([result], min_reps = 2)
     assert scope == set()
     rc, _ = U.audit_null([null], frozenset(), scope)
     assert rc == 0
@@ -621,7 +621,7 @@ def test_the_audit_still_fails_on_an_undecided_action_the_result_kept_differing_
     # null excuses it from the DECLARED list, unmeasured.
     result = null_run(tmp_path, "result", two_reps("settings", "AAA", "BBB"))
     null = null_run(tmp_path, "null", [("r100K", "rep0", "settings", "SAME", "SAME")])
-    scope = U.actions_needing_an_excuse([result], min_reps=2)
+    scope = U.actions_needing_an_excuse([result], min_reps = 2)
     assert scope == {("r100K", "settings")}
     rc, report_ = U.audit_null([null], frozenset(), scope)
     assert rc == 1
@@ -637,7 +637,7 @@ def test_a_difference_in_one_repetition_only_needs_no_excuse(tmp_path):
             ("r100K", "rep1", "settings", "SAME", "SAME"),
         ],
     )
-    assert U.actions_needing_an_excuse([result], min_reps=2) == set()
+    assert U.actions_needing_an_excuse([result], min_reps = 2) == set()
 
 
 def test_a_corroborated_one_arm_only_action_still_needs_the_null_to_decide_it(tmp_path):
@@ -646,7 +646,7 @@ def test_a_corroborated_one_arm_only_action_still_needs_the_null_to_decide_it(tm
     # list alone.
     result = one_sided_payload(tmp_path, "result", "settings", ("rep0", "rep1"))
     null = null_run(tmp_path, "null", [("r100K", "rep0", "settings", "SAME", "SAME")])
-    scope = U.actions_needing_an_excuse([result], min_reps=2)
+    scope = U.actions_needing_an_excuse([result], min_reps = 2)
     assert ("r100K", "settings") in scope
     rc, _ = U.audit_null([null], frozenset(), scope)
     assert rc == 1
@@ -654,7 +654,7 @@ def test_a_corroborated_one_arm_only_action_still_needs_the_null_to_decide_it(tm
 
 def test_the_workflow_scopes_the_audit_with_the_verdicts_own_threshold(tmp_path):
     # An audit scoped by a different --min-reps than the verdict is auditing a verdict nobody runs.
-    wf = WORKFLOW.read_text(encoding="utf-8")
+    wf = WORKFLOW.read_text(encoding = "utf-8")
     audit = wf.split("--audit-null", 1)[1].split("outputs/parity-null-control", 1)[0]
     assert "--compared-in outputs/parity-result" in audit
     assert "--min-reps 2" in audit
@@ -681,7 +681,7 @@ def missed_slot_payload(tmp_path: Path, name: str, action: str, reps: tuple[str,
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -692,12 +692,12 @@ def test_one_arm_missing_a_slot_in_every_repetition_is_still_not_a_build_differe
     # `slot_missed` can. Note which arm too: reading it as a regression would have blamed the head
     # build for the old one's timing.
     path = missed_slot_payload(tmp_path, "slow", "settings", ("rep0", "rep1"))
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 0
 
 
 def test_a_control_that_cannot_open_is_still_caught_when_a_slot_is_also_missed_elsewhere(tmp_path):
     path = one_sided_payload(tmp_path, "broken", "settings", ("rep0", "rep1"))
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 1
 
 
 def test_a_difference_at_one_rung_does_not_demand_the_null_decide_another(tmp_path):
@@ -716,7 +716,7 @@ def test_a_difference_at_one_rung_does_not_demand_the_null_decide_another(tmp_pa
         [("r1K", "rep0", "keystroke", "A", "B"), ("r1K", "rep1", "keystroke", "A", "B")]
         + [("r100K", "rep0", "keystroke", "S", "S")],
     )
-    scope = U.actions_needing_an_excuse([result], min_reps=2)
+    scope = U.actions_needing_an_excuse([result], min_reps = 2)
     assert scope == {("r1K", "keystroke")}
     rc, report_ = U.audit_null([null], frozenset(), scope)
     assert rc == 0, report_["undecided"]
@@ -766,9 +766,9 @@ def test_an_interrupted_retry_does_not_inherit_the_completion_it_superseded(tmp_
     out = tmp_path / "resumed"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
 
-    got = U.collect([path], require_complete=True)
+    got = U.collect([path], require_complete = True)
     assert got["incomplete"] == 1, got
     keys = {(k[2], k[4]) for k in got["pairs"]}
     assert ("rep0", "settings") in keys
@@ -842,7 +842,7 @@ def _arm_payload(tmp_path: Path, name: str, regress: str | None, self_race: str 
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -855,27 +855,27 @@ def test_the_other_runners_race_does_not_excuse_a_regression_on_this_one(tmp_pat
     it was excused solely by a race on a machine the result never touched -- and a corroborated
     head regression there would have shipped green.
     """
-    null = _arm_payload(tmp_path, "null", regress=None, self_race="reasoning_toggle")
-    result = _arm_payload(tmp_path, "result", regress="reasoning_toggle", self_race=None)
+    null = _arm_payload(tmp_path, "null", regress = None, self_race = "reasoning_toggle")
+    result = _arm_payload(tmp_path, "result", regress = "reasoning_toggle", self_race = None)
 
     imported, derived, _ = U.unstable_set([null])
     assert ("r100K", "reasoning_toggle") in imported, imported
     assert derived
 
-    assert U.report([result], "imported", imported, min_reps=2, min_compared=16) == 0
+    assert U.report([result], "imported", imported, min_reps = 2, min_compared = 16) == 0
 
     local_unstable, local_stable = U.in_arm_repeatability([result])
     assert ("r100K", "reasoning_toggle") in local_stable
     assert ("r100K", "reasoning_toggle") not in local_unstable
     effective, dropped = U.confine_to_runner(imported, local_unstable, local_stable)
     assert dropped == [("r100K", "reasoning_toggle")], dropped
-    assert U.report([result], "confined", effective, min_reps=2, min_compared=16) == 1
+    assert U.report([result], "confined", effective, min_reps = 2, min_compared = 16) == 1
     assert "reasoning_toggle" in capsys.readouterr().out
 
 
 def test_an_exemption_this_runner_reproduces_is_kept(tmp_path):
-    null = _arm_payload(tmp_path, "null", regress=None, self_race="reasoning_toggle")
-    result = _arm_payload(tmp_path, "result", regress=None, self_race="reasoning_toggle")
+    null = _arm_payload(tmp_path, "null", regress = None, self_race = "reasoning_toggle")
+    result = _arm_payload(tmp_path, "result", regress = None, self_race = "reasoning_toggle")
     imported, _derived, _ = U.unstable_set([null])
     effective, dropped = U.confine_to_runner(imported, *U.in_arm_repeatability([result]))
     assert dropped == []
@@ -885,11 +885,11 @@ def test_an_exemption_this_runner_reproduces_is_kept(tmp_path):
 def test_an_action_this_runner_could_not_decide_keeps_its_exemption(tmp_path):
     # UNDECIDED IS NOT STABLE: one repetition of side A is one observation, and reading it as
     # "this runner says the action is repeatable" would turn a lost slot into a red job.
-    null = _arm_payload(tmp_path, "null", regress=None, self_race="reasoning_toggle")
+    null = _arm_payload(tmp_path, "null", regress = None, self_race = "reasoning_toggle")
     rows = [
         json.loads(line)
-        for line in _arm_payload(tmp_path, "result", regress=None, self_race=None)
-        .read_text(encoding="utf-8")
+        for line in _arm_payload(tmp_path, "result", regress = None, self_race = None)
+        .read_text(encoding = "utf-8")
         .splitlines()
     ]
     rows = [
@@ -904,7 +904,7 @@ def test_an_action_this_runner_could_not_decide_keeps_its_exemption(tmp_path):
     out = tmp_path / "thin"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
 
     local_unstable, local_stable = U.in_arm_repeatability([path])
     assert ("r100K", "reasoning_toggle") not in local_stable
@@ -918,8 +918,8 @@ def test_an_action_this_runner_could_not_decide_keeps_its_exemption(tmp_path):
 def test_a_declared_exemption_is_never_dropped_by_a_runner_measurement(tmp_path):
     # The declared list is a standing claim about the app, not a measurement of a machine, so a
     # machine cannot contradict it; only the `(rung, action)` entries are runner-derived.
-    null = _arm_payload(tmp_path, "null", regress=None, self_race="reasoning_toggle")
-    result = _arm_payload(tmp_path, "result", regress=None, self_race=None)
+    null = _arm_payload(tmp_path, "null", regress = None, self_race = "reasoning_toggle")
+    result = _arm_payload(tmp_path, "result", regress = None, self_race = None)
     imported, _derived, _ = U.unstable_set([null])
     effective, _dropped = U.confine_to_runner(imported, *U.in_arm_repeatability([result]))
     assert U.UNSTABLE_ACTIONS <= effective
@@ -929,8 +929,8 @@ def test_the_verdict_confines_the_imported_set_when_driven_through_main(tmp_path
     # Driven through main() rather than report(), because the failure guarded against is a correct
     # confinement that never reaches the verdict: the same shape that shipped once in this file's
     # neighbour, where --min-reps was parsed and never passed to build().
-    null = _arm_payload(tmp_path, "null", regress=None, self_race="reasoning_toggle")
-    result = _arm_payload(tmp_path, "result", regress="reasoning_toggle", self_race=None)
+    null = _arm_payload(tmp_path, "null", regress = None, self_race = "reasoning_toggle")
+    result = _arm_payload(tmp_path, "result", regress = "reasoning_toggle", self_race = None)
     rc = U.main(
         [
             "--min-reps",
@@ -979,7 +979,7 @@ def _expect_payload(
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -994,26 +994,26 @@ def test_a_control_that_stopped_working_is_not_excused_by_its_digest_exemption(t
 
     The assertion is not a digest, so the digest exemption does not reach it.
     """
-    path = _expect_payload(tmp_path, "regressed", "stop_generation", failed_on="treatment")
+    path = _expect_payload(tmp_path, "regressed", "stop_generation", failed_on = "treatment")
     assert "stop_generation" in U.UNSTABLE_ACTIONS
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
     printed = capsys.readouterr().out
     assert "ASSERTION FAILED ON ONE ARM" in printed.upper()
     assert "stop_generation" in printed
 
 
 def test_both_arms_failing_the_assertion_is_lost_coverage_not_a_difference(tmp_path):
-    path = _expect_payload(tmp_path, "both", "stop_generation", failed_on=None, both=True)
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    path = _expect_payload(tmp_path, "both", "stop_generation", failed_on = None, both = True)
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
 
 
 def test_an_action_that_asserts_nothing_is_not_an_assertion_failure(tmp_path):
     # `expect_ok is None` is "this action makes no claim", which every payload recorded before the
     # field existed also carries, so reading None as False would red every one of them.
     path = _expect_payload(
-        tmp_path, "none", "stop_generation", failed_on=None, expect_ok_value=None
+        tmp_path, "none", "stop_generation", failed_on = None, expect_ok_value = None
     )
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
     # Asserted on the signal as well as the exit code: through the exit code alone this case is
     # indistinguishable from the both-arms one, and `expect_regressed` is where the distinction
     # lives.
@@ -1030,16 +1030,16 @@ def test_an_action_that_asserts_nothing_is_not_an_assertion_failure(tmp_path):
             "style": {"style_attempted": True, "capped": False, "nodes": []},
         },
     }
-    other = dict(row, expect_ok=True)
+    other = dict(row, expect_ok = True)
     assert P.compare_rows(row, other)["expect_regressed"] == ""
     assert P.compare_rows(other, row)["expect_regressed"] == ""
 
 
 def test_an_assertion_that_failed_in_one_repetition_of_two_is_not_counted(tmp_path, capsys):
     path = _expect_payload(
-        tmp_path, "flake", "stop_generation", failed_on="treatment", reps=("rep0",)
+        tmp_path, "flake", "stop_generation", failed_on = "treatment", reps = ("rep0",)
     )
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
     assert "UNCORROBORATED assertion failure" in capsys.readouterr().out
 
 
@@ -1066,7 +1066,7 @@ def _reversing_expect_payload(tmp_path: Path, name: str, action: str) -> Path:
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -1083,7 +1083,7 @@ def test_an_assertion_that_blames_a_different_arm_each_time_is_not_corroborated(
     visible in the output rather than silent.
     """
     path = _reversing_expect_payload(tmp_path, "reversing", "stop_generation")
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
     printed = capsys.readouterr().out
     assert "UNCORROBORATED assertion failure" in printed
     assert "ASSERTION failed on one arm:  0" in printed
@@ -1093,8 +1093,8 @@ def test_an_assertion_that_blames_the_same_arm_twice_still_fails_the_job(tmp_pat
     # The other side of the same key, and why the fix is not just "require more": a build that
     # consistently fails the assertion is what this category exists to catch and must survive the
     # direction keying.
-    path = _expect_payload(tmp_path, "consistent", "stop_generation", failed_on="treatment")
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    path = _expect_payload(tmp_path, "consistent", "stop_generation", failed_on = "treatment")
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
 
 
 def test_one_arm_only_that_swaps_arms_between_repetitions_is_not_corroborated(tmp_path, capsys):
@@ -1116,9 +1116,9 @@ def test_one_arm_only_that_swaps_arms_between_repetitions_is_not_corroborated(tm
     out = tmp_path / "swap"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
 
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 0
     assert "UNCORROBORATED one-arm-only" in capsys.readouterr().out
 
 
@@ -1139,7 +1139,7 @@ def _scope_payload(tmp_path: Path, name: str, actions: tuple[str, ...]) -> Path:
     out = tmp_path / name
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -1207,7 +1207,7 @@ def test_a_broken_control_is_not_excused_because_its_digest_varies(tmp_path, cap
     path = one_sided_payload(tmp_path, "broken", "keystroke", ("rep0", "rep1"))
     assert "keystroke" in U.UNSTABLE_ACTIONS
     assert "keystroke" not in P.RACY_EXECUTION
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
     assert "RAN ON ONE ARM ONLY" in capsys.readouterr().out
 
 
@@ -1217,7 +1217,7 @@ def test_an_action_with_no_not_run_path_is_never_exempt_from_one_arm_only(tmp_pa
     path = one_sided_payload(tmp_path, "scroll", "scroll_after", ("rep0", "rep1"))
     assert "scroll_after" in U.UNSTABLE_ACTIONS
     assert "scroll_after" not in P.RACY_EXECUTION
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
 
 
 def test_every_racy_execution_entry_states_its_mechanism():
@@ -1245,10 +1245,10 @@ def test_a_racy_execution_action_is_not_put_in_the_audit_scope(tmp_path):
         "racy",
         "stop_generation",
         ("rep0", "rep1"),
-        reason="nothing was generating and a new turn did not start within 8s",
+        reason = "nothing was generating and a new turn did not start within 8s",
     )
     assert "stop_generation" in P.RACY_EXECUTION
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
     assert ("r100K", "stop_generation") not in U.actions_needing_an_excuse([path], 2)
 
 
@@ -1272,15 +1272,15 @@ def test_a_direction_reversing_one_sided_pair_is_not_put_in_the_audit_scope(tmp_
     out = tmp_path / "swap2"
     out.mkdir()
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
 
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 0
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 0
     assert ("r100K", "settings") not in U.actions_needing_an_excuse([path], 2)
 
 
 def test_a_control_the_head_cannot_open_is_still_in_the_audit_scope(tmp_path):
     path = one_sided_payload(tmp_path, "real", "settings", ("rep0", "rep1"))
-    assert U.report([path], "t", frozenset(), min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", frozenset(), min_reps = 2, min_compared = 16) == 1
     assert ("r100K", "settings") in U.actions_needing_an_excuse([path], 2)
 
 
@@ -1297,10 +1297,10 @@ def test_a_removed_stop_button_is_not_exempt_just_because_stop_generation_can_ra
         "removed",
         "stop_generation",
         ("rep0", "rep1"),
-        reason="the stop button is not present",
+        reason = "the stop button is not present",
     )
     assert not P.racy_execution("stop_generation", "the stop button is not present")
-    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    assert U.report([path], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
     assert ("r100K", "stop_generation") in U.actions_needing_an_excuse([path], 2)
 
 
@@ -1310,14 +1310,14 @@ def test_a_missing_composer_is_not_exempt_just_because_send_turn_can_be_queued(t
         "queued",
         "send_turn",
         ("rep0", "rep1"),
-        reason="a reply was still streaming, so this send would have been queued",
+        reason = "a reply was still streaming, so this send would have been queued",
     )
-    assert U.report([racy], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 0
+    assert U.report([racy], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 0
 
     gone = one_sided_payload(
-        tmp_path, "gone", "send_turn", ("rep0", "rep1"), reason="no composer on the page"
+        tmp_path, "gone", "send_turn", ("rep0", "rep1"), reason = "no composer on the page"
     )
-    assert U.report([gone], "t", U.UNSTABLE_ACTIONS, min_reps=2, min_compared=16) == 1
+    assert U.report([gone], "t", U.UNSTABLE_ACTIONS, min_reps = 2, min_compared = 16) == 1
 
 
 # WHAT TURNED RED: a wave of `studiobench UI parity` audited UNDECIDED with `keystroke@r100K`
@@ -1408,9 +1408,9 @@ def streaming_null(tmp_path: Path, name: str, cells: list[list[dict]]) -> Path:
     for cell in cells:
         rows.extend(cell)
     out = tmp_path / name
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents = True, exist_ok = True)
     path = out / "payload.jsonl"
-    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
     return path
 
 
@@ -1422,8 +1422,8 @@ def test_a_mid_stream_tail_is_still_a_refusal_and_never_a_pass():
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
+        base_tail = "T18277",
+        treat_tail = "T18253",
     )
     got = P.compare(rows[0]["parity"], rows[1]["parity"])
     assert got["verdict"] == P.NOT_COMPARABLE
@@ -1437,8 +1437,8 @@ def test_a_refusal_that_read_the_settled_thread_is_an_observation():
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
+        base_tail = "T18277",
+        treat_tail = "T18253",
     )
     pair = ("keystroke", P.compare(rows[0]["parity"], rows[1]["parity"]))
     row = P.derive_unstable([pair, pair])["keystroke"]
@@ -1467,9 +1467,9 @@ def test_a_settled_message_that_moved_is_a_difference_not_an_observation():
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
-        treat_settled="MOVED",
+        base_tail = "T18277",
+        treat_tail = "T18253",
+        treat_settled = "MOVED",
     )
     got = P.compare(rows[0]["parity"], rows[1]["parity"])
     assert got["verdict"] == P.DIFFER
@@ -1483,9 +1483,9 @@ def test_a_scaffold_that_moved_is_a_difference_not_an_observation():
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
-        treat_scaffold="MOVED",
+        base_tail = "T18277",
+        treat_tail = "T18253",
+        treat_scaffold = "MOVED",
     )
     got = P.compare(rows[0]["parity"], rows[1]["parity"])
     assert got["verdict"] == P.DIFFER
@@ -1501,9 +1501,9 @@ def test_a_live_row_whose_role_changed_carries_no_positive_reading():
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
-        treat_role="user",
+        base_tail = "T18277",
+        treat_tail = "T18253",
+        treat_role = "user",
     )
     base, treat = rows[0]["parity"], rows[1]["parity"]
     assert P.settled_messages_moved(base, treat) == ["msg1:role assistant->user"]
@@ -1525,8 +1525,8 @@ def test_a_settled_match_cannot_supply_the_observation_that_mints_an_exemption()
         "r100K.base.rep0",
         "r100K.treatment.rep0",
         "keystroke",
-        base_tail="T18277",
-        treat_tail="T18253",
+        base_tail = "T18277",
+        treat_tail = "T18253",
     )
     settled = P.compare(rows[0]["parity"], rows[1]["parity"])
     assert settled[P.SETTLED_MATCH] is True
@@ -1555,19 +1555,19 @@ def test_the_audit_decides_an_action_whose_only_leftover_was_the_live_reply(tmp_
                 "r100K.base.rep0",
                 "r100K.treatment.rep0",
                 "keystroke",
-                base_tail="T18277",
-                treat_tail="T18253",
+                base_tail = "T18277",
+                treat_tail = "T18253",
             ),
             streaming_pair_rows(
                 "r100K.base.rep1",
                 "r100K.treatment.rep1",
                 "keystroke",
-                base_tail="T21004",
-                treat_tail="T20980",
+                base_tail = "T21004",
+                treat_tail = "T20980",
             ),
         ],
     )
-    rc, report = U.audit_null([null], scope={("r100K", "keystroke")})
+    rc, report = U.audit_null([null], scope = {("r100K", "keystroke")})
     assert rc == 0, report
     assert report["decided"] == [("r100K", "keystroke")]
     assert report["undecided"] == []
@@ -1585,14 +1585,14 @@ def test_the_audit_still_fails_when_the_capture_itself_was_blind(tmp_path):
             f"r100K.base.{rep}",
             f"r100K.treatment.{rep}",
             "keystroke",
-            base_tail=tails[0],
-            treat_tail=tails[1],
+            base_tail = tails[0],
+            treat_tail = tails[1],
         )
         for row in cell:
             row["parity"]["in_flight_unplaced"] = True
         cells.append(cell)
     null = streaming_null(tmp_path, "unplaced", cells)
-    rc, report = U.audit_null([null], scope={("r100K", "keystroke")})
+    rc, report = U.audit_null([null], scope = {("r100K", "keystroke")})
     assert rc == 1
     assert report["decided"] == []
     assert report["undecided"] == [("r100K", "keystroke")]
@@ -1609,15 +1609,15 @@ def test_a_settled_match_can_never_grow_the_excuse_set(tmp_path):
                 "r100K.base.rep0",
                 "r100K.treatment.rep0",
                 "keystroke",
-                base_tail="A",
-                treat_tail="B",
+                base_tail = "A",
+                treat_tail = "B",
             ),
             streaming_pair_rows(
                 "r100K.base.rep1",
                 "r100K.treatment.rep1",
                 "keystroke",
-                base_tail="C",
-                treat_tail="D",
+                base_tail = "C",
+                treat_tail = "D",
             ),
         ],
     )

@@ -119,11 +119,11 @@ def merge_text_streams(
     """
     import torch
 
-    states = torch.cat([encoder_hidden_states_2, encoder_hidden_states], dim=1)
-    mask = torch.cat([encoder_attention_mask_2, encoder_attention_mask], dim=1)
+    states = torch.cat([encoder_hidden_states_2, encoder_hidden_states], dim = 1)
+    mask = torch.cat([encoder_attention_mask_2, encoder_attention_mask], dim = 1)
     # Key 0 for a valid token, 1 for padding; a STABLE sort keeps byt5 ahead of mllm and each
     # stream's own order within both groups.
-    order = torch.argsort((~mask).to(torch.uint8), dim=1, stable=True)
+    order = torch.argsort((~mask).to(torch.uint8), dim = 1, stable = True)
     states = torch.gather(states, 1, order.unsqueeze(-1).expand(-1, -1, states.shape[-1]))
     mask = torch.gather(mask, 1, order)
     return states, mask

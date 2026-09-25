@@ -49,8 +49,8 @@ def _arm(
     monkeypatch,
     route,
     *,
-    inflight=0,
-    video=False,
+    inflight = 0,
+    video = False,
 ):
     """Point the route at a fresh backend and a controllable inference count."""
     backend = TrainingBackend()
@@ -58,7 +58,7 @@ def _arm(
     monkeypatch.setattr(
         keepwarm,
         "other_inference_request_count",
-        lambda current_request_counted=True, **_: inflight,
+        lambda current_request_counted = True, **_: inflight,
     )
     monkeypatch.setattr(route, "_background_video_generation_active", lambda: video)
     return backend
@@ -67,8 +67,8 @@ def _arm(
 async def _call(route, config):
     return await route.start_training(
         TrainingStartRequest.model_validate(config),
-        current_subject="mcp",
-        via_api_key=True,
+        current_subject = "mcp",
+        via_api_key = True,
     )
 
 
@@ -79,7 +79,7 @@ async def _call(route, config):
 
 def test_live_chat_stream_refuses_the_mcp_start(monkeypatch):
     route = _load_training_route("training_route_guard_stream_test")
-    _arm(monkeypatch, route, inflight=1)
+    _arm(monkeypatch, route, inflight = 1)
 
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(_call(route, _config()))
@@ -91,7 +91,7 @@ def test_live_chat_stream_refuses_the_mcp_start(monkeypatch):
 def test_background_video_generation_also_refuses_the_mcp_start(monkeypatch):
     """Wider than the PR title: a background clip blocks MCP training too."""
     route = _load_training_route("training_route_guard_video_test")
-    _arm(monkeypatch, route, inflight=0, video=True)
+    _arm(monkeypatch, route, inflight = 0, video = True)
 
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(_call(route, _config()))
@@ -102,7 +102,7 @@ def test_background_video_generation_also_refuses_the_mcp_start(monkeypatch):
 def test_idle_backend_lets_the_mcp_start_through_the_guard(monkeypatch):
     """No inference in flight: the 409 must not fire (the regression question)."""
     route = _load_training_route("training_route_guard_idle_test")
-    _arm(monkeypatch, route, inflight=0)
+    _arm(monkeypatch, route, inflight = 0)
 
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(_call(route, _config()))
@@ -123,7 +123,7 @@ def test_stream_finishing_then_retrying_starts(monkeypatch):
     monkeypatch.setattr(
         keepwarm,
         "other_inference_request_count",
-        lambda current_request_counted=True, **_: counter["n"],
+        lambda current_request_counted = True, **_: counter["n"],
     )
     monkeypatch.setattr(route, "_background_video_generation_active", lambda: False)
 
@@ -151,7 +151,7 @@ def test_the_mcp_call_does_not_count_itself():
 def test_idle_but_warm_model_counts_as_zero(monkeypatch):
     monkeypatch.setattr(keepwarm, "_inflight", 0)
     monkeypatch.setattr(keepwarm, "_pending", 0)
-    assert keepwarm.other_inference_request_count(current_request_counted=False) == 0
+    assert keepwarm.other_inference_request_count(current_request_counted = False) == 0
 
 
 def test_a_completed_request_is_reaped_by_the_middleware_finally():
@@ -176,29 +176,29 @@ def test_a_completed_request_is_reaped_by_the_middleware_finally():
         except RuntimeError:
             pass
 
-    before = keepwarm.other_inference_request_count(current_request_counted=False)
+    before = keepwarm.other_inference_request_count(current_request_counted = False)
     asyncio.run(drive(False))
-    assert keepwarm.other_inference_request_count(current_request_counted=False) == before
+    assert keepwarm.other_inference_request_count(current_request_counted = False) == before
     asyncio.run(drive(True))
-    assert keepwarm.other_inference_request_count(current_request_counted=False) == before
+    assert keepwarm.other_inference_request_count(current_request_counted = False) == before
 
 
 def test_an_untracked_external_provider_request_does_not_block_training():
     scope = {}
-    before = keepwarm.other_inference_request_count(current_request_counted=False)
+    before = keepwarm.other_inference_request_count(current_request_counted = False)
     keepwarm._note_pending()
     keepwarm._note_start()
-    assert keepwarm.other_inference_request_count(current_request_counted=False) == before + 1
+    assert keepwarm.other_inference_request_count(current_request_counted = False) == before + 1
     keepwarm.untrack_current_request(scope)
-    assert keepwarm.other_inference_request_count(current_request_counted=False) == before
+    assert keepwarm.other_inference_request_count(current_request_counted = False) == before
 
 
 def test_a_pending_waiter_counts_as_active(monkeypatch):
     """include_pending defaults True, so a queued chat also refuses training."""
-    before = keepwarm.other_inference_request_count(current_request_counted=False)
+    before = keepwarm.other_inference_request_count(current_request_counted = False)
     keepwarm._note_pending()
     try:
-        assert keepwarm.other_inference_request_count(current_request_counted=False) == before + 1
+        assert keepwarm.other_inference_request_count(current_request_counted = False) == before + 1
     finally:
         keepwarm._note_unpending()
 
@@ -217,11 +217,11 @@ def test_a_guard_409_does_not_poison_the_supplied_start_request_id(monkeypatch):
     monkeypatch.setattr(
         keepwarm,
         "other_inference_request_count",
-        lambda current_request_counted=True, **_: counter["n"],
+        lambda current_request_counted = True, **_: counter["n"],
     )
     monkeypatch.setattr(route, "_background_video_generation_active", lambda: False)
 
-    config = _config(start_request_id="agent-retry-1")
+    config = _config(start_request_id = "agent-retry-1")
 
     with pytest.raises(HTTPException) as first:
         asyncio.run(_call(route, config))
@@ -247,16 +247,16 @@ def test_a_fresh_start_request_id_recovers(monkeypatch):
     monkeypatch.setattr(
         keepwarm,
         "other_inference_request_count",
-        lambda current_request_counted=True, **_: counter["n"],
+        lambda current_request_counted = True, **_: counter["n"],
     )
     monkeypatch.setattr(route, "_background_video_generation_active", lambda: False)
 
     with pytest.raises(HTTPException):
-        asyncio.run(_call(route, _config(start_request_id="attempt-1")))
+        asyncio.run(_call(route, _config(start_request_id = "attempt-1")))
 
     counter["n"] = 0
     with pytest.raises(HTTPException) as second:
-        asyncio.run(_call(route, _config(start_request_id="attempt-2")))
+        asyncio.run(_call(route, _config(start_request_id = "attempt-2")))
     assert "inference request is in progress" not in str(second.value.detail)
 
 
@@ -267,16 +267,16 @@ def test_a_resolved_start_request_id_still_replays_under_the_guard(monkeypatch):
     unrelated inference request is in flight has to hear "your job is queued", not a
     fresh 409 telling it the start never happened."""
     route = _load_training_route("training_route_guard_replay_test")
-    backend = _arm(monkeypatch, route, inflight=1)
+    backend = _arm(monkeypatch, route, inflight = 1)
 
     backend.reserve_start_request("agent-accepted", "job-accepted")
     backend.resolve_start_request(
         "agent-accepted",
-        state="accepted",
-        message="Training started",
+        state = "accepted",
+        message = "Training started",
     )
 
-    response = asyncio.run(_call(route, _config(start_request_id="agent-accepted")))
+    response = asyncio.run(_call(route, _config(start_request_id = "agent-accepted")))
 
     assert response.status == "queued"
     assert response.job_id == "job-accepted"
@@ -293,7 +293,7 @@ def test_a_cancelled_start_request_id_replays_and_keeps_its_tombstone(monkeypatc
     from core.training import training as training_module
 
     route = _load_training_route("training_route_guard_tombstone_test")
-    backend = _arm(monkeypatch, route, inflight=1)
+    backend = _arm(monkeypatch, route, inflight = 1)
 
     outcome, cancelled = backend.cancel_start_request("agent-cancelled")
     assert outcome == "cancelled"
@@ -302,7 +302,7 @@ def test_a_cancelled_start_request_id_replays_and_keeps_its_tombstone(monkeypatc
     # would find nothing and start the job.
     backend._start_cancel_tombstones["agent-cancelled"] = (time.monotonic() + 0.5, cancelled)
 
-    response = asyncio.run(_call(route, _config(start_request_id="agent-cancelled")))
+    response = asyncio.run(_call(route, _config(start_request_id = "agent-cancelled")))
 
     assert response.status == "error"
     assert response.error_code == training_module._START_CANCELLED_ERROR_CODE
@@ -315,10 +315,10 @@ def test_a_cancelled_start_request_id_replays_and_keeps_its_tombstone(monkeypatc
 def test_an_unknown_start_request_id_is_still_refused_without_a_record(monkeypatch):
     """The replay lookup must not resurrect the poisoning bug this PR exists to fix."""
     route = _load_training_route("training_route_guard_replay_fresh_test")
-    backend = _arm(monkeypatch, route, inflight=1)
+    backend = _arm(monkeypatch, route, inflight = 1)
 
     with pytest.raises(HTTPException) as excinfo:
-        asyncio.run(_call(route, _config(start_request_id="agent-never-seen")))
+        asyncio.run(_call(route, _config(start_request_id = "agent-never-seen")))
 
     assert excinfo.value.status_code == 409
     assert backend.get_start_request("agent-never-seen") is None
@@ -343,7 +343,7 @@ def test_the_mcp_tool_surfaces_the_409_as_a_tool_error_not_a_dict(monkeypatch):
     monkeypatch.setattr(
         keepwarm,
         "other_inference_request_count",
-        lambda current_request_counted=True, **_: 1,
+        lambda current_request_counted = True, **_: 1,
     )
     monkeypatch.setattr(training_routes, "_background_video_generation_active", lambda: False)
 
@@ -359,7 +359,7 @@ def test_the_mcp_tool_surfaces_the_409_as_a_tool_error_not_a_dict(monkeypatch):
     async def run_tool_body():
         tool = await server.get_tool("start_training")
         assert tool is not None, "start_training must be registered on the studio MCP server"
-        return await tool.fn(config=_config())
+        return await tool.fn(config = _config())
 
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(run_tool_body())
@@ -388,13 +388,13 @@ def test_the_mcp_tool_surfaces_the_409_as_a_tool_error_not_a_dict(monkeypatch):
 
 def test_two_concurrent_mcp_starts_during_a_stream_both_refuse(monkeypatch):
     route = _load_training_route("training_route_guard_concurrent_test")
-    _arm(monkeypatch, route, inflight=1)
+    _arm(monkeypatch, route, inflight = 1)
 
     async def both():
         return await asyncio.gather(
             _call(route, _config()),
             _call(route, _config()),
-            return_exceptions=True,
+            return_exceptions = True,
         )
 
     results = asyncio.run(both())
@@ -403,7 +403,7 @@ def test_two_concurrent_mcp_starts_during_a_stream_both_refuse(monkeypatch):
 
 def test_guard_path_uses_no_platform_specific_apis():
     """The guard is pure Python: threading + a counter, no fork/signal/posix."""
-    source = (_BACKEND_ROOT / "routes" / "training.py").read_text(encoding="utf-8")
+    source = (_BACKEND_ROOT / "routes" / "training.py").read_text(encoding = "utf-8")
     guard = source[source.index("if via_api_key is True:") :][:800]
     for banned in ("os.fork", "signal.", "SIGKILL", "winreg", "msvcrt"):
         assert banned not in guard

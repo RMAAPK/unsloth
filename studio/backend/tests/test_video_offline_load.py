@@ -52,12 +52,12 @@ def _install_sentinels(monkeypatch, calls, tmp_path, *, offline):
         calls.model_info.append(repo_id)
         if offline:
             raise AssertionError(f"model_info({repo_id!r}) reached the Hub on an offline load")
-        return types.SimpleNamespace(siblings=[], sha="deadbeef")
+        return types.SimpleNamespace(siblings = [], sha = "deadbeef")
 
     def _download(
         repo_id,
         filename,
-        token=None,
+        token = None,
         **kwargs,
     ):
         local_files_only = bool(kwargs.get("local_files_only"))
@@ -67,11 +67,11 @@ def _install_sentinels(monkeypatch, calls, tmp_path, *, offline):
                 f"{repo_id}/{filename} was fetched without local_files_only on an offline load"
             )
         path = tmp_path / filename
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents = True, exist_ok = True)
         path.write_bytes(b"")
         return str(path)
 
-    monkeypatch.setattr(huggingface_hub.HfApi, "model_info", _model_info, raising=False)
+    monkeypatch.setattr(huggingface_hub.HfApi, "model_info", _model_info, raising = False)
     monkeypatch.setattr(xet, "hf_hub_download_with_xet_fallback", _download)
     # The wrapper's own offline branch calls this directly; a sentinel here catches a bypass.
     monkeypatch.setattr(
@@ -80,7 +80,7 @@ def _install_sentinels(monkeypatch, calls, tmp_path, *, offline):
         lambda **kwargs: _download(
             kwargs.get("repo_id"), kwargs.get("filename"), kwargs.get("token"), **kwargs
         ),
-        raising=False,
+        raising = False,
     )
 
 
@@ -88,7 +88,7 @@ def _backend(monkeypatch, calls_seen):
     """A backend whose family detection is pinned and whose pipeline build is a capture."""
     backend = VideoBackend()
     backend._load_token = 1
-    backend._loading = video_mod._VideoLoadingState(repo_id=WAN_GGUF, base_repo=WAN_BASE)
+    backend._loading = video_mod._VideoLoadingState(repo_id = WAN_GGUF, base_repo = WAN_BASE)
     fam = detect_video_family(WAN_BASE)
     assert fam is not None and not fam.modular_workflow
     monkeypatch.setattr(video_mod, "_detect_load_family", lambda *_a, **_k: fam)
@@ -100,15 +100,15 @@ def test_an_api_initiated_load_opens_the_cache_and_downloads_nothing(monkeypatch
     """The whole promise, end to end: every helper on the load path either stays off the Hub or
     asks it for a cached file only."""
     calls = _Calls()
-    _install_sentinels(monkeypatch, calls, tmp_path, offline=True)
+    _install_sentinels(monkeypatch, calls, tmp_path, offline = True)
     seen: dict = {}
     backend = _backend(monkeypatch, seen)
 
     backend._run_load(
-        repo_id=WAN_GGUF,
-        gguf_filename=WAN_FILE,
-        local_files_only=True,
-        _load_token=1,
+        repo_id = WAN_GGUF,
+        gguf_filename = WAN_FILE,
+        local_files_only = True,
+        _load_token = 1,
     )
 
     # _run_load swallows failures onto load_progress rather than raising, so the state IS the
@@ -126,14 +126,14 @@ def test_an_api_initiated_load_opens_the_cache_and_downloads_nothing(monkeypatch
 def test_a_user_initiated_load_still_calls_every_one_of_them(monkeypatch, tmp_path):
     """The pre-PR path, unchanged: the UI load asks the Hub for sizes and pulls the checkpoint."""
     calls = _Calls()
-    _install_sentinels(monkeypatch, calls, tmp_path, offline=False)
+    _install_sentinels(monkeypatch, calls, tmp_path, offline = False)
     seen: dict = {}
     backend = _backend(monkeypatch, seen)
 
     backend._run_load(
-        repo_id=WAN_GGUF,
-        gguf_filename=WAN_FILE,
-        _load_token=1,
+        repo_id = WAN_GGUF,
+        gguf_filename = WAN_FILE,
+        _load_token = 1,
     )
 
     assert backend._loading is None, getattr(backend._loading, "error", None)
@@ -158,15 +158,15 @@ def test_the_native_h3_path_binds_the_flag_instead_of_swallowing_it(monkeypatch)
     monkeypatch.setattr(video_mod, "_detect_load_family", lambda *_a, **_k: fam)
     backend = VideoBackend()
     backend._load_token = 1
-    backend._loading = video_mod._VideoLoadingState(repo_id=H3_GGUF_REPO, base_repo=fam.base_repo)
+    backend._loading = video_mod._VideoLoadingState(repo_id = H3_GGUF_REPO, base_repo = fam.base_repo)
     seen: dict = {}
     monkeypatch.setattr(backend, "_run_load_h3_native", lambda **kwargs: seen.update(kwargs))
 
     backend._run_load(
-        repo_id=H3_GGUF_REPO,
-        gguf_filename="MiniMax-H3-Q4_K_M.gguf",
-        local_files_only=True,
-        _load_token=1,
+        repo_id = H3_GGUF_REPO,
+        gguf_filename = "MiniMax-H3-Q4_K_M.gguf",
+        local_files_only = True,
+        _load_token = 1,
     )
     assert seen.get("local_files_only") is True
 
@@ -187,9 +187,9 @@ def test_load_pipeline_carries_the_flag_into_the_native_path(monkeypatch):
 
     backend.load_pipeline(
         H3_GGUF_REPO,
-        gguf_filename="MiniMax-H3-Q4_K_M.gguf",
-        model_kind="gguf",
-        local_files_only=True,
+        gguf_filename = "MiniMax-H3-Q4_K_M.gguf",
+        model_kind = "gguf",
+        local_files_only = True,
     )
     assert seen.get("local_files_only") is True
 
@@ -234,11 +234,11 @@ def test_the_estimate_and_the_base_prefetch_stand_down_offline(monkeypatch):
     backend = VideoBackend()
     assert (
         backend._estimate_download_bytes(
-            WAN_GGUF, WAN_FILE, WAN_BASE, None, "gguf", local_files_only=True
+            WAN_GGUF, WAN_FILE, WAN_BASE, None, "gguf", local_files_only = True
         )
         is None
     )
-    assert backend._predownload_base(WAN_BASE, None, "gguf", local_files_only=True) is None
+    assert backend._predownload_base(WAN_BASE, None, "gguf", local_files_only = True) is None
 
 
 def test_the_xet_wrapper_resolves_offline_without_the_shared_backend(monkeypatch, tmp_path):
@@ -261,7 +261,7 @@ def test_the_xet_wrapper_resolves_offline_without_the_shared_backend(monkeypatch
 
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", _hf_hub_download)
     out = xet.hf_hub_download_with_xet_fallback(
-        "org/repo", "file.bin", None, cache_dir=str(tmp_path), local_files_only=True
+        "org/repo", "file.bin", None, cache_dir = str(tmp_path), local_files_only = True
     )
     assert out == str(tmp_path / "file.bin")
     assert seen["local_files_only"] is True
@@ -278,7 +278,7 @@ def test_the_xet_wrapper_is_unchanged_for_every_existing_caller(monkeypatch, tmp
         return str(tmp_path / "file.bin")
 
     monkeypatch.setattr(xet, "_shared_hf_hub_download_with_xet_fallback", _shared)
-    xet.hf_hub_download_with_xet_fallback("org/repo", "file.bin", None, cache_dir=str(tmp_path))
+    xet.hf_hub_download_with_xet_fallback("org/repo", "file.bin", None, cache_dir = str(tmp_path))
     assert seen["args"] == ("org/repo", "file.bin", None)
     assert "local_files_only" not in seen["kwargs"]
 
@@ -296,7 +296,7 @@ def _keywords_of(module_path: str, function: str, callee: str) -> set[str]:
     # Anchored on the package, not on the process CWD: CI runs pytest from the repo root with the
     # backend merely on PYTHONPATH, where a relative open raises FileNotFoundError.
     backend_root = pathlib.Path(video_mod.__file__).resolve().parents[2]
-    tree = ast.parse((backend_root / module_path).read_text(encoding="utf-8"))
+    tree = ast.parse((backend_root / module_path).read_text(encoding = "utf-8"))
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or node.name != function:
             continue

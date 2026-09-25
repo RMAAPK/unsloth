@@ -91,16 +91,15 @@ def _skip_reason() -> str | None:
     return None
 
 
-pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason=_skip_reason() or "")
+pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason = _skip_reason() or "")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def browser():
     from playwright.sync_api import sync_playwright
-
     with sync_playwright() as p:
         try:
-            b = p.chromium.launch(args=["--no-sandbox"])
+            b = p.chromium.launch(args = ["--no-sandbox"])
         except Exception as exc:  # noqa: BLE001
             pytest.skip(f"chromium could not be launched: {exc}")
         yield b
@@ -111,22 +110,22 @@ def browser():
 def page(browser):
     # A PAGE PER TEST, because the mouse position is page state and a previous test's hover would carry
     # the control into the next one already revealed.
-    pg = browser.new_page(viewport={"width": 1280, "height": 900})
+    pg = browser.new_page(viewport = {"width": 1280, "height": 900})
     pg.set_content(FIXTURE)
     yield pg
     pg.close()
 
 
-def _ctx(page, log=None) -> ActionContext:
+def _ctx(page, log = None) -> ActionContext:
     return ActionContext(
-        page=page,
-        cdp=None,
-        cell=Cell(cell_id="r100K.base.rep0", rung="100K", rung_tokens=100_000),
-        window=None,
-        args={"thread_id": "t1", "base_url": "http://127.0.0.1:1"},
-        budget_ms=30_000,
-        dom=None,
-        log=log or (lambda _m: None),
+        page = page,
+        cdp = None,
+        cell = Cell(cell_id = "r100K.base.rep0", rung = "100K", rung_tokens = 100_000),
+        window = None,
+        args = {"thread_id": "t1", "base_url": "http://127.0.0.1:1"},
+        budget_ms = 30_000,
+        dom = None,
+        log = log or (lambda _m: None),
     )
 
 

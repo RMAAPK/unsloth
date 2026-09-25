@@ -24,9 +24,9 @@ def test_model_vision_capability_node_contract():
         pytest.skip("node not available")
     probe = subprocess.run(
         ["node", "--experimental-strip-types", "--version"],
-        capture_output=True,
-        text=True,
-        timeout=5,
+        capture_output = True,
+        text = True,
+        timeout = 5,
     )
     if probe.returncode != 0:
         pytest.skip("node --experimental-strip-types not available")
@@ -37,7 +37,7 @@ def test_model_vision_capability_node_contract():
             "--test",
             str(ROOT / "tests/studio/model_vision_capability.test.mjs"),
         ],
-        cwd=ROOT,
-        check=True,
-        timeout=30,
+        cwd = ROOT,
+        check = True,
+        timeout = 30,
     )

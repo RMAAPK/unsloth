@@ -51,7 +51,7 @@ class _Output:
     def __init__(
         self,
         logits,
-        hidden_states=None,
+        hidden_states = None,
     ):
         self.logits = logits
         self.hidden_states = hidden_states
@@ -76,8 +76,8 @@ class _SquareModel(torch.nn.Module):
 
     def forward(
         self,
-        input_ids=None,
-        pixel_values=None,
+        input_ids = None,
+        pixel_values = None,
         **kwargs,
     ):
         batch, length = input_ids.shape
@@ -91,8 +91,8 @@ class _SquareModel(torch.nn.Module):
                     "VisionTower.forward() got an unexpected keyword argument 'return_dict'"
                 )
             if self.mode == "no_hidden_states":
-                return _Output(logits=logits, hidden_states=None)
-        return _Output(logits=logits, hidden_states=(hidden,))
+                return _Output(logits = logits, hidden_states = None)
+        return _Output(logits = logits, hidden_states = (hidden,))
 
 
 @pytest.fixture
@@ -113,12 +113,12 @@ def test_a_degraded_call_does_not_poison_the_next_call(hidden_states_env, mode):
     model = _SquareModel(mode)
     assert install_wrapper(model) is True
     head = model.lm_head.weight
-    ids = torch.zeros(1, 3, dtype=torch.long)
+    ids = torch.zeros(1, 3, dtype = torch.long)
 
-    degraded = model.forward(input_ids=ids, pixel_values=torch.zeros(1, 3, 4, 4))
+    degraded = model.forward(input_ids = ids, pixel_values = torch.zeros(1, 3, 4, 4))
     assert returns_hidden_states(model, degraded.logits, head) is False
 
-    honoured = model.forward(input_ids=ids)
+    honoured = model.forward(input_ids = ids)
     assert torch.equal(
         honoured.logits, torch.full((1, 3, WIDTH), 0.5)
     ), "the second call really did hand back hidden states"
@@ -129,9 +129,9 @@ def test_a_degraded_call_does_not_poison_the_next_call(hidden_states_env, mode):
 def test_the_warn_once_flag_stays_sticky_for_logging(hidden_states_env, mode):
     model = _SquareModel(mode)
     install_wrapper(model)
-    ids = torch.zeros(1, 3, dtype=torch.long)
-    model.forward(input_ids=ids, pixel_values=torch.zeros(1, 3, 4, 4))
-    model.forward(input_ids=ids)
+    ids = torch.zeros(1, 3, dtype = torch.long)
+    model.forward(input_ids = ids, pixel_values = torch.zeros(1, 3, 4, 4))
+    model.forward(input_ids = ids)
     assert getattr(model, WARNED) is True, "the warning must not be re-emitted per call"
     assert getattr(model, DEGRADED) is False, "the per-call flag must track the last call"
 
@@ -142,7 +142,7 @@ def test_a_forward_run_with_the_flag_off_reports_real_logits():
     previous = os.environ.get("UNSLOTH_RETURN_HIDDEN_STATES")
     os.environ["UNSLOTH_RETURN_HIDDEN_STATES"] = "0"
     try:
-        out = model.forward(input_ids=torch.zeros(1, 3, dtype=torch.long))
+        out = model.forward(input_ids = torch.zeros(1, 3, dtype = torch.long))
     finally:
         if previous is None:
             os.environ.pop("UNSLOTH_RETURN_HIDDEN_STATES", None)
@@ -164,7 +164,7 @@ def test_the_fallback_retry_does_not_reuse_the_rejected_kwargs(hidden_states_env
     model = _SquareModel("typeerror")
     install_wrapper(model)
     kwargs = {
-        "input_ids": torch.zeros(1, 3, dtype=torch.long),
+        "input_ids": torch.zeros(1, 3, dtype = torch.long),
         "pixel_values": torch.zeros(1, 3, 4, 4),
     }
     out = model.forward(**kwargs)  # must not raise
@@ -176,8 +176,8 @@ def test_dropping_positional_kwargs_never_hands_back_the_callers_dict():
     import inspect
 
     def forward(
-        input_ids=None,
-        pixel_values=None,
+        input_ids = None,
+        pixel_values = None,
         **kwargs,
     ):
         pass

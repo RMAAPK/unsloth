@@ -22,8 +22,8 @@ def _assistant_call(
     name,
     arguments,
     *,
-    id="c1",
-    content="",
+    id = "c1",
+    content = "",
 ):
     """An assistant turn whose only content is one function tool call."""
     return {
@@ -44,7 +44,7 @@ def _save_thread(
     thread_id,
     turns,
     *,
-    append=False,
+    append = False,
 ):
     """Persist a transcript the way the chat history route does.
 
@@ -80,14 +80,14 @@ def _save_thread(
         return
     # A rewind, through the same prune_missing sync the PUT route uses. Deleting the
     # thread instead would tombstone its id, and recreating a tombstoned id raises.
-    studio_db.sync_chat_messages(thread_id, rows, prune_missing=True)
+    studio_db.sync_chat_messages(thread_id, rows, prune_missing = True)
 
 
 def _archive(
     messages,
-    thread_id=THREAD,
+    thread_id = THREAD,
     *,
-    persist=True,
+    persist = True,
 ):
     """The module opens its own connection to the same temp DB the fixture points at.
 
@@ -96,7 +96,7 @@ def _archive(
     archive is the temporary-chat leak. ``persist=False`` exercises the refusal.
     """
     if persist:
-        _save_thread(thread_id, messages, append=True)
+        _save_thread(thread_id, messages, append = True)
     return conversation_archive.archive_turns(thread_id, messages)
 
 
@@ -107,11 +107,11 @@ def conn(rag_home, rag_conn, stub_embeddings):
 
 def _tool_part(
     *,
-    type="tool-call",
-    toolCallId="c1",
-    toolName="terminal",
-    command="ls",
-    result="main.py readme.md",
+    type = "tool-call",
+    toolCallId = "c1",
+    toolName = "terminal",
+    command = "ls",
+    result = "main.py readme.md",
 ):
     """One stored tool-invocation content part, with per-test overrides."""
     return {
@@ -144,7 +144,7 @@ def test_re_archiving_the_same_turns_writes_nothing(conn):
     """
     turn = _turn("what is a duck", "a waterfowl")
     first = _archive(turn)
-    second = _archive(turn, persist=False)
+    second = _archive(turn, persist = False)
 
     scope = store.conversation_archive_scope(THREAD)
     assert (first, second) == (1, 0)
@@ -221,15 +221,15 @@ def test_recall_degrades_to_lexical_when_dense_retrieval_raises(monkeypatch, con
         scope,
         query,
         *,
-        k=None,
-        model_name=None,
-        mode="hybrid",
-        lexical_query=None,
+        k = None,
+        model_name = None,
+        mode = "hybrid",
+        lexical_query = None,
     ):
         if mode != "lexical":
             raise RuntimeError("no embedding backend available")
         return real_hybrid(
-            conn_, scope, query, k=k, model_name=model_name, mode=mode, lexical_query=lexical_query
+            conn_, scope, query, k = k, model_name = model_name, mode = mode, lexical_query = lexical_query
         )
 
     monkeypatch.setattr(retrieval, "retrieve_hybrid", only_lexical_works)
@@ -324,7 +324,7 @@ def test_recall_finds_a_rare_token_buried_in_boilerplate(conn):
                     "content": f"Section {index} is about climate change impacts.",
                 },
             ],
-            thread_id="needle-thread",
+            thread_id = "needle-thread",
         )
 
     found = conversation_archive.recall(
@@ -351,8 +351,8 @@ def test_recall_does_not_resurrect_a_turn_the_user_rolled_back_past(conn, monkey
         {"role": "user", "content": "section two, code GONEAWAY-2222"},
         {"role": "assistant", "content": "noted section two"},
     ]
-    _archive(kept, thread_id="branch-thread")
-    _archive(rolled_back, thread_id="branch-thread")
+    _archive(kept, thread_id = "branch-thread")
+    _archive(rolled_back, thread_id = "branch-thread")
     # The saved thread now holds only the surviving branch.
     _save_thread("branch-thread", kept)
 
@@ -381,20 +381,20 @@ def test_recall_filters_to_the_ACTIVE_branch_not_the_whole_stored_thread(conn):
         {"role": "user", "content": "what is the code, code KEEPME-1111"},
         {"role": "assistant", "content": "the code is SIBLING-3333"},
     ]
-    _archive(live, thread_id="retry-thread")
-    _archive(retried_away, thread_id="retry-thread")
+    _archive(live, thread_id = "retry-thread")
+    _archive(retried_away, thread_id = "retry-thread")
     # Both branches remain stored, which is exactly what Retry leaves behind.
     _save_thread("retry-thread", live)
-    _save_thread("retry-thread", retried_away, append=True)
+    _save_thread("retry-thread", retried_away, append = True)
 
     # Thread-wide filtering cannot reject the sibling: its text is genuinely in the DAG.
     thread_wide = conversation_archive.recall("retry-thread", "SIBLING-3333")
     assert thread_wide is not None and "SIBLING-3333" in thread_wide[0]
 
     # Told which branch this is, it is rejected while the live answer still comes back.
-    on_branch = conversation_archive.recall("retry-thread", "SIBLING-3333", branch_messages=live)
+    on_branch = conversation_archive.recall("retry-thread", "SIBLING-3333", branch_messages = live)
     assert on_branch is None or "SIBLING-3333" not in on_branch[0]
-    survived = conversation_archive.recall("retry-thread", "KEEPME-1111", branch_messages=live)
+    survived = conversation_archive.recall("retry-thread", "KEEPME-1111", branch_messages = live)
     assert survived is not None and "KEEPME-1111" in survived[0]
 
 
@@ -409,29 +409,29 @@ def test_the_reply_that_FOLLOWS_a_forced_recall_is_still_archived(conn):
         _assistant_call(
             "search_conversation",
             '{"query": "pass"}',
-            id="conv_recall_1",
-            content=None,
+            id = "conv_recall_1",
+            content = None,
         ),
         {"role": "tool", "tool_call_id": "conv_recall_1", "content": "<chunk>RETRIEVED</chunk>"},
         {"role": "assistant", "content": "The passphrase you set earlier was SWORDFISH-42."},
     ]
-    _save_thread("recall-turn-thread", evicted, append=True)
+    _save_thread("recall-turn-thread", evicted, append = True)
 
     assert conversation_archive.archive_turns("recall-turn-thread", evicted) == 2
 
     found = conversation_archive.recall(
-        "recall-turn-thread", "SWORDFISH-42", branch_messages=evicted
+        "recall-turn-thread", "SWORDFISH-42", branch_messages = evicted
     )
     assert found is not None
     assert "SWORDFISH-42" in found[0]
     # The retrieved passage itself is still kept out, or the archive feeds on itself.
     assert "RETRIEVED" not in found[0]
     assert (
-        conversation_archive.recall("recall-turn-thread", "RETRIEVED", branch_messages=evicted)
+        conversation_archive.recall("recall-turn-thread", "RETRIEVED", branch_messages = evicted)
         is None
         or "RETRIEVED"
         not in conversation_archive.recall(
-            "recall-turn-thread", "RETRIEVED", branch_messages=evicted
+            "recall-turn-thread", "RETRIEVED", branch_messages = evicted
         )[0]
     )
 
@@ -443,7 +443,7 @@ def test_deleting_a_thread_works_without_sqlite_vec(conn, monkeypatch):
     leaves the turns on disk, ready to answer again once the extension loads.
     """
     turns = _turn("what is the passphrase", "the passphrase is VECGONE-2020")
-    _save_thread("vecless-thread", turns, append=True)
+    _save_thread("vecless-thread", turns, append = True)
     assert conversation_archive.archive_turns("vecless-thread", turns) == 1
 
     def no_vec():
@@ -566,7 +566,7 @@ def test_a_search_the_MODEL_asked_for_is_not_archived_as_new_history():
     from core.rag import conversation_archive as archive
 
     recalled = [
-        _assistant_call("search_conversation", '{"query":"pass"}', id="call_0"),
+        _assistant_call("search_conversation", '{"query":"pass"}', id = "call_0"),
         {"role": "tool", "tool_call_id": "call_0", "content": "<chunk>RETRIEVEDPASSAGE</chunk>"},
         {"role": "assistant", "content": "It was ZQXVARA123."},
     ]
@@ -688,7 +688,7 @@ def test_a_folded_retrieval_result_is_still_kept_out_of_the_archive():
                         "tool_call_id": "call_0",
                     }
                 },
-                indent=2,
+                indent = 2,
             ),
         },
         {"role": "assistant", "content": "because of the fold."},
@@ -890,7 +890,7 @@ def test_one_turn_archived_twice_at_once_is_stored_once(conn, monkeypatch):
 
     def slow_encode(texts, **kwargs):
         # Both passes are inside the window: neither has inserted yet.
-        barrier.wait(timeout=10)
+        barrier.wait(timeout = 10)
         return real_encode(texts, **kwargs)
 
     monkeypatch.setattr(embeddings, "encode_with_identity", slow_encode)
@@ -901,7 +901,7 @@ def test_one_turn_archived_twice_at_once_is_stored_once(conn, monkeypatch):
     ]
     workers = [
         threading.Thread(
-            target=lambda: conversation_archive.archive_turns(
+            target = lambda: conversation_archive.archive_turns(
                 thread_id, [dict(message) for message in evicted]
             )
         )
@@ -982,7 +982,7 @@ def test_a_tool_turn_with_BOTH_text_and_a_call_stays_on_its_branch(conn):
     """
     request_shape = [
         {"role": "user", "content": "check the log"},
-        _assistant_call("terminal", '{"cmd":"cat log"}', content="I will read it now"),
+        _assistant_call("terminal", '{"cmd":"cat log"}', content = "I will read it now"),
         {"role": "tool", "tool_call_id": "c1", "content": "log contents here"},
     ]
     archived = conversation_archive.render_turn(request_shape)
@@ -1024,7 +1024,7 @@ def test_editing_ONE_chunk_of_a_long_turn_retires_the_whole_turn(conn):
         {"role": "user", "content": "explain the deploy process"},
         {"role": "assistant", "content": head + ("original ending sentence. " * 300)},
     ]
-    _save_thread("chunk-thread", turn, append=True)
+    _save_thread("chunk-thread", turn, append = True)
     assert conversation_archive.archive_turns("chunk-thread", turn) == 1
     # More than one chunk, or this test is not testing anything.
     scope = store.conversation_archive_scope("chunk-thread")
@@ -1069,7 +1069,7 @@ def test_editing_ONE_chunk_of_a_long_turn_retires_the_whole_turn(conn):
     )
 
     found = conversation_archive.recall(
-        "chunk-thread", "CHUNKSPLIT-7373", branch_messages=rewritten
+        "chunk-thread", "CHUNKSPLIT-7373", branch_messages = rewritten
     )
 
     assert found is None
@@ -1127,14 +1127,14 @@ def test_recall_widens_past_a_wall_of_abandoned_branch_hits(conn):
         for index in range(40)
     ]
 
-    _save_thread("wall-thread", live, append=True)
+    _save_thread("wall-thread", live, append = True)
     conversation_archive.archive_turns("wall-thread", live)
     for turn in abandoned:
         # Stored as siblings, as Retry leaves them: on the thread, not on the branch.
-        _save_thread("wall-thread", turn, append=True)
+        _save_thread("wall-thread", turn, append = True)
         conversation_archive.archive_turns("wall-thread", turn)
 
-    found = conversation_archive.recall("wall-thread", "WIDEN-5150", branch_messages=live)
+    found = conversation_archive.recall("wall-thread", "WIDEN-5150", branch_messages = live)
 
     assert found is not None
     assert "the marker is WIDEN-5150" in found[0]
@@ -1148,14 +1148,14 @@ def test_the_branch_transcript_carries_request_shaped_tool_calls(conn):
     archived tool turn and filters the whole exchange out as rolled back.
     """
     branch = [
-        _assistant_call("terminal", '{"cmd": "ls TOOLARG-7777"}', id="call_1"),
+        _assistant_call("terminal", '{"cmd": "ls TOOLARG-7777"}', id = "call_1"),
         {"role": "tool", "tool_call_id": "call_1", "content": "TOOLARG-7777 listed"},
     ]
-    _archive(branch, thread_id="tool-branch-thread")
+    _archive(branch, thread_id = "tool-branch-thread")
     _save_thread("tool-branch-thread", [{"role": "user", "content": "unrelated"}])
 
     found = conversation_archive.recall(
-        "tool-branch-thread", "TOOLARG-7777", branch_messages=branch
+        "tool-branch-thread", "TOOLARG-7777", branch_messages = branch
     )
 
     assert found is not None and "TOOLARG-7777" in found[0]
@@ -1173,8 +1173,8 @@ def test_a_thread_that_was_never_persisted_is_never_archived(conn):
             {"role": "user", "content": "temporary section, code EPHEMERAL-4444"},
             {"role": "assistant", "content": "noted"},
         ],
-        thread_id="temporary-thread",
-        persist=False,
+        thread_id = "temporary-thread",
+        persist = False,
     )
 
     assert written == 0
@@ -1195,7 +1195,7 @@ def test_a_thread_deleted_mid_ingest_does_not_leave_its_turns_behind(conn, monke
     from storage import studio_db
 
     turns = _turn("what is the code", "the code is DELETED-9999")
-    _save_thread("doomed-thread", turns, append=True)
+    _save_thread("doomed-thread", turns, append = True)
 
     original = conversation_archive.embeddings.encode_with_identity
 
@@ -1227,7 +1227,7 @@ def test_recall_is_unfiltered_when_the_thread_has_no_saved_transcript(conn):
             {"role": "user", "content": "unsaved section, code ORPHAN-3333"},
             {"role": "assistant", "content": "noted"},
         ],
-        thread_id="unsaved-thread",
+        thread_id = "unsaved-thread",
     )
     # Drop the saved rows, leaving the archive behind.
     from storage import studio_db
@@ -1250,7 +1250,7 @@ def test_editing_only_the_assistant_half_retires_the_archived_turn(conn):
         {"role": "user", "content": "what is the launch code"},
         {"role": "assistant", "content": "the launch code is STALEANSWER-9999"},
     ]
-    _archive(original, thread_id="edited-thread")
+    _archive(original, thread_id = "edited-thread")
     # The user keeps their question and rewrites the answer.
     _save_thread(
         "edited-thread",
@@ -1280,11 +1280,11 @@ def test_a_failed_chunk_write_leaves_the_turn_retryable(conn, monkeypatch):
     # undo() would also revert stub_embeddings and fail the retry for another reason.
     real_add_chunks = store.add_chunks
     monkeypatch.setattr(store, "add_chunks", explode)
-    assert _archive(turns, thread_id="retry-thread") == 0
+    assert _archive(turns, thread_id = "retry-thread") == 0
     monkeypatch.setattr(store, "add_chunks", real_add_chunks)
 
     # The retry succeeds, which it cannot do if a completed husk was left behind.
-    assert _archive(turns, thread_id="retry-thread", persist=False) == 1
+    assert _archive(turns, thread_id = "retry-thread", persist = False) == 1
     found = conversation_archive.recall("retry-thread", "quokka")
     assert found is not None and "quokka" in found[0]
 
@@ -1354,7 +1354,7 @@ def test_an_archived_tool_turn_survives_the_branch_filter(conn):
             "threadId": "tool-thread",
             "role": "assistant",
             "content": [
-                _tool_part(command="alembic upgrade head", result="migration applied cleanly")
+                _tool_part(command = "alembic upgrade head", result = "migration applied cleanly")
             ],
             "createdAt": 2,
         }
@@ -1378,7 +1378,7 @@ def test_an_edit_past_the_probe_cutoff_still_retires_the_turn(conn):
         {"role": "user", "content": "how do I deploy"},
         {"role": "assistant", "content": head + "finally run OLDSTEP-7777"},
     ]
-    _archive(original, thread_id="tail-edit-thread")
+    _archive(original, thread_id = "tail-edit-thread")
     # Same opening, different ending.
     _save_thread(
         "tail-edit-thread",
@@ -1432,7 +1432,7 @@ def test_the_late_archive_cleanup_spares_a_recreated_thread(conn):
 
     thread_id = "recreated-thread"
     turns = _turn("what is the code", "the code is 5150")
-    _save_thread(thread_id, turns, append=True)
+    _save_thread(thread_id, turns, append = True)
     assert conversation_archive.archive_turns(thread_id, turns) == 1
 
     chat_history._remove_thread_rag_data([thread_id])
@@ -1517,7 +1517,7 @@ def test_a_tool_exchange_archived_mid_request_is_recallable(conn):
     """
     thread_id = "toolrun-thread"
     request_branch = [{"role": "user", "content": "find the deploy code in the repo"}]
-    _save_thread(thread_id, request_branch, append=True)
+    _save_thread(thread_id, request_branch, append = True)
 
     tool_exchange = [
         _assistant_call("grep", '{"q": "deploy"}'),
@@ -1526,15 +1526,15 @@ def test_a_tool_exchange_archived_mid_request_is_recallable(conn):
     assert conversation_archive.archive_turns(thread_id, tool_exchange) == 1
 
     assert (
-        conversation_archive.recall(thread_id, "ZQX-5150", top_k=4, branch_messages=request_branch)
+        conversation_archive.recall(thread_id, "ZQX-5150", top_k = 4, branch_messages = request_branch)
         is None
     )
     assert (
         conversation_archive.recall(
             thread_id,
             "ZQX-5150",
-            top_k=4,
-            branch_messages=request_branch + tool_exchange,
+            top_k = 4,
+            branch_messages = request_branch + tool_exchange,
         )
         is not None
     )
@@ -1548,7 +1548,7 @@ def test_an_edit_to_any_message_of_a_turn_retires_the_archived_copy(conn):
     """
     rows = [{"text": "user: should I deploy on Friday\nassistant: No"}]
 
-    def _live(question, answer="No"):
+    def _live(question, answer = "No"):
         return conversation_archive.branch_message_texts(
             [
                 {"role": "user", "content": question},
@@ -1580,8 +1580,8 @@ def test_a_tool_call_message_is_exempt_from_the_character_anchors(conn):
                 "role": "assistant",
                 "content": [
                     _tool_part(
-                        command="alembic upgrade head",
-                        result="migration applied cleanly",
+                        command = "alembic upgrade head",
+                        result = "migration applied cleanly",
                     )
                 ],
             }
@@ -1609,7 +1609,7 @@ def test_a_turn_is_re_embedded_when_the_embedder_changes(conn, monkeypatch):
 
     thread_id = "identity-thread"
     turn = _turn("what is the deploy code", "the deploy code is 5150")
-    _save_thread(thread_id, turn, append=True)
+    _save_thread(thread_id, turn, append = True)
 
     identity = {"name": "st:model-a"}
     real = embeddings.encode_with_identity
@@ -1644,7 +1644,7 @@ def test_a_first_compaction_embeds_its_turns_in_one_pass(conn, monkeypatch):
     from core.rag import embeddings
 
     thread_id = "batch-thread"
-    _save_thread(thread_id, _turn("hello", "hi"), append=True)
+    _save_thread(thread_id, _turn("hello", "hi"), append = True)
 
     calls = []
     real = embeddings.encode_with_identity
@@ -1696,9 +1696,9 @@ _DISTRACTORS = [
 
 def _revisions(
     count,
-    thread_id=THREAD,
+    thread_id = THREAD,
     *,
-    distractors=3,
+    distractors = 3,
 ):
     """A variable assigned, then revised, with filler that shares the vocabulary.
 
@@ -1729,7 +1729,7 @@ def test_every_recall_slot_goes_to_the_subject_of_the_question(conn):
     values = _revisions(8)
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE}?", top_k=4
+        THREAD, f"What is the current value of {VARIABLE}?", top_k = 4
     )
 
     assert found is not None
@@ -1744,7 +1744,7 @@ def test_the_newest_revision_is_recalled_when_there_is_room(conn):
     values = _revisions(4)
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE}?", top_k=4
+        THREAD, f"What is the current value of {VARIABLE}?", top_k = 4
     )
 
     assert found is not None
@@ -1766,7 +1766,7 @@ def test_the_questions_filler_cannot_outrank_the_subject(conn):
     )
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE}?", top_k=1
+        THREAD, f"What is the current value of {VARIABLE}?", top_k = 1
     )
 
     assert found is not None
@@ -1795,7 +1795,7 @@ def test_recalled_turns_are_presented_oldest_first(conn):
     _archive(_turn(f"{VARIABLE} 222222", "Understood."))
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE}?", top_k=2
+        THREAD, f"What is the current value of {VARIABLE}?", top_k = 2
     )
 
     assert found is not None
@@ -1862,7 +1862,7 @@ def test_an_archive_written_before_ordinals_still_recalls_in_order(conn):
     conn.execute("UPDATE documents SET archive_ordinal=NULL WHERE id=?", (oldest,))
     conn.commit()
 
-    found = conversation_archive.recall(THREAD, "pelican", top_k=2)
+    found = conversation_archive.recall(THREAD, "pelican", top_k = 2)
 
     assert found is not None
     text, _sources = found
@@ -1876,7 +1876,7 @@ def test_asking_what_it_was_originally_still_returns_the_first_assignment(conn):
     values = _revisions(8)
 
     found = conversation_archive.recall(
-        THREAD, f"What was {VARIABLE} set to at the very start?", top_k=4
+        THREAD, f"What was {VARIABLE} set to at the very start?", top_k = 4
     )
 
     assert found is not None
@@ -1898,7 +1898,7 @@ def test_relevance_order_is_restored_when_the_knobs_are_off(conn, monkeypatch):
     _archive(_turn(f"{VARIABLE} 222222", "Understood."))
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE}?", top_k=2
+        THREAD, f"What is the current value of {VARIABLE}?", top_k = 2
     )
 
     assert found is not None
@@ -1955,7 +1955,7 @@ def test_a_question_about_two_variables_recalls_both_current_values(conn):
     _archive(_turn(f"please update {other}", f"the current value of {other} is now 800002"))
 
     found = conversation_archive.recall(
-        THREAD, f"What is the current value of {VARIABLE} and of {other}?", top_k=4
+        THREAD, f"What is the current value of {VARIABLE} and of {other}?", top_k = 4
     )
 
     assert found is not None
@@ -2070,7 +2070,7 @@ def test_the_archive_query_keeps_the_negation_that_carries_the_question(conn):
     ):
         _archive(_turn(question, answer))
 
-    found = conversation_archive.recall(THREAD, "What did I say not to delete?", top_k=4)
+    found = conversation_archive.recall(THREAD, "What did I say not to delete?", top_k = 4)
 
     assert found is not None
     assert "staging bucket" in found[0]
@@ -2113,7 +2113,7 @@ def test_re_embedding_a_turn_archived_before_ordinals_leaves_it_unnumbered(conn,
     # 1, not 0: the ordinal is the turn's POSITION, and the newest question is the second
     # turn. The old allocator said 0 by counting from MAX over a column holding one NULL.
     assert ordinals == [None, 1]
-    text, _sources = conversation_archive.recall(THREAD, "pelicans", top_k=4)
+    text, _sources = conversation_archive.recall(THREAD, "pelicans", top_k = 4)
     assert text.index("oldest statement") < text.index("newest statement")
 
 
@@ -2142,7 +2142,7 @@ def test_a_re_embed_that_stops_partway_does_not_reorder_a_legacy_archive(conn, m
 
     turns = [_turn(f"turn {n} about pelicans", f"STATEMENT{n} about pelicans") for n in range(1, 6)]
     history = [dict(message) for turn in turns for message in turn]
-    _save_thread(THREAD, history, append=True)
+    _save_thread(THREAD, history, append = True)
     assert conversation_archive.archive_turns(THREAD, [dict(m) for m in history]) == 5
     scope = store.conversation_archive_scope(THREAD)
     # What an upgraded database looks like: archived before the column, never backfilled.
@@ -2173,7 +2173,7 @@ def test_a_re_embed_that_stops_partway_does_not_reorder_a_legacy_archive(conn, m
     ]
     assert sorted(models) == ["st:model-a"] * 3 + ["st:model-b"] * 2
 
-    text, sources = conversation_archive.recall(THREAD, "pelicans", top_k=5)
+    text, sources = conversation_archive.recall(THREAD, "pelicans", top_k = 5)
     assert "supersedes" in text
     quoted = [source["text"].split("STATEMENT")[1][0] for source in sources]
     assert quoted == ["1", "2", "3", "4", "5"], quoted
@@ -2204,7 +2204,7 @@ def test_a_legacy_archive_written_in_one_clock_tick_is_still_ordered(conn, monke
 
     turns = [_turn(f"turn {n} about pelicans", f"STATEMENT{n} about pelicans") for n in range(1, 6)]
     history = [dict(message) for turn in turns for message in turn]
-    _save_thread(THREAD, history, append=True)
+    _save_thread(THREAD, history, append = True)
     assert conversation_archive.archive_turns(THREAD, [dict(m) for m in history]) == 5
     scope = store.conversation_archive_scope(THREAD)
     conn.execute("UPDATE documents SET archive_ordinal=NULL WHERE scope=?", (scope,))
@@ -2230,7 +2230,7 @@ def test_a_legacy_archive_written_in_one_clock_tick_is_still_ordered(conn, monke
     conversation_archive.archive_turns(THREAD, [dict(m) for m in history])
     monkeypatch.setattr(store, "add_chunks", real_add)
 
-    _text, sources = conversation_archive.recall(THREAD, "pelicans", top_k=5)
+    _text, sources = conversation_archive.recall(THREAD, "pelicans", top_k = 5)
     quoted = [source["text"].split("STATEMENT")[1][0] for source in sources]
     assert quoted == ["1", "2", "3", "4", "5"], quoted
 
@@ -2257,7 +2257,7 @@ def test_two_turns_stamped_alike_are_quoted_whole_and_not_interleaved(conn, monk
         )
 
     history = [dict(message) for tag in ("AAA", "BBB") for message in _long_turn(tag)]
-    _save_thread(THREAD, history, append=True)
+    _save_thread(THREAD, history, append = True)
     assert conversation_archive.archive_turns(THREAD, [dict(m) for m in history]) == 2
     scope = store.conversation_archive_scope(THREAD)
     conn.execute("UPDATE documents SET archive_ordinal=NULL WHERE scope=?", (scope,))
@@ -2276,7 +2276,7 @@ def test_two_turns_stamped_alike_are_quoted_whole_and_not_interleaved(conn, monk
     ]
     assert min(per_document) > 1, per_document
 
-    _text, sources = conversation_archive.recall(THREAD, "pelicans", top_k=8)
+    _text, sources = conversation_archive.recall(THREAD, "pelicans", top_k = 8)
 
     # Each turn is quoted in one unbroken run, and the run that was archived first leads.
     documents = [source["documentId"] for source in sources]
@@ -2325,17 +2325,17 @@ def test_the_sql_candidate_order_agrees_with_the_python_recall_order(conn):
         document_id = f"{len(plan) - position:04d}-turn"
         store.create_document(
             conn,
-            scope=scope,
-            thread_id=THREAD,
-            filename="earlier turn",
-            sha256=f"h{position}",
-            status="completed",
-            embedding_model="m",
-            archive_messages=2,
-            archive_ordinal=ordinal,
-            document_id=document_id,
-            created_at=created,
-            commit=False,
+            scope = scope,
+            thread_id = THREAD,
+            filename = "earlier turn",
+            sha256 = f"h{position}",
+            status = "completed",
+            embedding_model = "m",
+            archive_messages = 2,
+            archive_ordinal = ordinal,
+            document_id = document_id,
+            created_at = created,
+            commit = False,
         )
         store.add_chunks(
             conn,
@@ -2343,12 +2343,12 @@ def test_the_sql_candidate_order_agrees_with_the_python_recall_order(conn):
             document_id,
             [
                 types.SimpleNamespace(
-                    chunk_index=index,
-                    text="ZQXAGREE statement " + "word " * (index + position),
-                    page_number=None,
-                    source_page_index=None,
-                    token_count=5,
-                    char_count=20,
+                    chunk_index = index,
+                    text = "ZQXAGREE statement " + "word " * (index + position),
+                    page_number = None,
+                    source_page_index = None,
+                    token_count = 5,
+                    char_count = 20,
                 )
                 for index in range(count)
             ],
@@ -2366,8 +2366,8 @@ def test_the_sql_candidate_order_agrees_with_the_python_recall_order(conn):
                 grouped.append((score, [chunk_id]))
         return grouped
 
-    oldest = _tiers(oldest_first=True)
-    newest = _tiers(newest_first=True)
+    oldest = _tiers(oldest_first = True)
+    newest = _tiers(newest_first = True)
     every_id = [chunk_id for _score, tier in oldest for chunk_id in tier]
     assert len(every_id) == sum(count for _o, _c, count in plan)
     rows = store.chunks_by_id(conn, every_id)
@@ -2376,7 +2376,7 @@ def test_the_sql_candidate_order_agrees_with_the_python_recall_order(conn):
 
     for score, tier in oldest:
         expected = sorted(
-            tier, key=lambda chunk_id: conversation_archive._conversation_order(rows[chunk_id])
+            tier, key = lambda chunk_id: conversation_archive._conversation_order(rows[chunk_id])
         )
         assert tier == expected, (score, tier, expected)
     # And the other end is the exact mirror within each tier, or the two windows would not
@@ -2407,7 +2407,7 @@ def test_a_rewritten_turn_keeps_the_insertion_order_it_was_archived_in(conn, mon
 
     turns = [_turn(f"turn {n} about pelicans", f"STATEMENT{n} about pelicans") for n in range(1, 4)]
     history = [dict(message) for turn in turns for message in turn]
-    _save_thread(THREAD, history, append=True)
+    _save_thread(THREAD, history, append = True)
     assert conversation_archive.archive_turns(THREAD, [dict(m) for m in history]) == 3
     scope = store.conversation_archive_scope(THREAD)
     before = [
@@ -2443,7 +2443,7 @@ def test_merging_two_recall_queries_still_lists_legacy_turns_first(conn):
     conn.execute("UPDATE documents SET archive_ordinal=NULL WHERE id=?", (oldest,))
     conn.commit()
 
-    merged = conversation_archive.recall(THREAD, "pelican", top_k=4, extra_queries=["statement"])
+    merged = conversation_archive.recall(THREAD, "pelican", top_k = 4, extra_queries = ["statement"])
 
     assert merged is not None
     text, _sources = merged
@@ -2463,7 +2463,7 @@ def test_merging_two_recall_queries_keeps_one_turns_chunks_in_order(conn, monkey
     )
     _archive(_turn("a very long turn", body))
 
-    merged = conversation_archive.recall(THREAD, "ALPHAHEAD", top_k=2, extra_queries=["OMEGATAIL"])
+    merged = conversation_archive.recall(THREAD, "ALPHAHEAD", top_k = 2, extra_queries = ["OMEGATAIL"])
 
     assert merged is not None
     text, _sources = merged
@@ -2487,7 +2487,7 @@ def test_merging_two_recall_queries_keeps_legacy_turns_in_the_order_they_were_sa
         {"turn": 3, "createdAt": "2026-01-03T00:00:00Z", "chunkIndex": 0, "text": "numbered"},
     ]
     merged.sort(
-        key=lambda source: conversation_archive._order_key(
+        key = lambda source: conversation_archive._order_key(
             source.get("turn"),
             source.get("createdAt"),
             source.get("documentRowid"),
@@ -2503,7 +2503,6 @@ def test_both_recall_paths_order_by_the_same_key():
     they are only the same key while both call `_order_key`.
     """
     from core.rag import conversation_archive
-
     for ordinal in (None, 0, 4):
         for created in ("", "2026-01-01T00:00:00Z"):
             for rowid in (None, 0, 12):
@@ -2550,7 +2549,7 @@ def test_recall_sources_carry_the_fields_the_merge_orders_by():
             "document_rowid": 41,
         },
     }
-    hits = [SimpleNamespace(chunk_id="c1", score=0.5)]
+    hits = [SimpleNamespace(chunk_id = "c1", score = 0.5)]
 
     _, sources = tool.format_conversation_recall(rows, hits)
 
@@ -2583,7 +2582,7 @@ def test_the_forced_floor_filters_candidates_rather_than_deleting_results(conn, 
     monkeypatch.setattr(conversation_archive, "_candidates", weak_first)
     monkeypatch.setattr(config, "CONVERSATION_FORCED_MIN_SCORE", 0.5)
 
-    forced = conversation_archive.recall(THREAD, "pelican", top_k=4, forced=True)
+    forced = conversation_archive.recall(THREAD, "pelican", top_k = 4, forced = True)
 
     assert forced is not None, "the floor deleted the result instead of filtering candidates"
     assert len(forced[1]) == 4
@@ -2606,9 +2605,9 @@ def test_a_floor_nothing_clears_still_returns_nothing(conn, monkeypatch):
     monkeypatch.setattr(conversation_archive, "_candidates", all_weak)
     monkeypatch.setattr(config, "CONVERSATION_FORCED_MIN_SCORE", 0.5)
 
-    assert conversation_archive.recall(THREAD, "pelican", top_k=4, forced=True) is None
+    assert conversation_archive.recall(THREAD, "pelican", top_k = 4, forced = True) is None
     # And the tool-initiated path is untouched by the floor.
-    assert conversation_archive.recall(THREAD, "pelican", top_k=4) is not None
+    assert conversation_archive.recall(THREAD, "pelican", top_k = 4) is not None
 
 
 def test_the_newest_revision_survives_a_tied_run_LONGER_than_the_cap(conn):
@@ -2626,12 +2625,12 @@ def test_the_newest_revision_survives_a_tied_run_LONGER_than_the_cap(conn):
         _archive(_turn(f"note {index:03d} about ZQXVARA123", "noted"))
     _archive(_turn("set ZQXVARA123 to 9999", "done"))
 
-    found = conversation_archive.recall(THREAD, "what is ZQXVARA123 currently", top_k=4)
+    found = conversation_archive.recall(THREAD, "what is ZQXVARA123 currently", top_k = 4)
 
     assert found is not None
     assert "9999" in found[0]
     # The oldest end is still reachable: a fix that just returns the newest turns fails.
-    oldest = conversation_archive.recall(THREAD, "what was ZQXVARA123 originally", top_k=4)
+    oldest = conversation_archive.recall(THREAD, "what was ZQXVARA123 originally", top_k = 4)
     assert oldest is not None
     assert "note 000" in oldest[0]
 
@@ -2667,7 +2666,7 @@ def test_a_re_embedded_oldest_turn_is_still_reachable_past_the_cap(conn, monkeyp
     identity["name"] = "st:model-b"
     _archive([dict(message) for message in oldest_turn])
 
-    oldest = conversation_archive.recall(THREAD, "what was ZQXVARA123 originally", top_k=4)
+    oldest = conversation_archive.recall(THREAD, "what was ZQXVARA123 originally", top_k = 4)
     assert oldest is not None
     assert "note 000" in oldest[0]
 
@@ -2694,7 +2693,7 @@ def test_the_newest_revision_survives_a_tie_and_the_oldest_one_still_does(conn):
     """
     values = _revisions(8)
 
-    found = conversation_archive.recall(THREAD, f"what is the current value of {VARIABLE}", top_k=4)
+    found = conversation_archive.recall(THREAD, f"what is the current value of {VARIABLE}", top_k = 4)
 
     assert found is not None
     text, _sources = found
@@ -2718,8 +2717,8 @@ def test_an_overlapping_anchor_query_does_not_shrink_the_recall(conn):
     for index in range(6):
         _archive(_turn(f"pelican note {index}", f"statement about pelican {index}"))
 
-    alone = conversation_archive.recall(THREAD, "pelican", top_k=4)
-    merged = conversation_archive.recall(THREAD, "pelican", top_k=4, extra_queries=["statement"])
+    alone = conversation_archive.recall(THREAD, "pelican", top_k = 4)
+    merged = conversation_archive.recall(THREAD, "pelican", top_k = 4, extra_queries = ["statement"])
 
     assert alone is not None and merged is not None
     assert len(alone[1]) == 4
@@ -2750,7 +2749,7 @@ def test_a_shouted_question_filters_as_well_as_a_typed_one(conn):
     assert store.conversation_match_queries(question.upper()) == (
         store.conversation_match_queries(question)
     )
-    found = conversation_archive.recall(THREAD, question.upper(), top_k=1)
+    found = conversation_archive.recall(THREAD, question.upper(), top_k = 1)
 
     assert found is not None
     assert (
@@ -2780,7 +2779,7 @@ def test_a_numeric_subject_is_still_an_identifier_when_the_question_is_shouted(c
 
     assert store.conversation_match_queries(question)[0] == '"9134"'
     assert store.conversation_match_queries(question.upper())[0] == '"9134"'
-    found = conversation_archive.recall(THREAD, question.upper(), top_k=1)
+    found = conversation_archive.recall(THREAD, question.upper(), top_k = 1)
 
     assert found is not None
     assert "9134" in found[0]
@@ -2799,9 +2798,9 @@ def test_turning_the_query_focus_off_restores_the_old_order_on_a_tied_archive(co
 
     monkeypatch.setattr(config, "CONVERSATION_QUERY_FOCUS", False)
     monkeypatch.setattr(config, "CONVERSATION_RECALL_ORDER", "relevance")
-    values = _revisions(8, distractors=0)
+    values = _revisions(8, distractors = 0)
 
-    found = conversation_archive.recall(THREAD, f"what is the current value of {VARIABLE}", top_k=4)
+    found = conversation_archive.recall(THREAD, f"what is the current value of {VARIABLE}", top_k = 4)
 
     assert found is not None
     returned = [value for value in values if value in found[0]]
@@ -2827,7 +2826,7 @@ def test_a_turn_repeated_later_is_archived_again_at_its_own_position(conn):
     assert written == [1, 1, 1]
     scope = store.conversation_archive_scope(THREAD)
     assert len(store.list_documents(conn, scope)) == 3
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     turns = [source.get("turn") for source in found[1]]
     # Rendered oldest first with the repeat LAST, which makes the header's rule true.
@@ -2856,19 +2855,19 @@ def test_a_repeat_still_in_the_prompt_is_not_archived_early(conn):
 
     # Only the OLDEST copy has crossed the boundary; the newer one is still in the prompt.
     live = list(repeat) + tail
-    conversation_archive.archive_turns(THREAD, repeat, live=live)
-    conversation_archive.archive_turns(THREAD, repeat, live=live)
+    conversation_archive.archive_turns(THREAD, repeat, live = live)
+    conversation_archive.archive_turns(THREAD, repeat, live = live)
 
     scope = store.conversation_archive_scope(THREAD)
     assert len(store.list_documents(conn, scope)) == 1
 
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     texts = [source["text"] for source in found[1]]
     assert len(texts) == len(set(texts))
 
     # Once the newer copy is evicted too, it is archived at the position it was said.
-    conversation_archive.archive_turns(THREAD, conversation[:6], live=tail)
+    conversation_archive.archive_turns(THREAD, conversation[:6], live = tail)
     ordinals = [
         row["archive_ordinal"]
         for row in conn.execute(
@@ -2908,12 +2907,12 @@ def test_a_re_embed_does_not_swallow_a_repeat_evicted_later(conn, monkeypatch):
 
     # The first copy and the contradiction are evicted while the repeat is still live.
     live = list(repeat) + tail
-    conversation_archive.archive_turns(THREAD, repeat + middle, live=live)
+    conversation_archive.archive_turns(THREAD, repeat + middle, live = live)
 
     # The embedder changes, and only then is the repeat evicted. Handed over ALONE, as four
     # of the five call sites do: they pass the already-fitted list.
     identity["name"] = "st:model-b"
-    conversation_archive.archive_turns(THREAD, list(repeat), live=tail)
+    conversation_archive.archive_turns(THREAD, list(repeat), live = tail)
 
     scope = store.conversation_archive_scope(THREAD)
     ordinals = [
@@ -2925,7 +2924,7 @@ def test_a_re_embed_does_not_swallow_a_repeat_evicted_later(conn, monkeypatch):
     ]
     assert ordinals == [0, 1, 2]
 
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     # The last word on the identifier is 1, rendered last under the supersedes header.
     assert "set ZQXVARA123 to 1" in found[1][-1]["text"]
@@ -2943,7 +2942,7 @@ def test_two_evicted_copies_of_a_thrice_said_turn_are_both_archived(conn):
 
     # The last occurrence and `other` are still in the prompt; the first two are not.
     live = other + list(repeat)
-    conversation_archive.archive_turns(THREAD, repeat + mid + list(repeat), live=live)
+    conversation_archive.archive_turns(THREAD, repeat + mid + list(repeat), live = live)
 
     scope = store.conversation_archive_scope(THREAD)
     ordinals = [
@@ -2978,14 +2977,14 @@ def test_a_rewound_repeat_moves_the_survivor_to_the_seat_it_still_has(conn, monk
     mid = _turn("set ZQXVARA123 to 2", "ok")
     whole = repeat + mid + list(repeat)
     _save_thread(THREAD, whole)
-    conversation_archive.archive_turns(THREAD, whole, live=[])
+    conversation_archive.archive_turns(THREAD, whole, live = [])
 
     # The user rewinds away the FIRST occurrence, and the embedder changes.
     _save_thread(THREAD, mid + list(repeat))
     identity["name"] = "st:model-b"
-    conversation_archive.archive_turns(THREAD, mid + list(repeat), live=[])
+    conversation_archive.archive_turns(THREAD, mid + list(repeat), live = [])
 
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     # Rendered oldest first, so the conversation's last word has to come last.
     assert found[0].index("set ZQXVARA123 to 2") < found[0].rindex("set ZQXVARA123 to 1")
@@ -3043,7 +3042,7 @@ def test_an_out_of_order_eviction_still_numbers_turns_in_conversation_order(conn
         ).fetchall()
     ]
     assert ordinals == [0, 1, 2]
-    found = conversation_archive.recall(THREAD, "pelicans", top_k=4)
+    found = conversation_archive.recall(THREAD, "pelicans", top_k = 4)
     assert found is not None
     text = found[0]
     assert text.index("standing instruction") < text.index("middle turn") < text.index("final turn")
@@ -3072,7 +3071,7 @@ def test_two_turns_that_start_the_same_do_not_take_each_others_places(conn):
         ).fetchall()
     )
     # And re-evicting the same two turns stays free.
-    again = [_archive(first, persist=False), _archive(second, persist=False)]
+    again = [_archive(first, persist = False), _archive(second, persist = False)]
 
     assert written == [1, 1]
     assert ordinals == [0, 1]
@@ -3121,7 +3120,7 @@ def test_an_archive_numbered_by_the_old_allocator_converges_on_the_next_compacti
     conn.commit()
     conversation_archive.archive_turns(THREAD, conversation)
     assert ordinals() == [0, 1]
-    text, _sources = conversation_archive.recall(THREAD, "pelicans", top_k=4)
+    text, _sources = conversation_archive.recall(THREAD, "pelicans", top_k = 4)
     assert text.index("alpha") < text.index("beta")
 
 
@@ -3139,7 +3138,7 @@ def _persist_agent_thread():
         (
             "assistant",
             [
-                _tool_part(type="tool-call"),
+                _tool_part(type = "tool-call"),
                 {"type": "text", "text": "the repo has two files."},
             ],
         ),
@@ -3175,7 +3174,7 @@ def test_an_archived_tool_exchange_is_still_reachable_by_a_query(conn):
     tool_turn = _persist_agent_thread()
     conversation_archive.archive_turns(THREAD, tool_turn)
 
-    found = conversation_archive.recall(THREAD, "terminal ls repo files", top_k=4)
+    found = conversation_archive.recall(THREAD, "terminal ls repo files", top_k = 4)
 
     assert found is not None
     assert any("terminal" in source["text"] for source in found[1])
@@ -3218,7 +3217,7 @@ def test_a_tool_exchange_is_numbered_where_the_conversation_put_it(conn):
     ]
 
     assert ordinals == [0, 1, 2]
-    text, _sources = conversation_archive.recall(THREAD, "repo files peru ls", top_k=4)
+    text, _sources = conversation_archive.recall(THREAD, "repo files peru ls", top_k = 4)
     assert text.index("capital of peru") < text.index("list the files")
     assert text.index("list the files") < text.index("called terminal")
 
@@ -3233,10 +3232,10 @@ def test_an_anchor_query_cannot_cost_the_newest_revision_its_slot(conn):
     the recall worse than not adding it. Measured on eight revisions at top_k 4: the single
     query returned the newest, the same query plus an anchor did not.
     """
-    values = _revisions(8, distractors=0)
+    values = _revisions(8, distractors = 0)
 
-    alone = conversation_archive.recall(THREAD, f"{VARIABLE}", top_k=4)
-    merged = conversation_archive.recall(THREAD, f"{VARIABLE}", top_k=4, extra_queries=["timeout"])
+    alone = conversation_archive.recall(THREAD, f"{VARIABLE}", top_k = 4)
+    merged = conversation_archive.recall(THREAD, f"{VARIABLE}", top_k = 4, extra_queries = ["timeout"])
 
     assert alone is not None and merged is not None
     assert values[-1] in alone[0]
@@ -3378,7 +3377,7 @@ def test_a_rewind_retires_the_copy_the_conversation_no_longer_holds(conn):
         ).fetchall()
     )
     assert ordinals == [0, 1]
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     assert len(found[1]) == len({source["text"] for source in found[1]})
 
@@ -3443,7 +3442,7 @@ def test_a_re_embed_after_a_rewind_retires_the_surplus_copy_too(conn, monkeypatc
         ).fetchall()
     )
     assert ordinals == [0, 1]
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     assert len(found[1]) == len({source["text"] for source in found[1]})
 
@@ -3459,7 +3458,7 @@ def test_text_said_before_a_tool_call_rides_on_the_call_message():
     reply that followed the result and still belongs last, which is why this splits by
     POSITION and not by part type.
     """
-    call = _tool_part(type="tool-call")
+    call = _tool_part(type = "tool-call")
     before = conversation_archive._as_wire(
         [{"role": "assistant", "content": [{"type": "text", "text": "Let me check."}, call]}]
     )
@@ -3508,17 +3507,17 @@ def test_the_deleted_conversation_goes_even_when_its_id_comes_back(conn):
 
     thread_id = "recreated-with-cutoff"
     old_turns = _turn("what is the code", "the code is 5150")
-    _save_thread(thread_id, old_turns, append=True)
+    _save_thread(thread_id, old_turns, append = True)
     assert conversation_archive.archive_turns(thread_id, old_turns) == 1
 
     cutoff = datetime.now(timezone.utc).isoformat()
 
     # The stale tab recreates the id and its generation archives a turn of its own.
     fresh = _turn("what is the new code", "the new code is 8080")
-    _save_thread(thread_id, old_turns + fresh, append=True)
+    _save_thread(thread_id, old_turns + fresh, append = True)
     assert conversation_archive.archive_turns(thread_id, fresh) == 1
 
-    chat_history._remove_thread_rag_data([thread_id], cutoff=cutoff)
+    chat_history._remove_thread_rag_data([thread_id], cutoff = cutoff)
 
     scope = store.conversation_archive_scope(thread_id)
     remaining = " ".join(
@@ -3584,7 +3583,7 @@ def test_positions_follow_the_request_branch_not_the_newest_stored_row(conn):
     """
     live = _branch_switch_thread()
 
-    positions = conversation_archive._transcript_positions(THREAD, branch=live)
+    positions = conversation_archive._transcript_positions(THREAD, branch = live)
 
     assert len(positions) == 3, positions
     assert conversation_archive._occurrences(positions, live[2:4]) == [1]
@@ -3602,7 +3601,7 @@ def test_the_branch_seed_falls_back_when_nothing_matches(conn):
 
     seeded = conversation_archive._transcript_positions(THREAD)
     unmatched = conversation_archive._transcript_positions(
-        THREAD, branch=[{"role": "user", "content": "nothing in this thread says this"}]
+        THREAD, branch = [{"role": "user", "content": "nothing in this thread says this"}]
     )
 
     # Branch B is the newest stored row, so both fall back to it: two turns, not three.
@@ -3622,7 +3621,7 @@ def test_two_sequential_tool_rounds_replay_as_two_exchanges():
     """
 
     def _call(index, command, result):
-        return _tool_part(toolCallId=f"c{index}", command=command, result=result)
+        return _tool_part(toolCallId = f"c{index}", command = command, result = result)
 
     wire = conversation_archive._as_wire(
         [
@@ -3668,7 +3667,7 @@ def test_an_in_flight_tool_group_does_not_take_the_live_user_turn_s_number(conn)
     caused it, under the header saying a higher number was said later.
     """
     user_turn = _turn("run the deploy", "deploying now")
-    _save_thread(THREAD, user_turn, append=True)
+    _save_thread(THREAD, user_turn, append = True)
 
     in_flight = [
         _assistant_call("terminal", '{"command": "deploy"}'),
@@ -3756,7 +3755,7 @@ def test_an_empty_tool_result_still_produces_a_tool_message():
     the turn out of every recall.
     """
 
-    def _row(result, *, present=True):
+    def _row(result, *, present = True):
         call = {
             "type": "tool-call",
             "toolCallId": "c1",
@@ -3785,7 +3784,7 @@ def test_an_empty_tool_result_still_produces_a_tool_message():
         assert [message["content"] for message in wire if message["role"] == "tool"] == [expected]
 
     # A result that is genuinely not there stays not there, matching the serializer.
-    for row in (_row(None), _row(None, present=False)):
+    for row in (_row(None), _row(None, present = False)):
         assert [
             message for message in conversation_archive._as_wire(row) if message["role"] == "tool"
         ] == []
@@ -3819,12 +3818,12 @@ def test_a_bare_identifier_query_also_reaches_past_the_cap(conn):
     _archive(_turn("set ZQXVARA123 to 9999", "done"))
 
     assert len(store.conversation_match_queries("ZQXVARA123")) == 1
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
 
     assert found is not None
     assert "9999" in found[0]
     # The oldest end stays reachable, the invariant the ends-first ordering exists for.
-    assert "note 000" in conversation_archive.recall(THREAD, "ZQXVARA123", top_k=256)[0]
+    assert "note 000" in conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 256)[0]
 
 
 def test_a_persisted_tool_call_followed_by_its_answer_stays_on_its_branch(conn):
@@ -3840,7 +3839,7 @@ def test_a_persisted_tool_call_followed_by_its_answer_stays_on_its_branch(conn):
         {
             "role": "assistant",
             "content": [
-                _tool_part(command="cat deploy.yml", result="token ZQX-5150"),
+                _tool_part(command = "cat deploy.yml", result = "token ZQX-5150"),
                 {"type": "text", "text": "The deploy token is ZQX-5150."},
             ],
         }
@@ -3943,7 +3942,7 @@ def test_a_sandbox_result_is_replayed_as_the_text_the_model_saw():
         return [
             {
                 "role": "assistant",
-                "content": [_tool_part(toolName=tool_name, result=result)],
+                "content": [_tool_part(toolName = tool_name, result = result)],
             }
         ]
 
@@ -3999,8 +3998,8 @@ _ANSWER = "A ZQXVARA123 ragdoll weighs 6 kg."
 
 def _image_search_row(
     result,
-    tool_name="web_search",
-    answer=_ANSWER,
+    tool_name = "web_search",
+    answer = _ANSWER,
 ):
     return [
         {
@@ -4087,7 +4086,7 @@ def test_an_envelope_that_is_not_the_search_shape_is_still_serialised_whole():
     for entries in rejected:
         result = {"text": _SEARCH_TEXT, "webImages": entries}
         assert _wire_tool_content(_image_search_row(result)) == [
-            json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+            json.dumps(result, ensure_ascii = False, separators = (",", ":"))
         ], entries
 
 
@@ -4112,18 +4111,18 @@ def test_a_result_that_is_two_wrappers_at_once_is_still_stripped():
     # A null session is not an absent one: nobody's wrapper.
     nulled = {"text": _SEARCH_TEXT, "images": both["images"], "sessionId": None}
     assert _wire_tool_content(_image_search_row(nulled)) == [
-        json.dumps(nulled, ensure_ascii=False, separators=(",", ":"))
+        json.dumps(nulled, ensure_ascii = False, separators = (",", ":"))
     ]
 
 
-def _persist_image_search_turn(answer=_ANSWER):
+def _persist_image_search_turn(answer = _ANSWER):
     """The stored rows for one web_search turn, in the shape assistant-ui saves."""
     from storage import studio_db
 
     studio_db.upsert_chat_thread(
         {"id": THREAD, "title": "t", "modelType": "base", "modelId": "local-model", "createdAt": 1}
     )
-    row = _image_search_row({"text": _SEARCH_TEXT, "webImages": [_IMAGE_ENTRY]}, answer=answer)
+    row = _image_search_row({"text": _SEARCH_TEXT, "webImages": [_IMAGE_ENTRY]}, answer = answer)
     rows = [
         ("u0", None, "user", [{"type": "text", "text": "how heavy is a ZQXVARA123 ragdoll"}]),
         ("a0", "u0", "assistant", row[0]["content"]),
@@ -4144,7 +4143,7 @@ def _persist_image_search_turn(answer=_ANSWER):
 # The request the client sent for that turn: one `tool` message, already stripped.
 _IMAGE_SEARCH_WIRE = [
     {"role": "user", "content": "how heavy is a ZQXVARA123 ragdoll"},
-    _assistant_call("web_search", '{"query":"ragdoll ZQXVARA123"}', id="w1"),
+    _assistant_call("web_search", '{"query":"ragdoll ZQXVARA123"}', id = "w1"),
     {"role": "tool", "tool_call_id": "w1", "content": _SEARCH_TEXT_REPLAYED},
     {"role": "assistant", "content": "A ZQXVARA123 ragdoll weighs 6 kg."},
 ]
@@ -4173,7 +4172,7 @@ def test_a_recalled_turn_that_returned_pictures_survives_the_branch_filter(conn)
     conversation_archive.archive_turns(THREAD, _IMAGE_SEARCH_WIRE)
 
     with_branch = conversation_archive.recall(
-        THREAD, "ZQXVARA123 ragdoll", branch_messages=_IMAGE_SEARCH_WIRE
+        THREAD, "ZQXVARA123 ragdoll", branch_messages = _IMAGE_SEARCH_WIRE
     )
     without_branch = conversation_archive.recall(THREAD, "ZQXVARA123 ragdoll")
 
@@ -4190,7 +4189,7 @@ def test_a_reply_that_shows_the_picture_still_finds_its_transcript_seat(conn):
     matched no seat while only the `tool` message was mirrored.
     """
     answer = "%s\n\n[[img:%s]]" % (_ANSWER, _IMAGE_ID)
-    _persist_image_search_turn(answer=answer)
+    _persist_image_search_turn(answer = answer)
 
     positions = conversation_archive._transcript_positions(THREAD)
 
@@ -4218,7 +4217,7 @@ def test_an_audio_reply_is_replayed_as_the_sentinel_the_request_carried():
     # Off for a caller comparing the request against something written without it.
     assert (
         conversation_archive._probe_text(
-            conversation_archive._as_wire(row, sanitise_assistant=False)[0]
+            conversation_archive._as_wire(row, sanitise_assistant = False)[0]
         )
         == '<audio-player src="data:audio/wav;base64,QUJD" />'
     )
@@ -4273,7 +4272,7 @@ def test_the_branch_seed_scores_an_in_order_run_not_a_set(conn):
         {"role": "user", "content": "B"},
         {"role": "assistant", "content": "b1"},
     ]
-    positions = conversation_archive._transcript_positions(THREAD, branch=branch)
+    positions = conversation_archive._transcript_positions(THREAD, branch = branch)
 
     assert len(positions) == 3, positions
     # Both repeats keep their own seat instead of collapsing onto the first.
@@ -4336,8 +4335,8 @@ def test_a_system_prompt_does_not_stall_the_branch_seed(conn):
     live = _branch_switch_thread()
     with_system = [{"role": "system", "content": "You are a helpful assistant."}] + live
 
-    plain = conversation_archive._transcript_positions(THREAD, branch=live)
-    seeded = conversation_archive._transcript_positions(THREAD, branch=with_system)
+    plain = conversation_archive._transcript_positions(THREAD, branch = live)
+    seeded = conversation_archive._transcript_positions(THREAD, branch = with_system)
 
     assert len(plain) == 3, plain
     assert seeded == plain
@@ -4366,7 +4365,7 @@ def test_the_branch_seed_reaches_a_leaf_older_than_the_retry_pile(conn):
             }
         )
 
-    positions = conversation_archive._transcript_positions(THREAD, branch=live)
+    positions = conversation_archive._transcript_positions(THREAD, branch = live)
 
     assert len(positions) == 3, positions
     assert conversation_archive._occurrences(positions, live[4:6]) == [2]
@@ -4505,16 +4504,16 @@ def test_a_topped_up_copy_keeps_the_transcript_span(conn):
     assert (
         conversation_archive._write_copy(
             conn,
-            scope=scope,
-            thread_id=THREAD,
-            roles="assistant",
-            digest=digest,
-            identity="test-embedder",
-            group=archivable,
-            span=len(group),
-            chunks=[],
-            vectors=[],
-            seats=[0, 1],
+            scope = scope,
+            thread_id = THREAD,
+            roles = "assistant",
+            digest = digest,
+            identity = "test-embedder",
+            group = archivable,
+            span = len(group),
+            chunks = [],
+            vectors = [],
+            seats = [0, 1],
         )
         is True
     )
@@ -4544,7 +4543,7 @@ def test_a_tool_turn_with_a_preamble_still_gets_its_seat():
         "role": "assistant",
         "content": [
             {"type": "text", "text": "Let me check"},
-            _tool_part(result="main.py"),
+            _tool_part(result = "main.py"),
         ],
     }
     positions = [
@@ -4555,7 +4554,7 @@ def test_a_tool_turn_with_a_preamble_still_gets_its_seat():
         for record in (user, row)
     ]
     live = [
-        _assistant_call("terminal", '{"command": "ls"}', content="Let me check"),
+        _assistant_call("terminal", '{"command": "ls"}', content = "Let me check"),
         {"role": "tool", "tool_call_id": "c1", "content": "main.py"},
     ]
 
@@ -4573,7 +4572,7 @@ def test_the_same_text_over_a_longer_span_widens_the_stored_window(conn):
     could return it.
     """
     short = [
-        _assistant_call("terminal", '{"command":"ls"}', id="c2"),
+        _assistant_call("terminal", '{"command":"ls"}', id = "c2"),
         {"role": "tool", "tool_call_id": "c2", "content": "main.py readme.md"},
         {"role": "assistant", "content": "The repo has two files."},
     ]
@@ -4686,10 +4685,10 @@ def test_a_long_tool_exchange_stays_on_branch_across_a_chunk_boundary():
         ]
         text = conversation_archive.render_turn(group)
         chunks = chunk_pages(
-            [Page(text=text, page_number=None, char_count=len(text))],
-            max_tokens=config.CHUNK_TOKENS,
-            overlap=config.CHUNK_OVERLAP,
-            count=count,
+            [Page(text = text, page_number = None, char_count = len(text))],
+            max_tokens = config.CHUNK_TOKENS,
+            overlap = config.CHUNK_OVERLAP,
+            count = count,
         )
         assert len(chunks) > 1, "this test needs a turn that really crosses a chunk boundary"
         return conversation_archive._document_matches_one_run(
@@ -4713,7 +4712,7 @@ def test_one_pass_holding_both_spans_widens_the_window_too(conn):
     and the turn is unsearchable -- the same failure as the unlocked path, one lock down.
     """
     short = [
-        _assistant_call("terminal", '{"command":"ls"}', id="c2"),
+        _assistant_call("terminal", '{"command":"ls"}', id = "c2"),
         {"role": "tool", "tool_call_id": "c2", "content": "main.py readme.md"},
         {"role": "assistant", "content": "The repo has two files."},
     ]
@@ -4767,14 +4766,14 @@ def test_a_repeat_that_came_back_into_the_prompt_keeps_one_copy(conn):
     ).hexdigest()
 
     # Both occurrences evicted: two copies, one per seat.
-    conversation_archive.archive_turns(THREAD, conversation[:6], live=tail)
+    conversation_archive.archive_turns(THREAD, conversation[:6], live = tail)
     assert len(store.documents_by_hash(conn, scope, digest)) == 2
 
     # The newer occurrence is live again, so only one of them is still evicted.
-    conversation_archive.archive_turns(THREAD, repeat, live=list(repeat) + tail)
+    conversation_archive.archive_turns(THREAD, repeat, live = list(repeat) + tail)
 
     assert len(store.documents_by_hash(conn, scope, digest)) == 1
-    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k=4)
+    found = conversation_archive.recall(THREAD, "ZQXVARA123", top_k = 4)
     assert found is not None
     texts = [source["text"] for source in found[1]]
     assert len(texts) == len(set(texts)), texts

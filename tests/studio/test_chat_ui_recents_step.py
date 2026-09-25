@@ -28,7 +28,7 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 DRIVER_PATH = HERE / "playwright_chat_ui.py"
-DRIVER = DRIVER_PATH.read_text(encoding="utf-8")
+DRIVER = DRIVER_PATH.read_text(encoding = "utf-8")
 TREE = ast.parse(DRIVER)
 HELPER = "open_recent_thread_with_our_prompts"
 
@@ -152,13 +152,13 @@ def _load_helper(timeout_ms: int | None = None):
         "info": infos.append,
         "soft_fail": soft_fail,
     }
-    exec(compile(ast.Module(body=keep, type_ignores=[]), str(DRIVER_PATH), "exec"), scope)
+    exec(compile(ast.Module(body = keep, type_ignores = []), str(DRIVER_PATH), "exec"), scope)
     if timeout_ms is not None:
         scope["RECENTS_LOAD_TIMEOUT_MS"] = timeout_ms
     return scope[HELPER], infos
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def browser():
     sync_api = pytest.importorskip("playwright.sync_api")
     # Without Playwright, test_heavy_thread_measurement_integrity.py leaves a stand-in
@@ -179,13 +179,13 @@ def browser():
 def _open(
     browser,
     threads,
-    keep_stale=False,
+    keep_stale = False,
 ):
     import json
 
     ctx = browser.new_context()
     html = PAGE % {"threads": json.dumps(threads), "keep_stale": json.dumps(keep_stale)}
-    ctx.route(f"{ORIGIN}/**", lambda route: route.fulfill(content_type="text/html", body=html))
+    ctx.route(f"{ORIGIN}/**", lambda route: route.fulfill(content_type = "text/html", body = html))
     page = ctx.new_page()
     page.goto(f"{ORIGIN}/chat")
     return ctx, page
@@ -211,10 +211,10 @@ def test_a_thread_that_renders_after_500ms_passes(browser) -> None:
 
 
 def test_a_thread_that_never_shows_our_prompts_fails(browser) -> None:
-    helper, _ = _load_helper(timeout_ms=1500)
+    helper, _ = _load_helper(timeout_ms = 1500)
     ctx, page = _open(browser, [{**OURS, "loadMs": 50, "turns": [["user", "something else"]]}])
     try:
-        with pytest.raises(AssertionError, match="doesn't contain any of our sent prompts"):
+        with pytest.raises(AssertionError, match = "doesn't contain any of our sent prompts"):
             helper(page, SENT, lambda name: None)
     finally:
         ctx.close()
@@ -222,7 +222,7 @@ def test_a_thread_that_never_shows_our_prompts_fails(browser) -> None:
 
 def test_the_entry_is_chosen_by_title_not_position(browser) -> None:
     """A newer, unrelated chat at the top of Recents must not be the one checked."""
-    helper, infos = _load_helper(timeout_ms=3000)
+    helper, infos = _load_helper(timeout_ms = 3000)
     other = {"id": "t-other", "title": "New Chat", "turns": [], "loadMs": 0}
     ctx, page = _open(browser, [other, {**OURS, "loadMs": 200}])
     try:
@@ -236,7 +236,7 @@ def test_the_entry_is_chosen_by_title_not_position(browser) -> None:
 def test_auto_titled_chats_are_searched_past_an_unrelated_newer_one(browser) -> None:
     """No title matches when chats are auto-titled, so the newest row is tried first. One that
     loads someone else's turns is not ours, and the next row is tried instead of failing."""
-    helper, infos = _load_helper(timeout_ms=3000)
+    helper, infos = _load_helper(timeout_ms = 3000)
     other = {
         "id": "t-other",
         "title": "Weather chat",
@@ -253,7 +253,7 @@ def test_auto_titled_chats_are_searched_past_an_unrelated_newer_one(browser) -> 
 
 
 def test_auto_titled_chats_are_searched_past_an_empty_newer_one(browser) -> None:
-    helper, _ = _load_helper(timeout_ms=1000)
+    helper, _ = _load_helper(timeout_ms = 1000)
     empty = {"id": "t-empty", "title": "New Chat", "turns": [], "loadMs": 0}
     ctx, page = _open(browser, [empty, {**OURS, "title": "Rapid replies", "loadMs": 200}])
     try:
@@ -265,12 +265,12 @@ def test_auto_titled_chats_are_searched_past_an_empty_newer_one(browser) -> None
 
 def test_a_chat_titled_with_our_prompt_must_show_our_turns(browser) -> None:
     """The title says it is ours, so turns that are not ours fail rather than move on."""
-    helper, _ = _load_helper(timeout_ms=1000)
+    helper, _ = _load_helper(timeout_ms = 1000)
     wrong = {**OURS, "id": "t-wrong", "loadMs": 50, "turns": [["user", "something else"]]}
     later = {**OURS, "id": "t-later", "title": "Rapid replies", "loadMs": 50}
     ctx, page = _open(browser, [wrong, later])
     try:
-        with pytest.raises(AssertionError, match="doesn't contain any of our sent prompts"):
+        with pytest.raises(AssertionError, match = "doesn't contain any of our sent prompts"):
             helper(page, SENT, lambda name: None)
         assert "thread=t-wrong" in page.url
     finally:
@@ -280,7 +280,7 @@ def test_a_chat_titled_with_our_prompt_must_show_our_turns(browser) -> None:
 def test_the_previous_chats_turns_left_on_screen_are_not_read_as_the_next_one(browser) -> None:
     """The URL changes at once but the previous thread's turns stay until the next one loads, so
     a candidate must not be judged "someone else's" from what the last candidate left behind."""
-    helper, _ = _load_helper(timeout_ms=3000)
+    helper, _ = _load_helper(timeout_ms = 3000)
     other = {
         "id": "t-other",
         "title": "Weather chat",
@@ -288,7 +288,7 @@ def test_the_previous_chats_turns_left_on_screen_are_not_read_as_the_next_one(br
         "loadMs": 50,
     }
     ctx, page = _open(
-        browser, [other, {**OURS, "title": "Rapid replies", "loadMs": 800}], keep_stale=True
+        browser, [other, {**OURS, "title": "Rapid replies", "loadMs": 800}], keep_stale = True
     )
     try:
         helper(page, SENT, lambda name: None)
@@ -300,7 +300,7 @@ def test_the_previous_chats_turns_left_on_screen_are_not_read_as_the_next_one(br
 def test_our_turns_left_on_screen_do_not_pass_a_different_chat(browser) -> None:
     """The mirror case: the page shows our thread, a different chat is clicked, and our turns
     are still on screen while it loads. That is not our chat, and the next row must be ours."""
-    helper, _ = _load_helper(timeout_ms=3000)
+    helper, _ = _load_helper(timeout_ms = 3000)
     other = {
         "id": "t-other",
         "title": "Weather chat",
@@ -308,7 +308,7 @@ def test_our_turns_left_on_screen_do_not_pass_a_different_chat(browser) -> None:
         "loadMs": 800,
     }
     ctx, page = _open(
-        browser, [other, {**OURS, "title": "Rapid replies", "loadMs": 50}], keep_stale=True
+        browser, [other, {**OURS, "title": "Rapid replies", "loadMs": 50}], keep_stale = True
     )
     try:
         # Our thread is already on screen before the step runs.
@@ -323,22 +323,22 @@ def test_our_turns_left_on_screen_do_not_pass_a_different_chat(browser) -> None:
 def test_this_runs_chat_is_opened_by_id_over_an_earlier_runs_same_titled_chat(browser) -> None:
     """The prompts are fixed, so a reused Studio home can hold an earlier run's chat with the
     same title and turns. Given this run's id, that one is not taken for ours."""
-    helper, _ = _load_helper(timeout_ms=3000)
+    helper, _ = _load_helper(timeout_ms = 3000)
     earlier = {**OURS, "id": "t-earlier", "loadMs": 50}
     ctx, page = _open(browser, [earlier, {**OURS, "title": "Rapid replies", "loadMs": 200}])
     try:
-        helper(page, SENT, lambda name: None, our_thread_id="t-ours")
+        helper(page, SENT, lambda name: None, our_thread_id = "t-ours")
         assert "thread=t-ours" in page.url
     finally:
         ctx.close()
 
 
 def test_a_known_id_missing_from_recents_fails(browser) -> None:
-    helper, _ = _load_helper(timeout_ms=1000)
+    helper, _ = _load_helper(timeout_ms = 1000)
     ctx, page = _open(browser, [{**OURS, "loadMs": 50}])
     try:
-        with pytest.raises(AssertionError, match="is not in the sidebar"):
-            helper(page, SENT, lambda name: None, our_thread_id="t-gone")
+        with pytest.raises(AssertionError, match = "is not in the sidebar"):
+            helper(page, SENT, lambda name: None, our_thread_id = "t-gone")
     finally:
         ctx.close()
 
@@ -363,7 +363,7 @@ def test_the_driver_reads_this_runs_chat_id_from_the_url_or_the_active_row(brows
         '<button data-testid="recent-thread" data-active="true" data-thread-id="t-b"></button>'
     )
     ctx = browser.new_context()
-    ctx.route(f"{ORIGIN}/**", lambda route: route.fulfill(content_type="text/html", body=rows))
+    ctx.route(f"{ORIGIN}/**", lambda route: route.fulfill(content_type = "text/html", body = rows))
     page = ctx.new_page()
     try:
         page.goto(f"{ORIGIN}/chat")
@@ -376,14 +376,14 @@ def test_the_driver_reads_this_runs_chat_id_from_the_url_or_the_active_row(brows
 
 def test_a_known_id_is_found_past_the_first_rows(browser) -> None:
     """Pinned and project chats share the row testid, so ours can sit well down the sidebar."""
-    helper, _ = _load_helper(timeout_ms=3000)
+    helper, _ = _load_helper(timeout_ms = 3000)
     pinned = [
         {"id": f"t-pin{k}", "title": f"Pinned {k}", "turns": [["user", f"pinned {k}"]], "loadMs": 0}
         for k in range(25)
     ]
     ctx, page = _open(browser, [*pinned, {**OURS, "title": "Rapid replies", "loadMs": 100}])
     try:
-        helper(page, SENT, lambda name: None, our_thread_id="t-ours")
+        helper(page, SENT, lambda name: None, our_thread_id = "t-ours")
         assert "thread=t-ours" in page.url
     finally:
         ctx.close()

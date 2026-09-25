@@ -77,7 +77,7 @@ def _drive(instruments, ctx, cell, page, window_names):
     INTERFACES.md section 2 specifies. A raising instrument is caught and
     disabled for the rest of the cell rather than losing the window.
     """
-    ordered = sorted(instruments, key=lambda i: i.name)
+    ordered = sorted(instruments, key = lambda i: i.name)
     for inst in ordered:
         inst.attach(ctx)
     for inst in ordered:
@@ -85,7 +85,7 @@ def _drive(instruments, ctx, cell, page, window_names):
 
     rows = {}
     for wname in window_names:
-        w = Window(name=wname, kind="action", cell=cell, t_open_ms=time.monotonic() * 1000)
+        w = Window(name = wname, kind = "action", cell = cell, t_open_ms = time.monotonic() * 1000)
         for inst in ordered:
             inst.open(w)
         page.evaluate(f"__runTimer(); __runMsg({MESSAGE_ITERATIONS});")
@@ -137,7 +137,7 @@ def main() -> int:
         recorder = Recorder(paths.payload_jsonl, session_id)
 
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(args=["--no-sandbox"])
+            browser = pw.chromium.launch(args = ["--no-sandbox"])
             try:
                 for level in (1, 2, 3):
                     context = browser.new_context()
@@ -146,24 +146,24 @@ def main() -> int:
                     cdp = context.new_cdp_session(page)
 
                     ctx = BenchContext(
-                        browser=browser,
-                        context=context,
-                        page=page,
-                        cdp=cdp,
-                        base_url="about:blank",
-                        session_id=session_id,
-                        tier="quick",
-                        instrument_level=level,
-                        paths=paths,
-                        recorder=recorder,
-                        log=lambda m: None,
+                        browser = browser,
+                        context = context,
+                        page = page,
+                        cdp = cdp,
+                        base_url = "about:blank",
+                        session_id = session_id,
+                        tier = "quick",
+                        instrument_level = level,
+                        paths = paths,
+                        recorder = recorder,
+                        log = lambda m: None,
                     )
                     cell = Cell(
-                        cell_id=make_cell_id("10K", "A0", 0),
-                        rung="10K",
-                        rung_tokens=10_000,
-                        instrument_level=level,
-                        session_id=session_id,
+                        cell_id = make_cell_id("10K", "A0", 0),
+                        rung = "10K",
+                        rung_tokens = 10_000,
+                        instrument_level = level,
+                        session_id = session_id,
                     )
                     insts = build(level)
                     page.evaluate("window.__N = 0")

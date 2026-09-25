@@ -56,7 +56,7 @@ class _NoLanRunModule:
 
 
 def _function(name: str) -> ast.FunctionDef:
-    tree = ast.parse(_STUDIO_CLI.read_text(encoding="utf-8"))
+    tree = ast.parse(_STUDIO_CLI.read_text(encoding = "utf-8"))
     matches = [
         node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == name
     ]

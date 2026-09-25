@@ -35,7 +35,7 @@ CHAT_TEMPLATES_PATH = os.path.join(
 
 
 def _source():
-    return open(CHAT_TEMPLATES_PATH, encoding="utf-8").read()
+    return open(CHAT_TEMPLATES_PATH, encoding = "utf-8").read()
 
 
 def _resolution_statements():
@@ -57,7 +57,7 @@ def _resolution_statements():
         )
     ]
     assert statements, "could not find the map_eos_token resolution in get_chat_template"
-    return sorted(statements, key=lambda node: node.lineno)
+    return sorted(statements, key = lambda node: node.lineno)
 
 
 class _FakeTokenizer:
@@ -76,11 +76,11 @@ class _FakeLogger:
 def _resolve(
     map_eos_token,
     yes_map_eos_token,
-    token_mapping=None,
-    eos_token="<eos>",
+    token_mapping = None,
+    eos_token = "<eos>",
 ):
     """Run the shipped resolution statements over one (caller, template) combination."""
-    module = ast.Module(body=_resolution_statements(), type_ignores=[])
+    module = ast.Module(body = _resolution_statements(), type_ignores = [])
     logger = _FakeLogger()
     namespace = {
         "map_eos_token": map_eos_token,
@@ -97,16 +97,16 @@ def _resolve(
 
 def test_explicit_map_eos_token_false_is_honored():
     # A template asking for eos mapping must not override an explicit opt-out.
-    resolved, _ = _resolve(map_eos_token=False, yes_map_eos_token=True)
+    resolved, _ = _resolve(map_eos_token = False, yes_map_eos_token = True)
     assert resolved is False
 
 
 def test_other_map_eos_token_combinations_are_unchanged():
     # The default is map_eos_token = True, so these three paths must not move.
-    assert _resolve(map_eos_token=True, yes_map_eos_token=True)[0] is True
+    assert _resolve(map_eos_token = True, yes_map_eos_token = True)[0] is True
     # A template that does not use eos mapping still vetoes it.
-    assert _resolve(map_eos_token=True, yes_map_eos_token=False)[0] is False
-    assert _resolve(map_eos_token=False, yes_map_eos_token=False)[0] is False
+    assert _resolve(map_eos_token = True, yes_map_eos_token = False)[0] is False
+    assert _resolve(map_eos_token = False, yes_map_eos_token = False)[0] is False
 
 
 def test_opt_out_is_refused_when_the_template_rewrites_the_vocab():
@@ -114,10 +114,10 @@ def test_opt_out_is_refused_when_the_template_rewrites_the_vocab():
     # honored without leaving eos_token dangling. This pins the common shape, where eos_token is the renamed piece;
     # the next test pins the checkpoints where it is not, which is the case keying on tokenizer.eos_token used to miss.
     resolved, messages = _resolve(
-        map_eos_token=False,
-        yes_map_eos_token=True,
-        token_mapping={"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
-        eos_token="<eos>",
+        map_eos_token = False,
+        yes_map_eos_token = True,
+        token_mapping = {"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
+        eos_token = "<eos>",
     )
     assert resolved is True
     assert messages, "forcing the mapping back on must not be silent"
@@ -128,10 +128,10 @@ def test_opt_out_is_refused_when_eos_token_is_not_the_renamed_piece():
     # <eos> away to build <|im_end|>. Keying the guard on tokenizer.eos_token misses these and rebuilds the tokenizer
     # with no eos_token, so the class default re-adds the just-removed <eos> as a fresh id past the embeddings.
     resolved, messages = _resolve(
-        map_eos_token=False,
-        yes_map_eos_token=True,
-        token_mapping={"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
-        eos_token="<end_of_turn>",
+        map_eos_token = False,
+        yes_map_eos_token = True,
+        token_mapping = {"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
+        eos_token = "<end_of_turn>",
     )
     assert resolved is True
     assert messages, "forcing the mapping back on must not be silent"
@@ -141,10 +141,10 @@ def test_a_template_veto_still_wins_over_the_refusal():
     # The refusal only overrides the caller. A template that does not want eos mapping at all keeps
     # map_eos_token = False even if it carries a token_mapping.
     resolved, messages = _resolve(
-        map_eos_token=True,
-        yes_map_eos_token=False,
-        token_mapping={"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
-        eos_token="<eos>",
+        map_eos_token = True,
+        yes_map_eos_token = False,
+        token_mapping = {"<start_of_turn>": "<|im_start|>", "<eos>": "<|im_end|>"},
+        eos_token = "<eos>",
     )
     assert resolved is False
     assert not messages
@@ -154,10 +154,10 @@ def test_opt_out_still_honored_when_the_template_leaves_the_vocab_alone():
     # chatml / gemma / gemma2 carry no token_mapping, so nothing is half-applied when the mapping is skipped and the
     # caller's choice stands.
     resolved, messages = _resolve(
-        map_eos_token=False,
-        yes_map_eos_token=True,
-        token_mapping=None,
-        eos_token="<eos>",
+        map_eos_token = False,
+        yes_map_eos_token = True,
+        token_mapping = None,
+        eos_token = "<eos>",
     )
     assert resolved is False
     assert not messages
@@ -221,14 +221,14 @@ def _tiny_fast_tokenizer():
     from tokenizers import Tokenizer, models, pre_tokenizers
     from transformers import PreTrainedTokenizerFast
 
-    backend = Tokenizer(models.WordLevel(dict(VOCAB), unk_token="<unk>"))
+    backend = Tokenizer(models.WordLevel(dict(VOCAB), unk_token = "<unk>"))
     backend.pre_tokenizer = pre_tokenizers.Whitespace()
     return PreTrainedTokenizerFast(
-        tokenizer_object=backend,
-        bos_token="<bos>",
-        eos_token="<eos>",
-        pad_token="<pad>",
-        unk_token="<unk>",
+        tokenizer_object = backend,
+        bos_token = "<bos>",
+        eos_token = "<eos>",
+        pad_token = "<pad>",
+        unk_token = "<unk>",
     )
 
 
@@ -257,14 +257,14 @@ def _map_tokens(monkeypatch, map_eos_token, token_mapping):
         "map_eos_token": map_eos_token,
         "logger": _FakeLogger(),
     }
-    module = ast.Module(body=[_vocab_surgery_block()], type_ignores=[])
+    module = ast.Module(body = [_vocab_surgery_block()], type_ignores = [])
     exec(compile(module, CHAT_TEMPLATES_PATH, "exec"), namespace)
     return namespace["tokenizer"]
 
 
 def test_forced_mapping_renames_eos_in_the_vocab_and_takes_eos_token_with_it(monkeypatch):
     # gemma_chatml shape, with the flag the guard forces back on.
-    tokenizer = _map_tokens(monkeypatch, map_eos_token=True, token_mapping=GEMMA_CHATML_MAPPING)
+    tokenizer = _map_tokens(monkeypatch, map_eos_token = True, token_mapping = GEMMA_CHATML_MAPPING)
     vocab = tokenizer.get_vocab()
 
     assert "<eos>" not in vocab, "the rename must remove the old piece"
@@ -274,12 +274,12 @@ def test_forced_mapping_renames_eos_in_the_vocab_and_takes_eos_token_with_it(mon
 
     assert tokenizer.eos_token == STOP_WORD
     assert tokenizer.eos_token_id == vocab[STOP_WORD]
-    assert tokenizer(STOP_WORD, add_special_tokens=False)["input_ids"] == [vocab[STOP_WORD]]
+    assert tokenizer(STOP_WORD, add_special_tokens = False)["input_ids"] == [vocab[STOP_WORD]]
 
 
 def test_honoring_the_opt_out_here_would_leave_the_tokenizer_without_an_eos(monkeypatch):
     """Why the guard refuses the opt-out for this shape, rather than an argument about it."""
-    tokenizer = _map_tokens(monkeypatch, map_eos_token=False, token_mapping=GEMMA_CHATML_MAPPING)
+    tokenizer = _map_tokens(monkeypatch, map_eos_token = False, token_mapping = GEMMA_CHATML_MAPPING)
     vocab = tokenizer.get_vocab()
 
     assert "<eos>" not in vocab, "map_eos_token does not gate the rename, only the eos metadata"
@@ -293,7 +293,7 @@ def test_honoring_the_opt_out_here_would_leave_the_tokenizer_without_an_eos(monk
 
 def test_opt_out_on_the_plain_stop_word_path_leaves_the_tokenizer_untouched(monkeypatch):
     # chatml / gemma / gemma2: no token_mapping, so the opt-out skips the surgery outright.
-    tokenizer = _map_tokens(monkeypatch, map_eos_token=False, token_mapping=None)
+    tokenizer = _map_tokens(monkeypatch, map_eos_token = False, token_mapping = None)
     vocab = tokenizer.get_vocab()
 
     assert vocab == VOCAB
@@ -304,7 +304,7 @@ def test_opt_out_on_the_plain_stop_word_path_leaves_the_tokenizer_untouched(monk
 
 def test_mapping_on_the_plain_stop_word_path_still_swaps_eos_for_the_stop_word(monkeypatch):
     # The default, map_eos_token = True, must keep doing the swap on that same path.
-    tokenizer = _map_tokens(monkeypatch, map_eos_token=True, token_mapping=None)
+    tokenizer = _map_tokens(monkeypatch, map_eos_token = True, token_mapping = None)
     vocab = tokenizer.get_vocab()
 
     assert "<eos>" not in vocab

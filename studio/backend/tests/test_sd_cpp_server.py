@@ -20,12 +20,12 @@ from core.inference.sd_cpp_args import SdCppModelFiles
 from core.inference.sd_cpp_engine import SdCppCancelled
 from core.inference.sd_cpp_server import SdCppServer
 
-_FILES = SdCppModelFiles(diffusion_model="/m/z.gguf", vae="/m/vae.sft", llm="/m/llm.sft")
+_FILES = SdCppModelFiles(diffusion_model = "/m/z.gguf", vae = "/m/vae.sft", llm = "/m/llm.sft")
 
 
 def _png_b64(shade: int) -> str:
     buf = io.BytesIO()
-    Image.new("RGB", (1, 1), (shade, shade, shade)).save(buf, format="PNG")
+    Image.new("RGB", (1, 1), (shade, shade, shade)).save(buf, format = "PNG")
     return base64.b64encode(buf.getvalue()).decode()
 
 
@@ -36,8 +36,8 @@ class _FakePopen:
 
     def __init__(
         self,
-        lines=(),
-        exit_code=None,
+        lines = (),
+        exit_code = None,
     ):
         self.pid = 4242
         self._lines = list(lines)
@@ -67,7 +67,7 @@ class _FakePopen:
         self.returncode = 0
         self._done.set()
 
-    def wait(self, timeout=None):
+    def wait(self, timeout = None):
         self._done.wait(timeout)
         if self._exit is None:
             self._exit = 0
@@ -85,9 +85,9 @@ class _Resp:
     def __init__(
         self,
         status_code,
-        payload=None,
-        text="",
-        bad_json=False,
+        payload = None,
+        text = "",
+        bad_json = False,
     ):
         self.status_code = status_code
         self._payload = payload if payload is not None else {}
@@ -104,8 +104,8 @@ class _FakeClient:
     def __init__(
         self,
         *,
-        get=None,
-        post=None,
+        get = None,
+        post = None,
     ):
         self._get = get or (lambda url: _Resp(200, {}))
         self._post = post or (lambda url, json: _Resp(202, {"id": "job1"}))
@@ -116,7 +116,7 @@ class _FakeClient:
     def get(
         self,
         url,
-        timeout=None,
+        timeout = None,
     ):
         self.get_urls.append(url)
         return self._get(url)
@@ -124,8 +124,8 @@ class _FakeClient:
     def post(
         self,
         url,
-        json=None,
-        timeout=None,
+        json = None,
+        timeout = None,
     ):
         self.post_calls.append((url, json))
         return self._post(url, json)
@@ -158,13 +158,13 @@ def _server_with(popen, client):
 
 def test_start_becomes_ready_when_capabilities_200(patched, caplog):
     patched.setattr(srv, "_verbose_native_logs", lambda: False)
-    caplog.set_level("INFO", logger=srv.__name__)
-    popen = _FakePopen(lines=["loading model", "listening on: http://127.0.0.1:1"])
+    caplog.set_level("INFO", logger = srv.__name__)
+    popen = _FakePopen(lines = ["loading model", "listening on: http://127.0.0.1:1"])
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
     s = _server_with(
-        popen, _FakeClient(get=lambda url: _Resp(200, {"model": {"path": "/m/z.gguf"}}))
+        popen, _FakeClient(get = lambda url: _Resp(200, {"model": {"path": "/m/z.gguf"}}))
     )
-    s.start(_FILES, startup_timeout=5.0)
+    s.start(_FILES, startup_timeout = 5.0)
     assert s.is_alive() is True
     assert s.port is not None
     messages = [record.getMessage() for record in caplog.records if record.name == srv.__name__]
@@ -175,14 +175,14 @@ def test_start_becomes_ready_when_capabilities_200(patched, caplog):
 
 def test_start_fails_fast_when_process_exits(patched):
     # Model load failed, so the process exits before listening; start must raise with the tail.
-    popen = _FakePopen(lines=["error: bad model"], exit_code=1)
+    popen = _FakePopen(lines = ["error: bad model"], exit_code = 1)
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
     # Capabilities never answers (connection refused), so readiness relies on exit detection.
     s = _server_with(
-        popen, _FakeClient(get=lambda url: (_ for _ in ()).throw(srv.httpx.ConnectError("refused")))
+        popen, _FakeClient(get = lambda url: (_ for _ in ()).throw(srv.httpx.ConnectError("refused")))
     )
-    with pytest.raises(RuntimeError, match="failed to become ready"):
-        s.start(_FILES, startup_timeout=2.0)
+    with pytest.raises(RuntimeError, match = "failed to become ready"):
+        s.start(_FILES, startup_timeout = 2.0)
 
 
 # ── generation ───────────────────────────────────────────────────────────────
@@ -203,9 +203,9 @@ def test_img_gen_returns_image_bytes_in_index_order(patched):
     s = _server_with(
         popen,
         _FakeClient(
-            post=lambda url, json: _Resp(202, {"id": "jobA"}),
+            post = lambda url, json: _Resp(202, {"id": "jobA"}),
             # result images deliberately out of order -> manager must sort by index.
-            get=lambda url: _Resp(
+            get = lambda url: _Resp(
                 200,
                 {
                     "status": "completed",
@@ -230,20 +230,20 @@ def test_img_gen_failed_job_raises(patched):
     s = _server_with(
         popen,
         _FakeClient(
-            post=lambda url, json: _Resp(202, {"id": "jobF"}),
-            get=lambda url: _Resp(
+            post = lambda url, json: _Resp(202, {"id": "jobF"}),
+            get = lambda url: _Resp(
                 200, {"status": "failed", "error": {"code": "x", "message": "boom"}}
             ),
         ),
     )
-    with pytest.raises(RuntimeError, match="generation failed.*boom"):
+    with pytest.raises(RuntimeError, match = "generation failed.*boom"):
         s.img_gen({"prompt": "x"})
 
 
 def test_img_gen_queue_full_raises(patched):
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(post=lambda url, json: _Resp(429, text="busy")))
-    with pytest.raises(RuntimeError, match="queue is full"):
+    s = _server_with(popen, _FakeClient(post = lambda url, json: _Resp(429, text = "busy")))
+    with pytest.raises(RuntimeError, match = "queue is full"):
         s.img_gen({"prompt": "x"})
 
 
@@ -252,14 +252,14 @@ def test_img_gen_cancel_posts_cancel_and_raises(patched):
     cancel = threading.Event()
     cancel.set()  # already cancelled before the first poll
     client = _FakeClient(
-        post=lambda url, json: _Resp(202, {"id": "jobC"}),
-        get=lambda url: _Resp(
+        post = lambda url, json: _Resp(202, {"id": "jobC"}),
+        get = lambda url: _Resp(
             200, {"status": "cancelled", "error": {"code": "cancelled", "message": "c"}}
         ),
     )
     s = _server_with(popen, client)
     with pytest.raises(SdCppCancelled):
-        s.img_gen({"prompt": "x"}, cancel_event=cancel)
+        s.img_gen({"prompt": "x"}, cancel_event = cancel)
     assert any(url.endswith("/cancel") for url, _ in client.post_calls)
 
 
@@ -271,9 +271,9 @@ def test_img_gen_detects_server_death(patched):
         return _Resp(200, {"status": "generating"})
 
     s = _server_with(
-        popen, _FakeClient(post=lambda url, json: _Resp(202, {"id": "jobD"}), get=_die_get)
+        popen, _FakeClient(post = lambda url, json: _Resp(202, {"id": "jobD"}), get = _die_get)
     )
-    with pytest.raises(RuntimeError, match="connection lost|process exited"):
+    with pytest.raises(RuntimeError, match = "connection lost|process exited"):
         s.img_gen({"prompt": "x"})
 
 
@@ -285,7 +285,7 @@ def test_drain_routes_lines_to_step_listener_and_tail(patched):
     seen = []
     s._step_listener = seen.append
     # exit_code set so stdout ends after the scripted lines (a live fake would block).
-    s._drain_stdout(_FakePopen(lines=["sampling 1/8", "", "sampling 8/8", "done"], exit_code=0))
+    s._drain_stdout(_FakePopen(lines = ["sampling 1/8", "", "sampling 8/8", "done"], exit_code = 0))
     assert "sampling 1/8" in seen and "sampling 8/8" in seen
     assert "" not in seen  # blank lines skipped
     assert s._tail[-1] == "done"
@@ -294,9 +294,9 @@ def test_drain_routes_lines_to_step_listener_and_tail(patched):
 def test_stop_is_idempotent_and_terminates(patched):
     popen = _FakePopen()
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
-    client = _FakeClient(get=lambda url: _Resp(200, {}))
+    client = _FakeClient(get = lambda url: _Resp(200, {}))
     s = _server_with(popen, client)
-    s.start(_FILES, startup_timeout=5.0)
+    s.start(_FILES, startup_timeout = 5.0)
     s.stop()
     assert popen.terminated is True
     assert s.is_alive() is False
@@ -306,15 +306,15 @@ def test_stop_is_idempotent_and_terminates(patched):
 
 def test_img_gen_submit_error_raises(patched):
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(post=lambda url, json: _Resp(400, text="bad params")))
-    with pytest.raises(RuntimeError, match="submit -> 400"):
+    s = _server_with(popen, _FakeClient(post = lambda url, json: _Resp(400, text = "bad params")))
+    with pytest.raises(RuntimeError, match = "submit -> 400"):
         s.img_gen({"prompt": "x"})
 
 
 def test_img_gen_malformed_submit_json_raises(patched):
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(post=lambda url, json: _Resp(202, bad_json=True)))
-    with pytest.raises(RuntimeError, match="non-JSON submit"):
+    s = _server_with(popen, _FakeClient(post = lambda url, json: _Resp(202, bad_json = True)))
+    with pytest.raises(RuntimeError, match = "non-JSON submit"):
         s.img_gen({"prompt": "x"})
 
 
@@ -323,21 +323,21 @@ def test_img_gen_empty_result_raises(patched):
     s = _server_with(
         popen,
         _FakeClient(
-            post=lambda url, json: _Resp(202, {"id": "jobE"}),
-            get=lambda url: _Resp(200, {"status": "completed", "result": {"images": []}}),
+            post = lambda url, json: _Resp(202, {"id": "jobE"}),
+            get = lambda url: _Resp(200, {"status": "completed", "result": {"images": []}}),
         ),
     )
-    with pytest.raises(RuntimeError, match="no images"):
+    with pytest.raises(RuntimeError, match = "no images"):
         s.img_gen({"prompt": "x"})
 
 
 def test_img_gen_rejected_after_stop(patched):
     popen = _FakePopen()
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
-    s = _server_with(popen, _FakeClient(get=lambda url: _Resp(200, {})))
-    s.start(_FILES, startup_timeout=5.0)
+    s = _server_with(popen, _FakeClient(get = lambda url: _Resp(200, {})))
+    s.start(_FILES, startup_timeout = 5.0)
     s.stop()
-    with pytest.raises(RuntimeError, match="not running"):
+    with pytest.raises(RuntimeError, match = "not running"):
         s.img_gen({"prompt": "x"})
 
 
@@ -348,13 +348,13 @@ def test_img_gen_cancelled_before_submit_reports_cancellation(patched):
     # The server was stopped for a cancel/unload before submit; with the cancel event set this is a cancellation (409), not a "not running" 500.
     popen = _FakePopen()
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
-    s = _server_with(popen, _FakeClient(get=lambda url: _Resp(200, {})))
-    s.start(_FILES, startup_timeout=5.0)
+    s = _server_with(popen, _FakeClient(get = lambda url: _Resp(200, {})))
+    s.start(_FILES, startup_timeout = 5.0)
     s.stop()
     cancel = threading.Event()
     cancel.set()
     with pytest.raises(SdCppCancelled):
-        s.img_gen({"prompt": "x"}, cancel_event=cancel)
+        s.img_gen({"prompt": "x"}, cancel_event = cancel)
 
 
 def test_img_gen_abandons_when_cancel_not_honored(patched):
@@ -364,12 +364,12 @@ def test_img_gen_abandons_when_cancel_not_honored(patched):
     cancel = threading.Event()
     cancel.set()
     client = _FakeClient(
-        post=lambda url, json: _Resp(202, {"id": "jobG"}),
-        get=lambda url: _Resp(200, {"status": "generating"}),  # never terminal
+        post = lambda url, json: _Resp(202, {"id": "jobG"}),
+        get = lambda url: _Resp(200, {"status": "generating"}),  # never terminal
     )
     s = _server_with(popen, client)
     with pytest.raises(SdCppCancelled):
-        s.img_gen({"prompt": "x"}, cancel_event=cancel, poll_interval=0.01)
+        s.img_gen({"prompt": "x"}, cancel_event = cancel, poll_interval = 0.01)
     # And the process is stopped, not left running the abandoned job: sd-server does not interrupt an in-flight job, so a server
     # that ignored the cancel would burn a core (or the GPU) to completion and hold its job slot against the next request.
     assert not s.is_alive()
@@ -377,8 +377,8 @@ def test_img_gen_abandons_when_cancel_not_honored(patched):
 
 def test_img_gen_non_dict_submit_json_raises(patched):
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(post=lambda url, json: _Resp(202, ["not", "a", "dict"])))
-    with pytest.raises(RuntimeError, match="unexpected submit response"):
+    s = _server_with(popen, _FakeClient(post = lambda url, json: _Resp(202, ["not", "a", "dict"])))
+    with pytest.raises(RuntimeError, match = "unexpected submit response"):
         s.img_gen({"prompt": "x"})
 
 
@@ -387,40 +387,39 @@ def test_img_gen_non_dict_status_json_raises(patched):
     s = _server_with(
         popen,
         _FakeClient(
-            post=lambda url, json: _Resp(202, {"id": "jobH"}),
-            get=lambda url: _Resp(200, ["unexpected"]),
+            post = lambda url, json: _Resp(202, {"id": "jobH"}),
+            get = lambda url: _Resp(200, ["unexpected"]),
         ),
     )
-    with pytest.raises(RuntimeError, match="unexpected response type"):
-        s.img_gen({"prompt": "x"}, poll_interval=0.01)
+    with pytest.raises(RuntimeError, match = "unexpected response type"):
+        s.img_gen({"prompt": "x"}, poll_interval = 0.01)
 
 
 def test_decode_images_tolerates_unexpected_shapes():
     # A misbehaving/older server can return non-dict result/images/items, so _decode_images must raise a clean "no images" rather than an AttributeError.
     for job in ({"result": ["x"]}, {"result": {"images": "nope"}}, {"result": {"images": [1, 2]}}):
-        with pytest.raises(RuntimeError, match="no images"):
+        with pytest.raises(RuntimeError, match = "no images"):
             SdCppServer._decode_images(job)
 
 
 def test_start_aborted_by_concurrent_stop(patched):
     # A stop() during the readiness wait must abort start() promptly, without waiting out the startup timeout, and surface as a cancellation.
-    popen = _FakePopen(lines=["loading model"])
+    popen = _FakePopen(lines = ["loading model"])
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
 
     def _never_ready(url):
         raise srv.httpx.ConnectError("refused")
 
-    s = _server_with(popen, _FakeClient(get=_never_ready))
+    s = _server_with(popen, _FakeClient(get = _never_ready))
 
     def _stop_soon():
         import time as _t
-
         _t.sleep(0.2)
         s.stop()
 
-    threading.Thread(target=_stop_soon, daemon=True).start()
+    threading.Thread(target = _stop_soon, daemon = True).start()
     with pytest.raises(SdCppCancelled):
-        s.start(_FILES, startup_timeout=30.0)
+        s.start(_FILES, startup_timeout = 30.0)
 
 
 def test_diagnostic_tail_keeps_the_reason_not_just_the_backtrace():
@@ -459,20 +458,20 @@ def test_readiness_refuses_a_port_held_by_another_process(patched):
     # Another process can take it in that window, and llama.cpp's server also answers /v1/models 200, so readiness would pass on a stranger.
     import types
 
-    popen = _FakePopen(lines=["loading model"])
+    popen = _FakePopen(lines = ["loading model"])
     patched.setattr(srv.subprocess, "Popen", lambda *a, **k: popen)
-    s = _server_with(popen, _FakeClient(get=lambda url: _Resp(200, {"model": {}})))
+    s = _server_with(popen, _FakeClient(get = lambda url: _Resp(200, {"model": {}})))
 
     fake_psutil = types.SimpleNamespace(
-        CONN_LISTEN="LISTEN",
-        net_connections=lambda kind="inet": [
+        CONN_LISTEN = "LISTEN",
+        net_connections = lambda kind = "inet": [
             types.SimpleNamespace(
-                laddr=types.SimpleNamespace(port=s.port),
-                status="LISTEN",
-                pid=popen.pid + 1000,  # somebody else
+                laddr = types.SimpleNamespace(port = s.port),
+                status = "LISTEN",
+                pid = popen.pid + 1000,  # somebody else
             )
         ],
-        Process=lambda pid: types.SimpleNamespace(parent=lambda: None),
+        Process = lambda pid: types.SimpleNamespace(parent = lambda: None),
     )
     patched.setitem(__import__("sys").modules, "psutil", fake_psutil)
     assert s._port_is_ours() is False
@@ -482,12 +481,12 @@ def test_readiness_accepts_our_own_child_and_its_descendants(patched):
     import types
 
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(get=lambda url: _Resp(200, {})))
+    s = _server_with(popen, _FakeClient(get = lambda url: _Resp(200, {})))
 
     def _conns(owner_pid):
         return [
             types.SimpleNamespace(
-                laddr=types.SimpleNamespace(port=s.port), status="LISTEN", pid=owner_pid
+                laddr = types.SimpleNamespace(port = s.port), status = "LISTEN", pid = owner_pid
             )
         ]
 
@@ -496,9 +495,9 @@ def test_readiness_accepts_our_own_child_and_its_descendants(patched):
         __import__("sys").modules,
         "psutil",
         types.SimpleNamespace(
-            CONN_LISTEN="LISTEN",
-            net_connections=lambda kind="inet": _conns(popen.pid),
-            Process=lambda pid: types.SimpleNamespace(parent=lambda: None),
+            CONN_LISTEN = "LISTEN",
+            net_connections = lambda kind = "inet": _conns(popen.pid),
+            Process = lambda pid: types.SimpleNamespace(parent = lambda: None),
         ),
     )
     assert s._port_is_ours() is True
@@ -509,17 +508,17 @@ def test_readiness_accepts_our_own_child_and_its_descendants(patched):
     def _process(pid):
         if pid == child_pid:
             return types.SimpleNamespace(
-                parent=lambda: types.SimpleNamespace(pid=popen.pid, parent=lambda: None)
+                parent = lambda: types.SimpleNamespace(pid = popen.pid, parent = lambda: None)
             )
-        return types.SimpleNamespace(parent=lambda: None)
+        return types.SimpleNamespace(parent = lambda: None)
 
     patched.setitem(
         __import__("sys").modules,
         "psutil",
         types.SimpleNamespace(
-            CONN_LISTEN="LISTEN",
-            net_connections=lambda kind="inet": _conns(child_pid),
-            Process=_process,
+            CONN_LISTEN = "LISTEN",
+            net_connections = lambda kind = "inet": _conns(child_pid),
+            Process = _process,
         ),
     )
     assert s._port_is_ours() is True
@@ -530,18 +529,18 @@ def test_readiness_check_is_best_effort(patched):
     import types
 
     popen = _FakePopen()
-    s = _server_with(popen, _FakeClient(get=lambda url: _Resp(200, {})))
+    s = _server_with(popen, _FakeClient(get = lambda url: _Resp(200, {})))
 
     patched.setitem(__import__("sys").modules, "psutil", None)
     assert s._port_is_ours() is True
 
-    def _boom(kind="inet"):
+    def _boom(kind = "inet"):
         raise PermissionError("not allowed")
 
     patched.setitem(
         __import__("sys").modules,
         "psutil",
-        types.SimpleNamespace(CONN_LISTEN="LISTEN", net_connections=_boom),
+        types.SimpleNamespace(CONN_LISTEN = "LISTEN", net_connections = _boom),
     )
     assert s._port_is_ours() is True
 
@@ -550,10 +549,10 @@ def test_readiness_check_is_best_effort(patched):
         __import__("sys").modules,
         "psutil",
         types.SimpleNamespace(
-            CONN_LISTEN="LISTEN",
-            net_connections=lambda kind="inet": [
+            CONN_LISTEN = "LISTEN",
+            net_connections = lambda kind = "inet": [
                 types.SimpleNamespace(
-                    laddr=types.SimpleNamespace(port=s.port), status="LISTEN", pid=None
+                    laddr = types.SimpleNamespace(port = s.port), status = "LISTEN", pid = None
                 )
             ],
         ),

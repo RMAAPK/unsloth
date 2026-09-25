@@ -31,27 +31,27 @@ from utils import debug_log_export, debug_log_sources
 @pytest.fixture
 def client():
     app = FastAPI()
-    app.include_router(settings_route.router, prefix="/api/settings")
+    app.include_router(settings_route.router, prefix = "/api/settings")
     app.dependency_overrides[settings_route.get_current_subject] = lambda: "admin"
     app.dependency_overrides[settings_route._require_ui_session] = lambda: None
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions = False)
 
 
 def _seed_server_log(body: str = "hello\n") -> Path:
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     path = directory / f"server-20260813-120000-pid{os.getpid()}.log"
     # newline = "": `write_text` otherwise translates \n to \r\n on Windows, which
     # moves every byte offset the seek and budget tests below compute.
-    path.write_text(body, encoding="utf-8", newline="")
+    path.write_text(body, encoding = "utf-8", newline = "")
     return path
 
 
 def _seed_llama_log(body: str = "llama runner line\n") -> Path:
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "llama-server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     path = directory / "llama-1786000000.log"
-    path.write_text(body, encoding="utf-8", newline="")
+    path.write_text(body, encoding = "utf-8", newline = "")
     return path
 
 
@@ -120,7 +120,7 @@ def test_a_source_swapped_for_a_symlink_after_enumeration_is_refused(monkeypatch
     path = _seed_server_log("ordinary line\n")
     # Not `secret`, for the CodeQL reason on the AWS test below.
     link_target = tmp_path / "id_rsa"
-    link_target.write_text("PRIVATE KEY MATERIAL\n", encoding="utf-8")
+    link_target.write_text("PRIVATE KEY MATERIAL\n", encoding = "utf-8")
     enumerate_sources = debug_log_sources.list_sources
 
     def swap_then_return():
@@ -161,7 +161,7 @@ def test_a_file_replaced_between_the_stat_and_the_open_is_refused(monkeypatch):
             # coincidence. A rename of a file that already exists alongside is a
             # different inode by construction, on every filesystem.
             impostor = path.parent / "impostor.log"
-            impostor.write_text("SOMEONE ELSE'S FILE\n", encoding="utf-8")
+            impostor.write_text("SOMEONE ELSE'S FILE\n", encoding = "utf-8")
             os.replace(impostor, path)
         return real_open(*args, **kwargs)
 
@@ -285,10 +285,10 @@ def _filesystem_folds_case(directory: Path) -> bool:
     """
     probe = directory / "CaseProbe.tmp"
     try:
-        probe.write_text("x", encoding="utf-8")
+        probe.write_text("x", encoding = "utf-8")
         return (directory / "caseprobe.tmp").exists()
     finally:
-        probe.unlink(missing_ok=True)
+        probe.unlink(missing_ok = True)
 
 
 def test_two_logs_differing_only_in_case_both_survive_the_round_trip(monkeypatch):
@@ -302,7 +302,7 @@ def test_two_logs_differing_only_in_case_both_survive_the_round_trip(monkeypatch
     Windows shape; the files underneath are real, and so is the archive.
     """
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     if _filesystem_folds_case(directory):
         # The two files would be one file here, so there is nothing to pack
         # twice. The property still holds and is covered without a filesystem by
@@ -316,16 +316,16 @@ def test_two_logs_differing_only_in_case_both_survive_the_round_trip(monkeypatch
     sources = []
     for name, body in spellings.items():
         path = directory / name
-        path.write_text(body, encoding="utf-8")
+        path.write_text(body, encoding = "utf-8")
         sources.append(
             debug_log_sources.LogSource(
-                id=f"server:{name}",
-                family="server",
-                label=name,
-                realpath=str(path),
-                size_bytes=path.stat().st_size,
-                modified_at=0.0,
-                is_current=False,
+                id = f"server:{name}",
+                family = "server",
+                label = name,
+                realpath = str(path),
+                size_bytes = path.stat().st_size,
+                modified_at = 0.0,
+                is_current = False,
             )
         )
     monkeypatch.setattr(debug_log_sources, "list_sources", lambda: sources)
@@ -399,10 +399,10 @@ def test_an_api_key_session_cannot_download_the_logs():
     """A bundle of every log on the host is UI-operator material, exactly like
     the single-file read next to it."""
     app = FastAPI()
-    app.include_router(settings_route.router, prefix="/api/settings")
+    app.include_router(settings_route.router, prefix = "/api/settings")
     app.dependency_overrides[settings_route.get_current_subject] = lambda: "admin"
     app.dependency_overrides[settings_route.authenticated_via_api_key] = lambda: True
-    api_client = TestClient(app, raise_server_exceptions=False)
+    api_client = TestClient(app, raise_server_exceptions = False)
     _seed_server_log()
     assert api_client.get("/api/settings/debug/logs/export").status_code == 403
 
@@ -462,7 +462,7 @@ def test_a_record_cut_by_the_allowance_is_marked_not_presented_as_whole():
     trailing bytes ARE a whole record, so the two must not be treated alike.
     """
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     path = directory / "server-20260101-120000-pid1.log"
     path.write_bytes(b"password=SECRETVALUE12345\n")
 
@@ -528,13 +528,13 @@ def test_the_budget_is_spread_across_families_not_drained_by_one(monkeypatch):
 def test_round_robin_keeps_the_newest_of_each_family_first():
     def source(family, label):
         return debug_log_sources.LogSource(
-            id=f"{family}:{label}",
-            family=family,
-            label=label,
-            realpath=label,
-            size_bytes=0,
-            modified_at=0.0,
-            is_current=False,
+            id = f"{family}:{label}",
+            family = family,
+            label = label,
+            realpath = label,
+            size_bytes = 0,
+            modified_at = 0.0,
+            is_current = False,
         )
 
     grouped = [
@@ -582,7 +582,7 @@ def test_a_log_being_appended_to_is_still_bounded(monkeypatch):
         # Append far more than the allowance while the export is mid-read.
         if not state["appended"]:
             state["appended"] = True
-            with path.open("a", encoding="utf-8") as handle:
+            with path.open("a", encoding = "utf-8") as handle:
                 handle.write("appended line\n" * 20000)
         return real_redact(text)
 
@@ -670,7 +670,7 @@ def test_an_undecodable_filename_does_not_take_the_export_down():
     """Path.name hands back lone surrogates via surrogateescape; zipfile cannot
     encode them, and the raise is not an OSError so both handlers miss it."""
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     try:
         # fsdecode itself is the first thing that can refuse: Windows decodes
         # filenames as utf-8/surrogatepass, which has no way to carry a lone
@@ -686,10 +686,10 @@ def test_an_undecodable_filename_does_not_take_the_export_down():
     assert any(name.startswith("server/") for name in members)
 
 
-@pytest.mark.skipif(os.name == "nt", reason="Windows filenames cannot contain a newline")
+@pytest.mark.skipif(os.name == "nt", reason = "Windows filenames cannot contain a newline")
 def test_a_label_cannot_forge_a_line_in_the_warnings_member():
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     (directory / "server-a\nforged: nothing was omitted\nb.log").write_bytes(b"x\n")
     for name in _members():
         assert "\n" not in name
@@ -734,7 +734,7 @@ def test_a_pathological_log_cannot_run_past_the_time_budget(monkeypatch):
     assert truncated or "time budget" in warnings
 
 
-@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="no os.mkfifo on this platform")
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason = "no os.mkfifo on this platform")
 def test_a_fifo_in_the_log_directory_does_not_hang_the_export(monkeypatch):
     """O_NOFOLLOW refuses a symlink but not a FIFO, and opening a FIFO with no
     writer blocks forever -- before the fstat check gets a turn to reject it."""
@@ -773,7 +773,7 @@ def test_a_utf16_log_never_ships_its_credentials():
     character, so every masking rule stops matching and the record is copied
     through with the credential still perfectly readable."""
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     path = directory / "server-20260813-120000-utf16.log"
     path.write_bytes("HF_TOKEN=hf_AbCdEfGhIjKlMnOpQrStUv012345\n".encode("utf-16-le"))
     for name, body in _members().items():
@@ -785,7 +785,7 @@ def test_a_utf16_log_never_ships_its_credentials():
 
 def test_an_invalid_utf8_record_is_refused_rather_than_replaced():
     directory = Path(os.environ["UNSLOTH_STUDIO_HOME"]) / "logs" / "server"
-    directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents = True, exist_ok = True)
     path = directory / "server-20260813-120000-binary.log"
     path.write_bytes(b"ordinary line\n" + b"\xff\xfe token=abcdef123456\n")
     body = _members()[f"server/{path.name}"]
@@ -835,7 +835,7 @@ def test_the_tail_scan_does_not_follow_a_growing_log(monkeypatch):
         result = real_stat(fd)
         if grew["count"] < 200:
             grew["count"] += 1
-            with path.open("a", encoding="utf-8") as handle:
+            with path.open("a", encoding = "utf-8") as handle:
                 handle.write("y" * 4000)
         return result
 

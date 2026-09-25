@@ -70,5 +70,5 @@ def dflash_budget_bytes(
     )
     return max(
         (total for total in totals if not target_bytes or total < target_bytes),
-        default=0,
+        default = 0,
     )

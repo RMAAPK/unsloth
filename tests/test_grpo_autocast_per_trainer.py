@@ -44,8 +44,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 RL_PY = REPO_ROOT / "unsloth" / "models" / "rl.py"
 RL_REPLACEMENTS = REPO_ROOT / "unsloth" / "models" / "rl_replacements.py"
-RL_SRC = RL_PY.read_text(encoding="utf-8")
-REPL_SRC = RL_REPLACEMENTS.read_text(encoding="utf-8")
+RL_SRC = RL_PY.read_text(encoding = "utf-8")
+REPL_SRC = RL_REPLACEMENTS.read_text(encoding = "utf-8")
 
 
 # ---- the two pieces of source under test ---------------------------------
@@ -114,9 +114,9 @@ class _Args:
 
     def __init__(
         self,
-        fp16=False,
-        bf16=False,
-        has_mixed_precision=True,
+        fp16 = False,
+        bf16 = False,
+        has_mixed_precision = True,
     ):
         self.fp16 = fp16
         self.bf16 = bf16
@@ -128,21 +128,21 @@ def _build_trainer(
     env,
     model_dtype,
     bf16_supported,
-    fp16=False,
-    bf16=False,
-    user_float32=None,
-    has_mixed_precision=True,
-    mark_forced_float32=True,
-    forced_float32=None,
-    mark_full_finetuning=True,
-    full_finetuning=None,
-    env_override=None,
+    fp16 = False,
+    bf16 = False,
+    user_float32 = None,
+    has_mixed_precision = True,
+    mark_forced_float32 = True,
+    forced_float32 = None,
+    mark_full_finetuning = True,
+    full_finetuning = None,
+    env_override = None,
 ):
     """Run rl.py's __init__ block for one trainer against the shared env."""
-    args = _Args(fp16=fp16, bf16=bf16, has_mixed_precision=has_mixed_precision)
+    args = _Args(fp16 = fp16, bf16 = bf16, has_mixed_precision = has_mixed_precision)
     model = types.SimpleNamespace(
-        config=types.SimpleNamespace(dtype=model_dtype, torch_dtype=model_dtype),
-        _unsloth_user_float32=(
+        config = types.SimpleNamespace(dtype = model_dtype, torch_dtype = model_dtype),
+        _unsloth_user_float32 = (
             (model_dtype is torch.float32) if user_float32 is None else user_float32
         ),
     )
@@ -182,13 +182,13 @@ def _build_trainer(
     sys.modules["unsloth_zoo.utils"] = utils
     scope = {
         "torch": torch,
-        "os": types.SimpleNamespace(environ=env),
+        "os": types.SimpleNamespace(environ = env),
         "args": args,
         "model": model,
         "print": lambda *a, **k: None,
     }
     try:
-        with _pretend_cuda(has_bf16=bf16_supported):
+        with _pretend_cuda(has_bf16 = bf16_supported):
             exec(MP_SRC, scope)
     finally:
         for k, v in saved.items():
@@ -198,14 +198,14 @@ def _build_trainer(
                 sys.modules[k] = v
     assert scope["_bf16_supported"] is device_type.device_is_bf16_supported
     # The trainer, as much of one as the autocast header ever touches.
-    return types.SimpleNamespace(args=args, model=model)
+    return types.SimpleNamespace(args = args, model = model)
 
 
 def _generate(trainer, env, has_bf16):
     """Enter the injected _prepare_inputs header once and report the autocast."""
     scope = {
         "torch": torch,
-        "os": types.SimpleNamespace(environ=env),
+        "os": types.SimpleNamespace(environ = env),
         "nullcontext": nullcontext,
         "self": trainer,
         "seen": [],
@@ -219,7 +219,7 @@ def _generate(trainer, env, has_bf16):
         "\n    seen.append((torch.is_autocast_enabled('cuda'), "
         "torch.get_autocast_dtype('cuda') if torch.is_autocast_enabled('cuda') else None))\n"
     )
-    with _pretend_cuda(has_bf16=has_bf16):
+    with _pretend_cuda(has_bf16 = has_bf16):
         exec(_prepare_inputs_snippet() + body, scope)
     return scope["seen"][0]
 
@@ -234,16 +234,16 @@ def test_a_later_trainer_cannot_re_enable_this_trainers_autocast(has_mixed_preci
     The first trainer has not generated a single batch yet."""
     env = {}
     first = _build_trainer(
-        env, torch.float32, bf16_supported=False, has_mixed_precision=has_mixed_precision
+        env, torch.float32, bf16_supported = False, has_mixed_precision = has_mixed_precision
     )
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
     _build_trainer(
-        env, torch.float16, bf16_supported=False, has_mixed_precision=has_mixed_precision
+        env, torch.float16, bf16_supported = False, has_mixed_precision = has_mixed_precision
     )
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16", "the second trainer owns the env now"
 
-    enabled, dtype = _generate(first, env, has_bf16=False)
+    enabled, dtype = _generate(first, env, has_bf16 = False)
     assert enabled is False, "float32 trainer was pulled into the other trainer's fp16 autocast"
     assert dtype is None
 
@@ -252,20 +252,20 @@ def test_the_decision_survives_a_trainer_built_after_the_first_batch():
     """Latching on first use is not enough on its own; check the other order
     too, where the first trainer has already generated once."""
     env = {}
-    first = _build_trainer(env, torch.float32, bf16_supported=False)
-    assert _generate(first, env, has_bf16=False) == (False, None)
+    first = _build_trainer(env, torch.float32, bf16_supported = False)
+    assert _generate(first, env, has_bf16 = False) == (False, None)
 
-    _build_trainer(env, torch.float16, bf16_supported=False)
-    assert _generate(first, env, has_bf16=False) == (False, None)
+    _build_trainer(env, torch.float16, bf16_supported = False)
+    assert _generate(first, env, has_bf16 = False) == (False, None)
 
 
 def test_two_trainers_in_one_process_each_keep_their_own_answer():
     env = {}
-    first = _build_trainer(env, torch.float32, bf16_supported=False)
-    second = _build_trainer(env, torch.float16, bf16_supported=False)
+    first = _build_trainer(env, torch.float32, bf16_supported = False)
+    second = _build_trainer(env, torch.float16, bf16_supported = False)
 
-    assert _generate(first, env, has_bf16=False) == (False, None)
-    assert _generate(second, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(first, env, has_bf16 = False) == (False, None)
+    assert _generate(second, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_a_later_load_cannot_take_this_trainers_float16_autocast_away():
@@ -278,14 +278,14 @@ def test_a_later_load_cannot_take_this_trainers_float16_autocast_away():
     and run generation in full float32.
     """
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
-    first = _build_trainer(env, torch.float32, bf16_supported=False)
+    first = _build_trainer(env, torch.float32, bf16_supported = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
     # A second from_pretrained, before the first trainer generates.
     env["UNSLOTH_FORCE_FLOAT32"] = "0"
-    _build_trainer(env, torch.float16, bf16_supported=False)
+    _build_trainer(env, torch.float16, bf16_supported = False)
 
-    assert _generate(first, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(first, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_a_forced_float32_model_keeps_the_bfloat16_the_trainer_chose():
@@ -295,9 +295,9 @@ def test_a_forced_float32_model_keeps_the_bfloat16_the_trainer_chose():
     force_float32 and pick bf16 on purpose, so the stamp must not pull generation
     back into the float16 that the forced list exists to avoid."""
     env = {"UNSLOTH_FORCE_FLOAT32": "1", "UNSLOTH_ENABLE_FULL_FINETUNING": "1"}
-    trainer = _build_trainer(env, torch.bfloat16, bf16_supported=True)
+    trainer = _build_trainer(env, torch.bfloat16, bf16_supported = True)
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
-    assert _generate(trainer, env, has_bf16=True) == (True, torch.bfloat16)
+    assert _generate(trainer, env, has_bf16 = True) == (True, torch.bfloat16)
 
 
 def test_a_later_load_cannot_take_full_finetunings_bfloat16_away():
@@ -314,18 +314,18 @@ def test_a_later_load_cannot_take_full_finetunings_bfloat16_away():
     trainer = _build_trainer(
         env,
         torch.bfloat16,
-        bf16_supported=True,
-        full_finetuning=True,
-        env_override={"UNSLOTH_ENABLE_FULL_FINETUNING": "0"},
+        bf16_supported = True,
+        full_finetuning = True,
+        env_override = {"UNSLOTH_ENABLE_FULL_FINETUNING": "0"},
     )
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
-    assert _generate(trainer, env, has_bf16=True) == (True, torch.bfloat16)
+    assert _generate(trainer, env, has_bf16 = True) == (True, torch.bfloat16)
 
 
 def test_an_unstamped_model_still_takes_the_environments_finetuning_mode():
     """The fallback, for a model loaded before this stamp existed."""
     env = {"UNSLOTH_FORCE_FLOAT32": "1", "UNSLOTH_ENABLE_FULL_FINETUNING": "1"}
-    trainer = _build_trainer(env, torch.bfloat16, bf16_supported=True, mark_full_finetuning=False)
+    trainer = _build_trainer(env, torch.bfloat16, bf16_supported = True, mark_full_finetuning = False)
     assert not hasattr(trainer.model, "_unsloth_full_finetuning")
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
 
@@ -336,7 +336,7 @@ def test_the_loaders_stamp_the_full_finetuning_answer_on_the_model():
         "unsloth/models/vision.py",
         "unsloth/models/sentence_transformer.py",
     ):
-        src = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        src = (REPO_ROOT / rel).read_text(encoding = "utf-8")
         assert "_mark_full_finetuning(" in src, rel
 
 
@@ -352,7 +352,7 @@ def test_the_trainer_init_prefers_the_finetuning_stamp_over_the_shared_flag():
 
 def _fast_generate_autocast_source() -> str:
     """The autocast unsloth_base_fast_generate builds around _old_generate."""
-    src = (REPO_ROOT / "unsloth" / "models" / "vision.py").read_text(encoding="utf-8")
+    src = (REPO_ROOT / "unsloth" / "models" / "vision.py").read_text(encoding = "utf-8")
     start = src.index("    # Mixed precision autocast")
     end = src.index("    # Prepare LoRA\n", start)
     return textwrap.dedent(src[start:end])
@@ -375,9 +375,9 @@ class _RecordingTorch:
 
     def autocast(
         self,
-        device_type=None,
-        dtype=None,
-        enabled=True,
+        device_type = None,
+        dtype = None,
+        enabled = True,
         **kwargs,
     ):
         self._calls.append((enabled, dtype))
@@ -389,7 +389,7 @@ def _fast_generate(model, env, dtype):
     calls = []
     scope = {
         "torch": _RecordingTorch(calls),
-        "os": types.SimpleNamespace(environ=env),
+        "os": types.SimpleNamespace(environ = env),
         "self": model,
         "dtype": dtype,
         "DEVICE_TYPE_TORCH": "cuda",
@@ -407,14 +407,14 @@ def test_a_forced_load_cannot_pull_generation_into_float16():
     gpt-oss gets UNSLOTH_FORCE_FLOAT32 = '1' written behind its back, and its
     rollouts would then run in the float16 autocast the trainer kept it out of.
     """
-    model = types.SimpleNamespace(_unsloth_forced_float32=False)
+    model = types.SimpleNamespace(_unsloth_forced_float32 = False)
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
     assert _fast_generate(model, env, torch.float32) == (False, None)
 
 
 def test_a_forced_model_still_autocasts_after_a_plain_load():
     """The mirror: the stamp has to keep the float16 as well as refuse it."""
-    model = types.SimpleNamespace(_unsloth_forced_float32=True)
+    model = types.SimpleNamespace(_unsloth_forced_float32 = True)
     env = {"UNSLOTH_FORCE_FLOAT32": "0"}
     assert _fast_generate(model, env, torch.float32) == (True, torch.float16)
 
@@ -437,7 +437,7 @@ def test_generation_falls_back_to_the_environment_without_a_stamp():
     ],
 )
 def test_generation_without_a_forced_family_is_unchanged(dtype, expected):
-    model = types.SimpleNamespace(_unsloth_forced_float32=False)
+    model = types.SimpleNamespace(_unsloth_forced_float32 = False)
     assert _fast_generate(model, {}, dtype) == expected
 
 
@@ -445,7 +445,7 @@ def test_the_loaders_stamp_the_forced_float32_answer_on_the_model():
     """The stamp has to exist for the trainer to read, on both loaders that
     consult the forced list."""
     for rel in ("unsloth/models/loader.py", "unsloth/models/vision.py"):
-        src = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        src = (REPO_ROOT / rel).read_text(encoding = "utf-8")
         assert "_mark_forced_float32(" in src, rel
 
 
@@ -457,9 +457,9 @@ def test_only_one_place_reads_the_shared_forced_float32_flag():
 
 def test_a_model_without_the_stamp_keeps_the_old_environment_answer():
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
-    trainer = _build_trainer(env, torch.float32, bf16_supported=False, mark_forced_float32=False)
+    trainer = _build_trainer(env, torch.float32, bf16_supported = False, mark_forced_float32 = False)
     assert not hasattr(trainer.model, "_unsloth_forced_float32")
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_a_forced_float32_load_cannot_force_an_unforced_trainer():
@@ -471,14 +471,14 @@ def test_a_forced_float32_load_cannot_force_an_unforced_trainer():
     other model's answer and turn float16 autocast back on.
     """
     env = {"UNSLOTH_FORCE_FLOAT32": "0"}
-    trainer = _build_trainer(env, torch.float32, bf16_supported=False)
+    trainer = _build_trainer(env, torch.float32, bf16_supported = False)
     assert trainer.model._unsloth_forced_float32 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
     # A forced float32 family loaded before the first generation batch.
     env["UNSLOTH_FORCE_FLOAT32"] = "1"
 
-    assert _generate(trainer, env, has_bf16=False) == (False, None)
+    assert _generate(trainer, env, has_bf16 = False) == (False, None)
 
 
 @pytest.mark.parametrize(
@@ -500,17 +500,17 @@ def test_a_forced_load_earlier_in_the_process_cannot_force_this_trainer(
     A float16 model then trains with neither autocast nor a GradScaler.
     """
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
-    trainer = _build_trainer(env, model_dtype, bf16_supported=bf16_supported, forced_float32=False)
+    trainer = _build_trainer(env, model_dtype, bf16_supported = bf16_supported, forced_float32 = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == precision
-    assert _generate(trainer, env, has_bf16=bf16_supported) == autocast
+    assert _generate(trainer, env, has_bf16 = bf16_supported) == autocast
 
 
 def test_an_unstamped_model_still_takes_the_environment_answer_in_init():
     """The fallback, for a model loaded before the stamp existed."""
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
-    trainer = _build_trainer(env, torch.float32, bf16_supported=False, mark_forced_float32=False)
+    trainer = _build_trainer(env, torch.float32, bf16_supported = False, mark_forced_float32 = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_the_trainer_init_prefers_the_stamp_over_the_shared_flag():
@@ -565,7 +565,7 @@ def test_every_loader_return_path_stamps_the_forced_float32_answer():
     scan, so nothing further down can answer for it."""
     seen = 0
     for rel in ("unsloth/models/loader.py", "unsloth/models/vision.py"):
-        tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
+        tree = ast.parse((REPO_ROOT / rel).read_text(encoding = "utf-8"))
         for node in ast.walk(tree):
             if not (isinstance(node, ast.FunctionDef) and node.name == "from_pretrained"):
                 continue
@@ -593,7 +593,7 @@ def test_every_loader_return_path_stamps_the_forced_float32_answer():
 def test_the_diffusion_dispatch_stamps_both_answers():
     """A DiffusionGemma load leaves FastModel through _dispatch_diffusion, which
     predates this stamp: unstamped, a T4 float32 load autocasts to float16."""
-    tree = ast.parse((REPO_ROOT / "unsloth/models/loader.py").read_text(encoding="utf-8"))
+    tree = ast.parse((REPO_ROOT / "unsloth/models/loader.py").read_text(encoding = "utf-8"))
     helper = next(
         n
         for n in ast.walk(tree)
@@ -609,40 +609,40 @@ def test_the_diffusion_dispatch_stamps_both_answers():
 
 def test_a_float16_trainer_alone_still_autocasts():
     env = {}
-    trainer = _build_trainer(env, torch.float16, bf16_supported=False)
+    trainer = _build_trainer(env, torch.float16, bf16_supported = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16"
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_a_bfloat16_trainer_alone_still_autocasts_in_bfloat16():
     env = {}
-    trainer = _build_trainer(env, torch.bfloat16, bf16_supported=True)
+    trainer = _build_trainer(env, torch.bfloat16, bf16_supported = True)
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
-    assert _generate(trainer, env, has_bf16=True) == (True, torch.bfloat16)
+    assert _generate(trainer, env, has_bf16 = True) == (True, torch.bfloat16)
 
 
 def test_pure_bfloat16_full_finetuning_still_does_not_autocast():
     env = {"UNSLOTH_MIXED_PRECISION": "bfloat16", "UNSLOTH_ENABLE_FULL_FINETUNING": "1"}
-    trainer = _build_trainer(env, torch.bfloat16, bf16_supported=True)
+    trainer = _build_trainer(env, torch.bfloat16, bf16_supported = True)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
-    assert _generate(trainer, env, has_bf16=True) == (False, None)
+    assert _generate(trainer, env, has_bf16 = True) == (False, None)
 
 
 def test_force_float32_still_autocasts_in_float16():
     """Gemma3 and gpt-oss set 'no' as well, and still want float16 autocast."""
     env = {"UNSLOTH_FORCE_FLOAT32": "1"}
-    trainer = _build_trainer(env, torch.float32, bf16_supported=False)
+    trainer = _build_trainer(env, torch.float32, bf16_supported = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_an_upcast_float32_trainer_still_gets_float16_autocast():
     """Only an explicit float32 load suppresses it, not the float32 that full
     finetuning upcasts to by itself (issue #4082)."""
     env = {"UNSLOTH_ENABLE_FULL_FINETUNING": "1"}
-    trainer = _build_trainer(env, torch.float32, bf16_supported=False, user_float32=False)
+    trainer = _build_trainer(env, torch.float32, bf16_supported = False, user_float32 = False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16"
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_a_trainer_rl_py_never_touched_falls_back_to_the_environment():
@@ -650,7 +650,7 @@ def test_a_trainer_rl_py_never_touched_falls_back_to_the_environment():
     must still get the old environment answer rather than silently 'no'."""
     env = {"ACCELERATE_MIXED_PRECISION": "fp16", "UNSLOTH_FORCE_FLOAT32": "0"}
     trainer = types.SimpleNamespace()
-    assert _generate(trainer, env, has_bf16=False) == (True, torch.float16)
+    assert _generate(trainer, env, has_bf16 = False) == (True, torch.float16)
 
 
 def test_only_one_place_reads_the_shared_environment():
@@ -690,16 +690,16 @@ def test_an_outer_autocast_is_inherited_rather_than_overridden():
     assert outside == {"enabled": True, "dtype": torch.float16}, outside
 
     # Inside: no dtype at all, and it must actually build an autocast.
-    with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+    with torch.amp.autocast(device_type = "cuda", dtype = torch.bfloat16):
         inside = _unsloth_grpo_autocast_kwargs(trainer)
         assert "dtype" not in inside, inside
-        with torch.amp.autocast(device_type="cuda", **inside):
-            x = torch.randn(4, 4, device="cuda")
+        with torch.amp.autocast(device_type = "cuda", **inside):
+            x = torch.randn(4, 4, device = "cuda")
             assert (x @ x).dtype is torch.bfloat16
 
     # Forcing float32 keeps naming float16 even inside an outer autocast.
     trainer._autocast_force_float32 = True
-    with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+    with torch.amp.autocast(device_type = "cuda", dtype = torch.bfloat16):
         forced = _unsloth_grpo_autocast_kwargs(trainer)
     assert forced == {"enabled": True, "dtype": torch.float16}, forced
 

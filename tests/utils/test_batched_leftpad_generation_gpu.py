@@ -18,11 +18,11 @@ device = "cuda" if cuda_available else "xpu" if xpu_available else "cpu"
 # Non-strict rather than CUDA-only: keeps the XPU divergence visible, and goes
 # green by itself once XPU generation is fixed.
 pytestmark = [
-    pytest.mark.skipif(not (cuda_available or xpu_available), reason="requires a CUDA or XPU GPU"),
+    pytest.mark.skipif(not (cuda_available or xpu_available), reason = "requires a CUDA or XPU GPU"),
     pytest.mark.xfail(
         xpu_available and not cuda_available,
-        reason="batched left-padded generation diverges on XPU",
-        strict=False,
+        reason = "batched left-padded generation diverges on XPU",
+        strict = False,
     ),
 ]
 
@@ -38,14 +38,14 @@ PROMPTS = [
 ]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def model_and_tokenizer():
     from unsloth import FastLanguageModel
 
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=MODEL_NAME,
-        max_seq_length=2048,
-        load_in_4bit=True,
+        model_name = MODEL_NAME,
+        max_seq_length = 2048,
+        load_in_4bit = True,
     )
     FastLanguageModel.for_inference(model)
     tokenizer.padding_side = "left"
@@ -57,25 +57,25 @@ def model_and_tokenizer():
 def _chat(tokenizer, prompt):
     return tokenizer.apply_chat_template(
         [{"role": "user", "content": prompt}],
-        tokenize=False,
-        add_generation_prompt=True,
+        tokenize = False,
+        add_generation_prompt = True,
     )
 
 
 def _generate(model, tokenizer, texts):
-    inputs = tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(
+    inputs = tokenizer(texts, return_tensors = "pt", padding = True, add_special_tokens = False).to(
         device
     )
     with torch.inference_mode():
         out = model.generate(
             **inputs,
-            max_new_tokens=MAX_NEW_TOKENS,
-            do_sample=False,
-            temperature=None,
-            top_p=None,
-            top_k=None,
-            use_cache=True,
-            pad_token_id=tokenizer.pad_token_id,
+            max_new_tokens = MAX_NEW_TOKENS,
+            do_sample = False,
+            temperature = None,
+            top_p = None,
+            top_k = None,
+            use_cache = True,
+            pad_token_id = tokenizer.pad_token_id,
         )
     suffixes = out[:, inputs["input_ids"].shape[1] :]
     return [row.tolist() for row in suffixes]
@@ -97,8 +97,8 @@ def test_batched_leftpad_matches_solo_generation(model_and_tokenizer):
     batched = _generate(model, tokenizer, texts)
 
     for i, prompt in enumerate(PROMPTS):
-        solo_text = tokenizer.decode(solo[i], skip_special_tokens=True)
-        batch_text = tokenizer.decode(batched[i], skip_special_tokens=True)
+        solo_text = tokenizer.decode(solo[i], skip_special_tokens = True)
+        batch_text = tokenizer.decode(batched[i], skip_special_tokens = True)
         assert batched[i][:PREFIX_TOKENS] == solo[i][:PREFIX_TOKENS], (
             f"prompt {i} ({prompt[:30]!r}...) diverged from solo generation "
             f"within the first {PREFIX_TOKENS} tokens inside a left-padded "

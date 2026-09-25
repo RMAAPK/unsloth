@@ -48,7 +48,7 @@ else:
 DEFAULT_FETCH_TIMEOUT = int(os.environ.get("UNSLOTH_NOTEBOOK_FETCH_TIMEOUT", "60") or 60)
 
 
-def _load(path_or_url, fetch_timeout=None):
+def _load(path_or_url, fetch_timeout = None):
     """Parsed notebook. A URL is fetched with a socket timeout: --timeout only ever
     reached nbconvert, so a host that accepted the connection and then went quiet hung
     the run before a single cell had executed. This bounds each blocking socket
@@ -58,7 +58,7 @@ def _load(path_or_url, fetch_timeout=None):
         if fetch_timeout is None:
             fetch_timeout = DEFAULT_FETCH_TIMEOUT
         with urllib.request.urlopen(  # nosec - user-provided nb
-            path_or_url, timeout=fetch_timeout
+            path_or_url, timeout = fetch_timeout
         ) as r:
             data = r.read().decode()
         return json.loads(data)
@@ -100,7 +100,7 @@ def _makedirs_as_host(path):
         if parent == probe:
             break
         probe = parent
-    os.makedirs(path, exist_ok=True)
+    os.makedirs(path, exist_ok = True)
     if not missing:
         return
     try:
@@ -145,21 +145,21 @@ def _stage_metadata(staged, dest):
 
 
 def main():
-    ap = argparse.ArgumentParser(prog="unsloth-run")
+    ap = argparse.ArgumentParser(prog = "unsloth-run")
     ap.add_argument("notebook")
     ap.add_argument("--out")
-    ap.add_argument("--timeout", type=int, default=3600)
+    ap.add_argument("--timeout", type = int, default = 3600)
     ap.add_argument(
         "--fetch-timeout",
-        dest="fetch_timeout",
-        type=int,
-        default=DEFAULT_FETCH_TIMEOUT,
-        help="seconds a URL fetch may stall before giving up (default 60)",
+        dest = "fetch_timeout",
+        type = int,
+        default = DEFAULT_FETCH_TIMEOUT,
+        help = "seconds a URL fetch may stall before giving up (default 60)",
     )
-    ap.add_argument("--transformers", dest="tf")
+    ap.add_argument("--transformers", dest = "tf")
     args = ap.parse_args()
 
-    nb = _load(args.notebook, fetch_timeout=args.fetch_timeout)
+    nb = _load(args.notebook, fetch_timeout = args.fetch_timeout)
     pin, model = _scan(nb)
     want = args.tf or pin or (compat.tier_for_model(model) if compat else None)
     sidecar = compat.sidecar_for(want) if (compat and want) else None
@@ -174,7 +174,7 @@ def main():
         if args.notebook.startswith(("http://", "https://")):
             # A URL has no source tree to run in, so the download stays beside --out:
             # that is the directory the run's own artifacts should land in.
-            fd, src_path = tempfile.mkstemp(prefix=".unsloth-run-in-", suffix=".ipynb", dir=out_dir)
+            fd, src_path = tempfile.mkstemp(prefix = ".unsloth-run-in-", suffix = ".ipynb", dir = out_dir)
             with os.fdopen(fd, "w") as f:
                 json.dump(nb, f)
             tmp_files.append(src_path)
@@ -186,7 +186,7 @@ def main():
             # where it lives; only the result is staged beside --out.
             src_path = args.notebook
         fd, publish_from = tempfile.mkstemp(
-            prefix=".unsloth-run-out-", suffix=".ipynb", dir=out_dir
+            prefix = ".unsloth-run-out-", suffix = ".ipynb", dir = out_dir
         )
         os.close(fd)
         tmp_files.append(publish_from)
@@ -208,7 +208,7 @@ def main():
     # broke both ways: a target with a pin overwrote the caller kernel's pin, and a
     # target with no pin ran against the caller's stale one. Either way a kernel that
     # has not imported transformers yet can be handed the wrong sidecar.
-    fd, marker = tempfile.mkstemp(prefix=".unsloth-run-tfmarker-")
+    fd, marker = tempfile.mkstemp(prefix = ".unsloth-run-tfmarker-")
     os.close(fd)
     env["UNSLOTH_NB_TF_MARKER"] = marker
     tmp_files.append(marker)
@@ -242,7 +242,7 @@ def main():
         os.path.basename(args.notebook.split("?")[0]) if args.out else os.path.basename(src_path),
     )
     try:
-        rc = subprocess.call(cmd, env=env)
+        rc = subprocess.call(cmd, env = env)
         if rc == 0 and publish_from is not None:
             _stage_metadata(publish_from, out_path)
             try:
@@ -260,12 +260,12 @@ def main():
                     print(
                         f"[unsloth-run] could not publish to {out_path}; "
                         f"the executed notebook is at {publish_from}",
-                        file=sys.stderr,
+                        file = sys.stderr,
                     )
                     raise
     finally:
         if tmp_dir is not None:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+            shutil.rmtree(tmp_dir, ignore_errors = True)
         for p in tmp_files:
             try:
                 os.remove(p)

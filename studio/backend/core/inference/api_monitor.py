@@ -101,7 +101,7 @@ def _stream_tool_fragment(fragment: Any, *, serialize_json: bool = False) -> Opt
         return None
     if isinstance(fragment, str):
         return fragment
-    return json.dumps(fragment, default=str) if serialize_json else str(fragment)
+    return json.dumps(fragment, default = str) if serialize_json else str(fragment)
 
 
 def _append_stream_tool_field(
@@ -113,7 +113,7 @@ def _append_stream_tool_field(
 ) -> str:
     if fragment is None or budget <= 0 or len(current) >= _MAX_STREAM_TOOL_FIELD_CHARS:
         return current
-    fragment = _stream_tool_fragment(fragment, serialize_json=serialize_json)
+    fragment = _stream_tool_fragment(fragment, serialize_json = serialize_json)
     if fragment is None:
         return current
     remaining = min(_MAX_STREAM_TOOL_FIELD_CHARS - len(current), budget)
@@ -168,7 +168,7 @@ def _stream_tool_call_id(value: Any) -> Optional[str]:
         return None
     if len(value) <= _MAX_STREAM_TOOL_FIELD_CHARS:
         return value
-    return "sha256:" + hashlib.sha256(value.encode("utf-8", errors="replace")).hexdigest()
+    return "sha256:" + hashlib.sha256(value.encode("utf-8", errors = "replace")).hexdigest()
 
 
 @dataclass
@@ -184,7 +184,7 @@ class ApiMonitorEntry:
     # Who this row is attributed to; on a shared row it does not restrict visibility.
     subject: Optional[str] = None
     # Usernames are reusable and these in-memory rows outlive the account, so the immutable account id fences a replacement off its predecessor's traffic.
-    account_id: str = field(default_factory=current_account_id)
+    account_id: str = field(default_factory = current_account_id)
     # True for sk-unsloth callers only: the panel auto-opens on these, not Unsloth's chat.
     via_api_key: bool = False
     # Monotonic anchors so duration math survives wall-clock steps (NTP).
@@ -218,10 +218,10 @@ class ApiMonitorEntry:
     stop_reason: Optional[str] = None
     # Every finish reason seen so far. An n > 1 stream reports each choice in its own chunk, so agreement can only be
     # judged across the whole request. Not serialized.
-    stop_reasons_seen: set[str] = field(default_factory=set)
+    stop_reasons_seen: set[str] = field(default_factory = set)
     # request-local preview state, omitted from snapshots and cleared on terminal paths.
-    openai_stream_tool_calls: list[_OpenAIStreamToolCall] = field(default_factory=list)
-    openai_stream_last_tool_indexes: dict[int, int] = field(default_factory=dict)
+    openai_stream_tool_calls: list[_OpenAIStreamToolCall] = field(default_factory = list)
+    openai_stream_last_tool_indexes: dict[int, int] = field(default_factory = dict)
     openai_stream_last_segment_was_tool: bool = False
     prompt_complete: bool = True
 
@@ -379,19 +379,19 @@ class ApiMonitor:
             return ""
         now = time.time()
         entry = ApiMonitorEntry(
-            id=f"apireq_{uuid.uuid4().hex}",
-            endpoint=endpoint,
-            method=method,
+            id = f"apireq_{uuid.uuid4().hex}",
+            endpoint = endpoint,
+            method = method,
             # str(): a raw JSON body can carry any type, and a non-string breaks the UI.
-            model=str(model) if model else "default",
-            prompt=prompt or "",
-            status="running",
-            started_at=now,
-            updated_at=now,
-            subject=subject,
-            via_api_key=via_api_key,
-            started_monotonic=time.monotonic(),
-            context_length=context_length,
+            model = str(model) if model else "default",
+            prompt = prompt or "",
+            status = "running",
+            started_at = now,
+            updated_at = now,
+            subject = subject,
+            via_api_key = via_api_key,
+            started_monotonic = time.monotonic(),
+            context_length = context_length,
         )
         with self._lock:
             self._entries.appendleft(entry)
@@ -432,26 +432,26 @@ class ApiMonitor:
             return ""
         now = time.time()
         entry = ApiMonitorEntry(
-            id=f"apievt_{uuid.uuid4().hex[:12]}",
-            endpoint=f"model.{event}",
-            method="",
-            model=model or "default",
-            prompt="",
-            status="running" if running else "completed",
-            started_at=now,
-            updated_at=now,
-            started_monotonic=time.monotonic(),
-            finished_at=None if running else now,
-            finished_monotonic=None if running else time.monotonic(),
-            kind="lifecycle",
-            event=event,
-            reason=reason,
-            shared=True,
+            id = f"apievt_{uuid.uuid4().hex[:12]}",
+            endpoint = f"model.{event}",
+            method = "",
+            model = model or "default",
+            prompt = "",
+            status = "running" if running else "completed",
+            started_at = now,
+            updated_at = now,
+            started_monotonic = time.monotonic(),
+            finished_at = None if running else now,
+            finished_monotonic = None if running else time.monotonic(),
+            kind = "lifecycle",
+            event = event,
+            reason = reason,
+            shared = True,
             # The overlay opens on API-key traffic only, and a refused switch never reaches api_monitor.start, so this
             # row is its whole trace: without the attribution the monitor stayed shut on the failures it exists to
             # surface.
-            via_api_key=via_api_key,
-            subject=subject,
+            via_api_key = via_api_key,
+            subject = subject,
         )
         with self._lock:
             self._entries.appendleft(entry)
@@ -594,9 +594,9 @@ class ApiMonitor:
                 ):
                     return
                 state = _OpenAIStreamToolCall(
-                    choice_index=choice_index,
-                    tool_index=tool_index,
-                    call_id=call_id,
+                    choice_index = choice_index,
+                    tool_index = tool_index,
+                    call_id = call_id,
                 )
                 entry.openai_stream_tool_calls.append(state)
             elif call_id is not None and state.call_id is None:
@@ -614,7 +614,7 @@ class ApiMonitor:
                 state.arguments,
                 arguments_fragment,
                 budget,
-                serialize_json=True,
+                serialize_json = True,
             )
             now = time.monotonic()
             if entry.first_token_monotonic is None:
@@ -902,17 +902,17 @@ class ApiMonitor:
             callback_owner,
             callback,
             ApiUsageReceipt(
-                id=entry.id,
-                subject=subject,
-                endpoint=str(entry.endpoint)[:MAX_ENDPOINT_CHARS],
-                model=canonical_api_model(entry.model),
-                status=str(entry.status)[:MAX_STATUS_CHARS],
-                prompt_tokens=entry.prompt_tokens or 0,
-                completion_tokens=entry.completion_tokens or 0,
-                total_tokens=entry.total_tokens or 0,
-                created_at=int(entry.finished_at * 1000),
-                kind=entry.kind,
-                via_api_key=entry.via_api_key,
+                id = entry.id,
+                subject = subject,
+                endpoint = str(entry.endpoint)[:MAX_ENDPOINT_CHARS],
+                model = canonical_api_model(entry.model),
+                status = str(entry.status)[:MAX_STATUS_CHARS],
+                prompt_tokens = entry.prompt_tokens or 0,
+                completion_tokens = entry.completion_tokens or 0,
+                total_tokens = entry.total_tokens or 0,
+                created_at = int(entry.finished_at * 1000),
+                kind = entry.kind,
+                via_api_key = entry.via_api_key,
             ),
         )
 
@@ -925,7 +925,7 @@ class ApiMonitor:
         try:
             callback(receipt)
         except Exception:  # noqa: BLE001 - monitoring must never break inference.
-            logger.warning("api_monitor.terminal_callback_failed", exc_info=True)
+            logger.warning("api_monitor.terminal_callback_failed", exc_info = True)
         finally:
             with self._callback_condition:
                 remaining = self._terminal_callbacks_inflight.get(callback_owner, 0) - 1
@@ -944,8 +944,8 @@ class ApiMonitor:
         with self._lock:
             return [
                 entry.snapshot(
-                    include_details=include_details,
-                    attributed=self._attributed(entry, subject),
+                    include_details = include_details,
+                    attributed = self._attributed(entry, subject),
                 )
                 for entry in self._entries
                 if self._visible(entry, subject)
@@ -965,9 +965,9 @@ class ApiMonitor:
             if not self._visible(entry, subject):
                 return None
             return entry.snapshot(
-                include_details=True,
-                include_prompt=include_prompt,
-                attributed=self._attributed(entry, subject),
+                include_details = True,
+                include_prompt = include_prompt,
+                attributed = self._attributed(entry, subject),
             )
 
     def active_count(self, *, subject: Optional[str] = None) -> int:
@@ -1051,7 +1051,7 @@ class ApiMonitor:
                 del self._hidden_shared[key]
 
 
-api_monitor = ApiMonitor(enabled=not _api_monitor_disabled())
+api_monitor = ApiMonitor(enabled = not _api_monitor_disabled())
 
 
 def _lifecycle_row_visible_to_caller(entry: "ApiMonitorEntry", subject: str) -> bool:

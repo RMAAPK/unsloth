@@ -40,7 +40,7 @@ from utils.hardware import amd
 def _hip_sees(
     monkeypatch,
     count,
-    totals=None,
+    totals = None,
 ):
     """Declare HIP's own inventory: how many devices it opens, and the total memory
     it reports per physical id. Empty totals mean torch could not describe the
@@ -69,8 +69,8 @@ def rocm(monkeypatch):
         LlamaCppBackend, "_rocm_unified_memory_gpu_ids", staticmethod(lambda: set())
     )
     for _var in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-        monkeypatch.delenv(_var, raising=False)
-    monkeypatch.delenv("GPU_DEVICE_ORDINAL", raising=False)
+        monkeypatch.delenv(_var, raising = False)
+    monkeypatch.delenv("GPU_DEVICE_ORDINAL", raising = False)
     monkeypatch.setattr(
         LlamaCppBackend, "_resolve_visible_physical_ids", staticmethod(lambda: None)
     )
@@ -91,7 +91,7 @@ def _payload(*gpus: tuple[int, int, int]):
     ]
 
 
-def _fake_amd_smi(metric, hip_by_gpu=None):
+def _fake_amd_smi(metric, hip_by_gpu = None):
     """Stub amd-smi: ``metric`` returns the VRAM rows, ``list -e`` the amd-smi gpu id
     to HIP id mapping a host with more than one card needs before its ids can be
     used as HIP ordinals (see test_amd_smi_hip_index_and_coverage.py)."""
@@ -160,9 +160,9 @@ class TestAUnifiedMemoryApuDefersToTorch:
         monkeypatch.setattr(subprocess, "run", _no_nvidia_smi)
         torch_mod = types.ModuleType("torch")
         torch_mod.cuda = types.SimpleNamespace(
-            is_available=lambda: True,
-            device_count=lambda: 1,
-            mem_get_info=lambda *a: (100 * 1024**3, 128 * 1024**3),
+            is_available = lambda: True,
+            device_count = lambda: 1,
+            mem_get_info = lambda *a: (100 * 1024**3, 128 * 1024**3),
         )
         monkeypatch.setitem(sys.modules, "torch", torch_mod)
         monkeypatch.setattr(
@@ -238,7 +238,7 @@ class TestTheArchGateAppliesToThisBranchToo:
     def mixed_host(self, rocm, tmp_path, monkeypatch):
         """Both cards visible to amd-smi; only the dGPU's arch is in the marker."""
         (tmp_path / "UNSLOTH_PREBUILT_INFO.json").write_text(
-            json.dumps({"mapped_targets": ["gfx1100", "gfx1101"]}), encoding="utf-8"
+            json.dumps({"mapped_targets": ["gfx1100", "gfx1101"]}), encoding = "utf-8"
         )
         monkeypatch.setattr(
             LlamaCppBackend,
@@ -254,7 +254,7 @@ class TestTheArchGateAppliesToThisBranchToo:
         return str(tmp_path / "build" / "bin" / "llama-server")
 
     def test_an_uncovered_device_is_dropped(self, mixed_host):
-        assert LlamaCppBackend._get_gpu_memory_amd_smi(mixed_host, for_llama_server=True) == [
+        assert LlamaCppBackend._get_gpu_memory_amd_smi(mixed_host, for_llama_server = True) == [
             (0, 20480, 24576)
         ]
 
@@ -276,7 +276,7 @@ class TestTheArchGateAppliesToThisBranchToo:
             raise FileNotFoundError("nvidia-smi")
 
         monkeypatch.setattr(subprocess, "run", _no_nvidia_smi)
-        assert LlamaCppBackend._get_gpu_memory(mixed_host, for_llama_server=True) == [
+        assert LlamaCppBackend._get_gpu_memory(mixed_host, for_llama_server = True) == [
             (0, 20480, 24576)
         ]
 
@@ -295,11 +295,11 @@ class TestTheArchGateAppliesToThisBranchToo:
         )
         _hip_sees(monkeypatch, 2)
         binary = str(tmp_path / "build" / "bin" / "llama-server")
-        assert len(LlamaCppBackend._get_gpu_memory_amd_smi(binary, for_llama_server=True)) == 2
+        assert len(LlamaCppBackend._get_gpu_memory_amd_smi(binary, for_llama_server = True)) == 2
 
     def test_a_device_with_no_reported_arch_is_kept(self, mixed_host, monkeypatch):
         """Torch could not describe it, so there is no evidence against it."""
         monkeypatch.setattr(
             LlamaCppBackend, "_rocm_arch_by_physical_id", staticmethod(lambda: {0: "gfx1101"})
         )
-        assert len(LlamaCppBackend._get_gpu_memory_amd_smi(mixed_host, for_llama_server=True)) == 2
+        assert len(LlamaCppBackend._get_gpu_memory_amd_smi(mixed_host, for_llama_server = True)) == 2

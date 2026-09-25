@@ -43,7 +43,7 @@ def runtime_mutex_name_for_sid(sid: str) -> str:
 
 
 def _windows_profile_path() -> Path:
-    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+    shell32 = ctypes.WinDLL("shell32", use_last_error = True)
     get_folder_path = shell32.SHGetFolderPathW
     get_folder_path.argtypes = [
         wintypes.HWND,
@@ -64,7 +64,7 @@ def _windows_profile_path() -> Path:
 
 
 def _resolved_windows_path(path: Path) -> str:
-    resolved = str(path.resolve(strict=False))
+    resolved = str(path.resolve(strict = False))
     if resolved.startswith("\\\\?\\UNC\\"):
         resolved = "\\\\" + resolved[8:]
     elif resolved.startswith("\\\\?\\"):
@@ -102,7 +102,7 @@ def _canonical_windows_path(path: Path) -> str:
 
 
 def _windows_paths_equal(left: str, right: str) -> bool:
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
     compare = kernel32.CompareStringOrdinal
     compare.argtypes = [
         wintypes.LPCWSTR,
@@ -137,8 +137,8 @@ def runtime_mutex_name_for_studio_home(studio_home: Path) -> str:
 
 
 def _current_windows_user_sid() -> str:
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error = True)
 
     kernel32.GetCurrentProcess.restype = wintypes.HANDLE
     kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
@@ -216,7 +216,7 @@ def studio_runtime_launch_guard(
     if sys.platform != "win32":
         import fcntl
 
-        studio_home.mkdir(parents=True, exist_ok=True)
+        studio_home.mkdir(parents = True, exist_ok = True)
         lock_file = (studio_home / _POSIX_RUNTIME_LOCK_FILE).open("a+b")
         try:
             try:
@@ -232,7 +232,7 @@ def studio_runtime_launch_guard(
                 lock_file.close()
         return
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error = True)
     kernel32.CreateMutexW.argtypes = [
         ctypes.c_void_p,
         wintypes.BOOL,
@@ -306,12 +306,12 @@ def ensure_managed_environment_is_idle(studio_home: Path) -> None:
     )
     result = subprocess.run(
         [resolve_windows_powershell(), "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        check=False,
+        capture_output = True,
+        text = True,
+        encoding = "utf-8",
+        errors = "replace",
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        check = False,
     )
     if result.returncode != 0:
         detail = result.stderr.strip() or f"exit code {result.returncode}"

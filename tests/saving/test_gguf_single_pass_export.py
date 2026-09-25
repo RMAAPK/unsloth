@@ -44,7 +44,7 @@ def test_choose_first_conversion(methods, model_dtype, expected):
 
 def test_choose_first_conversion_imatrix_forces_two_pass():
     # Only llama-quantize can apply an imatrix, so q8_0-only must keep the 16-bit base.
-    assert save_mod._choose_first_conversion(["q8_0"], "f16", has_imatrix=True) == "f16"
+    assert save_mod._choose_first_conversion(["q8_0"], "f16", has_imatrix = True) == "f16"
 
 
 # -- save_to_gguf pass planning (mocked convert/quantize) -----------------------------------
@@ -57,8 +57,8 @@ class _Harness:
         self,
         monkeypatch,
         tmp_path,
-        quantize_delays=None,
-        quantize_error=None,
+        quantize_delays = None,
+        quantize_error = None,
     ):
         self.tmp_path = tmp_path
         self.convert_calls = []
@@ -93,8 +93,8 @@ class _Harness:
         input_gguf,
         output_gguf,
         quant_type,
-        imatrix=None,
-        n_threads=None,
+        imatrix = None,
+        n_threads = None,
         **kw,
     ):
         with self._lock:
@@ -115,13 +115,13 @@ class _Harness:
 
 def _run(tmp_path, methods, **kwargs):
     model_dir = tmp_path / "model_dir"
-    model_dir.mkdir(exist_ok=True)
+    model_dir.mkdir(exist_ok = True)
     return save_mod.save_to_gguf(
-        model_name="testmodel",
-        model_type="llama",
-        model_dtype="float16",
-        model_directory=str(model_dir),
-        quantization_method=methods,
+        model_name = "testmodel",
+        model_type = "llama",
+        model_dtype = "float16",
+        model_directory = str(model_dir),
+        quantization_method = methods,
         **kwargs,
     )
 
@@ -151,13 +151,13 @@ def test_explicit_gguf_directory_does_not_reuse_model_sibling(monkeypatch, tmp_p
     model_sibling = tmp_path / "model_dir_gguf"
     model_sibling.mkdir()
     notes = model_sibling / "notes.txt"
-    notes.write_text("keep", encoding="utf-8")
+    notes.write_text("keep", encoding = "utf-8")
     output_dir = tmp_path / "owned_output"
 
-    locations, _, _ = _run(tmp_path, ["q8_0"], gguf_directory=output_dir)
+    locations, _, _ = _run(tmp_path, ["q8_0"], gguf_directory = output_dir)
 
     assert [os.path.dirname(path) for path in locations] == [str(output_dir)]
-    assert notes.read_text(encoding="utf-8") == "keep"
+    assert notes.read_text(encoding = "utf-8") == "keep"
     assert list(model_sibling.glob("*.gguf")) == []
 
 
@@ -183,7 +183,7 @@ def test_mixed_methods_share_16bit_base(monkeypatch, tmp_path):
 def test_parallel_quants_preserve_request_order(monkeypatch, tmp_path):
     # First method is the slowest: completion order != request order.
     h = _Harness(
-        monkeypatch, tmp_path, quantize_delays={"q4_k_m": 0.3, "q5_k_m": 0.05, "q6_k": 0.01}
+        monkeypatch, tmp_path, quantize_delays = {"q4_k_m": 0.3, "q5_k_m": 0.05, "q6_k": 0.01}
     )
     locations, _, _ = _run(tmp_path, ["q4_k_m", "q5_k_m", "q6_k"])
 
@@ -201,7 +201,7 @@ def test_parallel_quants_preserve_request_order(monkeypatch, tmp_path):
 
 def test_parallel_quants_env_kill_switch(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_PARALLEL_GGUF_QUANTS", "0")
-    h = _Harness(monkeypatch, tmp_path, quantize_delays={"q4_k_m": 0.05, "q5_k_m": 0.05})
+    h = _Harness(monkeypatch, tmp_path, quantize_delays = {"q4_k_m": 0.05, "q5_k_m": 0.05})
     _run(tmp_path, ["q4_k_m", "q5_k_m"])
     assert h.max_concurrency == 1
 
@@ -214,24 +214,23 @@ def test_duplicate_methods_quantize_once(monkeypatch, tmp_path):
 
 
 def test_quantize_failure_raises_actionable_error(monkeypatch, tmp_path):
-    h = _Harness(monkeypatch, tmp_path, quantize_error=OSError("disk full"))
-    with pytest.raises(RuntimeError, match="Quantization failed"):
+    h = _Harness(monkeypatch, tmp_path, quantize_error = OSError("disk full"))
+    with pytest.raises(RuntimeError, match = "Quantization failed"):
         _run(tmp_path, ["q4_k_m", "q5_k_m"])
 
 
 # -- reclaiming the 16-bit merge on a tight disk (see tests/test_gguf_disk_headroom.py) -----
 
 
-def _tight_disk(monkeypatch, free_gb=1):
+def _tight_disk(monkeypatch, free_gb = 1):
     import types
-
-    usage = types.SimpleNamespace(total=0, used=0, free=free_gb * 1024**3)
+    usage = types.SimpleNamespace(total = 0, used = 0, free = free_gb * 1024**3)
     monkeypatch.setattr(save_mod.shutil, "disk_usage", lambda *_a, **_k: usage)
 
 
 def _merge_weights(tmp_path):
     model_dir = tmp_path / "model_dir"
-    model_dir.mkdir(exist_ok=True)
+    model_dir.mkdir(exist_ok = True)
     weights = model_dir / "model.safetensors"
     weights.write_bytes(b"\0" * 4096)
     return weights
@@ -246,8 +245,8 @@ def test_a_disposable_merge_is_reclaimed_when_the_disk_is_tight(monkeypatch, tmp
     _run(
         tmp_path,
         ["q4_k_m"],
-        merge_is_disposable=True,
-        preexisting_weights=frozenset(),
+        merge_is_disposable = True,
+        preexisting_weights = frozenset(),
     )
     assert not weights.exists()
 
@@ -265,8 +264,8 @@ def test_the_ownership_record_survives_the_same_trip(monkeypatch, tmp_path):
     _run(
         tmp_path,
         ["q4_k_m"],
-        merge_is_disposable=True,
-        preexisting_weights=frozenset([weights.name]),
+        merge_is_disposable = True,
+        preexisting_weights = frozenset([weights.name]),
     )
     assert weights.exists(), "a file the caller owned was reclaimed"
 
@@ -276,7 +275,7 @@ def test_an_export_that_cannot_say_what_it_owns_reclaims_nothing(monkeypatch, tm
     _Harness(monkeypatch, tmp_path)
     weights = _merge_weights(tmp_path)
     _tight_disk(monkeypatch)
-    _run(tmp_path, ["q4_k_m"], merge_is_disposable=True)
+    _run(tmp_path, ["q4_k_m"], merge_is_disposable = True)
     assert weights.exists()
 
 

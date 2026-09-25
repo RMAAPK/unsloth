@@ -144,7 +144,6 @@ def _ambient_hf_token() -> str | None:
         return False
     try:
         from huggingface_hub import get_token
-
         return get_token()
     except Exception:
         return None
@@ -169,7 +168,7 @@ def _st_module_subdirs(name: str, token: str | None) -> tuple[str, ...]:
             path = Path(normalize_path(name)).expanduser() / "modules.json"
             if not path.is_file():
                 return ()
-            data = json.loads(path.read_text(encoding="utf-8-sig"))
+            data = json.loads(path.read_text(encoding = "utf-8-sig"))
         else:
             from huggingface_hub import hf_hub_download
             from huggingface_hub.utils import EntryNotFoundError
@@ -179,12 +178,12 @@ def _st_module_subdirs(name: str, token: str | None) -> tuple[str, ...]:
                 local = hf_hub_download(
                     name,
                     "modules.json",
-                    token=account_hf_token(token or None),
-                    cache_dir=active_hf_hub_cache(),
+                    token = account_hf_token(token or None),
+                    cache_dir = active_hf_hub_cache(),
                 )
             except EntryNotFoundError:
                 return ()
-            data = json.loads(open(local, encoding="utf-8-sig").read())
+            data = json.loads(open(local, encoding = "utf-8-sig").read())
         subdirs = []
         for module in data or ():
             sub = str((module or {}).get("path", "")).strip().strip("/")
@@ -227,7 +226,7 @@ def _guard_model_security(
                 )
             )
         blocked = evaluate_file_security(
-            name, hf_token=token, load_subdirs=load_subdirs, local_only_load=local_only
+            name, hf_token = token, load_subdirs = load_subdirs, local_only_load = local_only
         ).blocked
     except Exception:
         return
@@ -333,7 +332,6 @@ def _quiet_transformers_load():
     hub_bars_off = None
     try:
         from huggingface_hub.utils import are_progress_bars_disabled
-
         hub_bars_off = bool(are_progress_bars_disabled())
     except Exception:  # noqa: BLE001 - no Hub, or a version without the probe
         hub_bars_off = None
@@ -342,7 +340,6 @@ def _quiet_transformers_load():
     hf_logging = None
     try:
         from transformers.utils import logging as hf_logging
-
         if hasattr(hf_logging, "is_progress_bar_enabled"):
             was_on = bool(hf_logging.is_progress_bar_enabled())
         elif hasattr(hf_logging, "are_progress_bars_disabled"):
@@ -368,7 +365,6 @@ def _quiet_transformers_load():
             if hub_bars_off:
                 try:
                     from huggingface_hub.utils import disable_progress_bars
-
                     disable_progress_bars()
                 except Exception:  # noqa: BLE001
                     pass
@@ -403,7 +399,6 @@ def _st_accepts_local_files_only(st_cls) -> bool:
     older constructor raises, so gate on the signature."""
     try:
         import inspect
-
         return "local_files_only" in inspect.signature(st_cls.__init__).parameters
     except Exception:
         return False
@@ -412,13 +407,12 @@ def _st_accepts_local_files_only(st_cls) -> bool:
 def _get(model_name: str | None = None):
     """Cached SentenceTransformer, (re)loading on a name change. Loaded in fp16 on an
     accelerator for a ~1.5x speedup at negligible accuracy loss, fp32 on CPU."""
-    account_path(model_name, reference=True)
+    account_path(model_name, reference = True)
     global _model, _name
     name = model_name or config.effective_embedding_model()
     # Capture offline state once so the gate and the load agree.
     try:
         from utils.embedding_model_settings import get_stored_download_pending
-
         download_pending = get_stored_download_pending(name)
     except Exception:  # noqa: BLE001 - old/unavailable settings store
         download_pending = False
@@ -435,11 +429,11 @@ def _get(model_name: str | None = None):
 
             logger.info("loading embedding model %s on %s", name, device)
             st_kwargs = dict(
-                device=device,
-                cache_folder=active_hf_hub_cache(),
+                device = device,
+                cache_folder = active_hf_hub_cache(),
                 # Keyed on the device we load on: fp16 BERT on CPU raises "not implemented for Half", which encode()
                 # answers by swapping the whole process to llama-server.
-                model_kwargs=dtype_kwargs("float32" if device == "cpu" else "float16"),
+                model_kwargs = dtype_kwargs("float32" if device == "cpu" else "float16"),
             )
             if managed_account():
                 st_kwargs["token"] = False
@@ -481,7 +475,7 @@ def _get(model_name: str | None = None):
             # Scan after load_target is settled: on the repo id it checked the Hub's current commit while the
             # load opened an older cached one. evaluate_file_security recovers the repo and exact commit from
             # a snapshot path.
-            _guard_model_security(load_target, offline, display=name)
+            _guard_model_security(load_target, offline, display = name)
             with _quiet_transformers_load() as report:
                 # Re-emit in finally: a load that raises after transformers wrote its report is exactly when a
                 # MISSING or MISMATCH line matters.
@@ -495,24 +489,21 @@ def _get(model_name: str | None = None):
                 # to llama-server with no marker, freeing the fallback to fetch the GGUF companion.
                 try:
                     from utils.embedding_model_settings import clear_stored_download_pending
-
                     clear_stored_download_pending(name)
                 except Exception:  # noqa: BLE001 - a settings write must not fail a load
                     pass
         return _model
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize = 1)
 def _inference_ctx_factory():
     """``torch.inference_mode`` if torch imports, else ``nullcontext``. Returns the
     factory so each call gets a fresh single-use guard."""
     try:
         import torch
-
         return torch.inference_mode
     except Exception:  # noqa: BLE001 - torch may be missing or broken
         from contextlib import nullcontext
-
         return nullcontext
 
 
@@ -537,15 +528,15 @@ def _st_encode(
             with _inference_ctx():
                 out = model.encode(
                     texts,
-                    normalize_embeddings=normalize,
-                    convert_to_numpy=True,
-                    show_progress_bar=False,
+                    normalize_embeddings = normalize,
+                    convert_to_numpy = True,
+                    show_progress_bar = False,
                 )
         finally:
             os.environ["TOKENIZERS_PARALLELISM"] = "false"
     # fp16 weights yield fp16 output; store float32 for sqlite-vec + stable cosine.
     if hasattr(out, "astype"):
-        out = out.astype("float32", copy=False)
+        out = out.astype("float32", copy = False)
     return out
 
 
@@ -566,7 +557,7 @@ def _st_max_tokens(model_name: str | None = None) -> int | None:
         prompts = getattr(model, "prompts", None) or {}
         prompt = prompts.get(getattr(model, "default_prompt_name", None))
         if prompt and tokenizer is not None:
-            reserved += len(tokenizer.encode(prompt, add_special_tokens=False))
+            reserved += len(tokenizer.encode(prompt, add_special_tokens = False))
         return max(1, int(limit) - reserved)
 
 
@@ -583,7 +574,7 @@ def _st_token_counter(model_name: str | None = None) -> Callable[[str], int]:
             tok = _get(model_name).tokenizer
             os.environ["TOKENIZERS_PARALLELISM"] = "true"
             try:
-                return len(tok.encode(t, add_special_tokens=False))
+                return len(tok.encode(t, add_special_tokens = False))
             finally:
                 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -609,11 +600,11 @@ class _SentenceTransformersBackend:
         self,
         texts,
         *,
-        model_name=None,
-        normalize=True,
+        model_name = None,
+        normalize = True,
     ):
         try:
-            return _st_encode(texts, model_name=model_name, normalize=normalize)
+            return _st_encode(texts, model_name = model_name, normalize = normalize)
         except (UnsafeEmbeddingModelError, EmbeddingModelDownloadRequiredError):
             raise
         except Exception as st_err:  # noqa: BLE001 - runtime ST/CUDA encode failure
@@ -623,18 +614,18 @@ class _SentenceTransformersBackend:
             if fallback is None:
                 raise
             _served_by.backend = fallback
-            return fallback.encode(texts, model_name=model_name, normalize=normalize)
+            return fallback.encode(texts, model_name = model_name, normalize = normalize)
 
-    def token_counter(self, *, model_name=None):
+    def token_counter(self, *, model_name = None):
         return _st_token_counter(model_name)
 
-    def dim(self, *, model_name=None):
+    def dim(self, *, model_name = None):
         return _st_dim(model_name)
 
-    def max_tokens(self, *, model_name=None):
+    def max_tokens(self, *, model_name = None):
         return _st_max_tokens(model_name)
 
-    def warm(self, *, model_name=None):
+    def warm(self, *, model_name = None):
         _get(model_name)
 
 
@@ -749,7 +740,6 @@ def _resolve_auto_for_model(model_name: str | None = None) -> str:
         return "llama-server"
     try:
         from utils.embedding_model_settings import get_stored_backend
-
         stored = get_stored_backend(model)
     except Exception:  # noqa: BLE001 - store unavailable: fall back to hardware
         stored = None
@@ -789,7 +779,6 @@ def sentence_transformers_runtime_available() -> bool:
 def _llama_server_runtime_available() -> bool:
     try:
         from core.inference.llama_cpp import LlamaCppBackend
-
         return bool(LlamaCppBackend._find_llama_server_binary())
     except Exception:  # noqa: BLE001 - an unavailable fallback cannot be planned
         return False
@@ -838,7 +827,7 @@ def _build_st_backend_or_fallback(model_name: str | None = None):
     """
     backend = _SentenceTransformersBackend()
     try:
-        backend.warm(model_name=model_name)
+        backend.warm(model_name = model_name)
         return backend
     except (UnsafeEmbeddingModelError, EmbeddingModelDownloadRequiredError):
         raise
@@ -919,7 +908,7 @@ def _backend_cache_key(raw: str, key: str) -> str:
     return f"{raw}\x00{key}"
 
 
-def _dispose_replaced_backend(old, new=None) -> None:
+def _dispose_replaced_backend(old, new = None) -> None:
     if old is None or old is new:
         return
     if isinstance(old, _SentenceTransformersBackend):
@@ -933,7 +922,7 @@ def _dispose_replaced_backend(old, new=None) -> None:
         try:
             shutdown()
         except Exception:  # noqa: BLE001 - replacement is already selected
-            logger.warning("replaced embedding backend shutdown failed", exc_info=True)
+            logger.warning("replaced embedding backend shutdown failed", exc_info = True)
 
 
 def _get_backend(model_name: str | None = None):
@@ -967,7 +956,6 @@ def _get_backend(model_name: str | None = None):
         elif key in _LLAMA_ALIASES:
             # Imported lazily so the ST path never imports llama plumbing.
             from .embed_llama_server import LlamaServerBackend
-
             new = LlamaServerBackend()
         else:
             raise ValueError(
@@ -1086,7 +1074,7 @@ def active_backend_is_llama(model_name: str | None = None) -> bool:
         return False
 
 
-def _llama_pooling(name: str, served=None) -> str | None:
+def _llama_pooling(name: str, served = None) -> str | None:
     try:
         from .embed_llama_server import LlamaServerBackend, _gguf_pooling
     except Exception:  # noqa: BLE001 - llama plumbing import must never block
@@ -1120,7 +1108,7 @@ def _llama_pooling(name: str, served=None) -> str | None:
 def _identity(
     is_llama: bool,
     name: str,
-    served=None,
+    served = None,
     served_identity: tuple[str | None, str | None] | None = None,
 ) -> str:
     if is_llama:
@@ -1133,8 +1121,8 @@ def _identity(
         return config.embedding_identity(
             "llama-server",
             name,
-            gguf_repo=repo,
-            pooling=pooling,
+            gguf_repo = repo,
+            pooling = pooling,
         )
     return config.embedding_identity("sentence-transformers", name)
 
@@ -1200,7 +1188,7 @@ def encode_with_identity(
     wrong half of the index."""
     _served_by.backend = None
     _served_by.llama_identity = None
-    vectors = encode(texts, model_name=model_name, normalize=normalize)
+    vectors = encode(texts, model_name = model_name, normalize = normalize)
     served = getattr(_served_by, "backend", None)
     served_identity = getattr(_served_by, "llama_identity", None)
     name = model_name or config.effective_embedding_model()
@@ -1211,7 +1199,7 @@ def encode_with_identity(
 
 def warm(model_name: str | None = None) -> None:
     """Eagerly load the embedder so the first real request isn't slow."""
-    _get_backend(model_name).warm(model_name=model_name)
+    _get_backend(model_name).warm(model_name = model_name)
 
 
 def encode(
@@ -1231,7 +1219,7 @@ def encode(
     _served_by.backend = backend
     _served_by.llama_identity = None
     try:
-        vectors = backend.encode(texts, model_name=model_name, normalize=normalize)
+        vectors = backend.encode(texts, model_name = model_name, normalize = normalize)
         served = getattr(_served_by, "backend", None) or backend
         _served_by.llama_identity = getattr(served, "served_embedding_identity", lambda: None)()
         return vectors
@@ -1242,17 +1230,17 @@ def encode(
     if replacement is backend:
         raise RuntimeError("llama-server embedding backend was unloaded")
     _served_by.backend = replacement
-    vectors = replacement.encode(texts, model_name=model_name, normalize=normalize)
+    vectors = replacement.encode(texts, model_name = model_name, normalize = normalize)
     _served_by.llama_identity = getattr(replacement, "served_embedding_identity", lambda: None)()
     return vectors
 
 
 def dim(model_name: str | None = None) -> int:
-    return _get_backend(model_name).dim(model_name=model_name)
+    return _get_backend(model_name).dim(model_name = model_name)
 
 
 def max_tokens(model_name: str | None = None) -> int | None:
-    return _get_backend(model_name).max_tokens(model_name=model_name)
+    return _get_backend(model_name).max_tokens(model_name = model_name)
 
 
 def token_counter(model_name: str | None = None) -> Callable[[str], int]:
@@ -1264,7 +1252,7 @@ def token_counter(model_name: str | None = None) -> Callable[[str], int]:
     errors still propagate unchanged.
     """
     backend = _get_backend(model_name)
-    state = (backend, backend.token_counter(model_name=model_name))
+    state = (backend, backend.token_counter(model_name = model_name))
     counter_lock = threading.Lock()
 
     def _count(text: str) -> int:
@@ -1285,7 +1273,7 @@ def token_counter(model_name: str | None = None) -> Callable[[str], int]:
                     raise RuntimeError("llama-server embedding backend was unloaded")
                 state = (
                     replacement,
-                    replacement.token_counter(model_name=model_name),
+                    replacement.token_counter(model_name = model_name),
                 )
             retry = state[1]
         return retry(text)

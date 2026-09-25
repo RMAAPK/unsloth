@@ -45,7 +45,7 @@ RL_PY = REPO_ROOT / "unsloth" / "models" / "rl.py"
 
 def _mixed_precision_source() -> str:
     """Extract the `mixed_precision = (...)` string literal from rl.py."""
-    src = RL_PY.read_text(encoding="utf-8")
+    src = RL_PY.read_text(encoding = "utf-8")
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
@@ -75,8 +75,8 @@ def _get_dtype(dtype):
 class _Args:
     def __init__(
         self,
-        fp16=False,
-        bf16=False,
+        fp16 = False,
+        bf16 = False,
     ):
         self.fp16 = fp16
         self.bf16 = bf16
@@ -85,29 +85,29 @@ class _Args:
 def _run(
     model_dtype,
     bf16_supported,
-    fp16=False,
-    bf16=False,
-    force_float32="0",
-    full_finetuning="0",
-    mixed_precision="float32",
-    user_float32=None,
+    fp16 = False,
+    bf16 = False,
+    force_float32 = "0",
+    full_finetuning = "0",
+    mixed_precision = "float32",
+    user_float32 = None,
 ):
     """Execute the block and report what it decided."""
-    config = types.SimpleNamespace(dtype=model_dtype, torch_dtype=model_dtype)
+    config = types.SimpleNamespace(dtype = model_dtype, torch_dtype = model_dtype)
     # from_pretrained records this only for an explicit dtype = torch.float32.
     model = types.SimpleNamespace(
-        config=config,
-        _unsloth_user_float32=(
+        config = config,
+        _unsloth_user_float32 = (
             (model_dtype is torch.float32) if user_float32 is None else user_float32 == "1"
         ),
     )
-    args = _Args(fp16=fp16, bf16=bf16)
+    args = _Args(fp16 = fp16, bf16 = bf16)
     env = {
         "UNSLOTH_FORCE_FLOAT32": force_float32,
         "UNSLOTH_ENABLE_FULL_FINETUNING": full_finetuning,
         "UNSLOTH_MIXED_PRECISION": mixed_precision,
     }
-    fake_os = types.SimpleNamespace(environ=env)
+    fake_os = types.SimpleNamespace(environ = env)
 
     ns = {
         "torch": torch,
@@ -119,7 +119,7 @@ def _run(
     # The block imports device_is_bf16_supported and falls back to torch.cuda.is_bf16_supported; make both answer the
     # same way.
     real_cuda = torch.cuda
-    torch.cuda = types.SimpleNamespace(is_bf16_supported=lambda: bf16_supported)
+    torch.cuda = types.SimpleNamespace(is_bf16_supported = lambda: bf16_supported)
     import sys
 
     # Stub the PARENT too: `from unsloth_zoo.device_type import x` imports unsloth_zoo first, and a raising package
@@ -155,7 +155,7 @@ def _run(
 
 
 def test_float32_model_on_t4_stays_float32():
-    args, env = _run(torch.float32, bf16_supported=False)
+    args, env = _run(torch.float32, bf16_supported = False)
     assert args.fp16 is False, "float32 model must not get float16 autocast"
     assert args.bf16 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
@@ -163,7 +163,7 @@ def test_float32_model_on_t4_stays_float32():
 
 def test_float32_full_finetuning_on_t4_stays_float32():
     # Spark_TTS exactly: full_finetuning = True, both flags off, no bf16.
-    args, env = _run(torch.float32, bf16_supported=False, full_finetuning="1")
+    args, env = _run(torch.float32, bf16_supported = False, full_finetuning = "1")
     assert (args.fp16, args.bf16) == (False, False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
@@ -173,32 +173,32 @@ def test_float32_full_finetuning_on_t4_stays_float32():
 
 def test_float32_model_on_bf16_gpu_still_autocasts():
     # bf16 shares float32's exponent range, so this stays safe and cheap.
-    args, env = _run(torch.float32, bf16_supported=True)
+    args, env = _run(torch.float32, bf16_supported = True)
     assert args.bf16 is True and args.fp16 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
 
 
 def test_float16_model_on_t4_still_gets_fp16_autocast():
-    args, env = _run(torch.float16, bf16_supported=False)
+    args, env = _run(torch.float16, bf16_supported = False)
     assert args.fp16 is True and args.bf16 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16"
 
 
 def test_bfloat16_model_on_bf16_gpu_unchanged():
-    args, env = _run(torch.bfloat16, bf16_supported=True)
+    args, env = _run(torch.bfloat16, bf16_supported = True)
     assert args.bf16 is True and args.fp16 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
 
 
 def test_explicit_fp16_on_a_float32_model_is_obeyed():
     # An explicit request is a choice, not a default; leave it alone.
-    args, env = _run(torch.float32, bf16_supported=False, fp16=True)
+    args, env = _run(torch.float32, bf16_supported = False, fp16 = True)
     assert args.fp16 is True
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16"
 
 
 def test_explicit_bf16_on_a_float32_model_is_obeyed():
-    args, env = _run(torch.float32, bf16_supported=True, bf16=True)
+    args, env = _run(torch.float32, bf16_supported = True, bf16 = True)
     assert args.bf16 is True
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
 
@@ -206,21 +206,21 @@ def test_explicit_bf16_on_a_float32_model_is_obeyed():
 def test_force_float32_models_take_the_earlier_branch():
     # Gemma3 / gpt-oss on a T4: force_float32 wins before the new branch and already lands on pure float32, so the
     # outcome is identical either way.
-    args, env = _run(torch.float32, bf16_supported=False, force_float32="1")
+    args, env = _run(torch.float32, bf16_supported = False, force_float32 = "1")
     assert (args.fp16, args.bf16) == (False, False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
 
 def test_force_float32_full_finetuning_on_bf16_gpu_keeps_bf16_autocast():
     # The documented fast path: master weights stay float32, autocast is bf16.
-    args, env = _run(torch.float32, bf16_supported=True, force_float32="1", full_finetuning="1")
+    args, env = _run(torch.float32, bf16_supported = True, force_float32 = "1", full_finetuning = "1")
     assert args.bf16 is True and args.fp16 is False
     assert env["ACCELERATE_MIXED_PRECISION"] == "bf16"
 
 
 def test_bfloat16_mixed_precision_mode_unchanged():
     # UNSLOTH_MIXED_PRECISION = bfloat16 does no autocasting at all.
-    args, env = _run(torch.bfloat16, bf16_supported=True, mixed_precision="bfloat16")
+    args, env = _run(torch.bfloat16, bf16_supported = True, mixed_precision = "bfloat16")
     assert (args.fp16, args.bf16) == (False, False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "no"
 
@@ -234,7 +234,7 @@ def test_upcast_float32_on_a_v100_still_gets_fp16_autocast():
     `dtype = torch.float32` at load time may suppress it, which is why the
     new branch is gated on the recorded request rather than on the dtype.
     """
-    args, env = _run(torch.float32, bf16_supported=False, full_finetuning="1", user_float32="0")
+    args, env = _run(torch.float32, bf16_supported = False, full_finetuning = "1", user_float32 = "0")
     assert (args.fp16, args.bf16) == (True, False)
     assert env["ACCELERATE_MIXED_PRECISION"] == "fp16"
 
@@ -243,7 +243,7 @@ def test_loaders_record_the_explicit_request():
     """Every public entry point, since only the outermost one sees the
     argument as the caller wrote it."""
     for rel in ("unsloth/models/loader.py", "unsloth/models/vision.py"):
-        src = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        src = (REPO_ROOT / rel).read_text(encoding = "utf-8")
         assert "_requested_float32(dtype)" in src, rel
         assert "_mark_requested_float32(" in src, rel
 
@@ -252,7 +252,7 @@ def test_the_legacy_language_model_path_records_it_too():
     """llama, mistral, gemma, gemma2, qwen2 and qwen3 LoRA/QLoRA loads go
     through dispatch_model.from_pretrained, which is neither of the two loaders
     that used to record this. Those are most of the notebooks."""
-    src = (REPO_ROOT / "unsloth" / "models" / "loader.py").read_text(encoding="utf-8")
+    src = (REPO_ROOT / "unsloth" / "models" / "loader.py").read_text(encoding = "utf-8")
     tree = ast.parse(src)
     cls = next(
         n for n in ast.walk(tree) if isinstance(n, ast.ClassDef) and n.name == "FastLanguageModel"
@@ -275,7 +275,7 @@ def test_the_text_diffusion_path_records_it_too():
     before the stamping at the end of from_pretrained. A `dtype = torch.float32`
     load on a T4 would otherwise reach the trainer unmarked and autocast to
     float16, which is the overflow this whole branch exists to avoid."""
-    src = (REPO_ROOT / "unsloth" / "models" / "loader.py").read_text(encoding="utf-8")
+    src = (REPO_ROOT / "unsloth" / "models" / "loader.py").read_text(encoding = "utf-8")
     tree = ast.parse(src)
     fn = next(
         n
@@ -298,7 +298,7 @@ def test_the_request_is_read_from_the_model_not_the_environment():
 
 def test_a_model_without_the_marker_keeps_the_old_behaviour():
     """Anything the loaders did not touch must not opt into the new branch."""
-    args, _ = _run(torch.float32, bf16_supported=False, user_float32="0")
+    args, _ = _run(torch.float32, bf16_supported = False, user_float32 = "0")
     assert (args.fp16, args.bf16) == (True, False)
 
 

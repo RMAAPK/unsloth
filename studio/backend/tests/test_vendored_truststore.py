@@ -20,7 +20,7 @@ import pytest
 
 _BACKEND = Path(__file__).resolve().parent.parent
 _VENDOR = _BACKEND / "vendor"
-_MANIFEST = json.loads((_VENDOR / "truststore_manifest.json").read_text(encoding="utf-8"))
+_MANIFEST = json.loads((_VENDOR / "truststore_manifest.json").read_text(encoding = "utf-8"))
 
 # Everything the vendor directory is allowed to hold, beyond the package itself.
 _SIDECARS = {"LICENSE", "README.md", "truststore_manifest.json"}
@@ -95,7 +95,7 @@ def test_nothing_imports_the_vendor_path_directly():
         if "vendor" in path.parts or "node_modules" in path.parts:
             continue
         try:
-            tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
+            tree = ast.parse(path.read_text(encoding = "utf-8", errors = "ignore"))
         except SyntaxError:
             continue
         for node in ast.walk(tree):
@@ -116,7 +116,7 @@ def test_vendored_version_is_the_one_recorded():
     spec = Path(vendor_dir()) / "truststore" / "__init__.py"
     version = next(
         line.split("=")[1].strip().strip('"')
-        for line in spec.read_text(encoding="utf-8").splitlines()
+        for line in spec.read_text(encoding = "utf-8").splitlines()
         if line.startswith("__version__")
     )
     assert (
@@ -127,4 +127,4 @@ def test_vendored_version_is_the_one_recorded():
 @pytest.mark.parametrize("relative", ["LICENSE", "README.md"])
 def test_provenance_files_are_present(relative):
     """MIT requires the licence to travel with the copy."""
-    assert (_VENDOR / relative).read_text(encoding="utf-8").strip()
+    assert (_VENDOR / relative).read_text(encoding = "utf-8").strip()

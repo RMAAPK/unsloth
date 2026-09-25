@@ -159,8 +159,7 @@ def _child_python(tmp_path):
     root = tmp_path / "venv"
     try:
         import venv as _venv
-
-        _venv.EnvBuilder(system_site_packages=True, with_pip=False).create(root)
+        _venv.EnvBuilder(system_site_packages = True, with_pip = False).create(root)
     except Exception as exc:  # pragma: no cover - platform dependent
         pytest.skip(f"cannot build a venv to host the child interpreter: {exc}")
     for candidate in (root / "bin" / "python", root / "Scripts" / "python.exe"):
@@ -173,22 +172,22 @@ def _run_on_hostile_tree(
     tmp_path,
     *,
     apply,
-    extra_env=None,
-    omit_metadata=False,
+    extra_env = None,
+    omit_metadata = False,
 ):
     """Build the tree OUTSIDE any sys prefix and run the driver against it."""
     overlay = tmp_path / "overlay_leg"  # deliberately not "site-packages"
     overlay.mkdir()
     for name, body in _HOSTILE_TREE.items():
         target = overlay / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(body, encoding="utf-8")
+        target.parent.mkdir(parents = True, exist_ok = True)
+        target.write_text(body, encoding = "utf-8")
     second = tmp_path / "overlay_second"
     second.mkdir()
     for name, body in _SECOND_LAYER.items():
         target = second / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(body, encoding="utf-8")
+        target.parent.mkdir(parents = True, exist_ok = True)
+        target.write_text(body, encoding = "utf-8")
     if omit_metadata:
         # Both layers: leaving the second one's metadata would keep the patch
         # alive and the "no metadata anywhere" case would never be exercised.
@@ -196,7 +195,7 @@ def _run_on_hostile_tree(
             for meta in layer.glob("*.dist-info"):
                 shutil.rmtree(meta)
     driver = tmp_path / "driver.py"
-    driver.write_text(_DRIVER, encoding="utf-8")
+    driver.write_text(_DRIVER, encoding = "utf-8")
 
     # The child venv inherits the BASE prefix's site-packages, not this interpreter's, so dill would otherwise be
     # missing when the tests run from a venv. Appended AFTER the overlay, and a real site-packages directory, so dill
@@ -218,11 +217,11 @@ def _run_on_hostile_tree(
     env.update(extra_env or {})
     proc = subprocess.run(
         [_child_python(tmp_path), str(driver)],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=300,
-        cwd=str(tmp_path),
+        capture_output = True,
+        text = True,
+        env = env,
+        timeout = 300,
+        cwd = str(tmp_path),
     )
     line = [ln for ln in proc.stdout.splitlines() if ln.startswith("RESULT ")]
     assert line, f"driver produced no result\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
@@ -235,7 +234,7 @@ def test_an_off_prefix_install_breaks_dill_without_the_fix(tmp_path):
     If this ever passes, dill has changed its own rule and the patch below is
     dead weight -- re-measure before deleting it.
     """
-    got = _run_on_hostile_tree(tmp_path, apply=False)
+    got = _run_on_hostile_tree(tmp_path, apply = False)
     assert (
         got["affected"] is True
     ), "the gate does not recognise this layout, so the fix would never install itself here"
@@ -247,7 +246,7 @@ def test_an_off_prefix_install_breaks_dill_without_the_fix(tmp_path):
 
 
 def test_the_fix_makes_the_same_tree_picklable(tmp_path):
-    got = _run_on_hostile_tree(tmp_path, apply=True)
+    got = _run_on_hostile_tree(tmp_path, apply = True)
     assert got["applied"] is True
     assert got["dumps"] == "ok", got["dumps"]
 
@@ -263,7 +262,7 @@ def test_a_co_located_project_module_keeps_its_by_value_state(tmp_path):
     result after `projcfg.VALUE` changed. Installed metadata is what tells the
     two apart, and this asks dill's live predicate which side each landed on.
     """
-    got = _run_on_hostile_tree(tmp_path, apply=True)
+    got = _run_on_hostile_tree(tmp_path, apply = True)
     assert got["applied"] is True
     assert got["by_reference"] == {
         "pyarrow": True,
@@ -284,7 +283,7 @@ def test_a_root_with_no_installed_metadata_is_left_alone(tmp_path):
     answer is to decline: the crash is loud and immediate, while guessing would
     silently pin fingerprints on whatever the user keeps beside it.
     """
-    got = _run_on_hostile_tree(tmp_path, apply=True, omit_metadata=True)
+    got = _run_on_hostile_tree(tmp_path, apply = True, omit_metadata = True)
     assert got["affected"] is True, "the layout is still the hostile one"
     assert (
         got["applied"] is False
@@ -295,14 +294,14 @@ def test_a_root_with_no_installed_metadata_is_left_alone(tmp_path):
 def test_it_is_idempotent(tmp_path):
     """Applied twice, dill must not end up wrapping the wrapper: a second layer
     is invisible until something recurses."""
-    got = _run_on_hostile_tree(tmp_path, apply=True)
+    got = _run_on_hostile_tree(tmp_path, apply = True)
     assert got["second_call"] is False, "the patch re-applied itself"
 
 
 def test_the_env_switch_turns_it_off(tmp_path):
     """A user whose environment this misjudges needs a way out that does not
     involve editing site-packages."""
-    got = _run_on_hostile_tree(tmp_path, apply=True, extra_env={"UNSLOTH_DISABLE_DILL_FIX": "1"})
+    got = _run_on_hostile_tree(tmp_path, apply = True, extra_env = {"UNSLOTH_DISABLE_DILL_FIX": "1"})
     assert got["applied"] is False
     assert got["dumps"].startswith("PicklingError")
 
@@ -341,7 +340,7 @@ def test_the_widening_only_covers_modules_that_import_back():
     assert _dill_module_is_importable_by_name(real, installed)
 
     orphan = types.ModuleType("not_in_sys_modules")
-    orphan.__spec__ = types.SimpleNamespace(name="not_in_sys_modules", origin="/x.py")
+    orphan.__spec__ = types.SimpleNamespace(name = "not_in_sys_modules", origin = "/x.py")
     assert not _dill_module_is_importable_by_name(orphan, installed)
 
     no_spec = types.ModuleType("json_lookalike")
@@ -357,7 +356,7 @@ def test_the_widening_only_covers_modules_that_import_back():
     # it a real spec.
     for hostile in ("__main__", "__mp_main__"):
         fake = types.ModuleType(hostile)
-        fake.__spec__ = types.SimpleNamespace(name=hostile, origin=f"/somewhere/pkg/{hostile}.py")
+        fake.__spec__ = types.SimpleNamespace(name = hostile, origin = f"/somewhere/pkg/{hostile}.py")
         previous = sys.modules.get(hostile)
         sys.modules[hostile] = fake
         try:
@@ -372,7 +371,7 @@ def test_the_widening_only_covers_modules_that_import_back():
                 sys.modules[hostile] = previous
 
     namespace_like = types.ModuleType("namespace_like")
-    namespace_like.__spec__ = types.SimpleNamespace(name="namespace_like", origin=None)
+    namespace_like.__spec__ = types.SimpleNamespace(name = "namespace_like", origin = None)
     sys.modules["namespace_like"] = namespace_like
     try:
         assert not _dill_module_is_importable_by_name(
@@ -390,7 +389,6 @@ def _unconditional(body):
     which is the shape of a guard that guards nothing.
     """
     import ast
-
     for node in body:
         if isinstance(node, ast.Try):
             yield from _unconditional(node.body)
@@ -411,7 +409,7 @@ def test_the_fix_is_called_on_every_import_path():
     """
     import ast
 
-    source = (REPO / "unsloth" / "__init__.py").read_text(encoding="utf-8")
+    source = (REPO / "unsloth" / "__init__.py").read_text(encoding = "utf-8")
     tree = ast.parse(source)
 
     top = list(_unconditional(tree.body))
@@ -486,17 +484,17 @@ def test_a_project_module_outside_the_install_root_keeps_its_by_value_state(tmp_
 
     library = types.ModuleType("pretend_library")
     library.__spec__ = types.SimpleNamespace(
-        name="pretend_library", origin=str(layer / "pretend_library.py")
+        name = "pretend_library", origin = str(layer / "pretend_library.py")
     )
     project = types.ModuleType("pretend_project")
     project.__spec__ = types.SimpleNamespace(
-        name="pretend_project", origin=str(elsewhere / "pretend_project.py")
+        name = "pretend_project", origin = str(elsewhere / "pretend_project.py")
     )
     # The user's own module in the SAME directory as the dependencies. Root
     # containment cannot separate it from `library`; installed metadata can.
     colocated = types.ModuleType("pretend_colocated")
     colocated.__spec__ = types.SimpleNamespace(
-        name="pretend_colocated", origin=str(layer / "pretend_colocated.py")
+        name = "pretend_colocated", origin = str(layer / "pretend_colocated.py")
     )
     sys.modules["pretend_library"] = library
     sys.modules["pretend_project"] = project
@@ -532,12 +530,12 @@ def test_only_recorded_files_are_treated_as_dependency_owned(tmp_path):
     from unsloth.import_fixes import _dill_distribution_paths
 
     root = tmp_path / "target"
-    (root / "withtop-1.0.dist-info").mkdir(parents=True)
+    (root / "withtop-1.0.dist-info").mkdir(parents = True)
     (root / "withtop-1.0.dist-info" / "top_level.txt").write_text(
-        "pkgone\n\n# comment\n", encoding="utf-8"
+        "pkgone\n\n# comment\n", encoding = "utf-8"
     )
     # The single module that name resolves to: a name is honoured only where it really is one file on disk.
-    (root / "pkgone.py").write_text("X = 1\n", encoding="utf-8")
+    (root / "pkgone.py").write_text("X = 1\n", encoding = "utf-8")
     (root / "onlyrecord-1.0.dist-info").mkdir()
     (root / "onlyrecord-1.0.dist-info" / "RECORD").write_text(
         "ns/cloud/__init__.py,sha256=x,10\n"
@@ -547,17 +545,17 @@ def test_only_recorded_files_are_treated_as_dependency_owned(tmp_path):
         "onlyrecord-1.0.dist-info/RECORD,,\n"
         "onlyrecord-1.0.data/scripts/thing,,\n"
         "__pycache__/singlemod.cpython-312.pyc,,\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     # Both files, which is ordinary.
     # RECORD wins: running the name fallback too would claim the whole `bothns` directory and put a co-located
     # `bothns/myconfig.py` back on the dependency side.
     (root / "both-1.0.dist-info").mkdir()
-    (root / "both-1.0.dist-info" / "RECORD").write_text("bothns/cloud.py,,\n", encoding="utf-8")
-    (root / "both-1.0.dist-info" / "top_level.txt").write_text("bothns\n", encoding="utf-8")
+    (root / "both-1.0.dist-info" / "RECORD").write_text("bothns/cloud.py,,\n", encoding = "utf-8")
+    (root / "both-1.0.dist-info" / "top_level.txt").write_text("bothns\n", encoding = "utf-8")
     (root / "eggy.egg-info").mkdir()
-    (root / "eggy.egg-info" / "installed-files.txt").write_text("../eggmod.py\n", encoding="utf-8")
-    (root / "myproj.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (root / "eggy.egg-info" / "installed-files.txt").write_text("../eggmod.py\n", encoding = "utf-8")
+    (root / "myproj.py").write_text("VALUE = 1\n", encoding = "utf-8")
 
     files = _dill_distribution_paths(str(root))
     rel = {os.path.relpath(f, str(root)) for f in files}
@@ -619,10 +617,10 @@ def test_stripped_bytecode_answers_to_its_recorded_source(tmp_path):
     files = frozenset({recorded})
 
     module = types.ModuleType("pkg")
-    module.__spec__ = types.SimpleNamespace(name="pkg", origin=str(layer / "pkg" / "__init__.pyc"))
+    module.__spec__ = types.SimpleNamespace(name = "pkg", origin = str(layer / "pkg" / "__init__.pyc"))
     unrecorded = types.ModuleType("otherpkg")
     unrecorded.__spec__ = types.SimpleNamespace(
-        name="otherpkg", origin=str(layer / "otherpkg" / "__init__.pyc")
+        name = "otherpkg", origin = str(layer / "otherpkg" / "__init__.pyc")
     )
     sys.modules["pkg"] = module
     sys.modules["otherpkg"] = unrecorded
@@ -652,13 +650,13 @@ def test_a_top_level_package_name_alone_claims_nothing(tmp_path):
     from unsloth.import_fixes import _dill_distribution_paths
 
     root = tmp_path / "layer"
-    (root / "google").mkdir(parents=True)
-    (root / "google" / "cloud.py").write_text("X = 1\n", encoding="utf-8")
-    (root / "google" / "myconfig.py").write_text("VALUE = 1\n", encoding="utf-8")
-    (root / "single.py").write_text("X = 1\n", encoding="utf-8")
+    (root / "google").mkdir(parents = True)
+    (root / "google" / "cloud.py").write_text("X = 1\n", encoding = "utf-8")
+    (root / "google" / "myconfig.py").write_text("VALUE = 1\n", encoding = "utf-8")
+    (root / "single.py").write_text("X = 1\n", encoding = "utf-8")
     (root / "legacy-1.0.egg-info").mkdir()
     (root / "legacy-1.0.egg-info" / "top_level.txt").write_text(
-        "google\nsingle\n", encoding="utf-8"
+        "google\nsingle\n", encoding = "utf-8"
     )
 
     files = _dill_distribution_paths(str(root))
@@ -678,11 +676,11 @@ def test_a_project_module_under_a_shared_namespace_stays_by_value(tmp_path):
     )
 
     root = tmp_path / "layer"
-    (root / "ns").mkdir(parents=True)
-    (root / "ns" / "cloud.py").write_text("X = 1\n", encoding="utf-8")
-    (root / "ns" / "myconfig.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (root / "ns").mkdir(parents = True)
+    (root / "ns" / "cloud.py").write_text("X = 1\n", encoding = "utf-8")
+    (root / "ns" / "myconfig.py").write_text("VALUE = 1\n", encoding = "utf-8")
     (root / "nsdist-1.0.dist-info").mkdir()
-    (root / "nsdist-1.0.dist-info" / "RECORD").write_text("ns/cloud.py,,\n", encoding="utf-8")
+    (root / "nsdist-1.0.dist-info" / "RECORD").write_text("ns/cloud.py,,\n", encoding = "utf-8")
     installed = _dill_distribution_paths(str(root))
 
     for name, filename, expected in (
@@ -690,7 +688,7 @@ def test_a_project_module_under_a_shared_namespace_stays_by_value(tmp_path):
         ("ns.myconfig", "myconfig.py", False),
     ):
         module = types.ModuleType(name)
-        module.__spec__ = types.SimpleNamespace(name=name, origin=str(root / "ns" / filename))
+        module.__spec__ = types.SimpleNamespace(name = name, origin = str(root / "ns" / filename))
         sys.modules[name] = module
         try:
             assert _dill_module_is_importable_by_name(module, installed) is expected, (
@@ -714,21 +712,21 @@ def test_metadata_in_one_root_cannot_vouch_for_a_file_in_another(tmp_path):
     )
 
     a, b = tmp_path / "a", tmp_path / "b"
-    (a / "config-1.0.dist-info").mkdir(parents=True)
-    (a / "config-1.0.dist-info" / "RECORD").write_text("config.py,,\n", encoding="utf-8")
-    (a / "config.py").write_text("X = 1\n", encoding="utf-8")
+    (a / "config-1.0.dist-info").mkdir(parents = True)
+    (a / "config-1.0.dist-info" / "RECORD").write_text("config.py,,\n", encoding = "utf-8")
+    (a / "config.py").write_text("X = 1\n", encoding = "utf-8")
     b.mkdir()
     (b / "other-1.0.dist-info").mkdir()
-    (b / "other-1.0.dist-info" / "RECORD").write_text("other.py,,\n", encoding="utf-8")
-    (b / "other.py").write_text("X = 1\n", encoding="utf-8")
-    (b / "config.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (b / "other-1.0.dist-info" / "RECORD").write_text("other.py,,\n", encoding = "utf-8")
+    (b / "other.py").write_text("X = 1\n", encoding = "utf-8")
+    (b / "config.py").write_text("VALUE = 1\n", encoding = "utf-8")
 
     installed = set()
     for root in (a, b):
         installed |= _dill_distribution_paths(str(root))
 
     module = types.ModuleType("config")
-    module.__spec__ = types.SimpleNamespace(name="config", origin=str(b / "config.py"))
+    module.__spec__ = types.SimpleNamespace(name = "config", origin = str(b / "config.py"))
     sys.modules["config"] = module
     try:
         assert not _dill_module_is_importable_by_name(module, installed), (
@@ -769,11 +767,11 @@ def test_the_gate_reads_the_literal_path_the_way_dill_does(tmp_path):
     from unsloth.import_fixes import _dill_path_pickles_by_value
 
     target = tmp_path / "a-site-packages-cache" / "libs"
-    target.mkdir(parents=True)
-    (target / "pyarrow.py").write_text("V = 0\n", encoding="utf-8")
+    target.mkdir(parents = True)
+    (target / "pyarrow.py").write_text("V = 0\n", encoding = "utf-8")
     link = tmp_path / "layer"
     try:
-        link.symlink_to(target, target_is_directory=True)
+        link.symlink_to(target, target_is_directory = True)
     except (OSError, NotImplementedError):  # pragma: no cover - platform dependent
         pytest.skip("this platform cannot create the symlink this needs")
 

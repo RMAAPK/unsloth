@@ -33,16 +33,16 @@ if _BACKEND_DIR not in sys.path:
 _STORAGE_ROOTS_PATH = Path(__file__).resolve().parent.parent / "utils/paths/storage_roots.py"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _isolate_studio_home(monkeypatch, tmp_path):
     # Keep _setup_cache_env's UV/VLLM mkdirs out of the real ~/.unsloth/studio.
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path / "studio"))
     # _setup_cache_env writes os.environ directly, so a portable test would leak these forward.
     for key in ("UNSLOTH_HOME", "UNSLOTH_PORTABLE", "TORCH_HOME"):
-        monkeypatch.delenv(key, raising=False)
+        monkeypatch.delenv(key, raising = False)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _restore_hf_cache_settings_module():
     # _load_storage_roots pops utils.hf_cache_settings so each test gets a fresh resolver. Left popped, the next import builds a SECOND module object
     # and rebinds it on the utils package, so a later test writes its setting into one object while the code under test reads the other. Restore both.
@@ -85,13 +85,13 @@ def _clear_hf_env(monkeypatch):
         "HF_ASSETS_CACHE",
         "HF_MODULES_CACHE",
     ):
-        monkeypatch.delenv(key, raising=False)
+        monkeypatch.delenv(key, raising = False)
 
 
 def _portable_install(monkeypatch, tmp_path):
     """Turn the fixture's studio home into a portable one and return its root."""
-    monkeypatch.delenv("UNSLOTH_STUDIO_HOME", raising=False)
-    monkeypatch.delenv("UNSLOTH_PORTABLE", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_HOME", raising = False)
+    monkeypatch.delenv("UNSLOTH_PORTABLE", raising = False)
     master = tmp_path / "portable"
     monkeypatch.setenv("UNSLOTH_HOME", str(master))
     return master
@@ -206,8 +206,8 @@ def test_portable_mode_without_an_explicit_hf_home_still_contains_them(monkeypat
 def test_a_normal_install_leaves_the_modules_cache_where_transformers_looks(monkeypatch, tmp_path):
     _clear_hf_env(monkeypatch)
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.delenv("UNSLOTH_HOME", raising=False)
-    monkeypatch.delenv("UNSLOTH_PORTABLE", raising=False)
+    monkeypatch.delenv("UNSLOTH_HOME", raising = False)
+    monkeypatch.delenv("UNSLOTH_PORTABLE", raising = False)
     sr = _load_storage_roots()
 
     sr._setup_cache_env()
@@ -308,10 +308,10 @@ def test_the_libraries_really_derive_these_caches_from_hf_home(monkeypatch, tmp_
             "print(json.dumps({'assets': c.HF_ASSETS_CACHE, 'hub': c.HF_HUB_CACHE,"
             "'datasets': str(d.HF_DATASETS_CACHE)}))",
         ],
-        env=dict(os.environ),
-        capture_output=True,
-        text=True,
-        check=True,
+        env = dict(os.environ),
+        capture_output = True,
+        text = True,
+        check = True,
     )
     result = json.loads(probe.stdout.strip().splitlines()[-1])
 

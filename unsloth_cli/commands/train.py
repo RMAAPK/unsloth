@@ -24,11 +24,10 @@ def _activate_mlx_transformers(model_name: str, hf_token: Optional[str]) -> None
     # Activate before any transformers import: adapter model-type detection imports utils.models.
     ensure_studio_backend_path()
     from utils.transformers_version import activate_transformers_for_subprocess
-
     try:
         activate_transformers_for_subprocess(model_name, hf_token)
     except Exception as exc:
-        typer.echo(f"Warning: failed to activate Transformers sidecar: {exc}", err=True)
+        typer.echo(f"Warning: failed to activate Transformers sidecar: {exc}", err = True)
 
 
 def _create_cli_trainer(model_name: str, hf_token: Optional[str]):
@@ -70,7 +69,7 @@ def _optimizer_for_host(requested: Optional[str] = None) -> str:
         device_backend = get_device().value
     except Exception:  # noqa: BLE001 -- an undetectable host keeps the historical default
         return optimizer
-    return normalize_training_optimizer_for_device(optimizer, device_backend=device_backend)
+    return normalize_training_optimizer_for_device(optimizer, device_backend = device_backend)
 
 
 @add_options_from_config(Config)
@@ -79,18 +78,18 @@ def train(
         None,
         "--config",
         "-c",
-        help="Path to YAML/JSON config file. CLI flags override config values.",
+        help = "Path to YAML/JSON config file. CLI flags override config values.",
     ),
     hf_token: Optional[str] = typer.Option(
-        None, "--hf-token", envvar="HF_TOKEN", help="Hugging Face token if needed."
+        None, "--hf-token", envvar = "HF_TOKEN", help = "Hugging Face token if needed."
     ),
     wandb_token: Optional[str] = typer.Option(
-        None, "--wandb-token", envvar="WANDB_API_KEY", help="Weights & Biases API key."
+        None, "--wandb-token", envvar = "WANDB_API_KEY", help = "Weights & Biases API key."
     ),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
-        help="Show resolved config and exit without training.",
+        help = "Show resolved config and exit without training.",
     ),
     config_overrides: dict = None,
 ):
@@ -98,8 +97,8 @@ def train(
     try:
         cfg = load_config(config)
     except (FileNotFoundError, ConfigError) as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=2)
+        typer.echo(f"Error: {e}", err = True)
+        raise typer.Exit(code = 2)
 
     config_overrides = config_overrides or {}
     cfg.apply_overrides(**config_overrides)
@@ -124,16 +123,16 @@ def train(
         for name in ("hf_token", "wandb_token"):
             if data["logging"].get(name) is not None:
                 data["logging"][name] = "[redacted]"
-        typer.echo(yaml.dump(data, default_flow_style=False, sort_keys=False))
-        raise typer.Exit(code=0)
+        typer.echo(yaml.dump(data, default_flow_style = False, sort_keys = False))
+        raise typer.Exit(code = 0)
 
     if not cfg.model:
-        typer.echo("Error: provide --model or set model in --config", err=True)
-        raise typer.Exit(code=2)
+        typer.echo("Error: provide --model or set model in --config", err = True)
+        raise typer.Exit(code = 2)
 
     if not cfg.data.dataset and not cfg.data.local_dataset:
-        typer.echo("Error: provide --dataset or --local-dataset (or via --config)", err=True)
-        raise typer.Exit(code=2)
+        typer.echo("Error: provide --dataset or --local-dataset (or via --config)", err = True)
+        raise typer.Exit(code = 2)
 
     model_path = Path(cfg.model) if cfg.model else None
     model_is_lora = (
@@ -145,49 +144,49 @@ def train(
         typer.echo(
             "Error: Cannot do full finetuning on a LoRA adapter. "
             "Use --training-type lora or provide a base model.",
-            err=True,
+            err = True,
         )
-        raise typer.Exit(code=2)
+        raise typer.Exit(code = 2)
 
     trainer = _create_cli_trainer(cfg.model, hf_token)
 
     if not trainer.load_model(
-        model_name=cfg.model,
-        max_seq_length=cfg.training.max_seq_length,
-        load_in_4bit=cfg.training.load_in_4bit if use_lora else False,
-        full_finetuning=not use_lora,
-        hf_token=hf_token,
-        use_gradient_checkpointing=cfg.training.gradient_checkpointing,
+        model_name = cfg.model,
+        max_seq_length = cfg.training.max_seq_length,
+        load_in_4bit = cfg.training.load_in_4bit if use_lora else False,
+        full_finetuning = not use_lora,
+        hf_token = hf_token,
+        use_gradient_checkpointing = cfg.training.gradient_checkpointing,
     ):
-        typer.echo("Model load failed", err=True)
-        raise typer.Exit(code=1)
+        typer.echo("Model load failed", err = True)
+        raise typer.Exit(code = 1)
 
     is_vision = trainer.is_vlm
 
     if not trainer.prepare_model_for_training(**cfg.model_kwargs(use_lora, is_vision)):
-        typer.echo("Model preparation failed", err=True)
-        raise typer.Exit(code=1)
+        typer.echo("Model preparation failed", err = True)
+        raise typer.Exit(code = 1)
 
     result = trainer.load_and_format_dataset(
-        dataset_source=cfg.data.dataset or "",
-        format_type=cfg.data.format_type,
-        local_datasets=cfg.data.local_dataset,
-        hf_token=hf_token,
+        dataset_source = cfg.data.dataset or "",
+        format_type = cfg.data.format_type,
+        local_datasets = cfg.data.local_dataset,
+        hf_token = hf_token,
     )
     if result is None:
-        typer.echo("Dataset load failed", err=True)
-        raise typer.Exit(code=1)
+        typer.echo("Dataset load failed", err = True)
+        raise typer.Exit(code = 1)
 
     ds, eval_ds = result
 
     training_kwargs = cfg.training_kwargs()
     training_kwargs["wandb_token"] = wandb_token
     training_kwargs["optim"] = _optimizer_for_host(training_kwargs.get("optim"))
-    started = trainer.start_training(dataset=ds, eval_dataset=eval_ds, **training_kwargs)
+    started = trainer.start_training(dataset = ds, eval_dataset = eval_ds, **training_kwargs)
 
     if not started:
-        typer.echo("Training failed to start", err=True)
-        raise typer.Exit(code=1)
+        typer.echo("Training failed to start", err = True)
+        raise typer.Exit(code = 1)
 
     interrupted = False
     try:
@@ -204,13 +203,13 @@ def train(
         if trainer.training_thread:
             progress = trainer.get_training_progress()
             if getattr(progress, "error", None):
-                trainer.training_thread.join(timeout=5)
+                trainer.training_thread.join(timeout = 5)
             else:
                 trainer.training_thread.join()
 
     final = trainer.get_training_progress()
     if getattr(final, "error", None):
-        typer.echo(f"Training error: {final.error}", err=True)
-        raise typer.Exit(code=1)
+        typer.echo(f"Training error: {final.error}", err = True)
+        raise typer.Exit(code = 1)
     if interrupted and not getattr(final, "is_completed", False):
-        raise typer.Exit(code=130)
+        raise typer.Exit(code = 130)

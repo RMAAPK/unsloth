@@ -56,11 +56,11 @@ PAD_ID, SEQ_LEN, KEEP = 0, 8, 4
 def _fallback_chunked_selective_log_softmax(
     logits,
     index,
-    temperature=1.0,
-    chunks=4,
+    temperature = 1.0,
+    chunks = 4,
 ):
-    chunked_logits = torch.chunk(logits.reshape(-1, logits.shape[-1]), chunks=chunks, dim=0)
-    chunked_index = torch.chunk(index.reshape(-1), chunks=chunks, dim=0)
+    chunked_logits = torch.chunk(logits.reshape(-1, logits.shape[-1]), chunks = chunks, dim = 0)
+    chunked_index = torch.chunk(index.reshape(-1), chunks = chunks, dim = 0)
     all_per_token_logps = []
     for chunk_logits, chunk_index in zip(chunked_logits, chunked_index):
         chunk_logits = chunk_logits.to(torch.float32)
@@ -68,10 +68,10 @@ def _fallback_chunked_selective_log_softmax(
             chunk_logits = chunk_logits / temperature
         selected_logits = torch.gather(
             chunk_logits,
-            dim=-1,
-            index=chunk_index.unsqueeze(-1),
+            dim = -1,
+            index = chunk_index.unsqueeze(-1),
         ).squeeze(-1)
-        logsumexp_values = torch.logsumexp(chunk_logits, dim=-1)
+        logsumexp_values = torch.logsumexp(chunk_logits, dim = -1)
         all_per_token_logps.append(selected_logits - logsumexp_values)
     all_per_token_logps = torch.concat(all_per_token_logps)
     return all_per_token_logps.reshape((logits.shape[0], logits.shape[1]))
@@ -81,15 +81,15 @@ def _fallback_chunked_hidden_states_selective_log_softmax(
     hidden_states,
     lm_head,
     index,
-    chunks=4,
-    logit_scale_multiply=0.0,
-    logit_scale_divide=0.0,
-    logit_softcapping=0.0,
-    temperature=1.0,
+    chunks = 4,
+    logit_scale_multiply = 0.0,
+    logit_scale_divide = 0.0,
+    logit_softcapping = 0.0,
+    temperature = 1.0,
 ):
     flat_hidden_states = hidden_states.reshape(-1, hidden_states.shape[-1])
-    chunked_hidden_states = torch.chunk(flat_hidden_states, chunks=chunks, dim=0)
-    chunked_index = torch.chunk(index.reshape(-1), chunks=chunks, dim=0)
+    chunked_hidden_states = torch.chunk(flat_hidden_states, chunks = chunks, dim = 0)
+    chunked_index = torch.chunk(index.reshape(-1), chunks = chunks, dim = 0)
     all_per_token_logps = []
     for chunk_hidden_states, chunk_index in zip(chunked_hidden_states, chunked_index):
         chunk_logits = chunk_hidden_states.to(lm_head.dtype) @ lm_head.t()
@@ -104,10 +104,10 @@ def _fallback_chunked_hidden_states_selective_log_softmax(
             chunk_logits = chunk_logits / temperature
         selected_logits = torch.gather(
             chunk_logits,
-            dim=-1,
-            index=chunk_index.unsqueeze(-1),
+            dim = -1,
+            index = chunk_index.unsqueeze(-1),
         ).squeeze(-1)
-        logsumexp_values = torch.logsumexp(chunk_logits, dim=-1)
+        logsumexp_values = torch.logsumexp(chunk_logits, dim = -1)
         all_per_token_logps.append(selected_logits - logsumexp_values)
     all_per_token_logps = torch.concat(all_per_token_logps)
     return all_per_token_logps.reshape((hidden_states.shape[0], hidden_states.shape[1]))
@@ -116,7 +116,7 @@ def _fallback_chunked_hidden_states_selective_log_softmax(
 def _fallback_calculate_pad_tokens_in_prompt(input_ids, logits_to_keep, pad_token_id):
     if logits_to_keep >= input_ids.shape[1]:
         raise ValueError("logits_to_keep must be smaller than the sequence length.")
-    return (input_ids[:, :-logits_to_keep] == pad_token_id).sum(dim=1)
+    return (input_ids[:, :-logits_to_keep] == pad_token_id).sum(dim = 1)
 
 
 def _fallback_create_completion_attention_mask(
@@ -124,7 +124,7 @@ def _fallback_create_completion_attention_mask(
 ):
     completion_len = completion_input_ids.shape[1]
     num_tokens_to_mask = max_left_pad - left_pad_tokens_per_prompt
-    indices = torch.arange(completion_len, device=completion_input_ids.device).unsqueeze(0)
+    indices = torch.arange(completion_len, device = completion_input_ids.device).unsqueeze(0)
     shift_mask = indices >= num_tokens_to_mask.unsqueeze(1)
     return shift_mask & (completion_input_ids != pad_token_id)
 
@@ -168,15 +168,15 @@ class _Model(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_states=False,
-        vocab=VOCAB,
-        hidden=HIDDEN,
-        degraded=False,
+        hidden_states = False,
+        vocab = VOCAB,
+        hidden = HIDDEN,
+        degraded = False,
     ):
         super().__init__()
         torch.manual_seed(0)
         self.emb = torch.nn.Embedding(vocab, hidden)
-        self.head = torch.nn.Linear(hidden, vocab, bias=False)
+        self.head = torch.nn.Linear(hidden, vocab, bias = False)
         self.hidden_states = hidden_states
         self.calls = []
         if degraded:
@@ -187,21 +187,21 @@ class _Model(torch.nn.Module):
 
     def forward(
         self,
-        input_ids=None,
-        position_ids=None,
-        attention_mask=None,
-        packed_seq_lengths=None,
-        use_cache=None,
+        input_ids = None,
+        position_ids = None,
+        attention_mask = None,
+        packed_seq_lengths = None,
+        use_cache = None,
         **kwargs,
     ):
         self.calls.append(
             SimpleNamespace(
-                shape=tuple(input_ids.shape),
-                packed=packed_seq_lengths is not None,
+                shape = tuple(input_ids.shape),
+                packed = packed_seq_lengths is not None,
             )
         )
         h = torch.tanh(self.emb(input_ids))
-        return SimpleNamespace(logits=h if self.hidden_states else self.head(h))
+        return SimpleNamespace(logits = h if self.hidden_states else self.head(h))
 
 
 # ---------------------------------------------------------------------------
@@ -255,7 +255,7 @@ def _packed_block_source():
     and ends with the `if` holding the `except ... as _pk_err` handler. No text
     search, so a comment that happens to quote the same code cannot match.
     """
-    text = _SOURCE.read_text(encoding="utf-8")
+    text = _SOURCE.read_text(encoding = "utf-8")
     tree = ast.parse(text)
     factory = _named_function(tree, "grpo_trainer__get_per_token_logps_and_entropies")
     inner = _named_function(factory, "_get_per_token_logps_and_entropies")
@@ -277,7 +277,7 @@ def _packed_block_source():
     assert len(found) == 1, f"expected one packed no-grad block, found {len(found)}"
 
     first, last = found[0]
-    lines = text.splitlines(keepends=True)[first.lineno - 1 : last.end_lineno]
+    lines = text.splitlines(keepends = True)[first.lineno - 1 : last.end_lineno]
     return textwrap.dedent("".join(lines))
 
 
@@ -294,10 +294,10 @@ def _batch():
     )
 
 
-def _run_packed_block(hidden_states=False, model=None):
+def _run_packed_block(hidden_states = False, model = None):
     """Exec the real packed + verify block and hand back its locals."""
     if model is None:
-        model = _Model(hidden_states=hidden_states)
+        model = _Model(hidden_states = hidden_states)
     lm_head = model.head.weight  # [vocab, hidden]
     input_ids = _batch()
     left_pad = _left_pad_of(input_ids, KEEP, PAD_ID)
@@ -321,8 +321,8 @@ def _run_packed_block(hidden_states=False, model=None):
         "UNSLOTH_GRPO_SEQ_PACKING_ON": True,
         "UNSLOTH_ZOO_HAS_MASKED_COL_GUARD": True,
         "self": SimpleNamespace(
-            processing_class=SimpleNamespace(pad_token_id=PAD_ID),
-            _autocast_dtype=torch.bfloat16,
+            processing_class = SimpleNamespace(pad_token_id = PAD_ID),
+            _autocast_dtype = torch.bfloat16,
         ),
         "model": model,
         "unwrapped_model": model,
@@ -357,13 +357,13 @@ def _reference_logprobs(model, input_ids, max_left_pad):
     width = KEEP + max_left_pad
     out = torch.zeros(input_ids.shape[0], input_ids.shape[1])
     for row in range(input_ids.shape[0]):
-        cols = (input_ids[row] != PAD_ID).nonzero(as_tuple=False).squeeze(1)
+        cols = (input_ids[row] != PAD_ID).nonzero(as_tuple = False).squeeze(1)
         real = input_ids[row][cols].unsqueeze(0)
         with torch.no_grad():
-            raw = model(input_ids=real).logits.float()
+            raw = model(input_ids = real).logits.float()
             if model.hidden_states:
                 raw = raw @ model.head.weight.t().float()
-            logps = torch.log_softmax(raw, dim=-1)[0]
+            logps = torch.log_softmax(raw, dim = -1)[0]
         for j in range(1, real.shape[1]):
             out[row, cols[j]] = logps[j - 1, real[0, j]]
     return out[:, -width:]
@@ -373,7 +373,7 @@ def _reference_logprobs(model, input_ids, max_left_pad):
 
 
 def test_packed_path_survives_a_forward_that_returns_real_logits():
-    namespace, model, _input_ids, _max_left_pad = _run_packed_block(hidden_states=False)
+    namespace, model, _input_ids, _max_left_pad = _run_packed_block(hidden_states = False)
     assert getattr(model, "_unsloth_seq_packing_nograd_ok", None) is not False, (
         "a packed call site sent raw vocab logits into the lm_head matmul, the "
         "outer handler swallowed the raise and pinned packing off for the run"
@@ -385,7 +385,7 @@ def test_packed_path_survives_a_forward_that_returns_real_logits():
 
 @pytest.mark.parametrize("hidden_states", [False, True])
 def test_packed_result_matches_the_per_row_logprobs(hidden_states):
-    namespace, model, input_ids, max_left_pad = _run_packed_block(hidden_states=hidden_states)
+    namespace, model, input_ids, max_left_pad = _run_packed_block(hidden_states = hidden_states)
     if not namespace["_pk_use"]:
         pytest.fail("packed path declined the batch, so there is nothing to compare")
     mask = _completion_mask_of(
@@ -396,7 +396,7 @@ def test_packed_result_matches_the_per_row_logprobs(hidden_states):
     ).float()
     reference = _reference_logprobs(model, input_ids, max_left_pad)
     got = namespace["_pk_result"].detach().float()
-    assert torch.allclose(got * mask, reference * mask, atol=1e-5), (
+    assert torch.allclose(got * mask, reference * mask, atol = 1e-5), (
         got * mask,
         reference * mask,
     )
@@ -412,8 +412,8 @@ def test_square_lm_head_raw_logits_are_routed_by_the_explicit_signal():
     sites therefore have to defer to the explicit
     UNSLOTH_RETURN_HIDDEN_STATES signal instead.
     """
-    model = _Model(hidden_states=False, vocab=VOCAB, hidden=VOCAB, degraded=True)
-    namespace, model, input_ids, max_left_pad = _run_packed_block(model=model)
+    model = _Model(hidden_states = False, vocab = VOCAB, hidden = VOCAB, degraded = True)
+    namespace, model, input_ids, max_left_pad = _run_packed_block(model = model)
 
     assert namespace["_pk_use"] is True
     assert namespace["_pk_ref"] is not None, "the per-row verifier never ran"
@@ -425,7 +425,7 @@ def test_square_lm_head_raw_logits_are_routed_by_the_explicit_signal():
     ).float()
     reference = _reference_logprobs(model, input_ids, max_left_pad)
     got = namespace["_pk_result"].detach().float()
-    assert torch.allclose(got * mask, reference * mask, atol=1e-5), (
+    assert torch.allclose(got * mask, reference * mask, atol = 1e-5), (
         got * mask,
         reference * mask,
     )
@@ -433,15 +433,15 @@ def test_square_lm_head_raw_logits_are_routed_by_the_explicit_signal():
 
 def test_square_lm_head_double_application_is_actually_detectable():
     """Guard against the assertion above passing vacuously."""
-    model = _Model(hidden_states=False, vocab=VOCAB, hidden=VOCAB)
+    model = _Model(hidden_states = False, vocab = VOCAB, hidden = VOCAB)
     input_ids = _batch()
     with torch.no_grad():
-        logits = model(input_ids=input_ids).logits.float()
+        logits = model(input_ids = input_ids).logits.float()
         doubled = logits @ model.head.weight.t().float()
     assert not torch.allclose(
-        torch.log_softmax(logits, dim=-1),
-        torch.log_softmax(doubled, dim=-1),
-        atol=1e-2,
+        torch.log_softmax(logits, dim = -1),
+        torch.log_softmax(doubled, dim = -1),
+        atol = 1e-2,
     )
 
 
@@ -449,7 +449,7 @@ def test_first_use_verify_branch_runs_the_per_row_forwards():
     """Without this, the raw-logits test above would never reach the second
     call site: a model already inside the trusted envelope takes the shortcut
     and the verifier never runs."""
-    namespace, model, input_ids, _max_left_pad = _run_packed_block(hidden_states=False)
+    namespace, model, input_ids, _max_left_pad = _run_packed_block(hidden_states = False)
 
     assert (
         "_pk_ref" in namespace and namespace["_pk_ref"] is not None

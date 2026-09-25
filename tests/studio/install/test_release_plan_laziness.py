@@ -27,15 +27,15 @@ RELEASE_TAGS = [f"b{11000 - index}-mix-abcdef0" for index in range(20)]
 def macos_host(**overrides):
     return llama_host(
         ILP.HostInfo,
-        system="Darwin",
-        machine="arm64",
-        macos_version=overrides.pop("macos_version", (15, 5)),
+        system = "Darwin",
+        machine = "arm64",
+        macos_version = overrides.pop("macos_version", (15, 5)),
         **overrides,
     )
 
 
 def linux_host(**overrides):
-    return llama_host(ILP.HostInfo, system="Linux", machine="x86_64", **overrides)
+    return llama_host(ILP.HostInfo, system = "Linux", machine = "x86_64", **overrides)
 
 
 class ApiRateLimited(RuntimeError):
@@ -72,10 +72,10 @@ class FakeReleases:
 
     def _bundle(self, release_tag: str):
         return ILP.PublishedReleaseBundle(
-            repo=PUBLISHED_REPO,
-            release_tag=release_tag,
-            upstream_tag=release_tag.split("-")[0],
-            assets={},
+            repo = PUBLISHED_REPO,
+            release_tag = release_tag,
+            upstream_tag = release_tag.split("-")[0],
+            assets = {},
         )
 
     def _cdn_release(
@@ -87,7 +87,7 @@ class FakeReleases:
             return None
         self.cdn_reads += 1
         bundle = self._bundle(self._cdn_tag)
-        return ILP.ResolvedPublishedRelease(bundle=bundle, checksums=self._checksums(repo, bundle))
+        return ILP.ResolvedPublishedRelease(bundle = bundle, checksums = self._checksums(repo, bundle))
 
     def _api_bundles(self, repo: str):
         self.api_listing_reads += 1
@@ -98,11 +98,11 @@ class FakeReleases:
 
     def _checksums(self, repo: str, bundle):
         return ILP.ApprovedReleaseChecksums(
-            repo=repo,
-            release_tag=bundle.release_tag,
-            upstream_tag=bundle.upstream_tag,
-            source_commit="deadbeef",
-            artifacts={},
+            repo = repo,
+            release_tag = bundle.release_tag,
+            upstream_tag = bundle.upstream_tag,
+            source_commit = "deadbeef",
+            artifacts = {},
         )
 
     def _attempts(self, host, resolved_tag, bundle, checksums):
@@ -111,13 +111,13 @@ class FakeReleases:
             return []
         return [
             ILP.AssetChoice(
-                repo=PUBLISHED_REPO,
-                tag=bundle.release_tag,
-                name=f"llama-{bundle.upstream_tag}-bin-macos-arm64.tar.gz",
-                url=f"https://example.com/{bundle.upstream_tag}.tar.gz",
-                source_label="published",
-                install_kind="macos-arm64",
-                expected_sha256="a" * 64,
+                repo = PUBLISHED_REPO,
+                tag = bundle.release_tag,
+                name = f"llama-{bundle.upstream_tag}-bin-macos-arm64.tar.gz",
+                url = f"https://example.com/{bundle.upstream_tag}.tar.gz",
+                source_label = "published",
+                install_kind = "macos-arm64",
+                expected_sha256 = "a" * 64,
             )
         ]
 
@@ -135,7 +135,7 @@ def test_a_usable_newest_release_resolves_exactly_one_plan(monkeypatch):
 
 
 def test_the_walk_back_still_reaches_older_releases_in_order(monkeypatch):
-    releases = FakeReleases(monkeypatch, reject=set(RELEASE_TAGS[:3]))
+    releases = FakeReleases(monkeypatch, reject = set(RELEASE_TAGS[:3]))
     _tag, plans = resolve(macos_host())
 
     assert plans[0].release_tag == RELEASE_TAGS[3]
@@ -160,7 +160,7 @@ def test_the_walk_back_is_still_capped(monkeypatch):
 
 
 def test_linux_still_takes_the_newest_release_from_the_download_host(monkeypatch):
-    releases = FakeReleases(monkeypatch, cdn_tag=RELEASE_TAGS[0])
+    releases = FakeReleases(monkeypatch, cdn_tag = RELEASE_TAGS[0])
     _tag, plans = resolve(linux_host())
 
     assert len(list(plans)) == 1  # the CDN surfaces only the newest, as before
@@ -169,7 +169,7 @@ def test_linux_still_takes_the_newest_release_from_the_download_host(monkeypatch
 
 
 def test_macos_takes_the_newest_release_from_the_download_host(monkeypatch):
-    releases = FakeReleases(monkeypatch, cdn_tag=RELEASE_TAGS[0])
+    releases = FakeReleases(monkeypatch, cdn_tag = RELEASE_TAGS[0])
     _tag, plans = resolve(macos_host())
 
     assert plans[0].release_tag == RELEASE_TAGS[0]
@@ -178,7 +178,7 @@ def test_macos_takes_the_newest_release_from_the_download_host(monkeypatch):
 
 
 def test_macos_falls_back_to_the_api_only_when_it_must_walk(monkeypatch):
-    releases = FakeReleases(monkeypatch, reject={RELEASE_TAGS[0]}, cdn_tag=RELEASE_TAGS[0])
+    releases = FakeReleases(monkeypatch, reject = {RELEASE_TAGS[0]}, cdn_tag = RELEASE_TAGS[0])
     _tag, plans = resolve(macos_host())
 
     assert plans[0].release_tag == RELEASE_TAGS[1]
@@ -188,7 +188,7 @@ def test_macos_falls_back_to_the_api_only_when_it_must_walk(monkeypatch):
 
 
 def test_a_walk_that_finds_nothing_usable_still_fails(monkeypatch):
-    FakeReleases(monkeypatch, reject=set(RELEASE_TAGS))
+    FakeReleases(monkeypatch, reject = set(RELEASE_TAGS))
 
     with pytest.raises(ILP.PrebuiltFallback):
         resolve(macos_host())
@@ -201,22 +201,22 @@ def test_the_first_plan_is_resolved_before_the_resolver_returns(monkeypatch):
     monkeypatch.setattr(ILP, "_download_host_resolve_enabled", lambda: False)
     monkeypatch.setattr(ILP, "iter_published_release_bundles", _explode)
 
-    with pytest.raises(RuntimeError, match="403"):
+    with pytest.raises(RuntimeError, match = "403"):
         resolve(macos_host())
 
 
 def test_a_403_on_the_deferred_lookup_reaches_the_installer_as_a_fallback(monkeypatch):
     releases = FakeReleases(
         monkeypatch,
-        cdn_tag=RELEASE_TAGS[0],
-        api_error=ApiRateLimited("GitHub API returned 403 for .../releases?per_page=100"),
+        cdn_tag = RELEASE_TAGS[0],
+        api_error = ApiRateLimited("GitHub API returned 403 for .../releases?per_page=100"),
     )
     _tag, plans = resolve(macos_host())
     remaining = ILP.iter_release_plans(plans, PUBLISHED_REPO)
     assert next(remaining).release_tag == RELEASE_TAGS[0]
     assert releases.api_listing_reads == 0
 
-    with pytest.raises(ILP.PrebuiltFallback, match="failed to inspect published releases"):
+    with pytest.raises(ILP.PrebuiltFallback, match = "failed to inspect published releases"):
         next(remaining)
     assert releases.api_listing_reads == 1
 
@@ -227,7 +227,7 @@ def test_a_pinned_release_resolves_once_even_when_the_walk_back_is_on(monkeypatc
     A pin names exactly one release, so the download host's answer is the whole
     answer; falling through would yield it a second time and spend an API call.
     """
-    releases = FakeReleases(monkeypatch, cdn_tag=RELEASE_TAGS[0])
+    releases = FakeReleases(monkeypatch, cdn_tag = RELEASE_TAGS[0])
     pinned_lookups = []
     monkeypatch.setattr(
         ILP,
@@ -240,7 +240,7 @@ def test_a_pinned_release_resolves_once_even_when_the_walk_back_is_on(monkeypatc
             "latest",
             PUBLISHED_REPO,
             RELEASE_TAGS[0],
-            continue_after_fast_path=True,
+            continue_after_fast_path = True,
         )
     )
 
@@ -264,7 +264,7 @@ def test_a_pin_without_the_cdn_still_reaches_the_api(monkeypatch):
             "latest",
             PUBLISHED_REPO,
             RELEASE_TAGS[0],
-            continue_after_fast_path=True,
+            continue_after_fast_path = True,
         )
     )
 
@@ -294,7 +294,7 @@ def test_a_failed_walk_reports_the_same_failure_every_time(monkeypatch):
 def test_the_resolver_itself_still_fails_hard_on_a_403(monkeypatch):
     FakeReleases(
         monkeypatch,
-        api_error=ApiRateLimited("GitHub API returned 403 for .../releases?per_page=100"),
+        api_error = ApiRateLimited("GitHub API returned 403 for .../releases?per_page=100"),
     )
 
     with pytest.raises(ApiRateLimited):
@@ -303,26 +303,26 @@ def test_the_resolver_itself_still_fails_hard_on_a_403(monkeypatch):
 
 def test_a_deferred_403_still_reaches_the_source_build_end_to_end(tmp_path, monkeypatch):
     plan = ILP.InstallReleasePlan(
-        requested_tag="latest",
-        llama_tag="b11000",
-        release_tag=RELEASE_TAGS[0],
-        attempts=[
+        requested_tag = "latest",
+        llama_tag = "b11000",
+        release_tag = RELEASE_TAGS[0],
+        attempts = [
             ILP.AssetChoice(
-                repo=PUBLISHED_REPO,
-                tag=RELEASE_TAGS[0],
-                name="llama-b11000-bin-macos-arm64.tar.gz",
-                url="https://example.com/llama-b11000-bin-macos-arm64.tar.gz",
-                source_label="published",
-                install_kind="macos-arm64",
-                expected_sha256="a" * 64,
+                repo = PUBLISHED_REPO,
+                tag = RELEASE_TAGS[0],
+                name = "llama-b11000-bin-macos-arm64.tar.gz",
+                url = "https://example.com/llama-b11000-bin-macos-arm64.tar.gz",
+                source_label = "published",
+                install_kind = "macos-arm64",
+                expected_sha256 = "a" * 64,
             )
         ],
-        approved_checksums=ILP.ApprovedReleaseChecksums(
-            repo=PUBLISHED_REPO,
-            release_tag=RELEASE_TAGS[0],
-            upstream_tag="b11000",
-            source_commit="deadbeef",
-            artifacts={},
+        approved_checksums = ILP.ApprovedReleaseChecksums(
+            repo = PUBLISHED_REPO,
+            release_tag = RELEASE_TAGS[0],
+            upstream_tag = "b11000",
+            source_commit = "deadbeef",
+            artifacts = {},
         ),
     )
 
@@ -346,13 +346,13 @@ def test_a_deferred_403_still_reaches_the_source_build_end_to_end(tmp_path, monk
     monkeypatch.setattr(ILP, "validate_prebuilt_attempts", _validation_fails)
 
     # Keep a runnable install when release lookup fails.
-    install_dir = build_install(tmp_path, host=MACOS, marker=S12, payload_backend="metal")
+    install_dir = build_install(tmp_path, host = MACOS, marker = S12, payload_backend = "metal")
     ILP.install_prebuilt(install_dir, "latest", PUBLISHED_REPO, "")
     assert (install_dir / "llama-server").exists()
 
     # Otherwise request a source build.
     broken = build_install(
-        tmp_path / "broken", host=MACOS, marker=S12, payload_backend="metal", runnable=False
+        tmp_path / "broken", host = MACOS, marker = S12, payload_backend = "metal", runnable = False
     )
     with pytest.raises(SystemExit) as caught:
         ILP.install_prebuilt(broken, "latest", PUBLISHED_REPO, "")

@@ -22,7 +22,7 @@ from hub.utils.inventory_scan import token_fingerprint
 
 
 def _sibling(name: str, size: int, sha: str):
-    return SimpleNamespace(rfilename=name, size=size, lfs=SimpleNamespace(sha256=sha))
+    return SimpleNamespace(rfilename = name, size = size, lfs = SimpleNamespace(sha256 = sha))
 
 
 def _clear_dataset_caches():
@@ -31,7 +31,7 @@ def _clear_dataset_caches():
         dataset_downloads._dataset_size_neg_cache.clear()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _isolated_caches():
     _clear_dataset_caches()
     yield
@@ -50,12 +50,12 @@ def _stub_dataset_info(monkeypatch, *, private: bool, calls: list):
                 # Anonymous or ambient-less: the Hub 404s a private repo.
                 raise RuntimeError("401 Unauthorized")
             return SimpleNamespace(
-                siblings=[_sibling("data/train.parquet", 4096, "sha-private")],
-                private=private,
-                gated=False,
+                siblings = [_sibling("data/train.parquet", 4096, "sha-private")],
+                private = private,
+                gated = False,
             )
 
-        return SimpleNamespace(dataset_info=_dataset_info)
+        return SimpleNamespace(dataset_info = _dataset_info)
 
     import huggingface_hub
 
@@ -64,7 +64,7 @@ def _stub_dataset_info(monkeypatch, *, private: bool, calls: list):
 
 def test_a_ui_session_private_dataset_is_not_served_to_an_anonymous_caller(monkeypatch):
     calls: list = []
-    _stub_dataset_info(monkeypatch, private=True, calls=calls)
+    _stub_dataset_info(monkeypatch, private = True, calls = calls)
 
     size, hashes = dataset_downloads.get_dataset_snapshot_metadata_cached(
         "org/private-set", "hf_operator_token"
@@ -95,12 +95,12 @@ def test_an_ambient_ui_entry_is_not_served_to_an_anonymous_caller(monkeypatch):
             if token is False:
                 raise RuntimeError("401 Unauthorized")
             return SimpleNamespace(
-                siblings=[_sibling("data/train.parquet", 4096, "sha-private")],
-                private=True,
-                gated=False,
+                siblings = [_sibling("data/train.parquet", 4096, "sha-private")],
+                private = True,
+                gated = False,
             )
 
-        return SimpleNamespace(dataset_info=_dataset_info)
+        return SimpleNamespace(dataset_info = _dataset_info)
 
     import huggingface_hub
 
@@ -121,7 +121,7 @@ def test_an_ambient_ui_entry_is_not_served_to_an_anonymous_caller(monkeypatch):
 def test_an_anonymous_denial_does_not_blank_a_later_ui_lookup(monkeypatch):
     """The negative direction: denial-of-service rather than disclosure."""
     calls: list = []
-    _stub_dataset_info(monkeypatch, private=True, calls=calls)
+    _stub_dataset_info(monkeypatch, private = True, calls = calls)
 
     refused = dataset_downloads.get_dataset_snapshot_metadata_cached("org/private-set", False)
     assert refused == (0, frozenset())
@@ -138,7 +138,7 @@ def test_an_anonymous_denial_does_not_blank_a_later_ui_lookup(monkeypatch):
 def test_the_same_caller_still_gets_a_cache_hit(monkeypatch):
     """The fix must not turn every lookup into a miss."""
     calls: list = []
-    _stub_dataset_info(monkeypatch, private=True, calls=calls)
+    _stub_dataset_info(monkeypatch, private = True, calls = calls)
 
     first = dataset_downloads.get_dataset_snapshot_metadata_cached(
         "org/private-set", "hf_operator_token"

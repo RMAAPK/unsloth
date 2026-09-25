@@ -82,7 +82,7 @@ class Proxy:
             mode = "deny=" + ",".join(self.deny_hosts)
         else:
             mode = "allow-all"
-        print(f"[proxy] 127.0.0.1:{self.port} log={log_path} mode={mode}", flush=True)
+        print(f"[proxy] 127.0.0.1:{self.port} log={log_path} mode={mode}", flush = True)
 
     def denied(self, host: str | None) -> bool:
         if self.refuse:
@@ -91,7 +91,7 @@ class Proxy:
         return any(h == d or h.endswith("." + d) for d in self.deny_hosts)
 
     def log(self, rec: dict) -> None:
-        line = json.dumps(rec, separators=(",", ":"))
+        line = json.dumps(rec, separators = (",", ":"))
         with self.lock:
             with open(self.log_path, "a") as fh:
                 fh.write(line + "\n")
@@ -118,7 +118,7 @@ class Proxy:
             # Before the worker exists: an accepted, unscheduled connection is invisible to the
             # journal.
             self._adjust_active(+1)
-            threading.Thread(target=self.handle, args=(conn,), daemon=True).start()
+            threading.Thread(target = self.handle, args = (conn,), daemon = True).start()
 
     @staticmethod
     def _read_head(conn: socket.socket) -> bytes:
@@ -190,14 +190,14 @@ class Proxy:
             if method == "CONNECT":
                 host, _, p = target.rpartition(":")
                 port = int(p or 443)
-                upstream = socket.create_connection((host, port), timeout=60)
+                upstream = socket.create_connection((host, port), timeout = 60)
                 conn.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
                 initial = b""
             else:
                 u = urlsplit(target)
                 host = u.hostname or ""
                 port = u.port or 80
-                upstream = socket.create_connection((host, port), timeout=60)
+                upstream = socket.create_connection((host, port), timeout = 60)
                 initial = head
             conn.settimeout(None)
             upstream.settimeout(None)
@@ -281,7 +281,7 @@ def summary(
                     h["refused"] += 1
                     refused += 1
                 total += rec["bytes_down"]
-    ordered = dict(sorted(by_host.items(), key=lambda kv: -kv[1]["bytes_down"]))
+    ordered = dict(sorted(by_host.items(), key = lambda kv: -kv[1]["bytes_down"]))
     return {
         "total_bytes_down": total,
         "connections": connections,
@@ -292,28 +292,28 @@ def summary(
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub = ap.add_subparsers(dest = "cmd", required = True)
     s = sub.add_parser("serve")
-    s.add_argument("--port", type=int, default=0)
-    s.add_argument("--log", required=True)
+    s.add_argument("--port", type = int, default = 0)
+    s.add_argument("--log", required = True)
     s.add_argument("--port-file")
-    s.add_argument("--refuse", action="store_true", help="403 every request and log it")
-    s.add_argument("--deny-hosts", default="", help="comma list of hosts to 403 (suffix match)")
+    s.add_argument("--refuse", action = "store_true", help = "403 every request and log it")
+    s.add_argument("--deny-hosts", default = "", help = "comma list of hosts to 403 (suffix match)")
     m = sub.add_parser("summary")
     m.add_argument("log")
-    m.add_argument("--since-ts", type=float)
-    m.add_argument("--until-ts", type=float)
+    m.add_argument("--since-ts", type = float)
+    m.add_argument("--until-ts", type = float)
     a = ap.parse_args()
     if a.cmd == "serve":
         Proxy(
             a.port,
             a.log,
             a.port_file,
-            refuse=a.refuse,
-            deny_hosts=tuple(a.deny_hosts.split(",")),
+            refuse = a.refuse,
+            deny_hosts = tuple(a.deny_hosts.split(",")),
         ).serve()
     else:
-        json.dump(summary(a.log, a.since_ts, a.until_ts), sys.stdout, indent=2)
+        json.dump(summary(a.log, a.since_ts, a.until_ts), sys.stdout, indent = 2)
         print()
 
 

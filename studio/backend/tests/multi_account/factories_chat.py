@@ -65,12 +65,12 @@ def _seed_run(account, run_id: str):
     run, _ = run_as(
         account,
         chat_generation_runs_db.create_run,
-        run_id=run_id,
-        owner_subject=account.username,
-        thread_id=RUN_THREAD_ID,
-        user_message_id=RUN_USER_MESSAGE_ID,
-        assistant_message_id=RUN_ASSISTANT_MESSAGE_ID,
-        request_payload={**RUN_REQUEST_PAYLOAD, "generation_run_id": run_id},
+        run_id = run_id,
+        owner_subject = account.username,
+        thread_id = RUN_THREAD_ID,
+        user_message_id = RUN_USER_MESSAGE_ID,
+        assistant_message_id = RUN_ASSISTANT_MESSAGE_ID,
+        request_payload = {**RUN_REQUEST_PAYLOAD, "generation_run_id": run_id},
     )
     return run
 
@@ -92,10 +92,10 @@ def seed_chat_generation_run_events(account) -> dict[str, str]:
         account,
         chat_generation_runs_db.finish_run,
         DONE_RUN_ID,
-        worker_token=worker_token,
-        status="completed",
-        finish_reason="stop",
-        pending_events=[("chunk", {"delta": CHAT_SENTINEL})],
+        worker_token = worker_token,
+        status = "completed",
+        finish_reason = "stop",
+        pending_events = [("chunk", {"delta": CHAT_SENTINEL})],
     )
     return {"run_id": DONE_RUN_ID}
 
@@ -112,7 +112,7 @@ def seed_chat_attachment(account) -> dict[str, str]:
         _user_message(
             ATTACHMENT_MESSAGE_ID,
             ATTACHMENT_THREAD_ID,
-            attachments=[
+            attachments = [
                 {
                     "id": ATTACHMENT_ID,
                     "name": "notes.txt",
@@ -158,11 +158,11 @@ def seed_chat_fork_tree(account) -> dict[str, str]:
     run_as(
         account,
         studio_db.fork_chat_thread,
-        source_thread_id=FORK_THREAD_ID,
-        branch_message_id=FORK_MESSAGE_ID,
-        new_thread_id=FORKED_CHILD_THREAD_ID,
-        created_at=1001,
-        id_factory=lambda: FORKED_CHILD_THREAD_ID + "-message",
+        source_thread_id = FORK_THREAD_ID,
+        branch_message_id = FORK_MESSAGE_ID,
+        new_thread_id = FORKED_CHILD_THREAD_ID,
+        created_at = 1001,
+        id_factory = lambda: FORKED_CHILD_THREAD_ID + "-message",
     )
     return {"thread_id": FORK_THREAD_ID, "message_id": FORK_MESSAGE_ID}
 
@@ -173,42 +173,42 @@ _FORK_COUNT_REASON = (
 )
 
 FACTORIES = {
-    "routes.chat_generation_runs:GET:/{run_id}": Factory("chat-generation-run", fragment=RUN_ID),
+    "routes.chat_generation_runs:GET:/{run_id}": Factory("chat-generation-run", fragment = RUN_ID),
     "routes.chat_generation_runs:POST:/{run_id}/cancel": Factory(
-        "chat-generation-run", fragment='"status":"cancelled"'
+        "chat-generation-run", fragment = '"status":"cancelled"'
     ),
     "routes.chat_generation_runs:POST:/{run_id}/events": Factory(
-        "chat-generation-run-events", fragment="event: run.completed"
+        "chat-generation-run-events", fragment = "event: run.completed"
     ),
     "routes.chat_history:GET:/attachments/{message_id}/{attachment_id}/file": Factory(
-        "chat-attachment", fragment=ATTACHMENT_TEXT
+        "chat-attachment", fragment = ATTACHMENT_TEXT
     ),
     "routes.chat_history:DELETE:/attachments/{message_id}/{attachment_id}": Factory(
-        "chat-attachment", fragment='"ok":true'
+        "chat-attachment", fragment = '"ok":true'
     ),
     "routes.chat_history:DELETE:/projects/{project_id}": Factory(
-        "chat-project", fragment=CHAT_SENTINEL
+        "chat-project", fragment = CHAT_SENTINEL
     ),
     "routes.chat_history:POST:/threads/{thread_id}/fork": Factory(
         "chat-fork-source",
         {"messageId": FORK_MESSAGE_ID, "newThreadId": FORK_NEW_THREAD_ID, "createdAt": 2000},
-        fragment=CHAT_SENTINEL,
+        fragment = CHAT_SENTINEL,
     ),
     "routes.chat_history:GET:/threads/{thread_id}/forks": Factory(
         "chat-fork-tree",
-        fragment=f'"{FORK_MESSAGE_ID}":1',
-        absent=f'"{FORK_MESSAGE_ID}"',
-        owner=(200,),
-        wrong=(200,),
-        reason=_FORK_COUNT_REASON,
+        fragment = f'"{FORK_MESSAGE_ID}":1',
+        absent = f'"{FORK_MESSAGE_ID}"',
+        owner = (200,),
+        wrong = (200,),
+        reason = _FORK_COUNT_REASON,
     ),
     "routes.chat_history:GET:/threads/{thread_id}/messages/{message_id}/forks": Factory(
         "chat-fork-tree",
-        fragment='"count":1',
-        absent='"count":1',
-        owner=(200,),
-        wrong=(200,),
-        reason=_FORK_COUNT_REASON,
+        fragment = '"count":1',
+        absent = '"count":1',
+        owner = (200,),
+        wrong = (200,),
+        reason = _FORK_COUNT_REASON,
     ),
 }
 

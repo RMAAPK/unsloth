@@ -57,7 +57,7 @@ RAW_IMAGES = [
 ]
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(search_images, "_registry", {})
     monkeypatch.setattr(search_images, "_inflight", {})
@@ -65,11 +65,11 @@ def _isolated_state(monkeypatch, tmp_path):
     monkeypatch.setattr(search_images, "_cache_dir", lambda: tmp_path)
 
 
-def _png_bytes(size=(64, 48), color=(200, 30, 30)) -> bytes:
+def _png_bytes(size = (64, 48), color = (200, 30, 30)) -> bytes:
     from PIL import Image
 
     out = io.BytesIO()
-    Image.new("RGB", size, color).save(out, format="PNG")
+    Image.new("RGB", size, color).save(out, format = "PNG")
     return out.getvalue()
 
 
@@ -147,7 +147,7 @@ def test_web_search_appends_tokens_and_envelope_when_images_are_on(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "AKC", "href": "https://akc.org/x", "body": "Breeds"}]
@@ -155,7 +155,7 @@ def test_web_search_appends_tokens_and_envelope_when_images_are_on(monkeypatch):
         def images(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             calls["images"] = (query, max_results, kwargs)
@@ -167,7 +167,7 @@ def test_web_search_appends_tokens_and_envelope_when_images_are_on(monkeypatch):
     assert "[[img:" not in plain
     assert "images" not in calls
 
-    result = tools._web_search("dog breeds", include_images=True)
+    result = tools._web_search("dog breeds", include_images = True)
     assert "Title: AKC" in result
     assert "[[img:" in result
     assert search_images.SEARCH_IMAGES_SENTINEL in result
@@ -193,7 +193,7 @@ def test_web_search_survives_an_image_engine_failure(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "AKC", "href": "https://akc.org/x", "body": "Breeds"}]
@@ -201,13 +201,13 @@ def test_web_search_survives_an_image_engine_failure(monkeypatch):
         def images(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             raise RuntimeError("engine down")
 
     monkeypatch.setattr("ddgs.DDGS", FakeDDGS)
-    result = tools._web_search("dog breeds", include_images=True)
+    result = tools._web_search("dog breeds", include_images = True)
     assert "Title: AKC" in result
     assert search_images.SEARCH_IMAGES_SENTINEL not in result
 
@@ -220,13 +220,13 @@ def test_web_search_without_an_images_method_is_unchanged(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "AKC", "href": "https://akc.org/x", "body": "Breeds"}]
 
     monkeypatch.setattr("ddgs.DDGS", FakeDDGS)
-    assert tools._web_search("q", include_images=True) == tools._web_search("q")
+    assert tools._web_search("q", include_images = True) == tools._web_search("q")
 
 
 def test_execute_tool_forwards_search_images(monkeypatch):
@@ -237,7 +237,7 @@ def test_execute_tool_forwards_search_images(monkeypatch):
         return "ok"
 
     monkeypatch.setattr(tools, "_web_search", fake_search)
-    tools.execute_tool("web_search", {"query": "q"}, search_images=True)
+    tools.execute_tool("web_search", {"query": "q"}, search_images = True)
     assert seen["include_images"] is True
     tools.execute_tool("web_search", {"query": "q"})
     assert seen["include_images"] is False
@@ -252,7 +252,7 @@ class _SubjectDDGS:
     def images(
         self,
         query,
-        max_results=5,
+        max_results = 5,
         **kwargs,
     ):
         _SubjectDDGS.calls.append(query)
@@ -312,14 +312,14 @@ def test_image_queries_alone_are_a_pure_image_lookup(monkeypatch):
     monkeypatch.setattr("ddgs.DDGS", _SubjectDDGS)
     off = tools.execute_tool("web_search", {"image_queries": ["Pug"]})
     assert off == tools.IMAGE_SEARCH_DISABLED
-    on = tools.execute_tool("web_search", {"image_queries": ["Pug"]}, search_images=True)
+    on = tools.execute_tool("web_search", {"image_queries": ["Pug"]}, search_images = True)
     assert "Pug:\n- [[img:" in on
     assert "Title:" not in on
     assert tools._image_search([]) == "No subjects provided."
     assert tools._image_search("Pug").count("Pug:") == 1
     assert tools._image_search({"bad": 1}) == "No subjects provided."
     # Without image_queries an empty call is still the old "No query provided."
-    assert tools.execute_tool("web_search", {}, search_images=True) == "No query provided."
+    assert tools.execute_tool("web_search", {}, search_images = True) == "No query provided."
 
 
 def test_web_search_with_image_queries_gives_one_picture_per_subject(monkeypatch):
@@ -327,7 +327,7 @@ def test_web_search_with_image_queries_gives_one_picture_per_subject(monkeypatch
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "AKC", "href": "https://akc.org/x", "body": "Breeds"}]
@@ -335,14 +335,14 @@ def test_web_search_with_image_queries_gives_one_picture_per_subject(monkeypatch
     _SubjectDDGS.calls = []
     monkeypatch.setattr("ddgs.DDGS", Both)
     result = tools._web_search(
-        "top dog breeds", include_images=True, image_queries=["Pug", "Beagle"]
+        "top dog breeds", include_images = True, image_queries = ["Pug", "Beagle"]
     )
     assert "Title: AKC" in result
     assert "Pug:\n- [[img:" in result and "Beagle:\n- [[img:" in result
     # The subjects replace the generic pile: no query-wide image lookup ran.
     assert sorted(_SubjectDDGS.calls) == ["Beagle", "Pug"]
     # With the setting off, named subjects are acknowledged rather than dropped.
-    off = tools._web_search("top dog breeds", include_images=False, image_queries=["Pug"])
+    off = tools._web_search("top dog breeds", include_images = False, image_queries = ["Pug"])
     assert "Title: AKC" in off and tools.IMAGE_SEARCH_DISABLED in off and "[[img:" not in off
     envelope = json.loads(result.rsplit(search_images.SEARCH_IMAGES_SENTINEL, 1)[1])
     assert {e["subject"] for e in envelope} == {"Pug", "Beagle"}
@@ -355,7 +355,7 @@ def test_named_subjects_survive_a_text_sweep_that_finds_nothing(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return []
@@ -368,7 +368,7 @@ def test_named_subjects_survive_a_text_sweep_that_finds_nothing(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             raise DDGSException("No results found for the given query.")
@@ -377,7 +377,7 @@ def test_named_subjects_survive_a_text_sweep_that_finds_nothing(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "X", "href": "https://blocked.example/x", "body": "b"}]
@@ -385,16 +385,16 @@ def test_named_subjects_survive_a_text_sweep_that_finds_nothing(monkeypatch):
     for engine in (NoText, RaisesEmpty):
         _SubjectDDGS.calls = []
         monkeypatch.setattr("ddgs.DDGS", engine)
-        result = tools._web_search("top dog breeds", include_images=True, image_queries=["Pug"])
+        result = tools._web_search("top dog breeds", include_images = True, image_queries = ["Pug"])
         assert tools.EMPTY_SEARCH_RESULTS[0] in result
         assert "Pug:\n- [[img:" in result
         assert sorted(_SubjectDDGS.calls) == ["Pug"]
         # With the setting off the parameter is acknowledged, not silently dropped.
-        off = tools._web_search("top dog breeds", include_images=False, image_queries=["Pug"])
+        off = tools._web_search("top dog breeds", include_images = False, image_queries = ["Pug"])
         assert tools.IMAGE_SEARCH_DISABLED in off and "[[img:" not in off
         # No image_queries: the empty answer stays exactly as it was.
         assert (
-            tools._web_search("top dog breeds", include_images=True)
+            tools._web_search("top dog breeds", include_images = True)
             == (tools.EMPTY_SEARCH_RESULTS[0])
         )
 
@@ -403,10 +403,10 @@ def test_named_subjects_survive_a_text_sweep_that_finds_nothing(monkeypatch):
     monkeypatch.setattr("ddgs.DDGS", OnlyBlocked)
     scoped = tools._web_search(
         "top dog breeds",
-        include_images=True,
-        image_queries=["Pug"],
+        include_images = True,
+        image_queries = ["Pug"],
         # The image hosts stay allowed; only the text hit's domain is out of scope.
-        website_policy={"allowedDomains": ["akc.org", "cdn.example.com", "example.com"]},
+        website_policy = {"allowedDomains": ["akc.org", "cdn.example.com", "example.com"]},
     )
     assert tools.EMPTY_SEARCH_RESULTS[1] in scoped and "Pug:\n- [[img:" in scoped
     # One image lookup, scoped by the same policy the text sweep used.
@@ -418,14 +418,14 @@ def test_a_genuine_search_failure_carries_no_pictures(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             raise RuntimeError("upstream exploded")
 
     _SubjectDDGS.calls = []
     monkeypatch.setattr("ddgs.DDGS", Boom)
-    result = tools._web_search("top dog breeds", include_images=True, image_queries=["Pug"])
+    result = tools._web_search("top dog breeds", include_images = True, image_queries = ["Pug"])
     # Pictures under an error would read as a partial answer.
     assert result.startswith("Search failed:") and "[[img:" not in result
     assert _SubjectDDGS.calls == []
@@ -481,7 +481,7 @@ def test_clear_all_chats_invalidates_an_image_lookup_already_in_a_thread(monkeyp
         def images(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             started.set()
@@ -516,7 +516,7 @@ def test_clear_all_chats_invalidates_the_plain_query_image_sweep(monkeypatch, tm
         def images(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             started.set()
@@ -652,27 +652,27 @@ async def _request_tools_swap_case(monkeypatch):
         ]
 
     payload = SimpleNamespace(
-        enabled_tools=["web_search", "python"],
-        rag_scope=None,
-        bypass_permissions=False,
+        enabled_tools = ["web_search", "python"],
+        rag_scope = None,
+        bypass_permissions = False,
     )
     monkeypatch.setattr(inference_routes, "_search_images_enabled", lambda: True)
     selected = await inference_routes._select_request_tools(
-        payload, tools_on=True, mcp_allowed=False
+        payload, tools_on = True, mcp_allowed = False
     )
     assert [t["function"]["name"] for t in selected] == ["web_search", "python"]
     assert has_image_queries(selected) == [True]
 
     monkeypatch.setattr(inference_routes, "_search_images_enabled", lambda: False)
     selected = await inference_routes._select_request_tools(
-        payload, tools_on=True, mcp_allowed=False
+        payload, tools_on = True, mcp_allowed = False
     )
     assert has_image_queries(selected) == [False]
 
     payload.enabled_tools = ["python"]
     monkeypatch.setattr(inference_routes, "_search_images_enabled", lambda: True)
     selected = await inference_routes._select_request_tools(
-        payload, tools_on=True, mcp_allowed=False
+        payload, tools_on = True, mcp_allowed = False
     )
     assert [t["function"]["name"] for t in selected] == ["python"]
 
@@ -683,7 +683,7 @@ def test_search_images_kwargs_follow_the_setting_and_the_signature(monkeypatch):
     def new_style(
         name,
         arguments,
-        search_images=False,
+        search_images = False,
         **kwargs,
     ):
         return ""
@@ -691,8 +691,8 @@ def test_search_images_kwargs_follow_the_setting_and_the_signature(monkeypatch):
     def old_style(
         name,
         arguments,
-        cancel_event=None,
-        timeout=None,
+        cancel_event = None,
+        timeout = None,
     ):
         return ""
 
@@ -738,7 +738,7 @@ class _FakeOpener:
     def open(
         self,
         req,
-        timeout=None,
+        timeout = None,
     ):
         return self._resp
 
@@ -761,19 +761,19 @@ def _serve_bytes(
 def test_fetch_url_raw_binary_mode_returns_bytes_and_caps_size(monkeypatch):
     _serve_bytes(monkeypatch, b"\x89PNG" + b"x" * 100)
     error, body, content_type = tools._fetch_url_raw(
-        "https://example.com/a.png", timeout=5, raw_bytes_max=1024
+        "https://example.com/a.png", timeout = 5, raw_bytes_max = 1024
     )
     assert error is None
     assert body == b"\x89PNG" + b"x" * 100
     assert content_type == "image/png"
 
-    error, body, _ = tools._fetch_url_raw("https://example.com/a.png", timeout=5, raw_bytes_max=50)
+    error, body, _ = tools._fetch_url_raw("https://example.com/a.png", timeout = 5, raw_bytes_max = 50)
     assert error is not None
     assert body == ""
 
 
 def test_fetch_url_raw_binary_mode_still_blocks_private_hosts():
-    error, body, _ = tools._fetch_url_raw("http://127.0.0.1/x.png", timeout=5, raw_bytes_max=1024)
+    error, body, _ = tools._fetch_url_raw("http://127.0.0.1/x.png", timeout = 5, raw_bytes_max = 1024)
     assert error is not None
     assert body == ""
 
@@ -850,7 +850,7 @@ def test_thumbnail_fetch_keeps_the_website_policy_of_the_search(monkeypatch):
 @pytest.fixture
 def client():
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     return TestClient(app)
 
@@ -874,13 +874,13 @@ def test_lookup_route_returns_subject_images_only_when_enabled(client, monkeypat
     monkeypatch.setattr("ddgs.DDGS", _SubjectDDGS)
     monkeypatch.setattr(search_images, "search_images_enabled", lambda: False)
     assert (
-        client.post("/api/inference/search-images/lookup", json={"subjects": ["Pug"]}).status_code
+        client.post("/api/inference/search-images/lookup", json = {"subjects": ["Pug"]}).status_code
         == 403
     )
 
     monkeypatch.setattr(search_images, "search_images_enabled", lambda: True)
     response = client.post(
-        "/api/inference/search-images/lookup", json={"subjects": ["Pug", "Beagle"]}
+        "/api/inference/search-images/lookup", json = {"subjects": ["Pug", "Beagle"]}
     )
     assert response.status_code == 200
     body = response.json()
@@ -889,10 +889,10 @@ def test_lookup_route_returns_subject_images_only_when_enabled(client, monkeypat
     assert {e["subject"] for e in body["images"]} == {"Pug", "Beagle"}
     assert all("thumbnail" not in e for e in body["images"])
     assert (
-        client.post("/api/inference/search-images/lookup", json={"subjects": []}).status_code == 422
+        client.post("/api/inference/search-images/lookup", json = {"subjects": []}).status_code == 422
     )
     assert (
-        client.post("/api/inference/search-images/lookup", json={"subjects": ["a"] * 6}).status_code
+        client.post("/api/inference/search-images/lookup", json = {"subjects": ["a"] * 6}).status_code
         == 422
     )
 
@@ -900,14 +900,14 @@ def test_lookup_route_returns_subject_images_only_when_enabled(client, monkeypat
 def test_route_has_no_url_parameter(client):
     # A URL-taking proxy would be an open fetch relay; the route must ignore one.
     response = client.get(
-        "/api/inference/search-images/0123456789ab", params={"url": "https://evil.test/x"}
+        "/api/inference/search-images/0123456789ab", params = {"url": "https://evil.test/x"}
     )
     assert response.status_code == 404
 
 
 def test_route_requires_auth():
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     anonymous = TestClient(app)
     entry = search_images.register_images(RAW_IMAGES)[0]
     response = anonymous.get(f"/api/inference/search-images/{entry['id']}")
@@ -1007,7 +1007,7 @@ def test_the_route_rejects_an_id_with_a_trailing_newline():
         is False
     )
     app = FastAPI()
-    app.include_router(studio_router, prefix="/api/inference")
+    app.include_router(studio_router, prefix = "/api/inference")
     app.dependency_overrides[get_current_subject] = lambda: "tester"
     client = TestClient(app)
     response = client.get("/api/inference/search-images/0123456789ab%0A")
@@ -1022,7 +1022,7 @@ def _fake_ddgs_with_text(monkeypatch):
         def text(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return [{"title": "AKC", "href": "https://akc.org/x", "body": "Breeds"}]
@@ -1030,7 +1030,7 @@ def _fake_ddgs_with_text(monkeypatch):
         def images(
             self,
             query,
-            max_results=5,
+            max_results = 5,
             **kwargs,
         ):
             return RAW_IMAGES
@@ -1049,7 +1049,7 @@ def test_a_failing_subject_lookup_does_not_discard_the_text_results(monkeypatch)
 
     monkeypatch.setattr(tools, "_image_search", boom)
     result = tools._web_search(
-        "dog breeds", include_images=True, image_queries=["Golden Retriever"]
+        "dog breeds", include_images = True, image_queries = ["Golden Retriever"]
     )
     assert "Title: AKC" in result
     assert "Search failed" not in result
@@ -1065,7 +1065,7 @@ def test_a_failing_image_only_lookup_still_returns_a_string(monkeypatch):
         raise RuntimeError("can't start new thread")
 
     monkeypatch.setattr(tools, "_image_search", boom)
-    result = tools._web_search("", include_images=True, image_queries=["Golden Retriever"])
+    result = tools._web_search("", include_images = True, image_queries = ["Golden Retriever"])
     assert result == "No images found for: Golden Retriever"
 
 
@@ -1232,7 +1232,7 @@ def test_a_lookup_already_running_when_a_clear_starts_publishes_nothing(monkeypa
     assert snapshot is not None
 
     # The lookup comes back and tries to publish.
-    published = search_images.register_images(RAW_IMAGES, expected_generation=sampled)
+    published = search_images.register_images(RAW_IMAGES, expected_generation = sampled)
 
     assert (
         published == []
@@ -1247,7 +1247,7 @@ def test_a_lookup_that_starts_after_the_clear_boundary_still_registers(monkeypat
 
     search_images.snapshot_and_fence_registrations()
     sampled = search_images.cache_generation()
-    published = search_images.register_images(RAW_IMAGES, expected_generation=sampled)
+    published = search_images.register_images(RAW_IMAGES, expected_generation = sampled)
 
     assert published, "a lookup that started after the boundary belongs to a surviving chat"
 

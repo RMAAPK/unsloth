@@ -25,12 +25,12 @@ from core.inference.llama_cpp import LlamaCppBackend
 _VISIBLE_DEVICE_MASKS = ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _no_inherited_gpu_mask(monkeypatch):
     """The ROCm arm asks about physical ids on a faked torch host. A mask inherited
     from the shell remaps them onto ids the fake host does not have."""
     for _mask in _VISIBLE_DEVICE_MASKS:
-        monkeypatch.delenv(_mask, raising=False)
+        monkeypatch.delenv(_mask, raising = False)
 
 
 def _shares(**kwargs) -> bool:
@@ -40,23 +40,23 @@ def _shares(**kwargs) -> bool:
 def _vulkan(
     shared_gpu_ids,
     detected,
-    gpu_indices=None,
+    gpu_indices = None,
 ) -> bool:
     return _shares(
-        is_vulkan_backend=True,
-        shared_gpu_ids=shared_gpu_ids,
-        detected_gpus=detected,
-        gpu_indices=gpu_indices,
+        is_vulkan_backend = True,
+        shared_gpu_ids = shared_gpu_ids,
+        detected_gpus = detected,
+        gpu_indices = gpu_indices,
     )
 
 
-def _fake_torch(archs, *, hip="6.4.0"):
+def _fake_torch(archs, *, hip = "6.4.0"):
     torch = types.ModuleType("torch")
-    torch.version = types.SimpleNamespace(hip=hip)
+    torch.version = types.SimpleNamespace(hip = hip)
     torch.cuda = types.SimpleNamespace(
-        is_available=lambda: True,
-        device_count=lambda: len(archs),
-        get_device_properties=lambda i: types.SimpleNamespace(gcnArchName=archs[i]),
+        is_available = lambda: True,
+        device_count = lambda: len(archs),
+        get_device_properties = lambda i: types.SimpleNamespace(gcnArchName = archs[i]),
     )
     return torch
 
@@ -65,7 +65,7 @@ def _fake_torch(archs, *, hip="6.4.0"):
 
 
 def test_an_igpu_only_target_shares_system_memory():
-    assert _vulkan({0}, [(0, 170079)], gpu_indices=[0]) is True
+    assert _vulkan({0}, [(0, 170079)], gpu_indices = [0]) is True
 
 
 def test_an_unpinned_load_reads_the_detected_list():
@@ -75,16 +75,16 @@ def test_an_unpinned_load_reads_the_detected_list():
 
 
 def test_a_discrete_card_beside_the_igpu_keeps_the_tuning():
-    assert _vulkan({0}, [(0, 170079), (1, 24000)], gpu_indices=[0, 1]) is False
+    assert _vulkan({0}, [(0, 170079), (1, 24000)], gpu_indices = [0, 1]) is False
     assert _vulkan({0}, [(0, 170079), (1, 24000)]) is False
 
 
 def test_pinning_only_the_igpu_of_a_mixed_host_still_shares():
-    assert _vulkan({0}, [(0, 170079), (1, 24000)], gpu_indices=[0]) is True
+    assert _vulkan({0}, [(0, 170079), (1, 24000)], gpu_indices = [0]) is True
 
 
 def test_a_discrete_only_host_keeps_the_tuning():
-    assert _vulkan(set(), [(0, 24000)], gpu_indices=[0]) is False
+    assert _vulkan(set(), [(0, 24000)], gpu_indices = [0]) is False
 
 
 def test_a_load_with_no_device_at_all_fails_closed():
@@ -99,10 +99,10 @@ def test_an_amd_apu_shares_system_memory(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "torch", _fake_torch(["gfx1151"]))
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids=set(),
-            detected_gpus=[(0, 60000)],
-            gpu_indices=[0],
+            is_vulkan_backend = False,
+            shared_gpu_ids = set(),
+            detected_gpus = [(0, 60000)],
+            gpu_indices = [0],
         )
         is True
     )
@@ -112,10 +112,10 @@ def test_a_discrete_amd_card_keeps_the_tuning(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "torch", _fake_torch(["gfx1100"]))
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids=set(),
-            detected_gpus=[(0, 24000)],
-            gpu_indices=[0],
+            is_vulkan_backend = False,
+            shared_gpu_ids = set(),
+            detected_gpus = [(0, 24000)],
+            gpu_indices = [0],
         )
         is False
     )
@@ -125,10 +125,10 @@ def test_an_apu_next_to_a_discrete_card_keeps_the_tuning(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "torch", _fake_torch(["gfx1151", "gfx1100"]))
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids=set(),
-            detected_gpus=[(0, 60000), (1, 24000)],
-            gpu_indices=[0, 1],
+            is_vulkan_backend = False,
+            shared_gpu_ids = set(),
+            detected_gpus = [(0, 60000), (1, 24000)],
+            gpu_indices = [0, 1],
         )
         is False
     )
@@ -140,10 +140,10 @@ def test_an_unreadable_inventory_fails_closed(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "torch", None)
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids=set(),
-            detected_gpus=[(0, 60000)],
-            gpu_indices=[0],
+            is_vulkan_backend = False,
+            shared_gpu_ids = set(),
+            detected_gpus = [(0, 60000)],
+            gpu_indices = [0],
         )
         is False
     )
@@ -155,10 +155,10 @@ def test_the_vulkan_shared_set_is_not_read_as_physical_ids(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "torch", _fake_torch(["gfx1100"]))
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids={0},
-            detected_gpus=[(0, 24000)],
-            gpu_indices=[0],
+            is_vulkan_backend = False,
+            shared_gpu_ids = {0},
+            detected_gpus = [(0, 24000)],
+            gpu_indices = [0],
         )
         is False
     )
@@ -183,19 +183,19 @@ def test_a_cuda_host_is_answered_without_touching_the_device(monkeypatch):
         raise _DeviceProbed("probed the CUDA device to answer a Windows-only question")
 
     torch = types.ModuleType("torch")
-    torch.version = types.SimpleNamespace(hip=None)
+    torch.version = types.SimpleNamespace(hip = None)
     torch.cuda = types.SimpleNamespace(
-        is_available=lambda: True,
-        device_count=lambda: 1,
-        get_device_properties=_explode,
+        is_available = lambda: True,
+        device_count = lambda: 1,
+        get_device_properties = _explode,
     )
     monkeypatch.setitem(__import__("sys").modules, "torch", torch)
     assert (
         _shares(
-            is_vulkan_backend=False,
-            shared_gpu_ids=set(),
-            detected_gpus=[(0, 24000)],
-            gpu_indices=[0],
+            is_vulkan_backend = False,
+            shared_gpu_ids = set(),
+            detected_gpus = [(0, 24000)],
+            gpu_indices = [0],
         )
         is False
     )
@@ -266,9 +266,9 @@ _CAPS = {"supports_cache_ram": True, "ctx_checkpoints_flag": "--ctx-checkpoints"
 def test_the_retry_applies_the_tuning_when_nothing_states_it():
     assert LlamaCppBackend._retry_cache_tuning_flags(
         ["llama-server", "-m", "x.gguf"],
-        cache_ram=None,
-        ctx_checkpoints=None,
-        server_caps=_CAPS,
+        cache_ram = None,
+        ctx_checkpoints = None,
+        server_caps = _CAPS,
     ) == ["--cache-ram", "0", "--ctx-checkpoints", "0"]
 
 
@@ -277,18 +277,18 @@ def test_the_retry_does_not_overrule_a_cache_flag_the_command_already_states():
     # the panel still shows -- the reverse of the launch, where the extras win.
     flags = LlamaCppBackend._retry_cache_tuning_flags(
         ["llama-server", "-m", "x.gguf", "--cache-ram", "8192"],
-        cache_ram=None,
-        ctx_checkpoints=None,
-        server_caps=_CAPS,
+        cache_ram = None,
+        ctx_checkpoints = None,
+        server_caps = _CAPS,
     )
     assert flags == ["--ctx-checkpoints", "0"]
 
     assert (
         LlamaCppBackend._retry_cache_tuning_flags(
             ["llama-server", "--cache-ram=8192", "--ctx-checkpoints=4"],
-            cache_ram=None,
-            ctx_checkpoints=None,
-            server_caps=_CAPS,
+            cache_ram = None,
+            ctx_checkpoints = None,
+            server_caps = _CAPS,
         )
         == []
     )
@@ -300,9 +300,9 @@ def test_the_retry_reads_the_short_spellings_as_the_same_settings():
     assert (
         LlamaCppBackend._retry_cache_tuning_flags(
             ["llama-server", "-cram", "8192", "-ctxcp", "4"],
-            cache_ram=None,
-            ctx_checkpoints=None,
-            server_caps=_CAPS,
+            cache_ram = None,
+            ctx_checkpoints = None,
+            server_caps = _CAPS,
         )
         == []
     )
@@ -310,15 +310,15 @@ def test_the_retry_reads_the_short_spellings_as_the_same_settings():
     # One at a time, so a single alias cannot stand in for the pair.
     assert LlamaCppBackend._retry_cache_tuning_flags(
         ["llama-server", "-cram", "8192"],
-        cache_ram=None,
-        ctx_checkpoints=None,
-        server_caps=_CAPS,
+        cache_ram = None,
+        ctx_checkpoints = None,
+        server_caps = _CAPS,
     ) == ["--ctx-checkpoints", "0"]
     assert LlamaCppBackend._retry_cache_tuning_flags(
         ["llama-server", "-ctxcp=4"],
-        cache_ram=None,
-        ctx_checkpoints=None,
-        server_caps=_CAPS,
+        cache_ram = None,
+        ctx_checkpoints = None,
+        server_caps = _CAPS,
     ) == ["--cache-ram", "0"]
 
 
@@ -326,9 +326,9 @@ def test_the_retry_reads_the_other_checkpoint_alias_as_the_same_setting():
     # A build advertising --ctx-checkpoints can still be handed --swa-checkpoints.
     assert LlamaCppBackend._retry_cache_tuning_flags(
         ["llama-server", "--swa-checkpoints", "4"],
-        cache_ram=None,
-        ctx_checkpoints=None,
-        server_caps=_CAPS,
+        cache_ram = None,
+        ctx_checkpoints = None,
+        server_caps = _CAPS,
     ) == ["--cache-ram", "0"]
 
 
@@ -336,16 +336,16 @@ def test_the_retry_skips_what_the_build_and_the_fields_already_own():
     # An explicit field, as at launch, and a build without the capability.
     assert (
         LlamaCppBackend._retry_cache_tuning_flags(
-            ["llama-server"], cache_ram=4096, ctx_checkpoints=8, server_caps=_CAPS
+            ["llama-server"], cache_ram = 4096, ctx_checkpoints = 8, server_caps = _CAPS
         )
         == []
     )
     assert (
         LlamaCppBackend._retry_cache_tuning_flags(
             ["llama-server"],
-            cache_ram=None,
-            ctx_checkpoints=None,
-            server_caps={"supports_cache_ram": False, "ctx_checkpoints_flag": None},
+            cache_ram = None,
+            ctx_checkpoints = None,
+            server_caps = {"supports_cache_ram": False, "ctx_checkpoints_flag": None},
         )
         == []
     )
