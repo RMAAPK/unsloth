@@ -57,14 +57,17 @@ async def stream_replicate(
             kwargs["temperature"] = temperature
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
-        if tools:
-            kwargs["stop"] = "</tool_call>"
+
+        import asyncio
+        await asyncio.sleep(1.5) # Anti-throttle for Replicate burst limits during tool loops
 
         # We don't pass kwargs["tools"] = tools to litellm because litellm throws it away for this model anyway,
         # and if it did support it, it might clash with our system prompt injection.
+        # We also DO NOT pass `kwargs["stop"] = "</tool_call>"` because Replicate's Triton Inference Server tokenizer crashes on multi-token custom stop sequences!
 
         response = await litellm.acompletion(**kwargs)
 
+        accumulated = ""
         async for chunk in response:
             try:
                 chunk_str = chunk.model_dump_json()
@@ -73,7 +76,20 @@ async def stream_replicate(
                     chunk_str = chunk.json()
                 except Exception:
                     chunk_str = json.dumps(dict(chunk))
+            
             yield f"data: {chunk_str}"
+
+            # Manually simulate stop sequence by inspecting chunks to prevent hallucination without crashing Replicate
+            try:
+                if hasattr(chunk, "choices") and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    content = delta.content if hasattr(delta, "content") else (delta.get("content") if isinstance(delta, dict) else "")
+                    if content:
+                        accumulated += content
+                        if "</tool_call>" in accumulated:
+                            break
+            except Exception:
+                pass
 
         yield "data: [DONE]"
     except Exception as e:
