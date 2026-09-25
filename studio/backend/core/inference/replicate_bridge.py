@@ -1,4 +1,4 @@
-﻿import json
+import json
 import httpx
 from typing import Any, AsyncGenerator, Optional
 
