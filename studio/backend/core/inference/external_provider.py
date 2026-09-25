@@ -1,4 +1,4 @@
-﻿# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-only
 # Copyright 2026-present the Unsloth AI Inc. team. All rights reserved. See /studio/LICENSE.AGPL-3.0
 
 """Async HTTP client proxying chat completions to external LLM providers. Most use OpenAI-compatible
@@ -294,9 +294,9 @@ def _sanitize_openai_reasoning_replay_item(item: Any) -> Optional[dict[str, Any]
 # OpenAI Responses inline citation markers: `citeSOURCE_ID[id2...][LOCATOR]` using private-use codepoints
 # (https://developers.openai.com/api/docs/guides/citation-formatting). Group 1 holds delim-separated tokens; each
 # resolvable token expands to `[[N]](URL)`, unresolved tokens drop silently so no garbled glyph reaches the renderer.
-_OPENAI_CITE_OPEN = "îˆ€citeîˆ‚"
-_OPENAI_CITE_STOP = "îˆ"
-_OPENAI_CITE_DELIM = "îˆ‚"
+_OPENAI_CITE_OPEN = "cite"
+_OPENAI_CITE_STOP = ""
+_OPENAI_CITE_DELIM = ""
 _OPENAI_CITATION_MARKER = re.compile(
     f"{_OPENAI_CITE_OPEN}([^{_OPENAI_CITE_STOP}]+){_OPENAI_CITE_STOP}"
 )
@@ -391,7 +391,7 @@ def _split_pending_citation_tail(text: str) -> tuple[str, str]:
     ``text`` has no open or a fully closed marker."""
     if not text:
         return text, ""
-    last_open = text.rfind("îˆ€")
+    last_open = text.rfind("")
     if last_open == -1:
         return text, ""
     # A stop byte after the last open byte means the marker closed here.
@@ -1546,11 +1546,6 @@ class ExternalProviderClient:
         # OpenAI moved flagship models (gpt-5.x) off /v1/chat/completions -- those endpoints return 404 "This is not a
         # chat model" for the new families. Route all OpenAI traffic through /v1/responses instead and translate the
         # Responses SSE back into Chat Completions chunks so the frontend stays endpoint-agnostic.
-        if self.provider_type == "replicate":
-            from .replicate_bridge import stream_replicate
-            async for line in stream_replicate(_client(), self.base_url, self._auth_headers(), messages, model, temperature, max_tokens): yield line
-            return
-
         if self.provider_type == "openai" or self.api_type == "responses":
             async for line in self._stream_openai_responses(
                 messages,
@@ -1931,7 +1926,7 @@ class ExternalProviderClient:
                         web_search_tool_ended = True
                 except GeneratorExit:
                     await response.aclose()  # set PoolByteStream._closed=True FIRST
-                    await lines_gen.aclose()  # now safe â€” aclose() is a no-op
+                    await lines_gen.aclose()  # now safe — aclose() is a no-op
                     raise
                 finally:
                     logger.info(
@@ -2875,7 +2870,7 @@ class ExternalProviderClient:
                     )
                     return
 
-                # NOTE: same manual __anext__ loop as stream_chat_completion â€” see comment there.
+                # NOTE: same manual __anext__ loop as stream_chat_completion — see comment there.
                 lines_gen = response.aiter_lines().__aiter__()
                 thinking_open = False
                 # Diagnostic counters for "no thinking content" reports -- distinguish "Anthropic never sent
@@ -3484,7 +3479,7 @@ class ExternalProviderClient:
                                     entry = {k: v for k, v in c.items() if k != "_key"}
                                     cited = entry.get("cited_text")
                                     if isinstance(cited, str) and len(cited) > _CITED_TEXT_MAX_LEN:
-                                        entry["cited_text"] = cited[:_CITED_TEXT_MAX_LEN] + "â€¦"
+                                        entry["cited_text"] = cited[:_CITED_TEXT_MAX_LEN] + "…"
                                     clean_cits.append(entry)
                                 yield _emit_tool_event(
                                     {
@@ -3521,7 +3516,7 @@ class ExternalProviderClient:
                             break
                 except GeneratorExit:
                     await response.aclose()  # set PoolByteStream._closed=True FIRST
-                    await lines_gen.aclose()  # now safe â€” aclose() is a no-op
+                    await lines_gen.aclose()  # now safe — aclose() is a no-op
                     raise
                 finally:
                     # Per-event-type counts + web_search summary for triage.
@@ -3825,7 +3820,7 @@ class ExternalProviderClient:
                                     )
                                     if _fetched is not None:
                                         _final_mime, _b64 = _fetched
-                                        # base64 expands ~4/3 â€” recover bytes from len(_b64).
+                                        # base64 expands ~4/3 — recover bytes from len(_b64).
                                         _approx_bytes = (len(_b64) * 3) // 4
                                         if (
                                             _remote_image_total_bytes + _approx_bytes
@@ -7031,7 +7026,7 @@ class ExternalProviderClient:
             )
 
     async def close(self) -> None:
-        """No-op â€” the underlying client is shared across requests."""
+        """No-op — the underlying client is shared across requests."""
 
 
 def _provider_display_name(provider_type: str) -> str:
@@ -7230,4 +7225,3 @@ def _build_usage_chunk(
         "usage": usage_block,
     }
     return f"data: {_json.dumps(chunk)}"
-
