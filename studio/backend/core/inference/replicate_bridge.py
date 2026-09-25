@@ -39,7 +39,10 @@ async def stream_replicate(
         system_injection = (
             "\n\n[SYSTEM TOOLING ENGINE ENABLED]\n"
             "You have access to the following server-side tools. To execute a tool, YOU MUST output a RAW JSON object wrapped in <tool_call> tags, and NOTHING ELSE in that block.\n"
-            'Format: <tool_call>{"name": "tool_name", "arguments": {"arg": "val"}}</tool_call>\n'
+            "Format:\n"
+            "<tool_call>\n"
+            '{"name": "tool_name", "arguments": {"arg": "val"}}\n'
+            "</tool_call>\n"
             f"Available Tools: {json.dumps(tool_docs)}\n"
         )
 
@@ -65,7 +68,18 @@ async def stream_replicate(
         # and if it did support it, it might clash with our system prompt injection.
         # We also DO NOT pass `kwargs["stop"] = "</tool_call>"` because Replicate's Triton Inference Server tokenizer crashes on multi-token custom stop sequences!
 
-        response = await litellm.acompletion(**kwargs)
+        max_retries = 3
+        response = None
+        for attempt in range(max_retries):
+            try:
+                response = await litellm.acompletion(**kwargs)
+                break
+            except Exception as e:
+                err_str = str(e).lower()
+                if attempt < max_retries - 1 and ("429" in err_str or "ratelimit" in err_str or "throttled" in err_str):
+                    await asyncio.sleep(4)
+                    continue
+                raise e
 
         accumulated = ""
         async for chunk in response:
