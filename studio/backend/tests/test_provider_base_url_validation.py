@@ -58,10 +58,10 @@ _SUPPORTED = [
 ] + [info["base_url"] for info in PROVIDER_REGISTRY.values() if info["base_url"]]
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _default_policy(monkeypatch):
     """Default deployment: the private-address opt-in is off."""
-    monkeypatch.delenv(BLOCK_PRIVATE_ENV, raising = False)
+    monkeypatch.delenv(BLOCK_PRIVATE_ENV, raising=False)
 
     # The lookup caches its answer per hostname and caps how many can be in
     # flight; a stale entry or a slot still held by an abandoned stub would
@@ -124,7 +124,7 @@ def test_dns_alias_of_a_metadata_address_is_refused(url, monkeypatch):
         "getaddrinfo",
         lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("169.254.169.254", 80))],
     )
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url(url)
 
 
@@ -170,7 +170,7 @@ def test_unresolvable_names_are_refused_only_under_the_opt_in(monkeypatch):
     assert validate_provider_base_url("http://my_ollama:11434/v1") == "http://my_ollama:11434/v1"
 
     monkeypatch.setenv(BLOCK_PRIVATE_ENV, "1")
-    with pytest.raises(ValueError, match = "could not be resolved"):
+    with pytest.raises(ValueError, match="could not be resolved"):
         validate_provider_base_url("http://my_ollama:11434/v1")
 
 
@@ -199,7 +199,7 @@ def test_a_name_resolving_to_a_non_metadata_address_stays_allowed(address, monke
 
 def test_a_link_local_literal_is_still_refused():
     """Typing the address stays refused, which is what main already did."""
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url("http://169.254.1.1/v1")
 
 
@@ -211,7 +211,7 @@ def test_a_dns_alias_of_tencents_metadata_service_is_refused(address, monkeypatc
         "getaddrinfo",
         lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, 80))],
     )
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url("http://alias.attacker.test/latest/meta-data")
 
 
@@ -244,7 +244,7 @@ def test_an_ascii_host_is_resolved_the_way_httpx_dials_it(monkeypatch):
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))]
 
     monkeypatch.setattr(socket, "getaddrinfo", _record)
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url("http://safe^alias.attacker.test/v1")
     assert seen == ["safe%5Ealias.attacker.test"]
 
@@ -276,7 +276,7 @@ def test_a_unicode_host_is_resolved_the_way_httpx_dials_it(monkeypatch):
         return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))]
 
     monkeypatch.setattr(socket, "getaddrinfo", _record)
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url("http://faß.attacker.test/v1")
     # Not fass.attacker.test, which is what the resolver would have been asked
     # for and is a different host with a different owner.
@@ -392,7 +392,7 @@ def test_a_slow_resolver_does_not_stall_validation(monkeypatch):
     ],
 )
 def test_rejected_url_shapes(url, error):
-    with pytest.raises(ValueError, match = error):
+    with pytest.raises(ValueError, match=error):
         validate_provider_base_url(url)
 
 
@@ -436,11 +436,11 @@ def test_rejected_url_shapes(url, error):
     ],
 )
 def test_cloud_metadata_endpoints_are_always_refused(url, monkeypatch):
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url(url)
     # Also refused with the private-address opt-in on.
     monkeypatch.setenv(BLOCK_PRIVATE_ENV, "1")
-    with pytest.raises(ValueError, match = "metadata"):
+    with pytest.raises(ValueError, match="metadata"):
         validate_provider_base_url(url)
 
 
@@ -465,7 +465,7 @@ def test_private_targets_blocked_only_with_the_opt_in(url, monkeypatch):
         "getaddrinfo",
         lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 80))],
     )
-    with pytest.raises(ValueError, match = "private address"):
+    with pytest.raises(ValueError, match="private address"):
         validate_provider_base_url(url)
 
 

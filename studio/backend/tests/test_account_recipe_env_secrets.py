@@ -24,7 +24,7 @@ from utils.account_context import AccountContext, OWNER, run_as
 ALICE = AccountContext("alice-secret-account", "alice")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def multi(monkeypatch):
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
     monkeypatch.setattr(jobs, "_retired", set())
@@ -97,8 +97,8 @@ def test_child_scrubs_model_provider_secrets(monkeypatch):
     ctx = multiprocessing.get_context("spawn")
     result_queue = ctx.Queue()
     process = ctx.Process(
-        target = jobs.run_account_child,
-        kwargs = {
+        target=jobs.run_account_child,
+        kwargs={
             "account": ALICE,
             "job_module": __name__,
             "job_target": "_provider_secret_probe",
@@ -107,13 +107,13 @@ def test_child_scrubs_model_provider_secrets(monkeypatch):
     )
     process.start()
     try:
-        result = result_queue.get(timeout = 60)
-        process.join(timeout = 10)
+        result = result_queue.get(timeout=60)
+        process.join(timeout=10)
         assert process.exitcode == 0
     finally:
         if process.is_alive():
             process.terminate()
-            process.join(timeout = 5)
+            process.join(timeout=5)
         result_queue.close()
     assert all(value is None for value in result.values()), result
     assert os.environ["OPENAI_API_KEY"] == "owner-OPENAI_API_KEY"

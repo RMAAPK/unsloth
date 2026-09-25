@@ -107,7 +107,7 @@ _kv_spec.loader.exec_module(_kv_mod)
 _make_gguf_bytes = _kv_mod._make_gguf_bytes
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _side_effect_caches_are_clean():
     """Both module caches are TTL'd, not per-request, so they leak across tests."""
     ri._estimate_files_cache.clear()
@@ -139,32 +139,32 @@ def side_effect_gguf(tmp_path) -> str:
     return str(path)
 
 
-def _run_estimate(fastapi_request = None, **kwargs):
+def _run_estimate(fastapi_request=None, **kwargs):
     """Call the route directly, bypassing the auth dependency."""
     return asyncio.run(
         ri.estimate_memory(
             EstimateMemoryRequest(**kwargs),
-            fastapi_request = fastapi_request,
-            current_subject = "test",
+            fastapi_request=fastapi_request,
+            current_subject="test",
         )
     )
 
 
 def _request_carrying_slots(slots: int):
     """A stand-in for the FastAPI request carrying the server's slot default."""
-    return SimpleNamespace(app = SimpleNamespace(state = SimpleNamespace(llama_parallel_slots = slots)))
+    return SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(llama_parallel_slots=slots)))
 
 
 def _priced_locally(monkeypatch, gguf_path: str):
     """Pin the route onto a local header so only the property under test moves."""
     config = SimpleNamespace(
-        identifier = "local/model",
-        gguf_file = gguf_path,
-        is_gguf = True,
-        gguf_mmproj_file = None,
-        gguf_mtp_file = None,
-        gguf_dspark_file = None,
-        gguf_dflash_file = None,
+        identifier="local/model",
+        gguf_file=gguf_path,
+        is_gguf=True,
+        gguf_mmproj_file=None,
+        gguf_mtp_file=None,
+        gguf_dspark_file=None,
+        gguf_dflash_file=None,
     )
     monkeypatch.setattr(ri, "_cached_estimate_config", lambda *a, **kw: config)
     monkeypatch.setattr(ri, "_gguf_resident_file_gb", lambda cfg, **kw: 2.0)
@@ -184,7 +184,7 @@ def _pin_on_disk(monkeypatch):
         ri,
         "_estimate_disk_residency",
         lambda _id: getattr(ri, "_ESTIMATE_DISK_PRESENT", "present"),
-        raising = False,
+        raising=False,
     )
 
 
@@ -196,6 +196,7 @@ def _hub_offline_now() -> bool:
     the honest observable for "would this call have gone to the network".
     """
     import huggingface_hub.constants as _hf_constants
+
     return bool(_hf_constants.HF_HUB_OFFLINE)
 
 
@@ -215,7 +216,7 @@ class TestTheOnDiskGateAndTheNetwork:
             raise ModuleNotFoundError("No module named 'structlog'")
 
         monkeypatch.setattr(
-            ri, "_estimate_hf_cache_roots", ri._estimate_hf_cache_roots, raising = False
+            ri, "_estimate_hf_cache_roots", ri._estimate_hf_cache_roots, raising=False
         )
         import hub.utils.hf_cache_state as _state
         import utils.hf_cache_settings as _settings
@@ -257,7 +258,7 @@ class TestTheOnDiskGateAndTheNetwork:
 
         monkeypatch.setattr(ri.ModelConfig, "from_identifier", staticmethod(_fake_from_identifier))
 
-        resp = _run_estimate(model_path = "org/definitely-not-cached")
+        resp = _run_estimate(model_path="org/definitely-not-cached")
         assert resp.available is False
         assert offline_at_each_call, "the resolution never ran at all"
         assert False not in offline_at_each_call, (
@@ -308,7 +309,7 @@ class TestTheOnDiskGateAndTheNetwork:
             return sorted(str(p.relative_to(hub_cache)) for p in hub_cache.rglob("*"))
 
         before = _snapshot()
-        resp = _run_estimate(model_path = "org/definitely-not-cached-side-effects")
+        resp = _run_estimate(model_path="org/definitely-not-cached-side-effects")
         assert resp.available is False
 
         after = _snapshot()
@@ -341,7 +342,7 @@ class TestTheOnDiskGateAndTheNetwork:
             pytest.skip("root reads through any mode")
 
         root = tmp_path / "locked"
-        (root / "models--org--Model-GGUF" / "snapshots" / "rev1").mkdir(parents = True)
+        (root / "models--org--Model-GGUF" / "snapshots" / "rev1").mkdir(parents=True)
         root.chmod(0o000)
         try:
             monkeypatch.setattr(ri, "_estimate_hf_cache_roots", lambda: [root])
@@ -365,7 +366,7 @@ class TestTheOnDiskGateAndTheNetwork:
 
         other_root = tmp_path / "legacy"
         snap = other_root / "models--org--Model-GGUF" / "snapshots" / "rev1"
-        snap.mkdir(parents = True)
+        snap.mkdir(parents=True)
         (snap / "model.gguf").write_bytes(b"\0" * 8)
 
         monkeypatch.setattr(ri, "_estimate_hf_cache_roots", lambda: [other_root])
@@ -381,7 +382,7 @@ class TestTheOnDiskGateAndTheNetwork:
             return None
 
         monkeypatch.setattr(ri.ModelConfig, "from_identifier", staticmethod(_fake_from_identifier))
-        _run_estimate(model_path = "org/Model-GGUF")
+        _run_estimate(model_path="org/Model-GGUF")
         assert offline_at_each_call, "the resolution never ran"
         # Deliberately NOT asserted as a fix: a repo that is genuinely present but
         # whose metadata lives elsewhere is the one case the online retry exists for.
@@ -528,9 +529,9 @@ class TestSlotResolutionStaysOffTheEventLoop:
         async def _drive():
             loop_thread = threading.get_ident()
             resp = await ri.estimate_memory(
-                EstimateMemoryRequest(model_path = side_effect_gguf, n_ctx = 4096),
-                fastapi_request = _request_carrying_slots(4),
-                current_subject = "test",
+                EstimateMemoryRequest(model_path=side_effect_gguf, n_ctx=4096),
+                fastapi_request=_request_carrying_slots(4),
+                current_subject="test",
             )
             return loop_thread, resp
 
@@ -554,9 +555,9 @@ class TestSlotResolutionStaysOffTheEventLoop:
             staticmethod(lambda *a, **kw: {"found": True, "supports_kv_unified": True}),
         )
         resp = _run_estimate(
-            fastapi_request = _request_carrying_slots(4),
-            model_path = side_effect_gguf,
-            n_ctx = 4096,
+            fastapi_request=_request_carrying_slots(4),
+            model_path=side_effect_gguf,
+            n_ctx=4096,
         )
         assert resp.n_parallel == 4, (
             "the server's published slot default was lost; blank Parallel Slots must "
@@ -594,7 +595,7 @@ class TestTheRequestParameterAnnotation:
             return {"injected": type(fastapi_request).__name__}
 
         with TestClient(app) as client:
-            body = client.post("/probe", json = {"model_path": "x"}).json()
+            body = client.post("/probe", json={"model_path": "x"}).json()
         assert body["injected"] == "Request"
 
     def test_optional_request_would_break_route_registration(self):
@@ -645,7 +646,7 @@ class TestEstimateCachesUnderConcurrency:
         class _FakeModelConfig:
             @staticmethod
             def from_identifier(*, model_id, **kw):
-                return SimpleNamespace(identifier = model_id, is_gguf = True)
+                return SimpleNamespace(identifier=model_id, is_gguf=True)
 
         monkeypatch.setattr(ri, "ModelConfig", _FakeModelConfig)
 
@@ -662,7 +663,7 @@ class TestEstimateCachesUnderConcurrency:
             except Exception as exc:  # noqa: BLE001 - the point is that none escape
                 errors.append(exc)
 
-        workers = [threading.Thread(target = _worker, args = (n,)) for n in range(threads)]
+        workers = [threading.Thread(target=_worker, args=(n,)) for n in range(threads)]
         for w in workers:
             w.start()
         for w in workers:
@@ -691,16 +692,16 @@ class TestEstimateCachesUnderConcurrency:
                 for i in range(40):
                     ri._gguf_resident_file_gb(
                         SimpleNamespace(
-                            identifier = f"org/files-{(n + i) % keys}",
-                            gguf_file = None,
-                            gguf_variant = None,
+                            identifier=f"org/files-{(n + i) % keys}",
+                            gguf_file=None,
+                            gguf_variant=None,
                         ),
                     )
                     sizes.append(len(ri._estimate_files_cache))
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
-        workers = [threading.Thread(target = _worker, args = (n,)) for n in range(threads)]
+        workers = [threading.Thread(target=_worker, args=(n,)) for n in range(threads)]
         for w in workers:
             w.start()
         for w in workers:
@@ -723,7 +724,7 @@ class TestEstimateCachesUnderConcurrency:
         # scheduler: every caller that gets here must arrive before any of them may
         # leave. If a single-flight is ever added, fewer than `threads` arrive and this
         # breaks rather than passing by luck.
-        inside = threading.Barrier(threads, timeout = 30)
+        inside = threading.Barrier(threads, timeout=30)
 
         class _CountingModelConfig:
             @staticmethod
@@ -731,7 +732,7 @@ class TestEstimateCachesUnderConcurrency:
                 with lock:
                     resolutions.append(model_id)
                 inside.wait()
-                return SimpleNamespace(identifier = model_id, is_gguf = True)
+                return SimpleNamespace(identifier=model_id, is_gguf=True)
 
         monkeypatch.setattr(ri, "ModelConfig", _CountingModelConfig)
 
@@ -744,7 +745,7 @@ class TestEstimateCachesUnderConcurrency:
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
-        workers = [threading.Thread(target = _worker) for _ in range(threads)]
+        workers = [threading.Thread(target=_worker) for _ in range(threads)]
         for w in workers:
             w.start()
         for w in workers:
@@ -766,7 +767,7 @@ class TestEstimateCachesUnderConcurrency:
         monkeypatch.setattr(
             ri,
             "time",
-            SimpleNamespace(monotonic = lambda: clock["t"], time = time.time),
+            SimpleNamespace(monotonic=lambda: clock["t"], time=time.time),
         )
 
         resolutions = []
@@ -777,7 +778,7 @@ class TestEstimateCachesUnderConcurrency:
             def from_identifier(*, model_id, **kw):
                 resolutions.append(model_id)
                 clock["t"] += slow  # the resolution really did take this long
-                return SimpleNamespace(identifier = model_id, is_gguf = True)
+                return SimpleNamespace(identifier=model_id, is_gguf=True)
 
         monkeypatch.setattr(ri, "ModelConfig", _SlowModelConfig)
 
@@ -797,7 +798,7 @@ class TestEstimateCachesUnderConcurrency:
         # re-walks it on every tick.
         clock = {"t": 5000.0}
         monkeypatch.setattr(
-            ri, "time", SimpleNamespace(monotonic = lambda: clock["t"], time = time.time)
+            ri, "time", SimpleNamespace(monotonic=lambda: clock["t"], time=time.time)
         )
         walks = []
         slow = ri._ESTIMATE_FILES_TTL_SECONDS + 10.0
@@ -810,7 +811,7 @@ class TestEstimateCachesUnderConcurrency:
         monkeypatch.setattr(ri, "_estimate_gguf_required_gb", _slow_required)
         monkeypatch.setattr(ri, "_remote_gguf_compute_reserve_gb", lambda **kw: 0.5)
 
-        config = SimpleNamespace(identifier = "org/many-shards", gguf_file = None, gguf_variant = None)
+        config = SimpleNamespace(identifier="org/many-shards", gguf_file=None, gguf_variant=None)
         ri._gguf_resident_file_gb(config)
         assert len(walks) == 1
         ri._gguf_resident_file_gb(config)
@@ -834,12 +835,12 @@ class TestTokenAndSubjectIsolation:
             def from_identifier(
                 *,
                 model_id,
-                hf_token = None,
+                hf_token=None,
                 **kw,
             ):
                 if hf_token is None:
                     raise PermissionError("gated repo needs a token")
-                return SimpleNamespace(identifier = model_id, is_gguf = True, resolved_with = hf_token)
+                return SimpleNamespace(identifier=model_id, is_gguf=True, resolved_with=hf_token)
 
         monkeypatch.setattr(ri, "ModelConfig", _PerTokenModelConfig)
 
@@ -875,8 +876,8 @@ class TestTokenAndSubjectIsolation:
             ri,
             "ModelConfig",
             SimpleNamespace(
-                from_identifier = staticmethod(
-                    lambda *, model_id, **kw: SimpleNamespace(identifier = model_id, is_gguf = True)
+                from_identifier=staticmethod(
+                    lambda *, model_id, **kw: SimpleNamespace(identifier=model_id, is_gguf=True)
                 )
             ),
         )
@@ -898,11 +899,11 @@ class TestTokenAndSubjectIsolation:
             def from_identifier(
                 *,
                 model_id,
-                drafter_accept = None,
+                drafter_accept=None,
                 **kw,
             ):
                 seen.append(drafter_accept is not None)
-                return SimpleNamespace(identifier = model_id, is_gguf = True)
+                return SimpleNamespace(identifier=model_id, is_gguf=True)
 
         monkeypatch.setattr(ri, "ModelConfig", _GrantAwareModelConfig)
 
@@ -974,9 +975,9 @@ class TestNoDeviceIsTouched:
 
         _priced_locally(monkeypatch, side_effect_gguf)
         resp = _run_estimate(
-            fastapi_request = _request_carrying_slots(1),
-            model_path = side_effect_gguf,
-            n_ctx = 8192,
+            fastapi_request=_request_carrying_slots(1),
+            model_path=side_effect_gguf,
+            n_ctx=8192,
         )
         assert resp.available is True
         assert touched == [], f"the estimate touched the GPU: {touched}"

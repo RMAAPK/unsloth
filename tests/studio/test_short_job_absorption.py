@@ -47,7 +47,7 @@ BACKEND_CI = WORKFLOWS / "studio-backend-ci.yml"
 
 
 def _doc(path: Path) -> dict:
-    return yaml.safe_load(path.read_text(encoding = "utf-8")) or {}
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
 def _steps(path: Path):
@@ -155,7 +155,7 @@ def test_backend_ci_still_runs_the_file_the_ubuntu_leg_used_to() -> None:
     One line added to that job's --ignore list would remove the coverage on every
     platform at once, and no test would fail.
     """
-    text = BACKEND_CI.read_text(encoding = "utf-8")
+    text = BACKEND_CI.read_text(encoding="utf-8")
     assert "test_export_capability" not in text, (
         "studio-backend-ci.yml now names tests/test_export_capability.py, which almost "
         "certainly means it is being ignored or deselected. The ubuntu leg of "

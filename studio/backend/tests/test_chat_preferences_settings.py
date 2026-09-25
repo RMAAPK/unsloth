@@ -59,16 +59,16 @@ def test_route_round_trip_and_migration(monkeypatch):
     client = TestClient(app)
 
     assert client.get("/chat-preferences").json() == {"show_model_disclaimer": False}
-    assert client.post("/chat-preferences/migrate", json = {}).json() == {
+    assert client.post("/chat-preferences/migrate", json={}).json() == {
         "show_model_disclaimer": False
     }
     assert client.post(
-        "/chat-preferences/migrate", json = {"show_model_disclaimer": True}
+        "/chat-preferences/migrate", json={"show_model_disclaimer": True}
     ).json() == {"show_model_disclaimer": True}
     assert client.post(
-        "/chat-preferences/migrate", json = {"show_model_disclaimer": False}
+        "/chat-preferences/migrate", json={"show_model_disclaimer": False}
     ).json() == {"show_model_disclaimer": True}
-    assert client.put("/chat-preferences", json = {"show_model_disclaimer": False}).json() == {
+    assert client.put("/chat-preferences", json={"show_model_disclaimer": False}).json() == {
         "show_model_disclaimer": False
     }
-    assert client.put("/chat-preferences", json = {"show_model_disclaimer": "yes"}).status_code == 422
+    assert client.put("/chat-preferences", json={"show_model_disclaimer": "yes"}).status_code == 422

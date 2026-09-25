@@ -19,6 +19,7 @@ try:
         _kid = ""
         try:
             from ipykernel import get_connection_file  # type: ignore
+
             _kid = os.path.splitext(os.path.basename(get_connection_file()))[0]
         except Exception:
             _kid = ""
@@ -35,12 +36,15 @@ try:
     unsloth_nb_pip_magic.register_ipython()
 except Exception as _e:  # never break a kernel because of the helper
     import sys
-    print(f"[unsloth-nb] startup hook skipped: {_e!r}", file = sys.stderr)
+
+    print(f"[unsloth-nb] startup hook skipped: {_e!r}", file=sys.stderr)
 
 # separate try/except, so neither hook can disable the other
 try:
     import unsloth_colab_compat
+
     unsloth_colab_compat.register_ipython()
 except Exception as _e:  # never break a kernel because of the helper
     import sys
-    print(f"[unsloth-nb] colab-compat hook skipped: {_e!r}", file = sys.stderr)
+
+    print(f"[unsloth-nb] colab-compat hook skipped: {_e!r}", file=sys.stderr)

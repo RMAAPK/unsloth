@@ -103,14 +103,14 @@ def _spawn(code, **extra_env):
         path.append(os.environ["PYTHONPATH"])
     return subprocess.run(
         [sys.executable, "-c", code],
-        capture_output = True,
-        text = True,
-        env = dict(os.environ, PYTHONPATH = os.pathsep.join(path), **extra_env),
-        timeout = 1800,
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, PYTHONPATH=os.pathsep.join(path), **extra_env),
+        timeout=1800,
     )
 
 
-def _collect(injection = ""):
+def _collect(injection=""):
     """The real import, in a fresh interpreter, reported as plain data.
 
     A host with no accelerator at all cannot finish `import unsloth` without
@@ -118,10 +118,10 @@ def _collect(injection = ""):
     one symptom rather than probing the host keeps this free of any assumption
     about which accelerator (or operating system) is present.
     """
-    code = _CHILD.format(injection = injection, begin = _BEGIN, end = _END)
+    code = _CHILD.format(injection=injection, begin=_BEGIN, end=_END)
     result = _spawn(code)
     if result.returncode != 0 and any(m in result.stderr for m in _NO_ACCELERATOR):
-        result = _spawn(code, UNSLOTH_ALLOW_CPU = "1")
+        result = _spawn(code, UNSLOTH_ALLOW_CPU="1")
     if result.returncode != 0 or _BEGIN not in result.stdout:
         raise AssertionError(
             "could not import unsloth to read the temporary patch outcomes\n"
@@ -146,7 +146,7 @@ def _assert_no_patch_raised(report):
     )
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def _clean_report():
     return _collect()
 
@@ -221,7 +221,7 @@ _utils._run_temporary_patches("post_compile")
 
 
 def test_mutation_control_a_patch_that_only_breaks_at_compile_time_turns_the_gate_red():
-    report = _collect(injection = _RAISES_ONLY_AT_COMPILE_TIME)
+    report = _collect(injection=_RAISES_ONLY_AT_COMPILE_TIME)
     assert (
         "_mutation_control_patch_quiet_until_compile" in report["init"]["completed"]
     ), "the control has to be quiet during import, or it proves nothing about the compile passes"
@@ -233,7 +233,7 @@ def test_mutation_control_a_patch_that_only_breaks_at_compile_time_turns_the_gat
 
 
 def test_mutation_control_a_raising_patch_turns_the_gate_red():
-    report = _collect(injection = _RAISES)
+    report = _collect(injection=_RAISES)
     with pytest.raises(AssertionError) as caught:
         _assert_no_patch_raised(report)
     message = str(caught.value)
@@ -242,7 +242,7 @@ def test_mutation_control_a_raising_patch_turns_the_gate_red():
 
 
 def test_mutation_control_a_cleanly_declining_patch_does_not():
-    report = _collect(injection = _DECLINES)
+    report = _collect(injection=_DECLINES)
     _assert_no_patch_raised(report)
     assert (
         "_mutation_control_patch_that_declines" in report["init"]["completed"]
@@ -264,7 +264,7 @@ class _CollectingLogger:
 
 
 def _isolated(patches, logger, outcomes):
-    source = _UTILS.read_text(encoding = "utf-8")
+    source = _UTILS.read_text(encoding="utf-8")
     tree = ast.parse(source)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "_run_temporary_patches":
@@ -413,7 +413,7 @@ def test_an_unnamed_callable_does_not_break_the_recording():
 def test_the_recording_is_wired_into_the_patch_loop():
     # DRIFT: the gate is only as good as its wiring, and a refactor that drops
     # these lines would leave every test above green while recording nothing.
-    source = _UTILS.read_text(encoding = "utf-8")
+    source = _UTILS.read_text(encoding="utf-8")
     tree = ast.parse(source)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "_run_temporary_patches":

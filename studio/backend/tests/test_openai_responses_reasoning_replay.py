@@ -69,22 +69,22 @@ def _client(
 ):
     def handler(request: httpx.Request) -> httpx.Response:
         captured["body"] = json.loads(request.content.decode("utf-8"))
-        return httpx.Response(200, content = body, headers = {"content-type": "text/event-stream"})
+        return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
 
     monkeypatch.setattr(
-        ep_mod, "_http_client", httpx.AsyncClient(transport = httpx.MockTransport(handler))
+        ep_mod, "_http_client", httpx.AsyncClient(transport=httpx.MockTransport(handler))
     )
     return ExternalProviderClient(
-        provider_type = "openai",
-        base_url = "https://api.openai.com/v1",
-        api_key = "k",
+        provider_type="openai",
+        base_url="https://api.openai.com/v1",
+        api_key="k",
     )
 
 
 def _run(client, messages):
     async def go():
         lines = [
-            line async for line in client.stream_chat_completion(messages = messages, model = "gpt-5.1")
+            line async for line in client.stream_chat_completion(messages=messages, model="gpt-5.1")
         ]
         await client.close()
         return lines

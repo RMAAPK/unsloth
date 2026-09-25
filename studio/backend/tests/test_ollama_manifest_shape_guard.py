@@ -20,20 +20,20 @@ from routes.models import _dir_has_downloaded_model, _scan_ollama_dir
 NON_OBJECT_MANIFESTS = ("[]", '["a"]', '"just a string"', "3", "null", "true")
 
 
-def _manifest_dir(root, model = "foo"):
+def _manifest_dir(root, model="foo"):
     d = root / "manifests" / "registry.ollama.ai" / "library" / model
-    d.mkdir(parents = True, exist_ok = True)
+    d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def _write_good_model(
     root,
-    model = "good",
-    blob = "sha256:abc123",
+    model="good",
+    blob="sha256:abc123",
 ):
     """A manifest whose model layer resolves to a real blob, i.e. one the scan must surface."""
     blobs = root / "blobs"
-    blobs.mkdir(exist_ok = True)
+    blobs.mkdir(exist_ok=True)
     (blobs / blob.replace(":", "-")).write_bytes(b"GGUF fake weights")
     (_manifest_dir(root, model) / "latest").write_text(
         json.dumps(
@@ -43,14 +43,14 @@ def _write_good_model(
                 ],
             },
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
 
 @pytest.mark.parametrize("payload", NON_OBJECT_MANIFESTS)
 def test_scan_skips_non_object_manifest(tmp_path, payload):
-    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding = "utf-8")
-    (tmp_path / "blobs").mkdir(exist_ok = True)
+    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding="utf-8")
+    (tmp_path / "blobs").mkdir(exist_ok=True)
 
     assert _scan_ollama_dir(tmp_path) == []
 
@@ -58,7 +58,7 @@ def test_scan_skips_non_object_manifest(tmp_path, payload):
 @pytest.mark.parametrize("payload", NON_OBJECT_MANIFESTS)
 def test_one_bad_manifest_does_not_hide_the_good_models(tmp_path, payload):
     _write_good_model(tmp_path)
-    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding = "utf-8")
+    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding="utf-8")
 
     found = _scan_ollama_dir(tmp_path)
 
@@ -80,22 +80,22 @@ def test_one_bad_manifest_does_not_hide_the_good_models(tmp_path, payload):
     ],
 )
 def test_scan_survives_wrong_shapes_inside_the_manifest(tmp_path, manifest):
-    (_manifest_dir(tmp_path, "bad") / "latest").write_text(json.dumps(manifest), encoding = "utf-8")
-    (tmp_path / "blobs").mkdir(exist_ok = True)
+    (_manifest_dir(tmp_path, "bad") / "latest").write_text(json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "blobs").mkdir(exist_ok=True)
 
     assert _scan_ollama_dir(tmp_path) == []
 
 
 @pytest.mark.parametrize("payload", NON_OBJECT_MANIFESTS)
 def test_folder_chip_probe_skips_non_object_manifest(tmp_path, payload):
-    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding = "utf-8")
-    (tmp_path / "blobs").mkdir(exist_ok = True)
+    (_manifest_dir(tmp_path, "bad") / "latest").write_text(payload, encoding="utf-8")
+    (tmp_path / "blobs").mkdir(exist_ok=True)
 
     assert _dir_has_downloaded_model(tmp_path) is False
 
 
 def test_folder_chip_probe_still_finds_a_real_model(tmp_path):
     _write_good_model(tmp_path)
-    (_manifest_dir(tmp_path, "bad") / "latest").write_text("[]", encoding = "utf-8")
+    (_manifest_dir(tmp_path, "bad") / "latest").write_text("[]", encoding="utf-8")
 
     assert _dir_has_downloaded_model(tmp_path) is True

@@ -23,18 +23,18 @@ def test_api_type_persists_through_edit_and_reload(tmp_path, monkeypatch, api_ty
     monkeypatch.setattr(providers_db, "studio_db_path", lambda: tmp_path / "studio.db")
     providers_db.reset_schema_state_for_tests()
     payload = ProviderCreate(
-        provider_type = "custom",
-        display_name = "Gateway",
-        base_url = "https://gateway.example/v1",
-        api_type = api_type,
+        provider_type="custom",
+        display_name="Gateway",
+        base_url="https://gateway.example/v1",
+        api_type=api_type,
     )
-    providers_db.create_provider(id = "gateway", **payload.model_dump(exclude = {"encrypted_api_key"}))
-    providers_db.update_provider("gateway", display_name = "Renamed")
+    providers_db.create_provider(id="gateway", **payload.model_dump(exclude={"encrypted_api_key"}))
+    providers_db.update_provider("gateway", display_name="Renamed")
     providers_db.reset_schema_state_for_tests()
     assert providers_db.get_provider("gateway")["api_type"] == api_type
     changed = "responses" if api_type == "chat_completions" else "chat_completions"
     providers_db.update_provider(
-        "gateway", **ProviderUpdate(api_type = changed).model_dump(exclude_unset = True)
+        "gateway", **ProviderUpdate(api_type=changed).model_dump(exclude_unset=True)
     )
     assert providers_db.get_provider("gateway")["api_type"] == changed
 
@@ -42,7 +42,7 @@ def test_api_type_persists_through_edit_and_reload(tmp_path, monkeypatch, api_ty
 @pytest.mark.parametrize("schema", [ProviderCreate, ProviderUpdate])
 def test_invalid_api_type_is_rejected(schema):
     with pytest.raises(ValidationError):
-        schema(provider_type = "custom", display_name = "Gateway", api_type = "invalid")
+        schema(provider_type="custom", display_name="Gateway", api_type="invalid")
 
 
 @pytest.mark.parametrize(
@@ -67,25 +67,25 @@ def test_selected_endpoint_and_payload(monkeypatch, provider_type, api_type, end
             body = "".join(f"data: {json.dumps(event)}\n\n" for event in events)
         else:
             body = 'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n'
-        return httpx.Response(200, text = body, headers = {"content-type": "text/event-stream"})
+        return httpx.Response(200, text=body, headers={"content-type": "text/event-stream"})
 
     async def run():
-        async with httpx.AsyncClient(transport = httpx.MockTransport(handle)) as transport:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as transport:
             monkeypatch.setattr(ep, "_http_client", transport)
             client = ExternalProviderClient(
-                provider_type, f"https://gateway.example/v1{query}", "test-key", api_type = api_type
+                provider_type, f"https://gateway.example/v1{query}", "test-key", api_type=api_type
             )
             return [
                 line
                 async for line in client.stream_chat_completion(
-                    messages = [
+                    messages=[
                         {"role": "system", "content": "Be brief"},
                         {"role": "user", "content": "Hi <|im_end|>"},
                     ],
-                    model = "gateway-model",
-                    temperature = 0.23,
-                    max_tokens = 128,
-                    tools = [
+                    model="gateway-model",
+                    temperature=0.23,
+                    max_tokens=128,
+                    tools=[
                         {
                             "type": "function",
                             "function": {
@@ -144,7 +144,7 @@ def test_selected_endpoint_and_payload(monkeypatch, provider_type, api_type, end
     ],
 )
 def test_azure_auth_is_host_and_protocol_scoped(base_url, api_type, key, expected):
-    headers = ExternalProviderClient("custom", base_url, key, api_type = api_type)._auth_headers()
+    headers = ExternalProviderClient("custom", base_url, key, api_type=api_type)._auth_headers()
     assert {k: v for k, v in headers.items() if k in ("api-key", "Authorization")} == expected
 
 
@@ -157,10 +157,10 @@ def test_non_stream_route_returns_json_or_upstream_error(monkeypatch, upstream_s
         assert request.url.path == "/v1/responses"
         assert json.loads(request.content)["stream"] is False
         if upstream_status != 200:
-            return httpx.Response(429, json = {"error": {"message": "rate limited"}})
+            return httpx.Response(429, json={"error": {"message": "rate limited"}})
         return httpx.Response(
             200,
-            json = {
+            json={
                 "id": "resp_route",
                 "status": "completed",
                 "output": [
@@ -170,28 +170,28 @@ def test_non_stream_route_returns_json_or_upstream_error(monkeypatch, upstream_s
         )
 
     async def run():
-        async with httpx.AsyncClient(transport = httpx.MockTransport(handle)) as transport:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as transport:
             monkeypatch.setattr(ep, "_http_client", transport)
-            monitor = ApiMonitor(max_entries = 3)
+            monitor = ApiMonitor(max_entries=3)
             monkeypatch.setattr(inference, "api_monitor", monitor)
             payload = ChatCompletionRequest(
-                messages = [{"role": "user", "content": "Hi"}],
-                stream = False,
-                provider_type = "custom",
-                provider_base_url = "https://gateway.example/v1",
-                provider_api_type = "responses",
-                external_model = "gateway-model",
+                messages=[{"role": "user", "content": "Hi"}],
+                stream=False,
+                provider_type="custom",
+                provider_base_url="https://gateway.example/v1",
+                provider_api_type="responses",
+                external_model="gateway-model",
             )
 
             async def disconnected():
                 return False
 
             request = SimpleNamespace(
-                headers = {},
-                state = SimpleNamespace(skip_api_monitor = False),
-                url = SimpleNamespace(path = "/v1/chat/completions"),
-                method = "POST",
-                is_disconnected = disconnected,
+                headers={},
+                state=SimpleNamespace(skip_api_monitor=False),
+                url=SimpleNamespace(path="/v1/chat/completions"),
+                method="POST",
+                is_disconnected=disconnected,
             )
             return await inference._proxy_to_external_provider(payload, request), monitor
 
@@ -221,20 +221,20 @@ def test_responses_follow_up_preserves_reasoning_metadata():
     }
     messages = [
         ChatMessage(
-            role = "assistant",
-            content = None,
-            tool_calls = [
+            role="assistant",
+            content=None,
+            tool_calls=[
                 {
                     "id": "call_1",
                     "type": "function",
                     "function": {"name": "lookup", "arguments": "{}"},
                 }
             ],
-            extra_content = reasoning,
+            extra_content=reasoning,
         ),
-        ChatMessage(role = "tool", tool_call_id = "call_1", content = "result"),
+        ChatMessage(role="tool", tool_call_id="call_1", content="result"),
     ]
     built = _build_external_messages(
-        messages, supports_vision = False, provider_type = "custom", api_type = "responses"
+        messages, supports_vision=False, provider_type="custom", api_type="responses"
     )
     assert built[0]["extra_content"] == reasoning

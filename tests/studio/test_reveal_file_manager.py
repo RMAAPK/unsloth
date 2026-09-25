@@ -38,7 +38,7 @@ if _REPO_ROOT is None:
     pytest.skip(
         "Could not locate studio/backend. Set UNSLOTH_REPO_ROOT or run from "
         "the repository checkout.",
-        allow_module_level = True,
+        allow_module_level=True,
     )
 
 _STUDIO_BACKEND = _REPO_ROOT / "studio" / "backend"
@@ -51,7 +51,7 @@ pytest.importorskip("huggingface_hub")
 try:
     from utils.paths import path_utils
 except Exception as exc:
-    pytest.skip(f"studio backend import unavailable: {exc}", allow_module_level = True)
+    pytest.skip(f"studio backend import unavailable: {exc}", allow_module_level=True)
 
 _WINDOWS_PATH = r"\\wsl.localhost\Distro\cache\model.gguf"
 
@@ -64,13 +64,13 @@ def linux_host(monkeypatch):
 
 @pytest.fixture()
 def spawned(monkeypatch):
-    calls = types.SimpleNamespace(run = [], popen = [], run_error = None)
+    calls = types.SimpleNamespace(run=[], popen=[], run_error=None)
 
     def fake_run(cmd, **kwargs):
         calls.run.append(list(cmd))
         if calls.run_error is not None:
             raise calls.run_error
-        return types.SimpleNamespace(stdout = _WINDOWS_PATH + "\n")
+        return types.SimpleNamespace(stdout=_WINDOWS_PATH + "\n")
 
     def fake_popen(cmd, **kwargs):
         calls.popen.append(list(cmd))
@@ -109,7 +109,7 @@ def test_wsl_empty_conversion_falls_back_to_xdg_open(linux_host, spawned, monkey
     monkeypatch.setattr(path_utils, "_IS_WSL", True)
 
     def empty_run(cmd, **kwargs):
-        return types.SimpleNamespace(stdout = "\n")
+        return types.SimpleNamespace(stdout="\n")
 
     monkeypatch.setattr(subprocess, "run", empty_run)
     path_utils.reveal_in_file_manager(tmp_path)

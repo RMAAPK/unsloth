@@ -77,7 +77,7 @@ def _imported_third_party() -> dict[str, set[str]]:
     local = _local_names()
     found: dict[str, set[str]] = {}
     for path in sorted(TESTS.glob("test_*.py")):
-        tree = ast.parse(path.read_text(encoding = "utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         # `pytest.importorskip("x")` is the suite's own way of saying a module
         # is optional, so it is not a claim on the install line.
         guarded = {
@@ -103,7 +103,7 @@ def _imported_third_party() -> dict[str, set[str]]:
 
 
 def _install_line() -> str:
-    text = WORKFLOW.read_text(encoding = "utf-8")
+    text = WORKFLOW.read_text(encoding="utf-8")
     step = text.index("- name: Test the harness")
     body = text[step : text.index("\n      - name:", step + 1)]
     matches = re.findall(r"pip install[^\n]*", body)
@@ -141,7 +141,7 @@ def test_the_scan_looks_inside_functions_and_not_only_at_module_level():
     imports `datasets` inside two test bodies and nowhere else, so a
     module-level-only scan reports a clean tree and the step still loses two
     tests."""
-    source = (TESTS / "test_vision_run.py").read_text(encoding = "utf-8")
+    source = (TESTS / "test_vision_run.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     module_level = {
         alias.name.split(".")[0]

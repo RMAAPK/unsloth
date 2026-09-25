@@ -29,8 +29,8 @@ class _Sibling:
     def __init__(
         self,
         rfilename,
-        size = 0,
-        blob_id = None,
+        size=0,
+        blob_id=None,
     ):
         self.rfilename = rfilename
         self.size = size
@@ -41,9 +41,9 @@ class _Info:
     def __init__(
         self,
         siblings,
-        sha = "abc123",
-        gated = False,
-        private = False,
+        sha="abc123",
+        gated=False,
+        private=False,
     ):
         self.siblings = siblings
         self.sha = sha
@@ -66,7 +66,7 @@ def _gguf_repo_info():
     )
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _clean_slot():
     from core.inference import local_model_resolver
 
@@ -84,11 +84,13 @@ def _clean_slot():
 
 def _repo_not_found_error():
     from huggingface_hub.utils import RepositoryNotFoundError
+
     return RepositoryNotFoundError
 
 
 def _gated_error():
     from huggingface_hub.utils import GatedRepoError
+
     return GatedRepoError
 
 
@@ -103,17 +105,19 @@ def _hub_error(error_type, status_code: int, message: str):
         exc = error_type(message)
     except TypeError:
         import httpx
+
         exc = error_type(
             message,
-            response = httpx.Response(
+            response=httpx.Response(
                 status_code,
-                request = httpx.Request("GET", "https://huggingface.co/api/models/org/repo"),
+                request=httpx.Request("GET", "https://huggingface.co/api/models/org/repo"),
             ),
         )
     if getattr(getattr(exc, "response", None), "status_code", None) != status_code:
         from types import SimpleNamespace
+
         try:
-            exc.response = SimpleNamespace(status_code = status_code)
+            exc.response = SimpleNamespace(status_code=status_code)
         except AttributeError:
             pass
     return exc
@@ -159,7 +163,7 @@ def hub(monkeypatch):
     }
 
     class _FakeApi:
-        def __init__(self, token = None):
+        def __init__(self, token=None):
             state["token"] = token
 
         def model_info(self, repo_id, **kwargs):
@@ -172,9 +176,9 @@ def hub(monkeypatch):
 
     async def _start(
         body,
-        hf_token = None,
+        hf_token=None,
         *,
-        allow_ambient_token = True,
+        allow_ambient_token=True,
     ):
         state["started"].append((body.repo_id, body.gguf_variant, hf_token))
         state["allow_ambient"] = allow_ambient_token
@@ -193,13 +197,13 @@ def hub(monkeypatch):
     monkeypatch.setattr(auto_dl, "_auth_denied", lambda repo, token: state["auth_denied"])
     monkeypatch.setattr(
         "utils.security.consent._config_has_auto_map",
-        lambda repo, token = None: state["auto_map"],
+        lambda repo, token=None: state["auto_map"],
     )
     return state
 
 
-def _run(model, hf_token = None):
-    return asyncio.run(auto_dl.maybe_auto_download(model, hf_token = hf_token))
+def _run(model, hf_token=None):
+    return asyncio.run(auto_dl.maybe_auto_download(model, hf_token=hf_token))
 
 
 # --- pure helpers ------------------------------------------------------------
@@ -409,24 +413,24 @@ def test_an_anonymous_404_does_not_silence_an_authorised_caller(hub):
     assert hub["probes"] == 1
 
     hub["raise"] = None
-    refusal = _run("myorg/private-GGUF", hf_token = "hf_caller_own")
+    refusal = _run("myorg/private-GGUF", hf_token="hf_caller_own")
     assert hub["probes"] == 2
     assert refusal.code == "model_downloading"
 
 
 def test_the_cache_is_per_token(hub):
     hub["raise"] = _hub_error(_repo_not_found_error(), 404, "nope")
-    assert _run("myorg/private-GGUF", hf_token = "hf_a") is None
-    assert _run("myorg/private-GGUF", hf_token = "hf_a") is None
+    assert _run("myorg/private-GGUF", hf_token="hf_a") is None
+    assert _run("myorg/private-GGUF", hf_token="hf_a") is None
     assert hub["probes"] == 1
     # A different credential gets its own verdict.
-    assert _run("myorg/private-GGUF", hf_token = "hf_b") is None
+    assert _run("myorg/private-GGUF", hf_token="hf_b") is None
     assert hub["probes"] == 2
 
 
 def test_the_gated_message_names_the_header_that_actually_works(hub):
     # Auto-download never uses the server's token, so an Unsloth setting would loop the caller.
-    hub["info"] = _Info(_gguf_repo_info().siblings, gated = "manual")
+    hub["info"] = _Info(_gguf_repo_info().siblings, gated="manual")
     hub["auth_denied"] = True
     refusal = _run("meta-llama/Llama-2-7b-hf")
     assert "X-Unsloth-HF-Token" in refusal.message
@@ -441,7 +445,7 @@ def test_gated_repo_is_403(hub):
 
 def test_a_gated_repo_that_still_returns_metadata_is_403(hub):
     # Metadata for a gated repo is not file access, so report the licence gate, not custom code.
-    hub["info"] = _Info(_gguf_repo_info().siblings, gated = "manual")
+    hub["info"] = _Info(_gguf_repo_info().siblings, gated="manual")
     hub["auth_denied"] = True
     refusal = _run("meta-llama/Llama-2-7b-hf")
     assert refusal.status == 403 and refusal.code == "model_access_denied"
@@ -450,7 +454,7 @@ def test_a_gated_repo_that_still_returns_metadata_is_403(hub):
 
 
 def test_a_gated_repo_this_token_may_read_still_downloads(hub):
-    hub["info"] = _Info(_gguf_repo_info().siblings, gated = "manual")
+    hub["info"] = _Info(_gguf_repo_info().siblings, gated="manual")
     refusal = _run("meta-llama/Llama-2-7b-hf")
     assert refusal.code == "model_downloading"
     assert len(hub["started"]) == 1
@@ -531,9 +535,9 @@ def test_progress_is_scaled_to_a_percentage(monkeypatch):
 
     async def _fraction(
         repo_id,
-        variant = "",
-        expected_bytes = 0,
-        hf_token = None,
+        variant="",
+        expected_bytes=0,
+        hf_token=None,
     ):
         return {"progress": 0.492}
 
@@ -556,7 +560,7 @@ def test_failed_job_surfaces_once_then_frees_the_slot(hub, monkeypatch):
 
 
 def test_hf_token_is_passed_to_the_worker(hub):
-    _run("unsloth/x-GGUF", hf_token = "hf_secret")
+    _run("unsloth/x-GGUF", hf_token="hf_secret")
     assert hub["started"][0][2] == "hf_secret"
 
 
@@ -591,7 +595,7 @@ def test_an_adoptable_dispatch_still_tracks_the_existing_job(hub):
 def test_a_failed_status_probe_does_not_end_the_watch(hub, monkeypatch):
     # A probe that raised says nothing: reading it as "idle" freed the slot mid-download.
 
-    async def _boom(repo_id, gguf_variant = ""):
+    async def _boom(repo_id, gguf_variant=""):
         raise RuntimeError("registry unavailable")
 
     monkeypatch.setattr(downloads, "get_download_status_response", _boom)
@@ -618,7 +622,7 @@ def test_a_hanging_code_probe_does_not_pin_the_slot(hub, monkeypatch):
 
     entered, release = threading.Event(), threading.Event()
 
-    def _hang(repo, token = None):
+    def _hang(repo, token=None):
         entered.set()
         release.wait(30)
         return False
@@ -650,7 +654,7 @@ def test_a_hanging_auth_check_falls_through_to_the_download(hub, monkeypatch):
     hub["info"].gated = True
     release = threading.Event()
 
-    def _hang(repo, token = None):
+    def _hang(repo, token=None):
         release.wait(30)
         return True
 
@@ -737,8 +741,8 @@ class _Url:
 class _Req:
     def __init__(
         self,
-        path = "/v1/chat/completions",
-        headers = None,
+        path="/v1/chat/completions",
+        headers=None,
     ):
         self.url = _Url(path)
         self.headers = headers or {}
@@ -748,7 +752,7 @@ def _hook(
     model,
     request,
     enabled,
-    current_subject = None,
+    current_subject=None,
 ):
     import utils.openai_auto_switch_settings as s
 
@@ -757,7 +761,7 @@ def _hook(
     try:
         return asyncio.run(
             inference_route._maybe_auto_download_model(
-                model, request, current_subject = current_subject
+                model, request, current_subject=current_subject
             )
         )
     finally:
@@ -766,13 +770,13 @@ def _hook(
 
 def test_setting_off_does_nothing_at_all(hub):
     # The compatibility invariant: no probe, no dispatch, no raise.
-    assert _hook("unsloth/x-GGUF:UD-Q5_K_XL", _Req(), enabled = False) is None
+    assert _hook("unsloth/x-GGUF:UD-Q5_K_XL", _Req(), enabled=False) is None
     assert hub["started"] == []
 
 
 def test_hook_raises_the_openai_envelope_with_retry_after(hub):
     with pytest.raises(HTTPException) as excinfo:
-        _hook("unsloth/x-GGUF:UD-Q5_K_XL", _Req(), enabled = True)
+        _hook("unsloth/x-GGUF:UD-Q5_K_XL", _Req(), enabled=True)
     exc = excinfo.value
     assert exc.status_code == 503
     assert exc.headers and exc.headers["Retry-After"]
@@ -783,7 +787,7 @@ def test_hook_raises_the_openai_envelope_with_retry_after(hub):
 
 def test_hook_uses_the_anthropic_envelope_on_messages(hub):
     with pytest.raises(HTTPException) as excinfo:
-        _hook("unsloth/x-GGUF", _Req(path = "/v1/messages"), enabled = True)
+        _hook("unsloth/x-GGUF", _Req(path="/v1/messages"), enabled=True)
     detail = excinfo.value.detail
     assert detail["type"] == "error"
     assert detail["error"]["type"] == "api_error"
@@ -793,13 +797,13 @@ def test_hook_swallows_unexpected_failures(hub, monkeypatch):
     # A broken download path must not turn a servable request into a 500.
     async def _boom(
         model,
-        hf_token = None,
+        hf_token=None,
         **kwargs,
     ):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(auto_dl, "maybe_auto_download", _boom)
-    assert _hook("unsloth/x-GGUF", _Req(), enabled = True) is None
+    assert _hook("unsloth/x-GGUF", _Req(), enabled=True) is None
 
 
 def _download_rows():
@@ -814,7 +818,7 @@ def test_a_ui_session_download_is_not_marked_as_api_traffic(hub):
     api_monitor.clear()
     with pytest.raises(HTTPException):
         # No Authorization header: the UI's session-JWT path.
-        _hook("unsloth/x-GGUF", _Req(), enabled = True, current_subject = "unsloth")
+        _hook("unsloth/x-GGUF", _Req(), enabled=True, current_subject="unsloth")
     rows = _download_rows()
     assert rows and all(row["via_api_key"] is False for row in rows)
 
@@ -828,14 +832,14 @@ def test_an_api_key_download_keeps_the_attribution_and_names_its_caller(hub):
     with pytest.raises(HTTPException):
         _hook(
             "unsloth/x-GGUF",
-            _Req(headers = {"authorization": f"Bearer {API_KEY_PREFIX}abc123"}),
-            enabled = True,
-            current_subject = "unsloth",
+            _Req(headers={"authorization": f"Bearer {API_KEY_PREFIX}abc123"}),
+            enabled=True,
+            current_subject="unsloth",
         )
     rows = _download_rows()
     assert rows and all(row["via_api_key"] is True for row in rows)
     # Still shared: another subject sees the row, just not the attribution.
-    others = [e for e in api_monitor.snapshot(subject = "someone-else") if e["event"] == "download"]
+    others = [e for e in api_monitor.snapshot(subject="someone-else") if e["event"] == "download"]
     assert len(others) == len(rows)
     assert all(row["via_api_key"] is False for row in others)
 
@@ -851,37 +855,38 @@ def test_an_api_key_caller_waiting_on_someone_elses_download_gets_a_row(hub):
     api_monitor.clear()
     with pytest.raises(HTTPException):
         # Unsloth's chat (session JWT) starts the download and takes the slot.
-        _hook("unsloth/x-GGUF", _Req(), enabled = True, current_subject = "unsloth")
-    seeded = {row["id"] for row in api_monitor.snapshot(subject = "unsloth")}
+        _hook("unsloth/x-GGUF", _Req(), enabled=True, current_subject="unsloth")
+    seeded = {row["id"] for row in api_monitor.snapshot(subject="unsloth")}
 
     with pytest.raises(HTTPException) as excinfo:
         # The adopted-download branch: same repo, an sk-unsloth key this time.
         _hook(
             "unsloth/x-GGUF",
-            _Req(headers = {"authorization": f"Bearer {API_KEY_PREFIX}abc123"}),
-            enabled = True,
-            current_subject = "unsloth",
+            _Req(headers={"authorization": f"Bearer {API_KEY_PREFIX}abc123"}),
+            enabled=True,
+            current_subject="unsloth",
         )
     assert excinfo.value.status_code == 503
 
-    fresh = [e for e in api_monitor.snapshot(subject = "unsloth") if e["id"] not in seeded]
+    fresh = [e for e in api_monitor.snapshot(subject="unsloth") if e["id"] not in seeded]
     # New (so the overlay counts it as unseen traffic) and attributed to this caller.
     assert [e for e in fresh if e["via_api_key"]], "the refused API-key call left no row"
     row = next(e for e in fresh if e["via_api_key"])
     assert row["endpoint"] == "/v1/chat/completions"
     assert row["status"] == "error"
     # Shared rows aside, another subject must not inherit the attribution.
-    others = [e for e in api_monitor.snapshot(subject = "someone-else") if e["id"] == row["id"]]
+    others = [e for e in api_monitor.snapshot(subject="someone-else") if e["id"] == row["id"]]
     assert others == []
 
 
 def test_hook_prefers_the_hub_header_token(hub):
     from hub.dependencies import HUB_HF_TOKEN_HEADER
+
     with pytest.raises(HTTPException):
         _hook(
             "unsloth/x-GGUF",
-            _Req(headers = {HUB_HF_TOKEN_HEADER: "hf_from_header"}),
-            enabled = True,
+            _Req(headers={HUB_HF_TOKEN_HEADER: "hf_from_header"}),
+            enabled=True,
         )
     assert hub["started"][0][2] == "hf_from_header"
 
@@ -904,8 +909,8 @@ class _Loaded:
     def __init__(
         self,
         identifier,
-        variant = None,
-        advertised = None,
+        variant=None,
+        advertised=None,
     ):
         self.is_loaded = True
         self.model_identifier = identifier
@@ -918,8 +923,8 @@ def _reject(
     loaded,
     monkeypatch,
     *,
-    downloaded = False,
-    auto_switch = False,
+    downloaded=False,
+    auto_switch=False,
 ):
     monkeypatch.setattr(inference_route, "get_llama_cpp_backend", lambda: loaded)
     monkeypatch.setattr(
@@ -978,7 +983,7 @@ def test_foreign_ids_still_fall_through(monkeypatch, foreign):
 def test_downloaded_but_auto_switch_off_says_so(monkeypatch):
     loaded = _Loaded("unsloth/A-GGUF", "UD-Q4_K_XL")
     with pytest.raises(HTTPException) as excinfo:
-        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded = True)
+        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded=True)
     assert "Switch model by request" in str(excinfo.value.detail)
 
 
@@ -986,7 +991,7 @@ def test_a_failed_switch_is_reported_not_answered_by_the_resident_model(monkeypa
     # On disk and switching allowed means the swap failed; the resident model is wrong weights.
     loaded = _Loaded("unsloth/A-GGUF", "UD-Q4_K_XL")
     with pytest.raises(HTTPException) as excinfo:
-        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded = True, auto_switch = True)
+        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded=True, auto_switch=True)
     assert excinfo.value.status_code == 503
     assert excinfo.value.detail["error"]["code"] == "model_switch_failed"
     assert excinfo.value.headers["Retry-After"] == "5"
@@ -1019,7 +1024,7 @@ def test_a_repo_that_is_here_is_refused_without_a_quant(monkeypatch):
     # The other half of the evidence test: a repo this server has is a reference to it.
     loaded = _Loaded("unsloth/A-GGUF", "UD-Q4_K_XL")
     with pytest.raises(HTTPException) as excinfo:
-        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded = True)
+        _reject("unsloth/B-GGUF", loaded, monkeypatch, downloaded=True)
     assert excinfo.value.status_code == 404
 
 
@@ -1124,7 +1129,7 @@ def test_anthropic_surface_gets_its_own_envelope(monkeypatch):
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(
             inference_route._reject_unservable_model(
-                "unsloth/B-GGUF:UD-Q6_K_XL", _Req(path = "/v1/messages")
+                "unsloth/B-GGUF:UD-Q6_K_XL", _Req(path="/v1/messages")
             )
         )
     assert excinfo.value.detail["type"] == "error"
@@ -1135,7 +1140,7 @@ def test_anthropic_surface_gets_its_own_envelope(monkeypatch):
 
 def test_auto_download_defaults_off_and_is_gated_on_auto_switch(monkeypatch):
     store = {}
-    monkeypatch.setattr(settings, "_cached_setting", lambda k, d = None: store.get(k, d))
+    monkeypatch.setattr(settings, "_cached_setting", lambda k, d=None: store.get(k, d))
     assert settings.get_stored_openai_auto_download_enabled() is False
     assert settings.get_openai_auto_download_enabled() is False
 
@@ -1159,7 +1164,7 @@ def test_setter_round_trips_auto_download_in_one_transaction(monkeypatch):
         store.update(mapping)
 
     monkeypatch.setattr(db, "upsert_app_settings", _upsert)
-    monkeypatch.setattr(settings, "_cached_setting", lambda k, d = None: store.get(k, d))
+    monkeypatch.setattr(settings, "_cached_setting", lambda k, d=None: store.get(k, d))
 
     result = settings.set_openai_auto_switch(True, 120, None, True)
     assert result == (True, 120, True, True, False, 0, False)
@@ -1168,8 +1173,8 @@ def test_setter_round_trips_auto_download_in_one_transaction(monkeypatch):
 
 
 def test_setter_rejects_a_non_boolean_auto_download(monkeypatch):
-    monkeypatch.setattr(settings, "_cached_setting", lambda k, d = None: None)
-    with pytest.raises(ValueError, match = "true or false"):
+    monkeypatch.setattr(settings, "_cached_setting", lambda k, d=None: None)
+    with pytest.raises(ValueError, match="true or false"):
         settings.set_openai_auto_switch(True, None, None, "garbage")
 
 
@@ -1210,7 +1215,7 @@ def test_the_servers_own_hf_token_is_never_borrowed(monkeypatch):
 
     monkeypatch.setattr(settings_route, "_ambient_hf_token", lambda: "hf_owner_secret")
     assert inference_route._auto_download_hf_token(_Req()) is None
-    caller = _Req(headers = {"X-Unsloth-HF-Token": "hf_caller_own"})
+    caller = _Req(headers={"X-Unsloth-HF-Token": "hf_caller_own"})
     assert inference_route._auto_download_hf_token(caller) == "hf_caller_own"
 
 
@@ -1241,7 +1246,7 @@ def test_the_metadata_probe_is_explicitly_anonymous(hub):
     _run("unsloth/x-GGUF")
     assert hub["token"] is False
     auto_dl.reset_for_tests()
-    _run("unsloth/y-GGUF", hf_token = "hf_caller_own")
+    _run("unsloth/y-GGUF", hf_token="hf_caller_own")
     assert hub["token"] == "hf_caller_own"
 
 
@@ -1358,9 +1363,9 @@ def test_disk_admission_counts_only_what_is_left_to_fetch(hub, monkeypatch):
     gb = 1024**3
     hub["info"] = _Info(
         [
-            _Sibling("model-UD-Q4_K_XL.gguf", 4 * gb, blob_id = "sha-main"),
-            _Sibling("mmproj-F16.gguf", 1 * gb, blob_id = "sha-mmproj"),
-            _Sibling("mtp-model.gguf", 1 * gb, blob_id = "sha-mtp"),
+            _Sibling("model-UD-Q4_K_XL.gguf", 4 * gb, blob_id="sha-main"),
+            _Sibling("mmproj-F16.gguf", 1 * gb, blob_id="sha-mmproj"),
+            _Sibling("mtp-model.gguf", 1 * gb, blob_id="sha-mtp"),
         ]
     )
     monkeypatch.setattr(auto_dl, "_enough_disk", _enough)
@@ -1504,7 +1509,7 @@ def test_a_refusal_is_never_swallowed_by_the_cannot_verify_handler(monkeypatch):
     )
 
     def _boom(*_a, **_k):
-        raise HTTPException(status_code = 418, detail = "decided")
+        raise HTTPException(status_code=418, detail="decided")
 
     monkeypatch.setattr(inference_route, "_resolves_to_resident", _boom)
     monkeypatch.setattr(
@@ -1527,7 +1532,7 @@ def test_warming_the_index_never_waits_on_the_scan_lock(monkeypatch):
     try:
         started = _time.perf_counter()
         _real_warm_index_soon()
-        resolver.resolve_local_gguf("unsloth/A-GGUF", allow_scan = False)
+        resolver.resolve_local_gguf("unsloth/A-GGUF", allow_scan=False)
         elapsed = _time.perf_counter() - started
     finally:
         released.set()
@@ -1577,10 +1582,10 @@ def test_invalidation_during_a_warm_preserves_a_second_scan(monkeypatch):
         _real_warm_index_soon()
         invalidation_finished.set()
 
-    invalidator = threading.Thread(target = _invalidate_and_warm)
+    invalidator = threading.Thread(target=_invalidate_and_warm)
     invalidator.start()
     release_first_scan.set()
-    invalidator.join(timeout = 5)
+    invalidator.join(timeout=5)
 
     try:
         assert not invalidator.is_alive()
@@ -1671,7 +1676,7 @@ def test_a_rejected_token_says_so_instead_of_asking_for_a_retry(hub):
     from huggingface_hub.utils import HfHubHTTPError
 
     hub["raise"] = _hub_error(HfHubHTTPError, 401, "unauthorized")
-    refusal = _run("unsloth/x-GGUF:UD-Q5_K_XL", hf_token = "hf_expired")
+    refusal = _run("unsloth/x-GGUF:UD-Q5_K_XL", hf_token="hf_expired")
     assert refusal.status == 401 and refusal.code == "model_access_denied"
     assert "token" in refusal.message.lower()
     assert hub["started"] == []
@@ -1683,7 +1688,7 @@ def test_an_image_request_does_not_download_a_text_only_model(hub):
     gb = 1024**3
     hub["info"] = _Info([_Sibling("model-UD-Q5_K_XL.gguf", 5 * gb)])
     refusal = asyncio.run(
-        auto_dl.maybe_auto_download("unsloth/text-GGUF:UD-Q5_K_XL", require_vision = True)
+        auto_dl.maybe_auto_download("unsloth/text-GGUF:UD-Q5_K_XL", require_vision=True)
     )
     assert refusal.status == 400 and refusal.code == "invalid_value"
     assert "mmproj" in refusal.message
@@ -1692,7 +1697,7 @@ def test_an_image_request_does_not_download_a_text_only_model(hub):
     hub["info"] = _gguf_repo_info()
     assert (
         asyncio.run(
-            auto_dl.maybe_auto_download("unsloth/x-GGUF:UD-Q5_K_XL", require_vision = True)
+            auto_dl.maybe_auto_download("unsloth/x-GGUF:UD-Q5_K_XL", require_vision=True)
         ).code
         == "model_downloading"
     )
@@ -1746,7 +1751,7 @@ def test_a_timed_out_download_keeps_the_slot_while_it_is_still_running(monkeypat
     monkeypatch.setattr(auto_dl, "_MAX_WATCH_S", 0.0)
     monkeypatch.setattr(auto_dl, "_WATCH_POLL_S", 0.001)
     monkeypatch.setattr(auto_dl, "_TIMED_OUT_POLL_S", 0.001)
-    active = auto_dl._Active(repo_id = "org/big-GGUF", variant = "Q4_K_M")
+    active = auto_dl._Active(repo_id="org/big-GGUF", variant="Q4_K_M")
 
     async def _drive():
         finished = asyncio.Event()
@@ -1775,7 +1780,7 @@ def test_a_timed_out_download_stops_holding_the_slot_once_unprobeable(monkeypatc
     monkeypatch.setattr(auto_dl, "_MAX_WATCH_S", 0.0)
     monkeypatch.setattr(auto_dl, "_WATCH_POLL_S", 0.001)
     monkeypatch.setattr(auto_dl, "_TIMED_OUT_POLL_S", 0.001)
-    active = auto_dl._Active(repo_id = "org/big-GGUF", variant = "Q4_K_M")
+    active = auto_dl._Active(repo_id="org/big-GGUF", variant="Q4_K_M")
 
     async def _unknown(repo, variant):
         return "unknown", None
@@ -1924,7 +1929,7 @@ def test_the_trust_probe_never_falls_back_to_the_server_identity(hub, monkeypatc
     # server's identity.
     seen: list = []
 
-    def _probe(model_name, hf_token = None):
+    def _probe(model_name, hf_token=None):
         seen.append(hf_token)
         return False
 
@@ -1934,7 +1939,7 @@ def test_the_trust_probe_never_falls_back_to_the_server_identity(hub, monkeypatc
 
     seen.clear()
     auto_dl.reset_for_tests()
-    _run("unsloth/x-GGUF:UD-Q5_K_XL", hf_token = "hf_caller")
+    _run("unsloth/x-GGUF:UD-Q5_K_XL", hf_token="hf_caller")
     assert seen == ["hf_caller"], "the caller's own token must still be used"
 
 
@@ -1962,7 +1967,7 @@ def test_a_failed_download_keeps_the_slot_until_someone_is_told(monkeypatch):
         return "error", "disk exploded"
 
     monkeypatch.setattr(auto_dl, "_job_state", _errored)
-    active = auto_dl._Active(repo_id = "org/x-GGUF", variant = "Q4_K_M")
+    active = auto_dl._Active(repo_id="org/x-GGUF", variant="Q4_K_M")
     auto_dl._active = active
     asyncio.run(auto_dl._watch(active, None))
     assert auto_dl._active is active, "the slot was freed before anyone was told"
@@ -1972,10 +1977,10 @@ def test_a_failed_download_keeps_the_slot_until_someone_is_told(monkeypatch):
 def test_the_retry_after_a_failure_is_told_instead_of_restarting_it(hub, monkeypatch):
     # End of the same chain: the held failure has to reach the caller.
     active = auto_dl._Active(
-        repo_id = "unsloth/x-GGUF",
-        variant = "UD-Q5_K_XL",
-        error = "disk exploded",
-        failed_at = 1.0,
+        repo_id="unsloth/x-GGUF",
+        variant="UD-Q5_K_XL",
+        error="disk exploded",
+        failed_at=1.0,
     )
     auto_dl._active = active
 
@@ -2036,7 +2041,7 @@ def test_speech_download_admission(hub, monkeypatch, sidecar, probe, code):
     monkeypatch.setattr(
         auto_dl, "_probe_remote_gguf_audio_type", lambda *a: weights.append(a) or probe
     )
-    result = asyncio.run(auto_dl.maybe_auto_download("unsloth/tts-GGUF:Q8_0", require_speech = True))
+    result = asyncio.run(auto_dl.maybe_auto_download("unsloth/tts-GGUF:Q8_0", require_speech=True))
     assert result.code == code
     assert result.status == (400 if code == "invalid_value" else 503)
     assert bool(hub["started"]) is (code == "model_downloading")
@@ -2054,8 +2059,8 @@ def _unavailable_message(
     downloaded,
     servable,
     monkeypatch,
-    rows = None,
-    listing = None,
+    rows=None,
+    listing=None,
 ):
     """``_unavailable_model_message`` against a catalog holding *downloaded* and a
     ``GET /v1/models`` listing holding *servable*.
@@ -2069,7 +2074,7 @@ def _unavailable_message(
     async def _catalog():
         if rows is not None:
             return rows
-        return [SimpleNamespace(model_id = mid, id = mid, path = f"/models/{mid}") for mid in downloaded]
+        return [SimpleNamespace(model_id=mid, id=mid, path=f"/models/{mid}") for mid in downloaded]
 
     async def _objects():
         if listing is not None:
@@ -2090,9 +2095,9 @@ def test_a_downloaded_but_unservable_model_is_not_reported_as_missing(monkeypatc
     message = _unavailable_message(
         "ornith-ai/Ornith-1.5-35B-A3B-MLX-4bit",
         # Last, not first: a lookup that only ever reads row zero would pass either way.
-        downloaded = ["unsloth/A-GGUF", "org/Other", "ornith-ai/Ornith-1.5-35B-A3B-MLX-4bit"],
-        servable = ["unsloth/A-GGUF"],
-        monkeypatch = monkeypatch,
+        downloaded=["unsloth/A-GGUF", "org/Other", "ornith-ai/Ornith-1.5-35B-A3B-MLX-4bit"],
+        servable=["unsloth/A-GGUF"],
+        monkeypatch=monkeypatch,
     )
     assert "is not downloaded" not in message
     assert "is downloaded, but this server cannot serve it" in message
@@ -2103,9 +2108,9 @@ def test_a_downloaded_but_unservable_model_is_not_reported_as_missing(monkeypatc
 def test_a_model_that_is_really_absent_still_says_it_is_not_downloaded(monkeypatch):
     message = _unavailable_message(
         "some-org/never-fetched",
-        downloaded = ["unsloth/A-GGUF"],
-        servable = ["unsloth/A-GGUF"],
-        monkeypatch = monkeypatch,
+        downloaded=["unsloth/A-GGUF"],
+        servable=["unsloth/A-GGUF"],
+        monkeypatch=monkeypatch,
     )
     assert "is not downloaded on this server" in message
     assert "cannot serve it" not in message
@@ -2116,9 +2121,9 @@ def test_the_downloaded_check_ignores_id_case(monkeypatch):
     a case-variant request must not read as a model nobody downloaded."""
     message = _unavailable_message(
         "Ornith-AI/Ornith-1.5-35B-A3B-MLX-4bit",
-        downloaded = ["ornith-ai/ornith-1.5-35b-a3b-mlx-4bit"],
-        servable = [],
-        monkeypatch = monkeypatch,
+        downloaded=["ornith-ai/ornith-1.5-35b-a3b-mlx-4bit"],
+        servable=[],
+        monkeypatch=monkeypatch,
     )
     assert "is downloaded, but this server cannot serve it" in message
 
@@ -2128,22 +2133,23 @@ def test_a_loaded_model_is_never_called_unservable(monkeypatch):
     catalog alone."""
     message = _unavailable_message(
         "unsloth/A-GGUF",
-        downloaded = ["unsloth/A-GGUF"],
-        servable = ["unsloth/A-GGUF"],
-        monkeypatch = monkeypatch,
+        downloaded=["unsloth/A-GGUF"],
+        servable=["unsloth/A-GGUF"],
+        monkeypatch=monkeypatch,
     )
     assert "cannot serve it" not in message
 
 
 def _row(
     *,
-    model_id = None,
-    id = None,
-    path = "/models/x",
-    partial = False,
+    model_id=None,
+    id=None,
+    path="/models/x",
+    partial=False,
 ):
     from types import SimpleNamespace
-    return SimpleNamespace(model_id = model_id, id = id, path = path, partial = partial)
+
+    return SimpleNamespace(model_id=model_id, id=id, path=path, partial=partial)
 
 
 def test_a_scanner_row_without_a_model_id_still_counts_as_downloaded(monkeypatch):
@@ -2152,10 +2158,10 @@ def test_a_scanner_row_without_a_model_id_still_counts_as_downloaded(monkeypatch
     nobody downloaded."""
     message = _unavailable_message(
         "Ornith-1.5-35B-A3B-MLX-4bit",
-        downloaded = [],
-        servable = [],
-        rows = [_row(id = "/srv/models/Ornith-1.5-35B-A3B-MLX-4bit")],
-        monkeypatch = monkeypatch,
+        downloaded=[],
+        servable=[],
+        rows=[_row(id="/srv/models/Ornith-1.5-35B-A3B-MLX-4bit")],
+        monkeypatch=monkeypatch,
     )
     assert "is downloaded, but this server cannot serve it here" in message
     # And never the host path the row was keyed by.
@@ -2167,10 +2173,10 @@ def test_a_partial_download_is_not_called_downloaded(monkeypatch):
     send the caller away from the thing that actually fixes it."""
     message = _unavailable_message(
         "org/Half-Fetched",
-        downloaded = [],
-        servable = [],
-        rows = [_row(model_id = "org/Half-Fetched", partial = True)],
-        monkeypatch = monkeypatch,
+        downloaded=[],
+        servable=[],
+        rows=[_row(model_id="org/Half-Fetched", partial=True)],
+        monkeypatch=monkeypatch,
     )
     assert "cannot serve it here" not in message
     assert "is not downloaded on this server" in message
@@ -2182,9 +2188,9 @@ def test_a_quant_tagged_name_still_gets_the_downloaded_diagnosis(monkeypatch):
     for tag in (":Q4_K_M", ":latest"):
         message = _unavailable_message(
             f"org/Withheld{tag}",
-            downloaded = ["org/Withheld"],
-            servable = [],
-            monkeypatch = monkeypatch,
+            downloaded=["org/Withheld"],
+            servable=[],
+            monkeypatch=monkeypatch,
         )
         assert "is downloaded, but this server cannot serve it here" in message, tag
         assert "org/Withheld'" in message, tag
@@ -2195,10 +2201,10 @@ def test_a_model_listed_only_for_another_task_is_not_called_available(monkeypatc
     listing alone would report it available for a chat request it cannot answer."""
     message = _unavailable_message(
         "openai/whisper-tiny",
-        downloaded = ["openai/whisper-tiny"],
-        servable = [],
-        listing = [{"id": "openai/whisper-tiny", "task": "automatic-speech-recognition"}],
-        monkeypatch = monkeypatch,
+        downloaded=["openai/whisper-tiny"],
+        servable=[],
+        listing=[{"id": "openai/whisper-tiny", "task": "automatic-speech-recognition"}],
+        monkeypatch=monkeypatch,
     )
     assert "is downloaded, but this server cannot serve it here" in message
 
@@ -2215,10 +2221,10 @@ def test_the_diagnosis_does_not_report_a_model_this_account_cannot_see(monkeypat
 
     hidden = _unavailable_message(
         "someone-else/Private",
-        downloaded = [],
-        servable = [],
-        rows = [_row(model_id = "org/Granted"), _row(model_id = "someone-else/Private")],
-        monkeypatch = monkeypatch,
+        downloaded=[],
+        servable=[],
+        rows=[_row(model_id="org/Granted"), _row(model_id="someone-else/Private")],
+        monkeypatch=monkeypatch,
     )
     assert "is downloaded" not in hidden
     assert "is not downloaded on this server" in hidden
@@ -2227,9 +2233,9 @@ def test_the_diagnosis_does_not_report_a_model_this_account_cannot_see(monkeypat
     # told nothing it owns is downloaded.
     granted = _unavailable_message(
         "org/Granted",
-        downloaded = [],
-        servable = [],
-        rows = [_row(model_id = "org/Granted"), _row(model_id = "someone-else/Private")],
-        monkeypatch = monkeypatch,
+        downloaded=[],
+        servable=[],
+        rows=[_row(model_id="org/Granted"), _row(model_id="someone-else/Private")],
+        monkeypatch=monkeypatch,
     )
     assert "is downloaded, but this server cannot serve it here" in granted

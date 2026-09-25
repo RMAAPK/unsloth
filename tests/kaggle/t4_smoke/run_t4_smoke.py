@@ -111,12 +111,12 @@ DEFAULT_MODEL = "unsloth/Qwen2.5-0.5B-Instruct"
 
 
 def _log(msg: str) -> None:
-    print(f"[t4-smoke] {msg}", flush = True)
+    print(f"[t4-smoke] {msg}", flush=True)
 
 
 def load_canary_rows(path: Path) -> list[dict]:
     rows = [
-        json.loads(line) for line in path.read_text(encoding = "utf-8").splitlines() if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     if not rows:
         raise RuntimeError(f"canary dataset {path} is empty")
@@ -151,7 +151,7 @@ def dataset_digest(path: Path) -> str:
         rows = load_canary_rows(path)
     except Exception as exc:  # noqa: BLE001
         return f"unreadable:{type(exc).__name__}"
-    canonical = "\n".join(json.dumps(row, sort_keys = True, separators = (",", ":")) for row in rows)
+    canonical = "\n".join(json.dumps(row, sort_keys=True, separators=(",", ":")) for row in rows)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -166,9 +166,10 @@ def build_dataset(rows: list[dict], eos_token: str):
     (``completion_only_loss``).
     """
     from datasets import Dataset
+
     return Dataset.from_dict(
         {
-            "prompt": [PROMPT_TEMPLATE.format(question = r["question"]) for r in rows],
+            "prompt": [PROMPT_TEMPLATE.format(question=r["question"]) for r in rows],
             "completion": [r["answer"] + eos_token for r in rows],
         }
     )
@@ -257,11 +258,12 @@ def train_once(args, run_index: int) -> dict:
         # numeric path, so a local run under it is evidence about the HARNESS,
         # not about T4 numerics.
         from unsloth.utils import attention_dispatch
+
         attention_dispatch.HAS_XFORMERS = False
         _log("force-sdpa: HAS_XFORMERS pinned False (local repro only)")
 
     set_all_seeds_fast(SEED)
-    det_state = set_deterministic_algorithms(warn_only = not args.strict_deterministic)
+    det_state = set_deterministic_algorithms(warn_only=not args.strict_deterministic)
 
     rows = load_canary_rows(Path(args.dataset))
 
@@ -304,10 +306,10 @@ def train_once(args, run_index: int) -> dict:
     # its own cannot say whether the prefetch lane is buying anything.
     with FetchTimer() as fetch_timer:
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name = args.model,
-            max_seq_length = args.max_seq_length,
-            load_in_4bit = True,
-            dtype = torch.float16,
+            model_name=args.model,
+            max_seq_length=args.max_seq_length,
+            load_in_4bit=True,
+            dtype=torch.float16,
             **load_kwargs,
         )
     load_seconds = time.time() - t0
@@ -362,13 +364,13 @@ def train_once(args, run_index: int) -> dict:
     ]
     model = FastLanguageModel.get_peft_model(
         model,
-        r = args.lora_r,
-        lora_alpha = args.lora_alpha,
-        lora_dropout = 0.0,  # nonzero dropout is one more RNG consumer
-        bias = "none",
-        target_modules = target_modules,
-        use_gradient_checkpointing = args.gradient_checkpointing,
-        random_state = SEED,
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=0.0,  # nonzero dropout is one more RNG consumer
+        bias="none",
+        target_modules=target_modules,
+        use_gradient_checkpointing=args.gradient_checkpointing,
+        random_state=SEED,
     )
 
     eos = tokenizer.eos_token or ""
@@ -377,48 +379,48 @@ def train_once(args, run_index: int) -> dict:
     from trl import SFTConfig, SFTTrainer
 
     sampler = RepeatingSequentialSampler(
-        dataset_length = len(dataset),
-        batch_size = args.batch_size,
-        gradient_accumulation_steps = args.grad_accum,
-        max_steps = args.max_steps,
+        dataset_length=len(dataset),
+        batch_size=args.batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        max_steps=args.max_steps,
     )
     stats = StatisticsCallback()
 
     config = SFTConfig(
-        output_dir = str(Path(args.outdir) / f"trainer_run{run_index}"),
-        completion_only_loss = True,
-        max_length = args.max_seq_length,
-        per_device_train_batch_size = args.batch_size,
-        gradient_accumulation_steps = args.grad_accum,
-        max_steps = args.max_steps,
-        learning_rate = args.learning_rate,
+        output_dir=str(Path(args.outdir) / f"trainer_run{run_index}"),
+        completion_only_loss=True,
+        max_length=args.max_seq_length,
+        per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        max_steps=args.max_steps,
+        learning_rate=args.learning_rate,
         # Constant schedule, no warmup: over 3 steps a warmup would spend the
         # whole run at a fraction of the target LR, and a linear decay would
         # make step 3's update depend on max_steps. Constant keeps the reference
         # meaningful and the overfit strong enough for the canary.
-        lr_scheduler_type = "constant",
-        warmup_steps = 0,
-        logging_steps = 1,  # StatisticsCallback only fires on logs
-        optim = args.optim,
-        weight_decay = 0.0,
-        seed = SEED,
-        data_seed = SEED,
-        fp16 = True,
-        bf16 = False,
-        dataloader_num_workers = 0,  # worker processes reorder and reseed
-        dataloader_pin_memory = False,
-        group_by_length = False,
-        report_to = "none",
-        save_strategy = "no",
+        lr_scheduler_type="constant",
+        warmup_steps=0,
+        logging_steps=1,  # StatisticsCallback only fires on logs
+        optim=args.optim,
+        weight_decay=0.0,
+        seed=SEED,
+        data_seed=SEED,
+        fp16=True,
+        bf16=False,
+        dataloader_num_workers=0,  # worker processes reorder and reseed
+        dataloader_pin_memory=False,
+        group_by_length=False,
+        report_to="none",
+        save_strategy="no",
     )
 
     trainer_cls = _make_trainer_class(SFTTrainer, sampler)
     trainer = trainer_cls(
-        model = model,
-        processing_class = tokenizer,
-        train_dataset = dataset,
-        args = config,
-        callbacks = [stats],
+        model=model,
+        processing_class=tokenizer,
+        train_dataset=dataset,
+        args=config,
+        callbacks=[stats],
     )
 
     loss_scale = pin_initial_loss_scale(trainer, args.init_loss_scale)
@@ -450,7 +452,7 @@ def train_once(args, run_index: int) -> dict:
         raise RuntimeError(f"no adapter weights in {adapter_dir}: {saved_files}")
     saved_adapter = verify_saved_adapter(
         adapter_dir,
-        expected = {
+        expected={
             "r": args.lora_r,
             "lora_alpha": args.lora_alpha,
             "target_modules": target_modules,
@@ -458,14 +460,14 @@ def train_once(args, run_index: int) -> dict:
         # Asked of the model that was just saved, so the file is compared
         # against what PEFT calls these tensors rather than against a list this
         # payload would have to keep in step with peft by hand.
-        peft_keys = peft_adapter_keys(model),
+        peft_keys=peft_adapter_keys(model),
     )
     _log(f"saved adapter: {json.dumps(saved_adapter)}")
 
     # Inference on the trained, in-memory model, greedy so the output is a
     # function of the weights alone.
     FastLanguageModel.for_inference(model)
-    prompt = PROMPT_TEMPLATE.format(question = rows[0]["question"])
+    prompt = PROMPT_TEMPLATE.format(question=rows[0]["question"])
     # `text = ` and not positional, and this cost a leg. A vision model's
     # tokenizer IS a processor, whose signature is
     # `__call__(self, images=None, text=None, videos=None, ...)` -- so a
@@ -475,28 +477,28 @@ def train_once(args, run_index: int) -> dict:
     #   transformers/image_processing_backends.py, in fetch_images
     # `text` is the first parameter of a plain tokenizer too, so the keyword is
     # correct for both and is not a special case for vision.
-    inputs = tokenizer(text = [prompt], return_tensors = "pt").to(model.device)
+    inputs = tokenizer(text=[prompt], return_tensors="pt").to(model.device)
     t0 = time.time()
     with torch.inference_mode():
         out = model.generate(
             **inputs,
-            max_new_tokens = args.max_new_tokens,
-            do_sample = False,
-            temperature = None,
-            top_p = None,
-            top_k = None,
-            use_cache = True,
-            pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id,
+            max_new_tokens=args.max_new_tokens,
+            do_sample=False,
+            temperature=None,
+            top_p=None,
+            top_k=None,
+            use_cache=True,
+            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
         )
     infer_seconds = time.time() - t0
-    generated = tokenizer.decode(out[0][inputs["input_ids"].shape[1] :], skip_special_tokens = True)
+    generated = tokenizer.decode(out[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True)
 
     # Batched generation, on the SAME trained model, immediately after the
     # single-prompt generation above. Prompts of deliberately different lengths,
     # because a batch of equal-length prompts pads nothing and would report a
     # green left-padding check that never padded.
     batch_prompts = [
-        PROMPT_TEMPLATE.format(question = row["question"]) for row in rows[: max(BATCH_SIZES)]
+        PROMPT_TEMPLATE.format(question=row["question"]) for row in rows[: max(BATCH_SIZES)]
     ]
     while len(batch_prompts) < max(BATCH_SIZES):
         # The canary dataset is small. Pad the LIST (not the tensors) by
@@ -505,7 +507,7 @@ def train_once(args, run_index: int) -> dict:
         idx = len(batch_prompts)
         batch_prompts.append(
             PROMPT_TEMPLATE.format(
-                question = " ".join(["please"] * (idx % 5 + 1))
+                question=" ".join(["please"] * (idx % 5 + 1))
                 + " "
                 + rows[idx % len(rows)]["question"]
             )
@@ -514,7 +516,7 @@ def train_once(args, run_index: int) -> dict:
         model,
         tokenizer,
         batch_prompts,
-        max_new_tokens = args.max_new_tokens,
+        max_new_tokens=args.max_new_tokens,
     )
     _log(f"batched generation: {json.dumps({k: v for k, v in batched.items() if k != 'batched'})}")
 
@@ -580,8 +582,8 @@ def train_once(args, run_index: int) -> dict:
         gguf_export_record = export_gguf(
             model,
             tokenizer,
-            tempfile.mkdtemp(prefix = f"gguf_run{run_index}_"),
-            quantization = args.gguf_quantization,
+            tempfile.mkdtemp(prefix=f"gguf_run{run_index}_"),
+            quantization=args.gguf_quantization,
         )
         gguf_export_record["llama_cpp"] = facts
         _log(
@@ -771,21 +773,21 @@ def batched_generation(model, tokenizer, prompts, *, max_new_tokens) -> dict:
     def _gen(batch: list) -> list:
         # Keyword for the same reason as the single-prompt path above: a
         # processor reads a positional list as images.
-        enc = tokenizer(text = batch, return_tensors = "pt", padding = True).to(model.device)
+        enc = tokenizer(text=batch, return_tensors="pt", padding=True).to(model.device)
         with torch.inference_mode():
             out = model.generate(
                 **enc,
-                max_new_tokens = max_new_tokens,
-                do_sample = False,
-                temperature = None,
-                top_p = None,
-                top_k = None,
-                use_cache = True,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+                top_k=None,
+                use_cache=True,
                 # `x or y` is wrong here: pad_token_id 0 is a perfectly ordinary
                 # id (Qwen and Llama both use low ids) and is falsy, so `or`
                 # silently substitutes the EOS id for it and pads the batch with
                 # end-of-sequence tokens. Test for None.
-                pad_token_id = (
+                pad_token_id=(
                     tokenizer.pad_token_id
                     if tokenizer.pad_token_id is not None
                     else tokenizer.eos_token_id
@@ -795,7 +797,7 @@ def batched_generation(model, tokenizer, prompts, *, max_new_tokens) -> dict:
         # padding every row starts at the same column, and using the unpadded
         # length would re-read the tail of the prompt as if it were output.
         width = enc["input_ids"].shape[1]
-        return [tokenizer.decode(row[width:], skip_special_tokens = True) for row in out]
+        return [tokenizer.decode(row[width:], skip_special_tokens=True) for row in out]
 
     # `[0]`, and the missing index made this whole check vacuous. A processor
     # returns input_ids with a BATCH dimension, so `len(...)` on it is the
@@ -806,7 +808,7 @@ def batched_generation(model, tokenizer, prompts, *, max_new_tokens) -> dict:
     #    ever padded and the left-padding check proved nothing"
     # A plain tokenizer given one string returns a flat list, which is why this
     # read correctly on every text model and only broke on the first vision one.
-    lengths = [len(tokenizer(text = [p])["input_ids"][0]) for p in prompts]
+    lengths = [len(tokenizer(text=[p])["input_ids"][0]) for p in prompts]
     singles = [_gen([p])[0] for p in prompts]
     result = {
         "prompt_token_lengths": lengths,
@@ -1076,6 +1078,7 @@ def peft_adapter_keys(model) -> dict:
     """
     try:
         from peft import get_peft_model_state_dict
+
         return {"keys": sorted(get_peft_model_state_dict(model))}
     except Exception as exc:  # noqa: BLE001
         return {"error": f"{type(exc).__name__}: {exc}"[:300]}
@@ -1158,7 +1161,7 @@ def verify_saved_adapter(
         state["error"] = f"{type(exc).__name__}: {exc}"
         return state
     try:
-        json.loads((adapter_dir / "adapter_config.json").read_text(encoding = "utf-8"))
+        json.loads((adapter_dir / "adapter_config.json").read_text(encoding="utf-8"))
         state["config_readable"] = True
     except Exception as exc:  # noqa: BLE001
         state["config_readable"] = False
@@ -1172,12 +1175,14 @@ def verify_saved_adapter(
     try:
         if safetensors_file.exists():
             from safetensors.torch import load_file
+
             state["weight_file"] = safetensors_file.name
             tensors = load_file(str(safetensors_file))
         elif bin_file.exists():
             import torch
+
             state["weight_file"] = bin_file.name
-            tensors = torch.load(str(bin_file), map_location = "cpu", weights_only = True)
+            tensors = torch.load(str(bin_file), map_location="cpu", weights_only=True)
         else:
             state["error"] = "no adapter_model.safetensors and no adapter_model.bin"
             return state
@@ -1338,16 +1343,19 @@ def environment_fingerprint() -> dict:
     }
     try:
         import transformers
+
         info["transformers"] = transformers.__version__
     except Exception:  # noqa: BLE001
         pass
     try:
         import trl
+
         info["trl"] = trl.__version__
     except Exception:  # noqa: BLE001
         pass
     try:
         import unsloth
+
         info["unsloth"] = getattr(unsloth, "__version__", "unknown")
     except Exception:  # noqa: BLE001
         pass
@@ -1464,7 +1472,7 @@ def check_reference(
     """
     if not reference_path.exists():
         return {"status": "absent", "path": str(reference_path)}
-    ref = json.loads(reference_path.read_text(encoding = "utf-8"))
+    ref = json.loads(reference_path.read_text(encoding="utf-8"))
     ref_metrics = ref.get("metrics", [])
     verdict: dict = {
         "status": "ok",
@@ -1811,20 +1819,20 @@ def optimisation_failures(metrics: list[dict]) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default = DEFAULT_MODEL)
+    ap.add_argument("--model", default=DEFAULT_MODEL)
     # On by default: batched generation is the surface that has broken most
     # often here (#3699, #1066, #1456, #2138) and a leg that quietly skips it
     # is a leg that stops covering it.
     ap.add_argument(
         "--check-batched-generation",
-        dest = "check_batched_generation",
-        action = "store_true",
-        default = True,
+        dest="check_batched_generation",
+        action="store_true",
+        default=True,
     )
     ap.add_argument(
         "--no-check-batched-generation",
-        dest = "check_batched_generation",
-        action = "store_false",
+        dest="check_batched_generation",
+        action="store_false",
     )
     # OFF by default, unlike the batched-generation check above. That one is
     # pure compute on a model already in memory; this one installs llama.cpp
@@ -1832,20 +1840,20 @@ def main() -> int:
     # so a leg opts in rather than every payload paying for it.
     ap.add_argument(
         "--export-gguf",
-        dest = "export_gguf",
-        action = "store_true",
-        default = False,
+        dest="export_gguf",
+        action="store_true",
+        default=False,
     )
     # What the exported filename is allowed to say. More than one because a
     # model may legitimately override the request: gpt-oss answers q8_0 with
     # "Overriding to MXFP4 format" by design, and failing on documented
     # behaviour would be a failure invented rather than found.
-    ap.add_argument("--gguf-quantization", default = "q8_0")
+    ap.add_argument("--gguf-quantization", default="q8_0")
     ap.add_argument(
-        "--gguf-accept", default = "", help = "comma separated; defaults to the requested one"
+        "--gguf-accept", default="", help="comma separated; defaults to the requested one"
     )
-    ap.add_argument("--dataset", default = str(_HERE / "canary_dataset.jsonl"))
-    ap.add_argument("--outdir", required = True)
+    ap.add_argument("--dataset", default=str(_HERE / "canary_dataset.jsonl"))
+    ap.add_argument("--outdir", required=True)
     # 3 steps, and the whole reason --init-loss-scale exists.
     #
     # Measured twice. Under fp16 the dynamic gradient scaler starts at 65536,
@@ -1864,7 +1872,7 @@ def main() -> int:
     # at 10. A T4 run reporting the canary missing while the scaler shows
     # updates applied is the signal to raise this back up, not to relax the
     # canary.
-    ap.add_argument("--max-steps", type = int, default = 10)
+    ap.add_argument("--max-steps", type=int, default=10)
     # Off by default. The pin is for short runs: the scaler overflows the first
     # three steps, so anything under about five applies no updates at all. At
     # the default of 10 the run reaches step 4 on its own and learns the canary,
@@ -1875,71 +1883,71 @@ def main() -> int:
     # with both.
     ap.add_argument(
         "--init-loss-scale",
-        type = float,
-        default = 0.0,
-        help = "fp16 GradScaler starting scale; 0 leaves the "
+        type=float,
+        default=0.0,
+        help="fp16 GradScaler starting scale; 0 leaves the "
         "framework default (65536, which costs a short run "
         "its first few steps to overflows)",
     )
-    ap.add_argument("--batch-size", type = int, default = 2)
-    ap.add_argument("--grad-accum", type = int, default = 1)
-    ap.add_argument("--max-seq-length", type = int, default = 512)
+    ap.add_argument("--batch-size", type=int, default=2)
+    ap.add_argument("--grad-accum", type=int, default=1)
+    ap.add_argument("--max-seq-length", type=int, default=512)
     # 1e-3 with the prompt masked out. Higher rates overflow fp16 far more often,
     # and each overflow is a skipped step this short run cannot spare.
-    ap.add_argument("--learning-rate", type = float, default = 1e-3)
-    ap.add_argument("--lora-r", type = int, default = 16)
-    ap.add_argument("--lora-alpha", type = int, default = 32)
-    ap.add_argument("--optim", default = "adamw_8bit")
-    ap.add_argument("--gradient-checkpointing", default = "unsloth")
-    ap.add_argument("--max-new-tokens", type = int, default = 16)
+    ap.add_argument("--learning-rate", type=float, default=1e-3)
+    ap.add_argument("--lora-r", type=int, default=16)
+    ap.add_argument("--lora-alpha", type=int, default=32)
+    ap.add_argument("--optim", default="adamw_8bit")
+    ap.add_argument("--gradient-checkpointing", default="unsloth")
+    ap.add_argument("--max-new-tokens", type=int, default=16)
     ap.add_argument(
-        "--repeat", type = int, default = 2, help = "fresh-process cycles; >1 enables the bitwise check"
+        "--repeat", type=int, default=2, help="fresh-process cycles; >1 enables the bitwise check"
     )
     ap.add_argument(
-        "--cycle", type = int, default = -1, help = argparse.SUPPRESS
+        "--cycle", type=int, default=-1, help=argparse.SUPPRESS
     )  # internal: child-mode marker
     ap.add_argument(
         "--force-sdpa",
-        action = "store_true",
-        help = "pin the SDPA attention backend. Local reproduction "
+        action="store_true",
+        help="pin the SDPA attention backend. Local reproduction "
         "on hardware xformers has no kernel for; NOT for "
         "the T4 run, which must exercise the xformers path",
     )
     ap.add_argument(
         "--strict-deterministic",
-        action = "store_true",
-        help = "use_deterministic_algorithms(warn_only=False)",
+        action="store_true",
+        help="use_deterministic_algorithms(warn_only=False)",
     )
     ap.add_argument(
-        "--reference", default = "", help = "committed reference JSON to band-check against"
+        "--reference", default="", help="committed reference JSON to band-check against"
     )
     ap.add_argument(
         "--pins",
-        default = "",
-        help = "a name==version pin file this run must have "
+        default="",
+        help="a name==version pin file this run must have "
         "resolved to exactly. The control leg passes it; a "
         "pin that did not hold means the leg is not a "
         "control and its comparison against the canary is "
         "worthless, so it is a failure rather than a note",
     )
-    ap.add_argument("--rel-tol", type = float, default = 0.10)
+    ap.add_argument("--rel-tol", type=float, default=0.10)
     ap.add_argument(
         "--abs-floor",
-        type = float,
-        default = 0.05,
-        help = "denominator floor so a near-zero reference value "
+        type=float,
+        default=0.05,
+        help="denominator floor so a near-zero reference value "
         "does not turn a tiny absolute drift into a huge "
         "relative one",
     )
-    ap.add_argument("--require-canary", dest = "require_canary", action = "store_true", default = True)
-    ap.add_argument("--no-require-canary", dest = "require_canary", action = "store_false")
+    ap.add_argument("--require-canary", dest="require_canary", action="store_true", default=True)
+    ap.add_argument("--no-require-canary", dest="require_canary", action="store_false")
     ap.add_argument(
         # The plain-TRL control arm, in its own process. Off by default: it
         # doubles the leg's train time and only one leg is asking the question.
         "--compare-naive-trl",
-        action = "store_true",
-        default = False,
-        help = "also train the same rows with plain TRL and report both traces",
+        action="store_true",
+        default=False,
+        help="also train the same rows with plain TRL and report both traces",
     )
     ap.add_argument(
         # The multi-card leg, and it is the ONLY thing that makes unsloth's
@@ -1947,10 +1955,10 @@ def main() -> int:
         # payload with CUDA_VISIBLE_DEVICES, so `torch_gpu_device` is the
         # nullcontext shim in every run this CI has ever produced.
         "--require-multi-gpu",
-        dest = "require_multi_gpu",
-        action = "store_true",
-        default = False,
-        help = "assert unsloth bound its multi-card code path, and record where "
+        dest="require_multi_gpu",
+        action="store_true",
+        default=False,
+        help="assert unsloth bound its multi-card code path, and record where "
         "the weights landed",
     )
     ap.add_argument(
@@ -1958,10 +1966,10 @@ def main() -> int:
         # the from_pretrained call: sharded training is broken upstream, and the
         # DEVICE_COUNT > 1 bindings this leg exists to cover do not need it.
         "--single-device",
-        dest = "single_device",
-        action = "store_true",
-        default = False,
-        help = "load with device_map={'': 0} while leaving both cards visible",
+        dest="single_device",
+        action="store_true",
+        default=False,
+        help="load with device_map={'': 0} while leaving both cards visible",
     )
     ap.add_argument(
         # How many cards this leg was BUILT for, so the check compares against a
@@ -1969,18 +1977,18 @@ def main() -> int:
         # it. Reading device_count() on both sides of the comparison is how a
         # rule ends up unable to fail.
         "--expected-cards",
-        dest = "expected_cards",
-        type = int,
-        default = 2,
+        dest="expected_cards",
+        type=int,
+        default=2,
     )
     ap.add_argument(
         # Off by default: only the vendored-kernel leg is asking, and probing
         # imports in every leg would add imports to legs that never wanted them.
         "--kernel-provenance",
-        dest = "kernel_provenance",
-        action = "store_true",
-        default = False,
-        help = "record which fast kernels loaded and where each resolved from",
+        dest="kernel_provenance",
+        action="store_true",
+        default=False,
+        help="record which fast kernels loaded and where each resolved from",
     )
     ap.add_argument(
         # A SEPARATE PROCESS, like the plain-TRL control and for a related
@@ -1989,25 +1997,25 @@ def main() -> int:
         # on the thing it was testing. It also runs AFTER the cycles, so a
         # vision failure cannot be mistaken for a text-training one.
         "--vision-run",
-        dest = "vision_run",
-        action = "store_true",
-        default = False,
-        help = "also drive run_vision_t4.py and fold its verdict into this report",
+        dest="vision_run",
+        action="store_true",
+        default=False,
+        help="also drive run_vision_t4.py and fold its verdict into this report",
     )
     ap.add_argument(
         # Only for models the control arm demonstrably cannot LOAD on the card.
         # An OOM during training stays a failure either way.
         "--control-oom-is-ok",
-        dest = "control_oom_is_ok",
-        action = "store_true",
-        default = False,
-        help = "a plain-TRL OOM before the first step is reported, not failed",
+        dest="control_oom_is_ok",
+        action="store_true",
+        default=False,
+        help="a plain-TRL OOM before the first step is reported, not failed",
     )
-    ap.add_argument("--label", default = "t4-smoke")
+    ap.add_argument("--label", default="t4-smoke")
     args = ap.parse_args()
 
     outdir = Path(args.outdir)
-    outdir.mkdir(parents = True, exist_ok = True)
+    outdir.mkdir(parents=True, exist_ok=True)
 
     # Child mode: exactly one cycle, report to disk, no assertions.
     if args.cycle >= 0:
@@ -2031,7 +2039,7 @@ def main() -> int:
                 "multi_gpu": _LAST_MULTI_GPU_FACTS,
             }
             (outdir / "cycle_report.json").write_text(
-                json.dumps(partial, indent = 2), encoding = "utf-8"
+                json.dumps(partial, indent=2), encoding="utf-8"
             )
             raise
         for entry in run["metrics"]:
@@ -2040,7 +2048,7 @@ def main() -> int:
                 f"grad_norm={entry.get('grad_norm')!r}"
             )
         _log(f"    generated: {run['generated']!r}")
-        (outdir / "cycle_report.json").write_text(json.dumps(run, indent = 2), encoding = "utf-8")
+        (outdir / "cycle_report.json").write_text(json.dumps(run, indent=2), encoding="utf-8")
         return 0
 
     # Parent mode: each cycle in a FRESH process, measured rather than assumed.
@@ -2084,7 +2092,7 @@ def main() -> int:
     for i in range(args.repeat):
         _log(f"=== cycle {i + 1}/{args.repeat} (fresh process) ===")
         cycle_dir = outdir / f"cycle{i}"
-        cycle_dir.mkdir(parents = True, exist_ok = True)
+        cycle_dir.mkdir(parents=True, exist_ok=True)
         cmd = [
             sys.executable,
             str(Path(__file__).resolve()),
@@ -2154,12 +2162,12 @@ def main() -> int:
                 "failures": [f"cycle {i} did not complete " f"(rc={proc.returncode})"],
             }
             (outdir / "t4_smoke_report.json").write_text(
-                json.dumps(failed, indent = 2), encoding = "utf-8"
+                json.dumps(failed, indent=2), encoding="utf-8"
             )
-            print("T4_SMOKE_REPORT " + json.dumps(failed), flush = True)
+            print("T4_SMOKE_REPORT " + json.dumps(failed), flush=True)
             _log("T4_SMOKE_RESULT FAIL")
             return 1
-        runs.append(json.loads(report_file.read_text(encoding = "utf-8")))
+        runs.append(json.loads(report_file.read_text(encoding="utf-8")))
 
     # The plain-TRL control arm. AFTER the cycles, not before and not beside:
     # it wants the same card, and two 4bit models resident at once on a 14.56GB
@@ -2171,7 +2179,7 @@ def main() -> int:
     naive = None
     if args.compare_naive_trl:
         naive_dir = outdir / "naive_trl"
-        naive_dir.mkdir(parents = True, exist_ok = True)
+        naive_dir.mkdir(parents=True, exist_ok=True)
         _log("=== plain-TRL control arm (fresh process, unsloth not imported) ===")
         cmd = [
             sys.executable,
@@ -2213,14 +2221,14 @@ def main() -> int:
         subprocess.run(cmd)
         naive_file = naive_dir / "naive_trl_report.json"
         if naive_file.exists():
-            naive = json.loads(naive_file.read_text(encoding = "utf-8"))
+            naive = json.loads(naive_file.read_text(encoding="utf-8"))
         else:
             naive = {"error": "the plain-TRL process wrote no report"}
 
     vision = None
     if args.vision_run:
         vision_dir = outdir / "vision"
-        vision_dir.mkdir(parents = True, exist_ok = True)
+        vision_dir.mkdir(parents=True, exist_ok=True)
         _log("=== vision training run (fresh process, after the cycles) ===")
         vision_cmd = [
             sys.executable,
@@ -2252,7 +2260,7 @@ def main() -> int:
         subprocess.run(vision_cmd)
         vision_file = vision_dir / "vision_report.json"
         if vision_file.exists():
-            vision = json.loads(vision_file.read_text(encoding = "utf-8"))
+            vision = json.loads(vision_file.read_text(encoding="utf-8"))
         else:
             vision = {"error": "the vision process wrote no report"}
 
@@ -2285,7 +2293,7 @@ def main() -> int:
         kernel_broken = vision_kernel_failures(
             runs[0].get("kernels"),
             runs[0].get("attention"),
-            capability = str(env.get("gpu_capability", "")),
+            capability=str(env.get("gpu_capability", "")),
         )
         report["kernel_failures"] = kernel_broken
         failures += kernel_broken
@@ -2297,7 +2305,7 @@ def main() -> int:
         report["multi_gpu"] = runs[0].get("multi_gpu")
         multi_broken = multi_gpu_failures(
             runs[0].get("multi_gpu"),
-            expected_cards = args.expected_cards,
+            expected_cards=args.expected_cards,
         )
         report["multi_gpu_failures"] = multi_broken
         failures += multi_broken
@@ -2324,7 +2332,7 @@ def main() -> int:
     if args.compare_naive_trl:
         report["naive_trl"] = naive
         naive_broken = comparison_failures(
-            naive, report["metrics"], allow_oom = args.control_oom_is_ok
+            naive, report["metrics"], allow_oom=args.control_oom_is_ok
         )
         report["naive_trl_failures"] = naive_broken
         failures += naive_broken
@@ -2360,7 +2368,7 @@ def main() -> int:
             "identical": not differing,
             "first_diff_step": differing[0][1]["first_diff_step"] if differing else None,
             "max_abs_diff": worst,
-            "compared_cycles": sorted(cycles, key = int),
+            "compared_cycles": sorted(cycles, key=int),
             "cycles": cycles,
         }
         for index, cmp in differing:
@@ -2377,7 +2385,7 @@ def main() -> int:
 
     # 2. canary, exactly
     for run in runs:
-        failures += canary_failures(run, require = args.require_canary)
+        failures += canary_failures(run, require=args.require_canary)
 
     # 3. sanity: finite, the optimisation moved, and it moved at all
     failures += optimisation_failures(runs[0]["metrics"])
@@ -2422,7 +2430,7 @@ def main() -> int:
         for run in exported:
             failures += [
                 f"run {run['run_index']}: {f}"
-                for f in export_failures(run.get("gguf_export"), accept_quantizations = accept)
+                for f in export_failures(run.get("gguf_export"), accept_quantizations=accept)
             ]
             # Only ask whether it RUNS once the export produced something; a
             # missing file already failed above and would otherwise be reported
@@ -2439,12 +2447,12 @@ def main() -> int:
             Path(args.reference),
             args.rel_tol,
             args.abs_floor,
-            max_steps = args.max_steps,
-            config = config,
-            model = args.model,
-            resolved_checkpoint = runs[0].get("resolved_checkpoint"),
-            resolved_revision = runs[0].get("resolved_revision"),
-            environment = env,
+            max_steps=args.max_steps,
+            config=config,
+            model=args.model,
+            resolved_checkpoint=runs[0].get("resolved_checkpoint"),
+            resolved_revision=runs[0].get("resolved_revision"),
+            environment=env,
         )
         report["reference_check"] = ref
         failures += reference_failures(ref, args.rel_tol)
@@ -2453,9 +2461,9 @@ def main() -> int:
     report["passed"] = not failures
 
     report_path = outdir / "t4_smoke_report.json"
-    report_path.write_text(json.dumps(report, indent = 2), encoding = "utf-8")
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     _log(f"report -> {report_path}")
-    print("T4_SMOKE_REPORT " + json.dumps(report), flush = True)
+    print("T4_SMOKE_REPORT " + json.dumps(report), flush=True)
 
     if failures:
         for f in failures:

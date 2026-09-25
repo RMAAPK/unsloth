@@ -57,7 +57,7 @@ def test_custom_model_overrides_default_and_derives_gguf(settings_store, monkeyp
     """The core contract: with nothing stored the default is in effect; a saved
     custom model becomes the effective embedding model and derives its -GGUF
     companion (what the llama-server backend loads); reset clears the override."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     assert ems.get_rag_embedding_model() == rag_config.EMBEDDING_MODEL
     assert rag_config.effective_gguf_repo() == rag_config.EMBED_GGUF_REPO
 
@@ -70,7 +70,7 @@ def test_custom_model_overrides_default_and_derives_gguf(settings_store, monkeyp
 
 
 def test_env_default_derives_its_gguf_companion(monkeypatch):
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     monkeypatch.setattr(rag_config, "EMBEDDING_MODEL", "org/env-default-embedder")
 
     assert rag_config.default_gguf_repo() == "org/env-default-embedder-GGUF"
@@ -79,13 +79,13 @@ def test_env_default_derives_its_gguf_companion(monkeypatch):
 def test_env_default_keeps_its_resolved_gguf_without_becoming_custom(settings_store, monkeypatch):
     """An env default can resolve to an off-convention repo even though selecting
     it should not turn the default itself into a persisted override."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     monkeypatch.setattr(rag_config, "EMBEDDING_MODEL", "org/env-default-embedder")
 
     ems.set_rag_embedding_model(
         "org/env-default-embedder",
-        gguf_repo = "org/published-conversion",
-        backend = "llama-server",
+        gguf_repo="org/published-conversion",
+        backend="llama-server",
     )
 
     assert ems.get_stored_embedding_model() is None
@@ -96,8 +96,8 @@ def test_env_default_keeps_its_resolved_gguf_without_becoming_custom(settings_st
 def test_resolution_record_keeps_model_repo_and_backend_atomic(settings_store):
     ems.set_rag_embedding_model(
         "org/embedder",
-        gguf_repo = "org/embedder-conversion",
-        backend = "llama-server",
+        gguf_repo="org/embedder-conversion",
+        backend="llama-server",
     )
     assert settings_store[ems.EMBEDDING_RESOLUTION_SETTING_KEY] == {
         "model": "org/embedder",
@@ -113,9 +113,9 @@ def test_resolution_record_keeps_model_repo_and_backend_atomic(settings_store):
 def test_pending_download_is_stored_with_the_same_atomic_resolution(settings_store):
     ems.set_rag_embedding_model(
         "org/embedder",
-        gguf_repo = "org/embedder-conversion",
-        backend = "llama-server",
-        download_pending = True,
+        gguf_repo="org/embedder-conversion",
+        backend="llama-server",
+        download_pending=True,
     )
     assert ems.get_stored_download_pending("org/embedder") is True
     assert ems.get_stored_download_pending("org/another") is False
@@ -128,9 +128,9 @@ def test_a_completed_transfer_retires_the_pending_marker(settings_store):
     later cache eviction reads as "never downloaded"."""
     ems.set_rag_embedding_model(
         "org/embedder",
-        gguf_repo = "org/embedder-conversion",
-        backend = "llama-server",
-        download_pending = True,
+        gguf_repo="org/embedder-conversion",
+        backend="llama-server",
+        download_pending=True,
     )
 
     assert ems.clear_stored_download_pending("org/embedder") is True
@@ -150,11 +150,11 @@ def test_a_concurrent_save_is_not_reverted_by_a_late_pending_clear(settings_stor
     B's override, leaving B to re-derive a backend and a companion it never
     resolved. The write is conditional on the record it read."""
     ems.set_rag_embedding_model(
-        "org/a", gguf_repo = "org/a-GGUF", backend = "llama-server", download_pending = True
+        "org/a", gguf_repo="org/a-GGUF", backend="llama-server", download_pending=True
     )
     stale = ems._get_stored_state()  # A's loader has read it
     assert stale[1] == "org/a" and stale[4] is True
-    ems.set_rag_embedding_model("org/b", gguf_repo = "org/b-GGUF", backend = "sentence-transformers")
+    ems.set_rag_embedding_model("org/b", gguf_repo="org/b-GGUF", backend="sentence-transformers")
     ems._cached[("owner", ems.EMBEDDING_RESOLUTION_SETTING_KEY)] = (
         0.0,
         stale,
@@ -170,18 +170,18 @@ def test_a_concurrent_save_is_not_reverted_by_a_late_pending_clear(settings_stor
 def test_a_pinned_jobs_resolved_repo_survives_a_save_for_another_model(settings_store, monkeypatch):
     """One stored record, so saving B takes A's repo away while a job pinned to A
     is still ingesting, moving its identity to the derived A-GGUF mid-run."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
     from core.rag import config
 
     ems.set_rag_embedding_model(
-        "org/embedder-a", gguf_repo = "mirror/off-convention-GGUF", backend = "llama-server"
+        "org/embedder-a", gguf_repo="mirror/off-convention-GGUF", backend="llama-server"
     )
     assert config.effective_gguf_repo_for_embedding_model("org/embedder-a") == (
         "mirror/off-convention-GGUF"
     )
 
-    ems.set_rag_embedding_model("org/embedder-b", gguf_repo = None, backend = None)
+    ems.set_rag_embedding_model("org/embedder-b", gguf_repo=None, backend=None)
 
     # The stored record is B's now, and the staleness rule still holds.
     assert ems.get_stored_gguf_repo("org/embedder-a") is None
@@ -200,12 +200,12 @@ def test_a_reset_keeps_the_repo_a_running_job_still_needs(settings_store, monkey
     ingesting through the repo that was resolved for it. The memo is per model and
     consulted only when the store has nothing, so dropping it here moved that job
     onto the derived <model>-GGUF mid-run."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
     from core.rag import config
 
     ems.set_rag_embedding_model(
-        "org/embedder-a", gguf_repo = "mirror/off-convention-GGUF", backend = "llama-server"
+        "org/embedder-a", gguf_repo="mirror/off-convention-GGUF", backend="llama-server"
     )
     assert ems.get_stored_gguf_repo("org/embedder-a") == "mirror/off-convention-GGUF"
     ems.reset_rag_embedding_model()
@@ -229,19 +229,19 @@ def test_a_pinned_jobs_backend_and_pending_survive_a_save_for_another_model(
     """On an auto CPU install a model with no GGUF resolves to
     sentence-transformers; losing that record drops a still-running job onto the
     hardware default, and losing the marker re-enables the implicit download."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
 
     ems.set_rag_embedding_model(
         "org/st-only",
-        gguf_repo = None,
-        backend = "sentence-transformers",
-        download_pending = True,
+        gguf_repo=None,
+        backend="sentence-transformers",
+        download_pending=True,
     )
     assert ems.get_stored_backend("org/st-only") == "sentence-transformers"
     assert ems.get_stored_download_pending("org/st-only") is True
 
-    ems.set_rag_embedding_model("org/other", gguf_repo = None, backend = "llama-server")
+    ems.set_rag_embedding_model("org/other", gguf_repo=None, backend="llama-server")
 
     assert ems.get_stored_backend("org/st-only") == "sentence-transformers"
     assert ems.get_stored_download_pending("org/st-only") is True
@@ -255,19 +255,19 @@ def test_a_pinned_jobs_backend_and_pending_survive_a_save_for_another_model(
 def test_retiring_the_pending_marker_retires_it_in_the_memo_too(settings_store, monkeypatch):
     """Or a pinned job keeps reading pending=True and stays cache-only after the
     download landed."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
 
     ems.set_rag_embedding_model(
         "org/embedder",
-        gguf_repo = None,
-        backend = "sentence-transformers",
-        download_pending = True,
+        gguf_repo=None,
+        backend="sentence-transformers",
+        download_pending=True,
     )
     assert ems.get_stored_download_pending("org/embedder") is True
     assert ems.clear_stored_download_pending("org/embedder") is True
 
-    ems.set_rag_embedding_model("org/other", gguf_repo = None, backend = None)
+    ems.set_rag_embedding_model("org/other", gguf_repo=None, backend=None)
     assert ems.get_stored_download_pending("org/embedder") is False
     # The backend it was resolved with is still remembered.
     assert ems.get_stored_backend("org/embedder") == "sentence-transformers"
@@ -278,17 +278,17 @@ def test_a_reset_makes_the_restored_defaults_resolution_durable(settings_store, 
     default is not a running job: new work resolves through it too, and a
     process-only answer would change identity on the next restart, stranding
     whatever was indexed in between."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
     default = ems.default_embedding_model()
 
     # The default itself was resolved to an off-convention mirror...
     ems.set_rag_embedding_model(
-        default, gguf_repo = "mirror/off-convention-GGUF", backend = "llama-server"
+        default, gguf_repo="mirror/off-convention-GGUF", backend="llama-server"
     )
     assert ems.get_stored_gguf_repo(default) == "mirror/off-convention-GGUF"
     # ...then another model is selected, taking the single record with it...
-    ems.set_rag_embedding_model("org/other", gguf_repo = None, backend = None)
+    ems.set_rag_embedding_model("org/other", gguf_repo=None, backend=None)
     # ...and the selection is reset.
     assert ems.reset_rag_embedding_model() == default
 
@@ -301,10 +301,10 @@ def test_a_reset_makes_the_restored_defaults_resolution_durable(settings_store, 
 
 
 def test_a_reset_with_nothing_remembered_stays_a_plain_reset(settings_store, monkeypatch):
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     ems._resolved_gguf_memo.clear()
 
-    ems.set_rag_embedding_model("org/other", gguf_repo = None, backend = "sentence-transformers")
+    ems.set_rag_embedding_model("org/other", gguf_repo=None, backend="sentence-transformers")
     assert ems.reset_rag_embedding_model() == ems.default_embedding_model()
 
     assert ems.get_stored_embedding_model() is None
@@ -318,10 +318,10 @@ def test_the_planned_gguf_family_is_stored_and_survives_the_clear(settings_store
     ems._resolved_gguf_memo.clear()
     ems.set_rag_embedding_model(
         "org/a",
-        gguf_repo = "org/a-GGUF",
-        backend = "llama-server",
-        download_pending = True,
-        gguf_files = ["a-Q8_0-00001-of-00002.gguf", "a-Q8_0-00002-of-00002.gguf"],
+        gguf_repo="org/a-GGUF",
+        backend="llama-server",
+        download_pending=True,
+        gguf_files=["a-Q8_0-00001-of-00002.gguf", "a-Q8_0-00002-of-00002.gguf"],
     )
 
     assert ems.get_stored_gguf_files("org/a") == [
@@ -368,10 +368,10 @@ def test_a_reset_keeps_a_pending_only_resolution_for_the_default(settings_store)
     from starting the implicit download this picker replaces."""
     ems._resolved_gguf_memo.clear()
     default = ems.default_embedding_model()
-    ems.set_rag_embedding_model(default, download_pending = True)
+    ems.set_rag_embedding_model(default, download_pending=True)
     assert ems.get_stored_download_pending(default) is True
 
-    ems.set_rag_embedding_model("org/other", gguf_repo = "org/other-GGUF", backend = "llama-server")
+    ems.set_rag_embedding_model("org/other", gguf_repo="org/other-GGUF", backend="llama-server")
     assert ems.reset_rag_embedding_model() == default
 
     # Read the store, not the memo: the memo answers for this process either way,
@@ -386,17 +386,17 @@ def test_pinning_a_model_memoizes_what_was_resolved_for_it(settings_store, monke
     and embeds afterwards. Only the repo/backend getters used to populate the memo,
     so a save for another model in that gap left the pinned job with nothing to
     fall back to and moved it onto the derived <model>-GGUF mid-run."""
-    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising = False)
+    monkeypatch.delenv("RAG_EMBED_GGUF_REPO", raising=False)
     from core.rag import config
 
     ems.set_rag_embedding_model(
-        "org/embedder-a", gguf_repo = "mirror/off-convention-GGUF", backend = "llama-server"
+        "org/embedder-a", gguf_repo="mirror/off-convention-GGUF", backend="llama-server"
     )
     # Nothing has read the resolution yet; the pin is the only thing that happens.
     ems._resolved_gguf_memo.clear()
     assert config.effective_embedding_model() == "org/embedder-a"
 
-    ems.set_rag_embedding_model("org/embedder-b", gguf_repo = None, backend = None)
+    ems.set_rag_embedding_model("org/embedder-b", gguf_repo=None, backend=None)
 
     assert config.effective_gguf_repo_for_embedding_model("org/embedder-a") == (
         "mirror/off-convention-GGUF"
@@ -408,7 +408,7 @@ def test_the_per_identity_cache_is_bounded(settings_store, monkeypatch):
     ems._cached.clear()
     ems._generation.clear()
     for index in range(ems._CACHE_MAX * 2):
-        monkeypatch.setattr(ems, "current_account_id", lambda index = index: f"account-{index}")
+        monkeypatch.setattr(ems, "current_account_id", lambda index=index: f"account-{index}")
         ems._get_stored_state()
     assert len(ems._cached) <= ems._CACHE_MAX
     assert (

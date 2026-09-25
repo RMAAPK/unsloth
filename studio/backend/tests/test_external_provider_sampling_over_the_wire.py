@@ -78,21 +78,21 @@ _OPENAI_DOCUMENTED = frozenset(
 class _Server:
     """A live OpenAI-compatible endpoint that keeps every body it was posted."""
 
-    def __init__(self, handler = None) -> None:
+    def __init__(self, handler=None) -> None:
         self._handler = handler or _Handler
 
     def __enter__(self) -> "_Server":
         # Port 0: the OS assigns, so no free-port scan can lose the race on a busy runner.
         self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._handler)
         self._httpd.recorded = []  # type: ignore[attr-defined]
-        self._thread = threading.Thread(target = self._httpd.serve_forever, daemon = True)
+        self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self._thread.start()
         return self
 
     def __exit__(self, *exc) -> None:
         self._httpd.shutdown()
         self._httpd.server_close()
-        self._thread.join(timeout = 10)
+        self._thread.join(timeout=10)
 
     @property
     def base_url(self) -> str:
@@ -134,15 +134,15 @@ def _run(coro) -> None:
 def _client_capture(provider_type: str, **kwargs) -> dict:
     with _Server() as server:
         client = ExternalProviderClient(
-            provider_type = provider_type,
-            base_url = server.base_url,
-            api_key = "",
+            provider_type=provider_type,
+            base_url=server.base_url,
+            api_key="",
         )
 
         async def go() -> None:
             async for _ in client.stream_chat_completion(
-                messages = [{"role": "user", "content": "hi"}],
-                model = "a-model",
+                messages=[{"role": "user", "content": "hi"}],
+                model="a-model",
                 **kwargs,
             ):
                 pass
@@ -154,9 +154,9 @@ def _client_capture(provider_type: str, **kwargs) -> dict:
 
 def _route_capture(
     *,
-    provider_type = "vllm",
-    messages = None,
-    full_body = False,
+    provider_type="vllm",
+    messages=None,
+    full_body=False,
     **payload_fields,
 ) -> dict:
     """POST through `_proxy_to_external_provider`, not around it."""
@@ -168,11 +168,11 @@ def _route_capture(
 
     with _Server() as server:
         payload = ChatCompletionRequest(
-            provider_type = provider_type,
-            provider_base_url = server.base_url,
-            messages = messages or [{"role": "user", "content": "hi"}],
-            model = "a-model",
-            stream = True,
+            provider_type=provider_type,
+            provider_base_url=server.base_url,
+            messages=messages or [{"role": "user", "content": "hi"}],
+            model="a-model",
+            stream=True,
             **payload_fields,
         )
         request = Request(
@@ -208,7 +208,7 @@ def test_a_request_that_never_mentioned_them_forwards_nothing():
 
 
 def test_the_route_forwards_explicit_values():
-    assert _route_capture(top_k = 40, min_p = 0.07, repetition_penalty = 1.15) == {
+    assert _route_capture(top_k=40, min_p=0.07, repetition_penalty=1.15) == {
         "top_k": 40,
         "min_p": 0.07,
         "repetition_penalty": 1.15,
@@ -217,7 +217,7 @@ def test_the_route_forwards_explicit_values():
 
 def test_explicit_values_equal_to_the_schema_defaults_are_still_forwarded():
     # 20 / 0.01 / 1.0 ARE the defaults, so a `!= default` shortcut would drop them.
-    assert _route_capture(top_k = 20, min_p = 0.01, repetition_penalty = 1.0) == {
+    assert _route_capture(top_k=20, min_p=0.01, repetition_penalty=1.0) == {
         "top_k": 20,
         "min_p": 0.01,
         "repetition_penalty": 1.0,
@@ -225,7 +225,7 @@ def test_explicit_values_equal_to_the_schema_defaults_are_still_forwarded():
 
 
 def test_zero_survives_the_route():
-    assert _route_capture(top_k = 0, min_p = 0.0) == {"top_k": 0, "min_p": 0.0}
+    assert _route_capture(top_k=0, min_p=0.0) == {"top_k": 0, "min_p": 0.0}
 
 
 @pytest.mark.parametrize(
@@ -241,7 +241,7 @@ def test_one_field_set_forwards_only_that_field(field, value):
 
 
 def test_writing_to_the_payload_would_make_an_omission_look_explicit():
-    payload = ChatCompletionRequest(messages = [{"role": "user", "content": "hi"}])
+    payload = ChatCompletionRequest(messages=[{"role": "user", "content": "hi"}])
     assert "min_p" not in payload.model_fields_set
     payload.min_p = payload.min_p  # a no-op write, same value
     assert "min_p" in payload.model_fields_set
@@ -251,41 +251,42 @@ def test_writing_to_the_payload_would_make_an_omission_look_explicit():
 def test_all_three_reach_a_live_endpoint(provider_type):
     assert _client_capture(
         provider_type,
-        top_k = 40,
-        min_p = 0.07,
-        repetition_penalty = 1.15,
+        top_k=40,
+        min_p=0.07,
+        repetition_penalty=1.15,
     ) == {"top_k": 40, "min_p": 0.07, "repetition_penalty": 1.15}
 
 
 def test_llama_server_receives_repeat_penalty_on_the_wire():
     assert _client_capture(
         "llama_cpp",
-        top_k = 40,
-        min_p = 0.07,
-        repetition_penalty = 1.15,
+        top_k=40,
+        min_p=0.07,
+        repetition_penalty=1.15,
     ) == {"top_k": 40, "min_p": 0.07, "repeat_penalty": 1.15}
 
 
 def test_ollama_receives_none_of_them_even_from_a_raw_api_caller():
-    assert _client_capture("ollama", top_k = 42, min_p = 0.07, repetition_penalty = 1.23) == {}
+    assert _client_capture("ollama", top_k=42, min_p=0.07, repetition_penalty=1.23) == {}
 
 
 def test_the_tool_loop_continuation_keeps_the_same_sampling():
     # OAICompatTransport replays **request_kwargs every turn; a tool call must not change it.
     from core.inference.external_tool_transport import OAICompatTransport
+
     with _Server() as server:
         client = ExternalProviderClient(
-            provider_type = "vllm",
-            base_url = server.base_url,
-            api_key = "",
+            provider_type="vllm",
+            base_url=server.base_url,
+            api_key="",
         )
         transport = OAICompatTransport(
             client,
-            model = "a-model",
-            stream = True,
-            top_k = 40,
-            min_p = 0.07,
-            repetition_penalty = 1.15,
+            model="a-model",
+            stream=True,
+            top_k=40,
+            min_p=0.07,
+            repetition_penalty=1.15,
         )
         cancel_event = threading.Event()
         turns = [
@@ -310,10 +311,10 @@ def test_the_tool_loop_continuation_keeps_the_same_sampling():
         async def go() -> None:
             for messages in turns:
                 async for _ in transport.stream(
-                    messages = messages,
-                    tools = None,
-                    tool_choice = None,
-                    cancel_event = cancel_event,
+                    messages=messages,
+                    tools=None,
+                    tool_choice=None,
+                    cancel_event=cancel_event,
                 ):
                     pass
 
@@ -353,19 +354,19 @@ def test_a_stale_frontend_bundle_does_not_start_400ing_a_custom_gateway():
             self.end_headers()
             self.wfile.write(payload)
 
-    with _Server(handler = _Strict) as server:
+    with _Server(handler=_Strict) as server:
         client = ExternalProviderClient(
-            provider_type = "custom",
-            base_url = server.base_url,
-            api_key = "",
+            provider_type="custom",
+            base_url=server.base_url,
+            api_key="",
         )
         lines: list[str] = []
 
         async def go() -> None:
             async for line in client.stream_chat_completion(
-                messages = [{"role": "user", "content": "hi"}],
-                model = "a-model",
-                top_k = 20,
+                messages=[{"role": "user", "content": "hi"}],
+                model="a-model",
+                top_k=20,
             ):
                 lines.append(line)
 
@@ -382,7 +383,7 @@ def test_preserve_thinking_reaches_llama_server_through_the_route(value):
         {"role": "user", "content": "two"},
     ]
     body = _route_capture(
-        provider_type = "llama_cpp", messages = messages, full_body = True, preserve_thinking = value
+        provider_type="llama_cpp", messages=messages, full_body=True, preserve_thinking=value
     )
     assert body["messages"][-2]["reasoning_content"] == "prior thought"
     if value is None:

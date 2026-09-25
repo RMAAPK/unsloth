@@ -32,7 +32,7 @@ import contextlib
 
 def _health_check_ast():
     """main.py's ``health_check`` coroutine, parsed rather than imported."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     return next(
         node
         for node in ast.walk(tree)
@@ -75,7 +75,7 @@ def test_the_cached_path_does_not_look_like_a_redetect(monkeypatch):
     """get_device() on a warm process must not advance the generation counter:
     _refresh_static_models_if_stale() reads a change as a re-detection, so counting cache
     hits made any GPU or export helper rebuild the curated defaults and log falsely."""
-    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising=False)
     before = hw.DETECTION_GENERATION
     for _ in range(5):
         hw.ensure_hardware_detected()
@@ -87,7 +87,7 @@ def test_the_cached_path_does_not_look_like_a_redetect(monkeypatch):
 
 def test_a_real_detection_still_advances_the_generation(monkeypatch):
     """Negative control: the counter must still move when detection runs."""
-    monkeypatch.setattr(hw, "DEVICE", None, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", None, raising=False)
     calls: list[int] = []
 
     def _fake_locked():
@@ -104,7 +104,7 @@ def test_a_real_detection_still_advances_the_generation(monkeypatch):
 
 def test_the_completion_event_is_published_on_the_cached_path_too(monkeypatch):
     """The event is not the counter: a late waiter must still find it set."""
-    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising=False)
     hw.DETECTION_COMPLETE.clear()
     try:
         hw.ensure_hardware_detected()
@@ -122,10 +122,10 @@ def test_a_failed_redetect_restores_the_whole_published_verdict(monkeypatch):
     The pass resets CHAT_ONLY / CHAT_ONLY_REASON / IS_ROCM on entry and the MLX autorepair
     catches the exception, so without a restore the reason is gone and the sidebar poll
     stops (it continues only while it reads "mlx_unavailable")."""
-    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY_REASON", "mlx_unavailable", raising = False)
-    monkeypatch.setattr(hw, "IS_ROCM", True, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY_REASON", "mlx_unavailable", raising=False)
+    monkeypatch.setattr(hw, "IS_ROCM", True, raising=False)
 
     def _boom():
         # Exactly what the real body does before it can fail.
@@ -153,9 +153,9 @@ def test_a_failed_redetect_restores_the_whole_published_verdict(monkeypatch):
 
 def test_a_successful_redetect_publishes_the_new_verdict(monkeypatch):
     """Negative control: the restore must not undo a pass that worked."""
-    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY_REASON", "mlx_unavailable", raising = False)
+    monkeypatch.setattr(hw, "DEVICE", hw.DeviceType.CPU, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY_REASON", "mlx_unavailable", raising=False)
 
     def _ok():
         hw.CHAT_ONLY = False
@@ -180,7 +180,7 @@ def test_building_the_orchestrator_makes_no_outbound_request():
     Starting the ranking fetch from __init__ reached huggingface.co on every boot before
     anyone signed in. Asserted on the source: importing here pulls the whole stack."""
     tree = ast.parse(
-        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding = "utf-8")
+        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding="utf-8")
     )
     # Scope to the class: the module defines more than one __init__.
     cls = next(
@@ -210,7 +210,7 @@ def test_building_the_orchestrator_makes_no_outbound_request():
 def test_the_ranking_fetch_is_started_by_the_first_reader():
     """...but it must still be reachable, or the extra choices never load."""
     tree = ast.parse(
-        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding = "utf-8")
+        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding="utf-8")
     )
     prop = next(
         node
@@ -241,8 +241,8 @@ def test_the_ranking_fetch_starts_no_thread_when_offline(monkeypatch, env):
     leave the first model list network-silent, not just the one the guard compares."""
     from core.inference import orchestrator as orch
 
-    monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
-    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
@@ -251,7 +251,7 @@ def test_the_ranking_fetch_starts_no_thread_when_offline(monkeypatch, env):
         orch.threading,
         "Thread",
         lambda *a, **kw: started.append(kw.get("name")) or _NeverStarts(),
-        raising = True,
+        raising=True,
     )
 
     instance = object.__new__(orch.InferenceOrchestrator)
@@ -265,15 +265,15 @@ def test_the_ranking_fetch_still_runs_when_online(monkeypatch):
     """Negative control: nothing above may have disabled the fetch outright."""
     from core.inference import orchestrator as orch
 
-    monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
-    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
 
     started = []
     monkeypatch.setattr(
         orch.threading,
         "Thread",
         lambda *a, **kw: started.append(kw.get("name")) or _NeverStarts(),
-        raising = True,
+        raising=True,
     )
 
     instance = object.__new__(orch.InferenceOrchestrator)
@@ -288,7 +288,7 @@ def test_the_ranking_fetch_still_runs_when_online(monkeypatch):
 
 def _async_offloaded_names(path: Path, function: str) -> set[str]:
     """Names this async function hands to asyncio.to_thread."""
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -313,7 +313,7 @@ def test_the_openai_model_listing_reaches_the_singleton_off_loop(function):
     early GET /v1/models held the loop for the rest of the torch import, and the offload
     further down could not help: the call had already happened."""
     path = _BACKEND / "routes" / "inference.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     names = {node.name for node in ast.walk(tree) if isinstance(node, ast.AsyncFunctionDef)}
     if function not in names:
         pytest.skip(f"{function} is not an async handler in this tree")
@@ -325,7 +325,7 @@ def test_the_model_config_capability_block_runs_off_loop():
     property, not a helper name: the handler body must not call the probes, and whatever
     the worker runs must."""
     path = _BACKEND / "routes" / "models.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -374,7 +374,7 @@ def test_the_model_config_capability_block_runs_off_loop():
 
 def test_post_warm_order_keeps_mlx_selfheal_and_linked_folder_startup():
     """Removing the RAG warm must not drop either remaining lifecycle action."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -418,7 +418,7 @@ def test_the_torch_kill_switch_leaves_linked_folder_sync_running(monkeypatch):
 
 def test_the_purge_rechecks_before_touching_sys_modules():
     """A racing retry republishes the parent; do not strip modules under it."""
-    src = (_BACKEND / "utils" / "torch_warmup.py").read_text(encoding = "utf-8")
+    src = (_BACKEND / "utils" / "torch_warmup.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     fn = next(
         node
@@ -455,7 +455,7 @@ def test_the_purge_stops_when_the_parent_reappears(monkeypatch):
         def pop(
             self,
             key,
-            default = None,
+            default=None,
         ):
             popped.append(key)
             # A retry publishes the parent right after the first pop.
@@ -486,7 +486,7 @@ def test_the_purge_still_cleans_an_uncontested_failure(monkeypatch):
 
 def test_threading_import_is_present_for_the_lazy_fetch():
     """The lazy start puts up its own thread; keep the import it needs."""
-    src = (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding = "utf-8")
+    src = (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding="utf-8")
     assert "import threading" in src
     assert isinstance(threading.Lock(), type(threading.Lock()))
 
@@ -609,7 +609,7 @@ def test_only_the_current_generation_does_the_work(monkeypatch):
 def test_shutdown_does_not_wait_for_the_post_warm_thread():
     """Retiring must not join: a join would hold shutdown for the rest of the ML
     stack import, which is the stall this path exists to avoid."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -625,7 +625,7 @@ def test_shutdown_does_not_wait_for_the_post_warm_thread():
 
 def test_the_lifespan_stops_the_post_warm_thread_on_shutdown():
     """Guard the wiring: the signal has to actually be sent."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -652,9 +652,9 @@ def test_health_will_not_publish_a_verdict_mid_redetect(monkeypatch):
     import main as main_mod
 
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising = False)
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY", True, raising = False)
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY_REASON", None, raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising=False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY", True, raising=False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY_REASON", None, raising=False)
     hw_mod.DETECTION_COMPLETE.clear()
     try:
         assert (
@@ -669,7 +669,7 @@ def test_health_snapshot_rejects_a_torn_read(monkeypatch):
     import main as main_mod
 
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", None, raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", None, raising=False)
     hw_mod.DETECTION_COMPLETE.set()
     assert main_mod._hardware_snapshot() is None
 
@@ -679,15 +679,15 @@ def test_health_snapshot_returns_a_settled_verdict(monkeypatch):
     import main as main_mod
 
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising = False)
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY", True, raising = False)
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY_REASON", "mlx_unavailable", raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising=False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY", True, raising=False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY_REASON", "mlx_unavailable", raising=False)
     # The detail too. _hardware_snapshot reads three fields and this pinned all
     # three while stubbing only two, so the assertion held on whatever the real
     # module happened to be carrying. It stopped holding on 2026-08-19 when an
     # mlx-vlm bump left a live "(needs >=0.4.4)" detail behind, and the failure
     # read as a snapshot bug rather than as an unstubbed field.
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY_DETAIL", None, raising = False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY_DETAIL", None, raising=False)
     hw_mod.DETECTION_COMPLETE.set()
     # Three items: the detail travels with the reason it explains, out of the same
     # guarded read, so the two can never be paired across different detection passes.
@@ -696,7 +696,7 @@ def test_health_snapshot_returns_a_settled_verdict(monkeypatch):
     # And the detail is genuinely read rather than hardcoded to None: pairing it
     # with its reason out of one guarded read is the property this test is named
     # for, and stubbing it to None above would hide a snapshot that dropped it.
-    monkeypatch.setattr(hw_mod, "CHAT_ONLY_DETAIL", "mlx-vlm 0.4.3 (needs >=0.4.4)", raising = False)
+    monkeypatch.setattr(hw_mod, "CHAT_ONLY_DETAIL", "mlx-vlm 0.4.3 (needs >=0.4.4)", raising=False)
     assert main_mod._hardware_snapshot() == (
         True,
         "mlx_unavailable",
@@ -724,7 +724,7 @@ def test_health_rereads_the_verdict_after_authentication():
 
 def test_detection_wait_requires_a_device_not_just_the_event():
     """Event-set-with-DEVICE-None must send the caller to a fresh detection."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -772,7 +772,7 @@ def test_the_delete_guard_runs_off_the_event_loop():
     _inference_backend_blocks_delete() is sync and reaches get_inference_backend(), whose
     cold build waits on detection: inline, an authed DELETE held the loop for the import."""
     path = _BACKEND / "hub" / "services" / "models" / "deletion.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -802,7 +802,7 @@ def test_the_delete_guard_keeps_its_short_circuit_and_fail_closed():
     loaded the first guard answers and the second never runs. And an unreadable load state
     must still raise rather than fall through to unlinking weights under a live process."""
     path = _BACKEND / "hub" / "services" / "models" / "deletion.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     helper = next(
         node
         for node in ast.walk(tree)
@@ -861,12 +861,12 @@ def test_health_does_not_kick_detection_when_the_warm_is_off(monkeypatch):
 
     kicks = []
     monkeypatch.setattr(
-        main_mod, "start_background_detection", lambda: kicks.append(1), raising = True
+        main_mod, "start_background_detection", lambda: kicks.append(1), raising=True
     )
     monkeypatch.setenv(main_mod.DISABLE_ENV_VAR, "1")
 
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", None, raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", None, raising=False)
     was_complete = hw_mod.DETECTION_COMPLETE.is_set()
     hw_mod.DETECTION_COMPLETE.clear()
     try:
@@ -887,12 +887,12 @@ def test_health_still_kicks_detection_when_the_warm_is_on(monkeypatch):
 
     kicks = []
     monkeypatch.setattr(
-        main_mod, "start_background_detection", lambda: kicks.append(1), raising = True
+        main_mod, "start_background_detection", lambda: kicks.append(1), raising=True
     )
-    monkeypatch.delenv(main_mod.DISABLE_ENV_VAR, raising = False)
+    monkeypatch.delenv(main_mod.DISABLE_ENV_VAR, raising=False)
 
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", None, raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", None, raising=False)
     was_complete = hw_mod.DETECTION_COMPLETE.is_set()
     hw_mod.DETECTION_COMPLETE.clear()
     try:
@@ -913,7 +913,7 @@ def test_the_switch_still_reports_a_verdict_it_already_has(monkeypatch):
 
     monkeypatch.setenv(main_mod.DISABLE_ENV_VAR, "1")
     hw_mod = main_mod._hw_module
-    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising = False)
+    monkeypatch.setattr(hw_mod, "DEVICE", hw_mod.DeviceType.CPU, raising=False)
     was_complete = hw_mod.DETECTION_COMPLETE.is_set()
     hw_mod.DETECTION_COMPLETE.set()
     try:
@@ -929,7 +929,7 @@ def test_the_standalone_vision_probe_runs_off_the_event_loop():
     is_vision_model() are lazy now, so the first call either imports transformers or waits
     on _DETECTION_SETS_LOCK while the warm holds it. Both park uvicorn."""
     path = _BACKEND / "routes" / "models.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -983,7 +983,7 @@ def test_the_ranking_fetch_uses_the_shared_offline_check():
     read goes through hf_env_offline(); a literal "1" comparison leaves a boot that set any
     other accepted spelling making a raw outbound httpx.get to Hugging Face."""
     path = _BACKEND / "core" / "inference" / "orchestrator.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1020,13 +1020,13 @@ def test_the_shared_offline_check_accepts_the_other_spellings(monkeypatch):
         ("HF_HUB_OFFLINE", "on"),
         ("TRANSFORMERS_OFFLINE", "1"),
     ):
-        monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
-        monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
+        monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+        monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
         monkeypatch.setenv(var, value)
         assert hf_env_offline(), f"{var}={value} was treated as online"
 
-    monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
-    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
     assert not hf_env_offline(), "a host with neither variable set was called offline"
 
 
@@ -1074,9 +1074,9 @@ class _FakeHardwareModule:
 async def _run_shutdown(shutdown_mod, hw_mod) -> None:
     """Drive run_lifespan_shutdown with everything but the hardware reset stubbed."""
     await shutdown_mod.run_lifespan_shutdown(
-        terminate_downloads = lambda: None,
-        clear_compiled_cache = lambda: None,
-        hw_module = hw_mod,
+        terminate_downloads=lambda: None,
+        clear_compiled_cache=lambda: None,
+        hw_module=hw_mod,
     )
 
 
@@ -1084,7 +1084,7 @@ async def _run_shutdown(shutdown_mod, hw_mod) -> None:
 def test_the_post_warm_worker_rechecks_before_each_action():
     """One check after the join leaves a shutdown window around each remaining action.
     A generation read before MLX repair and linked-folder startup keeps a stopped lifespan cold."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1108,7 +1108,7 @@ def test_the_retirement_check_reads_the_live_generation(monkeypatch):
     """It has to compare against the current counter, not a captured one."""
     import main as main_mod
 
-    monkeypatch.setattr(main_mod, "_post_warm_current_generation", lambda: 7, raising = True)
+    monkeypatch.setattr(main_mod, "_post_warm_current_generation", lambda: 7, raising=True)
     assert main_mod._post_warm_retired(7) is False
     assert main_mod._post_warm_retired(6) is True
     assert (
@@ -1122,7 +1122,7 @@ def test_the_saved_gpu_override_check_runs_off_the_event_loop():
     resolve_requested_gpu_ids() calls get_device() itself, so both wait on the
     detection lock while the warm imports torch."""
     path = _BACKEND / "routes" / "inference.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1167,8 +1167,8 @@ def test_a_detection_retired_by_shutdown_does_not_publish(monkeypatch):
     Shutdown cannot take _DETECT_LOCK to stop it -- that parks teardown behind the whole
     import -- so it retires the epoch. Otherwise the detector republishes a settled-looking
     verdict over the reset, and the next lifespan skips detection on a non-None DEVICE."""
-    monkeypatch.setattr(hw, "DEVICE", None, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", None, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising=False)
 
     def _detect_and_get_retired():
         # Stands in for the torch import: shutdown lands while we are inside it.
@@ -1191,8 +1191,8 @@ def test_a_detection_retired_by_shutdown_does_not_publish(monkeypatch):
 
 def test_a_detection_that_is_not_retired_still_publishes(monkeypatch):
     """Negative control: the epoch gate must not block ordinary detection."""
-    monkeypatch.setattr(hw, "DEVICE", None, raising = False)
-    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising = False)
+    monkeypatch.setattr(hw, "DEVICE", None, raising=False)
+    monkeypatch.setattr(hw, "CHAT_ONLY", True, raising=False)
 
     def _ok():
         hw.DEVICE = hw.DeviceType.CUDA
@@ -1211,7 +1211,7 @@ def test_a_detection_that_is_not_retired_still_publishes(monkeypatch):
 
 def test_shutdown_retires_the_detection_epoch():
     """run_lifespan_shutdown must move the epoch, not just clear the globals."""
-    src = (_BACKEND / "utils" / "lifespan_shutdown.py").read_text(encoding = "utf-8")
+    src = (_BACKEND / "utils" / "lifespan_shutdown.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     fn = next(
         node
@@ -1233,7 +1233,7 @@ def test_shutdown_retires_the_detection_epoch():
 def test_the_mcp_status_tool_reads_hardware_off_the_event_loop():
     """get_gpu_utilization() reaches detection, which blocks on the warm import."""
     path = _BACKEND / "mcp_server.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     called_directly = [
         node
         for node in ast.walk(tree)
@@ -1297,7 +1297,7 @@ def test_the_warm_stops_after_a_stage_its_lifespan_no_longer_owns():
     """Later stages build the orchestrator, which starts a fresh detection. Discarding the
     hardware stage's verdict is not enough: the inference_backend stage reaches get_device()
     and would republish DEVICE after teardown cleared it."""
-    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1321,7 +1321,7 @@ def test_the_warm_stops_after_a_stage_its_lifespan_no_longer_owns():
 # -------------------------------- describing what is loaded must not build it
 def test_the_monitor_context_read_does_not_construct_the_backend():
     """It is called inline from the OpenAI, Responses and Anthropic paths."""
-    tree = ast.parse((_BACKEND / "routes" / "inference.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "routes" / "inference.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1364,7 +1364,7 @@ def test_the_peek_never_constructs():
 
 def test_the_metadata_cleanup_does_not_construct_the_backend():
     """A metadata-only cleanup has no reason to import torch."""
-    tree = ast.parse((_BACKEND / "routes" / "models.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "routes" / "models.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -1392,7 +1392,7 @@ def test_the_research_probes_do_not_construct_the_backend():
     """A durable research run resumes on the loop as soon as the port is recorded, and
     calls these two sync probes inline, so a cold get_inference_backend() there parks
     uvicorn on the torch import for the rest of the warm."""
-    tree = ast.parse((_BACKEND / "core" / "research_runs.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "core" / "research_runs.py").read_text(encoding="utf-8"))
     for name in ("_loaded_context_length", "_local_model_ready"):
         fn = next(
             node
@@ -1440,8 +1440,8 @@ class _DeferredThread:
 
     def __init__(
         self,
-        target = None,
-        args = (),
+        target=None,
+        args=(),
         **_kw,
     ):
         self._target, self._args = target, args
@@ -1468,13 +1468,13 @@ def test_a_warm_delayed_past_shutdown_is_already_retired(monkeypatch):
     from utils.hardware import hardware as hw
 
     ran: list = []
-    stages = tuple((name, lambda name = name: ran.append(name)) for name in ("hardware", "later"))
+    stages = tuple((name, lambda name=name: ran.append(name)) for name in ("hardware", "later"))
     monkeypatch.setattr(warm, "_STAGES", stages)
     monkeypatch.setattr(warm.threading, "Thread", _DeferredThread)
     monkeypatch.setattr(warm, "_thread", None)
     # Own the latch and the status: leaving them set shows the next test a live warm.
     monkeypatch.setattr(warm, "_status", {"started": False, "finished": False, "stages": {}})
-    monkeypatch.delenv(warm.DISABLE_ENV_VAR, raising = False)
+    monkeypatch.delenv(warm.DISABLE_ENV_VAR, raising=False)
     _DeferredThread.instances.clear()
 
     assert warm.start_background_warm() is True
@@ -1489,13 +1489,13 @@ def test_a_warm_that_owns_its_epoch_still_runs(monkeypatch):
     import utils.torch_warmup as warm
 
     ran: list = []
-    stages = tuple((name, lambda name = name: ran.append(name)) for name in ("hardware", "later"))
+    stages = tuple((name, lambda name=name: ran.append(name)) for name in ("hardware", "later"))
     monkeypatch.setattr(warm, "_STAGES", stages)
     monkeypatch.setattr(warm.threading, "Thread", _DeferredThread)
     monkeypatch.setattr(warm, "_thread", None)
     # Own the latch and the status: leaving them set shows the next test a live warm.
     monkeypatch.setattr(warm, "_status", {"started": False, "finished": False, "stages": {}})
-    monkeypatch.delenv(warm.DISABLE_ENV_VAR, raising = False)
+    monkeypatch.delenv(warm.DISABLE_ENV_VAR, raising=False)
     _DeferredThread.instances.clear()
 
     assert warm.start_background_warm() is True
@@ -1533,7 +1533,7 @@ def test_both_spawners_read_the_epoch_before_start():
         (("utils", "torch_warmup.py"), "start_background_warm"),
         (("utils", "hardware", "hardware.py"), "start_background_detection"),
     ):
-        tree = ast.parse(_BACKEND.joinpath(*rel).read_text(encoding = "utf-8"))
+        tree = ast.parse(_BACKEND.joinpath(*rel).read_text(encoding="utf-8"))
         fn = next(
             node
             for node in ast.walk(tree)
@@ -1715,7 +1715,7 @@ def test_an_absent_torch_is_still_just_absent():
 
     def _missing(name, *a, **k):
         if name == "torch" or name.startswith("torch."):
-            raise ModuleNotFoundError("No module named 'torch'", name = "torch")
+            raise ModuleNotFoundError("No module named 'torch'", name="torch")
         return real_import(name, *a, **k)
 
     try:
@@ -1737,9 +1737,9 @@ def test_an_absent_torch_is_still_just_absent():
         # Windows.
         OSError("[WinError 126] The specified module could not be found"),
         # A missing submodule still means torch itself is installed.
-        ModuleNotFoundError("No module named 'torch._C'", name = "torch._C"),
+        ModuleNotFoundError("No module named 'torch._C'", name="torch._C"),
     ],
-    ids = ["import_error_native_lib", "os_error_windows", "missing_submodule"],
+    ids=["import_error_native_lib", "os_error_windows", "missing_submodule"],
 )
 def test_a_broken_torch_is_never_mistaken_for_an_absent_one(exc):
     """ImportError is not a synonym for "not installed". Keying on the class reports a wheel
@@ -1771,7 +1771,7 @@ def test_the_default_model_list_is_stamped_before_it_is_built():
     get_default_models() settles detection and reads CHAT_ONLY, so a re-detection between
     that and the stamp marks the pre-repair list as post-repair, permanently."""
     tree = ast.parse(
-        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding = "utf-8")
+        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding="utf-8")
     )
 
     def _line_of(fn, predicate):
@@ -1849,7 +1849,7 @@ def test_the_default_model_list_is_stamped_before_it_is_built():
     assert all(
         _line_of(
             guarded,
-            lambda a, attr = attr: any(
+            lambda a, attr=attr: any(
                 isinstance(t, ast.Attribute) and t.attr == attr for t in a.targets
             ),
         )
@@ -1887,7 +1887,7 @@ def test_a_redetect_during_the_bearer_await_leaves_the_reply_provisional():
 
 def test_the_unload_eviction_checks_are_offloaded():
     """AST: both _unload_may_evict() calls reach the singleton, so neither runs inline."""
-    tree = ast.parse((_BACKEND / "routes" / "inference.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "routes" / "inference.py").read_text(encoding="utf-8"))
     inline = [
         sub.lineno
         for sub in ast.walk(tree)
@@ -1969,7 +1969,7 @@ def test_the_warm_hands_its_epoch_to_detection():
     # hand and patching the bound name hops over the wrapper, which is how one that dropped
     # the argument (raising into _run_stage on every boot) went unnoticed.
     seen: list = []
-    with mock.patch.object(hw_mod, "ensure_hardware_detected", lambda e = None: seen.append(e)):
+    with mock.patch.object(hw_mod, "ensure_hardware_detected", lambda e=None: seen.append(e)):
         warm._warm_hardware(41)
     assert seen == [41], f"the hardware stage dropped its epoch: {seen}"
 
@@ -2010,7 +2010,7 @@ def test_the_warm_loop_passes_the_epoch_to_the_real_stage_only():
 
     got: list = []
 
-    def _hardware(epoch = None):
+    def _hardware(epoch=None):
         got.append(("hardware", epoch))
 
     zero_arg_calls: list = []
@@ -2022,7 +2022,7 @@ def test_the_warm_loop_passes_the_epoch_to_the_real_stage_only():
     assert zero_arg_calls == ["later"]
 
     # The real stage does get it: assert on the call the loop builds.
-    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -2042,7 +2042,7 @@ def test_deleting_a_cached_model_does_not_construct_the_backend():
     a stall; it is the kill switch defeated, and the warm window paying a torch import to
     answer "nothing loaded"."""
     tree = ast.parse(
-        (_BACKEND / "hub" / "services" / "models" / "deletion.py").read_text(encoding = "utf-8")
+        (_BACKEND / "hub" / "services" / "models" / "deletion.py").read_text(encoding="utf-8")
     )
     fn = next(
         node
@@ -2082,7 +2082,7 @@ def test_the_warm_epoch_is_retired_before_any_shutdown_await():
     """The coordinated warm has to be stopped at shutdown entry too. run_lifespan_shutdown()
     invalidates, but only after several awaits, and a warm running through those keeps
     building the inference backend and importing for a lifespan that has stopped."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -2120,7 +2120,7 @@ def test_the_post_warm_worker_is_retired_before_any_shutdown_await():
     """It has to stop first, not merely early. Everything the post-warm worker does next loads
     part of the ML stack, including starting a llama-server, and a warm finishing during a
     later shutdown await would still read the lifespan as current and go ahead."""
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
     fn = next(
         node
         for node in ast.walk(tree)
@@ -2191,7 +2191,7 @@ def test_an_offline_first_read_does_not_retire_the_ranking_fetch():
     """Claiming the latch before the offline check disables the fetch for the process: an
     offline boot or a force_hf_offline() scope then never picks the ranking up again."""
     tree = ast.parse(
-        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding = "utf-8")
+        (_BACKEND / "core" / "inference" / "orchestrator.py").read_text(encoding="utf-8")
     )
     fn = next(
         node
@@ -2458,7 +2458,7 @@ def test_the_scope_is_per_thread_and_restores_what_it_replaced():
         with hw.owning_detection_epoch(22):
             assert hw._OWNING_EPOCH.value == 22
         assert hw._OWNING_EPOCH.value == 11, "the inner scope did not restore the outer"
-        thread = threading.Thread(target = _other)
+        thread = threading.Thread(target=_other)
         thread.start()
         thread.join()
 
@@ -2469,7 +2469,7 @@ def test_the_scope_is_per_thread_and_restores_what_it_replaced():
 def test_the_warm_runs_its_stages_inside_an_owning_scope():
     """AST: the guard is the scope around the loop, not any one stage. A future stage that
     reaches hardware some other way is covered only while the loop body stays inside it."""
-    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / "utils" / "torch_warmup.py").read_text(encoding="utf-8"))
     warm = next(
         node
         for node in ast.walk(tree)
@@ -2558,7 +2558,7 @@ def test_the_mlx_worker_reads_its_epoch_before_start():
                 mock.patch.object(repair, "mlx_stack_available", lambda: False),
                 mock.patch.object(repair, "_installed_without_torch", lambda: False),
             ):
-                with mock.patch.dict(os.environ, {}, clear = False):
+                with mock.patch.dict(os.environ, {}, clear=False):
                     os.environ.pop(repair.DISABLE_ENV_VAR, None)
                     repair._attempted = False
                     repair.start_mlx_autorepair_if_needed()
@@ -2586,7 +2586,7 @@ def test_an_interrupted_purge_reports_only_what_it_removed():
         def pop(
             self,
             key,
-            default = None,
+            default=None,
         ):
             result = super().pop(key, default)
             self.setdefault(package, types.ModuleType(package))
@@ -2594,7 +2594,7 @@ def test_an_interrupted_purge_reports_only_what_it_removed():
 
     fake = _RacingModules({name: types.ModuleType(name) for name in names})
 
-    with mock.patch.object(torch_warmup, "sys", types.SimpleNamespace(modules = fake)):
+    with mock.patch.object(torch_warmup, "sys", types.SimpleNamespace(modules=fake)):
         removed = torch_warmup.purge_partial_import(package)
 
     assert len(removed) < len(names), (
@@ -2642,6 +2642,7 @@ def test_a_repair_that_outlived_its_lifespan_still_reopens_train():
     _attempted is process-wide so no later repair revisits it, and health only reads the
     settled snapshot. Train and Export stay disabled until a restart."""
     import utils.mlx_repair as repair
+
     with _restores_hardware_verdict() as hw:
         spawn_epoch = hw.current_detection_epoch()
         hw.invalidate_detection()  # the restart, while the install was still running

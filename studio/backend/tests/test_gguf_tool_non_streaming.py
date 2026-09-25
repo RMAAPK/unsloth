@@ -48,7 +48,7 @@ class _ToolGgufBackend(FakeLlamaCppBackend):
         }
 
 
-def _client(monkeypatch, backend = None):
+def _client(monkeypatch, backend=None):
     monkeypatch.setattr(
         inference_route, "get_llama_cpp_backend", lambda: backend or _ToolGgufBackend()
     )
@@ -75,7 +75,7 @@ def _payload(stream: bool):
 
 
 def test_non_streaming_tool_call_returns_single_json(monkeypatch):
-    response = _client(monkeypatch).post("/chat/completions", json = _payload(stream = False))
+    response = _client(monkeypatch).post("/chat/completions", json=_payload(stream=False))
 
     assert response.status_code == 200
     # The bug returned text/event-stream here; it must be a single JSON object.
@@ -96,8 +96,8 @@ def test_streaming_tool_call_still_streams(monkeypatch):
     # enable_tools arms the confirm gate, which asks over the control frames.
     response = _client(monkeypatch).post(
         "/chat/completions",
-        json = _payload(stream = True),
-        headers = {"X-Unsloth-Events": "1"},
+        json=_payload(stream=True),
+        headers={"X-Unsloth-Events": "1"},
     )
 
     assert response.status_code == 200
@@ -120,7 +120,7 @@ def test_non_streaming_missing_usage_defaults_to_zero(monkeypatch):
     # No metadata event at all: usage zero-defaults and finish_reason falls back.
     events = [{"type": "content", "text": "hi"}]
     response = _client(monkeypatch, _EventsBackend(events)).post(
-        "/chat/completions", json = _payload(stream = False)
+        "/chat/completions", json=_payload(stream=False)
     )
 
     assert response.status_code == 200
@@ -142,7 +142,7 @@ def test_non_streaming_preserves_length_finish_reason(monkeypatch):
         },
     ]
     response = _client(monkeypatch, _EventsBackend(events)).post(
-        "/chat/completions", json = _payload(stream = False)
+        "/chat/completions", json=_payload(stream=False)
     )
 
     assert response.status_code == 200
@@ -168,7 +168,7 @@ def test_non_streaming_preserves_cached_tokens(monkeypatch):
         },
     ]
     response = _client(monkeypatch, _EventsBackend(events)).post(
-        "/chat/completions", json = _payload(stream = False)
+        "/chat/completions", json=_payload(stream=False)
     )
 
     assert response.status_code == 200
@@ -196,7 +196,7 @@ def test_non_streaming_preserves_accumulated_context_truncation(monkeypatch):
         {"type": "content", "text": "hi"},
     ]
     response = _client(monkeypatch, _EventsBackend(events)).post(
-        "/chat/completions", json = _payload(stream = False)
+        "/chat/completions", json=_payload(stream=False)
     )
 
     assert response.status_code == 200

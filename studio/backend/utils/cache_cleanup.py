@@ -158,6 +158,7 @@ def register_compiled_cache_on_path() -> None:
 def cache_coordination_dir() -> Path:
     """Where backends of this install find each other: the studio home, the same scope the startup markers use. Two backends of one install share an install-tree compiled cache and that is the case this coordinates; two SEPARATE installs pointed at one UNSLOTH_COMPILE_LOCATION are not coordinated, and clearing is best effort there, as it was before."""
     from utils.paths.storage_roots import studio_root
+
     return studio_root()
 
 
@@ -187,9 +188,11 @@ _CONTENTION_ERRNOS = frozenset(
 def _try_lock(fd: int) -> None:
     if os.name == "nt":
         import msvcrt
+
         msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
     else:
         import fcntl
+
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
@@ -197,9 +200,11 @@ def _unlock(fd: int) -> None:
     with contextlib.suppress(Exception):
         if os.name == "nt":
             import msvcrt
+
             msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
         else:
             import fcntl
+
             fcntl.flock(fd, fcntl.LOCK_UN)
     with contextlib.suppress(OSError):
         os.close(fd)
@@ -212,7 +217,7 @@ def compiled_cache_lock(timeout: float = _LOCK_TIMEOUT):
 
     try:
         lock_dir = cache_coordination_dir()
-        lock_dir.mkdir(parents = True, exist_ok = True)
+        lock_dir.mkdir(parents=True, exist_ok=True)
         fd = os.open(str(lock_dir / "compiled-cache.lock"), os.O_CREAT | os.O_RDWR, 0o600)
     except Exception as exc:  # noqa: BLE001
         # Resolving or opening it is part of taking it, so it degrades the same way rather than aborting a startup that only wanted to know about siblings.
@@ -255,7 +260,7 @@ def compiled_cache_lock(timeout: float = _LOCK_TIMEOUT):
             _unlock(fd)
 
 
-def clear_compiled_cache_unless_shared(sibling_probe = None) -> None:
+def clear_compiled_cache_unless_shared(sibling_probe=None) -> None:
     """Clear the compiled cache, unless another backend of this install is live. The cache sits in the install tree, not the studio home, so two of our own backends share it and the wipe would delete modules the other one is still importing, including the Unsloth*Trainer.py that the in-process clears preserve for spawn workers. run_server supplies the probe; without it (tests, an embedded app) the old unconditional clear stands. The probe and the clear run under `compiled_cache_lock` so a sibling cannot publish itself in between and lose the modules it has already compiled. Two launches that overlap from cold both keep a cache neither has cleaned, so stale modules can survive until the next start that finds itself alone: that is the deliberate direction, since the failure this replaces was the two of them deleting each other's modules mid-run."""
     if not callable(sibling_probe):
         clear_unsloth_compiled_cache()
@@ -306,16 +311,16 @@ def clear_unsloth_compiled_cache(preserve_patterns: Optional[List[str]] = None) 
                             logger.debug(f"Could not delete {item}: {e}")
 
                 elif item.is_dir():
-                    shutil.rmtree(item, ignore_errors = True)
+                    shutil.rmtree(item, ignore_errors=True)
         else:
             # Legacy: remove the entire directory. Resolved first: rmtree refuses a symlink, and ignore_errors would leave the whole cache in place.
             logger.info(f"Removing unsloth compiled cache: {cache_dir}")
-            shutil.rmtree(Path(os.path.realpath(cache_dir)), ignore_errors = True)
+            shutil.rmtree(Path(os.path.realpath(cache_dir)), ignore_errors=True)
         # The marker goes with whatever was cleared and nothing rewrites it, so the next cleanup would demote our own cache to "shared". A built-in path needs none unless it is a dangling link. setup_cache_env writes the marker only when it first sets the variable.
         if dedicated and (str(cache_dir) not in _builtin_cache_paths() or cache_dir.is_symlink()):
             try:
                 restored = Path(os.path.realpath(cache_dir))
-                restored.mkdir(parents = True, exist_ok = True)
-                (restored / CACHE_MARKER).touch(exist_ok = True)
+                restored.mkdir(parents=True, exist_ok=True)
+                (restored / CACHE_MARKER).touch(exist_ok=True)
             except OSError as e:
                 logger.debug(f"Could not restore the cache marker in {cache_dir}: {e}")

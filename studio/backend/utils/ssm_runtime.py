@@ -269,7 +269,7 @@ def _install_kernel(
     release_tag: str,
     release_base_url: str,
     status_cb: StatusCb,
-    run: Callable[..., Any],
+    run: Callable[..., Any]
 ) -> bool:
     """Install one kernel wheel-first, then a HIP-aware PyPI source build. Returns True iff importable afterwards; idempotent (no-op when already installed)."""
     if _is_importable(import_name):

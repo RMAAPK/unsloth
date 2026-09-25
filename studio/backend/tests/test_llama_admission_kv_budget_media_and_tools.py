@@ -68,12 +68,12 @@ class TestMediaIsCharged:
     def test_legacy_image_costs_what_the_same_image_inline_costs(self):
         image = _image_b64()
         legacy = _Payload(
-            messages = [{"role": "user", "content": "what is this?"}],
-            image_base64 = image,
-            max_tokens = 128,
+            messages=[{"role": "user", "content": "what is this?"}],
+            image_base64=image,
+            max_tokens=128,
         )
         inline = _Payload(
-            messages = [
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -85,12 +85,12 @@ class TestMediaIsCharged:
                     ],
                 }
             ],
-            max_tokens = 128,
+            max_tokens=128,
         )
         # Clear of the clamp: at 4096 `max(1, min(budget, ...))` pinned both sides to the
         # budget, so they agreed whatever the estimator did and this proved nothing.
-        legacy_cost = _openai_llama_admission_tokens(legacy, budget = 1_000_000, capacity = 4)
-        inline_cost = _openai_llama_admission_tokens(inline, budget = 1_000_000, capacity = 4)
+        legacy_cost = _openai_llama_admission_tokens(legacy, budget=1_000_000, capacity=4)
+        inline_cost = _openai_llama_admission_tokens(inline, budget=1_000_000, capacity=4)
         # The wire spelling must not change the commitment. Not to the token: inline
         # really does send a content-part wrapper legacy does not, and the marker is
         # itself a little JSON. What must not survive is the 30x gap between pricing an
@@ -113,16 +113,16 @@ class TestMediaIsCharged:
             }
         ]
         dual = _Payload(
-            messages = inline_messages,
-            image_base64 = image,
-            max_tokens = 128,
+            messages=inline_messages,
+            image_base64=image,
+            max_tokens=128,
         )
-        inline = _Payload(messages = inline_messages, max_tokens = 128)
+        inline = _Payload(messages=inline_messages, max_tokens=128)
 
         # Clear of the clamp: at 65536 a 1 MiB image priced as prompt text pinned both
         # sides to the budget, so `dual == inline` held on the unfixed estimator too.
-        dual_cost = _openai_llama_admission_tokens(dual, budget = 1_000_000, capacity = 4)
-        inline_cost = _openai_llama_admission_tokens(inline, budget = 1_000_000, capacity = 4)
+        dual_cost = _openai_llama_admission_tokens(dual, budget=1_000_000, capacity=4)
+        inline_cost = _openai_llama_admission_tokens(inline, budget=1_000_000, capacity=4)
 
         assert dual_cost == inline_cost
         assert (
@@ -159,20 +159,20 @@ class TestMediaIsCharged:
         }
         shapes = {
             "studio dual": ChatCompletionRequest(
-                model = "m",
-                max_tokens = 128,
-                messages = [
+                model="m",
+                max_tokens=128,
+                messages=[
                     {
                         "role": "user",
                         "content": [{"type": "text", "text": "what is this?"}, inline_part],
                     }
                 ],
-                image_base64 = image,
+                image_base64=image,
             ),
             "inline only": ChatCompletionRequest(
-                model = "m",
-                max_tokens = 128,
-                messages = [
+                model="m",
+                max_tokens=128,
+                messages=[
                     {
                         "role": "user",
                         "content": [{"type": "text", "text": "what is this?"}, inline_part],
@@ -180,23 +180,23 @@ class TestMediaIsCharged:
                 ],
             ),
             "legacy only": ChatCompletionRequest(
-                model = "m",
-                max_tokens = 128,
-                messages = [{"role": "user", "content": "what is this?"}],
-                image_base64 = image,
+                model="m",
+                max_tokens=128,
+                messages=[{"role": "user", "content": "what is this?"}],
+                image_base64=image,
             ),
             # An older image in history plus a genuinely different one attached to this
             # turn through the legacy field: two images, and both must be charged.
             "history image plus a distinct legacy attachment": ChatCompletionRequest(
-                model = "m",
-                max_tokens = 128,
-                messages = [
+                model="m",
+                max_tokens=128,
+                messages=[
                     {
                         "role": "user",
                         "content": [{"type": "text", "text": "and this?"}, inline_part],
                     }
                 ],
-                image_base64 = _OTHER_PNG,
+                image_base64=_OTHER_PNG,
             ),
         }
 
@@ -213,7 +213,7 @@ class TestMediaIsCharged:
             _, message_image_parts = _openai_llama_admission_messages_for_estimate(payload.messages)
             billed = (
                 _openai_llama_admission_media_tokens(
-                    payload, message_image_parts = message_image_parts
+                    payload, message_image_parts=message_image_parts
                 )
                 // _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS
             )
@@ -256,8 +256,8 @@ class TestMediaIsCharged:
         class _Backend:
             def __init__(
                 self,
-                extra_args = None,
-                projector = None,
+                extra_args=None,
+                projector=None,
             ):
                 self._extra_args = extra_args
                 self._mmproj_projector_type = projector
@@ -279,19 +279,19 @@ class TestMediaIsCharged:
         # ones far above the default: youtuvl is 62500 and hunyuanvl 16384, so a flat
         # default would have reserved a fraction of what one image really costs.
         for projector, ceiling in _MMPROJ_IMAGE_TOKEN_MAX.items():
-            assert _openai_llama_admission_image_tokens(_Backend(projector = projector)) >= ceiling
-        assert _openai_llama_admission_image_tokens(_Backend(projector = "youtuvl")) >= 62500
+            assert _openai_llama_admission_image_tokens(_Backend(projector=projector)) >= ceiling
+        assert _openai_llama_admission_image_tokens(_Backend(projector="youtuvl")) >= 62500
         # A projector with a small ceiling reserves near it rather than the default.
-        assert _openai_llama_admission_image_tokens(_Backend(projector = "lfm2")) < 1024
+        assert _openai_llama_admission_image_tokens(_Backend(projector="lfm2")) < 1024
         # An unknown family keeps the default rather than inventing a number.
-        assert _openai_llama_admission_image_tokens(_Backend(projector = "nope")) == (
+        assert _openai_llama_admission_image_tokens(_Backend(projector="nope")) == (
             _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS
         )
         # The flag is only honoured by dynamic-resolution projectors, so a LOW cap must
         # not talk the reservation below what a fixed-resolution one really costs.
         assert (
             _openai_llama_admission_image_tokens(
-                _Backend(["--image-max-tokens", "16"], projector = "qwen3vl_merger")
+                _Backend(["--image-max-tokens", "16"], projector="qwen3vl_merger")
             )
             >= _MMPROJ_IMAGE_TOKEN_MAX["qwen3vl_merger"]
         )
@@ -306,7 +306,7 @@ class TestMediaIsCharged:
             leases = []
             for _ in range(2):
                 payload = _Payload(
-                    messages = [
+                    messages=[
                         {
                             "role": "user",
                             "content": [
@@ -318,14 +318,14 @@ class TestMediaIsCharged:
                             ],
                         }
                     ],
-                    image_base64 = image,
-                    max_tokens = 128,
+                    image_base64=image,
+                    max_tokens=128,
                 )
                 reservation = queue.reserve(
-                    capacity = 4,
-                    config = config,
-                    budget = 12_000,
-                    tokens = _openai_llama_admission_tokens(payload, budget = 12_000, capacity = 4),
+                    capacity=4,
+                    config=config,
+                    budget=12_000,
+                    tokens=_openai_llama_admission_tokens(payload, budget=12_000, capacity=4),
                 )
                 leases.append(reservation.lease_nowait())
             admitted = [lease is not None for lease in leases]
@@ -346,15 +346,15 @@ class TestMediaIsCharged:
             leases = []
             for _ in range(2):
                 payload = _Payload(
-                    messages = [{"role": "user", "content": "describe"}],
-                    image_base64 = image,
-                    max_tokens = 128,
+                    messages=[{"role": "user", "content": "describe"}],
+                    image_base64=image,
+                    max_tokens=128,
                 )
                 reservation = queue.reserve(
-                    capacity = 4,
-                    config = config,
-                    budget = 2048,
-                    tokens = _openai_llama_admission_tokens(payload, budget = 2048, capacity = 4),
+                    capacity=4,
+                    config=config,
+                    budget=2048,
+                    tokens=_openai_llama_admission_tokens(payload, budget=2048, capacity=4),
                 )
                 leases.append(reservation.lease_nowait())
             return leases
@@ -369,11 +369,11 @@ class TestMediaIsCharged:
         clip = _image_b64(8)
         for field in ("audio_base64", "video_base64"):
             payload = _Payload(
-                messages = [{"role": "user", "content": "transcribe"}],
-                max_tokens = 64,
+                messages=[{"role": "user", "content": "transcribe"}],
+                max_tokens=64,
                 **{field: clip},
             )
-            cost = _openai_llama_admission_tokens(payload, budget = 65536, capacity = 4)
+            cost = _openai_llama_admission_tokens(payload, budget=65536, capacity=4)
             assert cost > 2000, f"{field} was charged {cost}, i.e. nothing for the media"
 
 
@@ -410,11 +410,11 @@ class TestAnAudioTurnIsChargedByItsDuration:
         assert len(audio) > 800_000
         budget = 32768
         payload = _Payload(
-            messages = [{"role": "user", "content": "transcribe"}],
-            audio_base64 = audio,
-            max_tokens = 256,
+            messages=[{"role": "user", "content": "transcribe"}],
+            audio_base64=audio,
+            max_tokens=256,
         )
-        cost = _openai_llama_admission_tokens(payload, budget = budget, capacity = 4)
+        cost = _openai_llama_admission_tokens(payload, budget=budget, capacity=4)
         assert cost < budget // 4, f"20 s of audio reserved {cost} of {budget}"
 
     def test_a_text_chat_is_admitted_beside_an_audio_chat(self):
@@ -427,15 +427,15 @@ class TestAnAudioTurnIsChargedByItsDuration:
                 {"content": "hi"},
             ):
                 payload = _Payload(
-                    messages = [{"role": "user", "content": fields.pop("content")}],
-                    max_tokens = 256,
+                    messages=[{"role": "user", "content": fields.pop("content")}],
+                    max_tokens=256,
                     **fields,
                 )
                 reservation = queue.reserve(
-                    capacity = 4,
-                    config = config,
-                    budget = 32768,
-                    tokens = _openai_llama_admission_tokens(payload, budget = 32768, capacity = 4),
+                    capacity=4,
+                    config=config,
+                    budget=32768,
+                    tokens=_openai_llama_admission_tokens(payload, budget=32768, capacity=4),
                 )
                 leases.append(reservation.lease_nowait())
             return leases
@@ -451,10 +451,10 @@ class TestAnAudioTurnIsChargedByItsDuration:
             ("data:audio/wav;base64," + _wav_b64(45), 45.0),
             (_mp3_b64(383), 383 * 1152 / 44100),
         ],
-        ids = ["wav-1s", "wav-data-uri-45s", "mp3-10s"],
+        ids=["wav-1s", "wav-data-uri-45s", "mp3-10s"],
     )
     def test_the_charge_bounds_every_audio_projector(self, audio, seconds):
-        cost = _openai_llama_admission_media_tokens(_Payload(audio_base64 = audio))
+        cost = _openai_llama_admission_media_tokens(_Payload(audio_base64=audio))
         # 25 embeddings a second, and a Whisper encoder pads each clip to a whole 30 s window.
         whisper_windows = int(seconds // 30) + 1
         assert cost >= max(25 * seconds, 750 * whisper_windows)
@@ -467,15 +467,15 @@ class TestAnAudioTurnIsChargedByItsDuration:
             base64.b64encode(b"RIFF\x00\x00\x00\x00WAVEjunk" + b"\x00" * 4096).decode(),
             "not base64 at all!",
         ],
-        ids = ["not-audio", "wav-without-data-chunk", "not-base64"],
+        ids=["not-audio", "wav-without-data-chunk", "not-base64"],
     )
     def test_audio_without_a_stated_duration_keeps_the_byte_charge(self, audio):
-        cost = _openai_llama_admission_media_tokens(_Payload(audio_base64 = audio))
+        cost = _openai_llama_admission_media_tokens(_Payload(audio_base64=audio))
         assert cost == max(1, len(audio) // 4)
 
     def test_video_keeps_the_byte_charge(self):
         clip = _wav_b64(20)
-        cost = _openai_llama_admission_media_tokens(_Payload(video_base64 = clip, messages = []))
+        cost = _openai_llama_admission_media_tokens(_Payload(video_base64=clip, messages=[]))
         assert cost == len(clip) // 4
 
     def test_a_tool_round_does_not_price_the_injected_recording_as_text(self):
@@ -490,10 +490,10 @@ class TestAnAudioTurnIsChargedByItsDuration:
 
         audio = _wav_b64(3)
         payload = _Payload(
-            messages = [{"role": "user", "content": "transcribe"}],
-            audio_base64 = audio,
-            enable_tools = True,
-            max_tokens = 256,
+            messages=[{"role": "user", "content": "transcribe"}],
+            audio_base64=audio,
+            enable_tools=True,
+            max_tokens=256,
         )
         # What _inject_audio_part hands the tool loop.
         conversation = [
@@ -509,11 +509,11 @@ class TestAnAudioTurnIsChargedByItsDuration:
         async def run():
             queue = LlamaAdmissionQueue("test")
             reservation = queue.reserve(
-                capacity = 4,
-                config = LlamaAdmissionConfig(),
-                budget = 32768,
-                tokens = _openai_llama_admission_tokens(
-                    payload, budget = 32768, capacity = 4, tool_loop = True
+                capacity=4,
+                config=LlamaAdmissionConfig(),
+                budget=32768,
+                tokens=_openai_llama_admission_tokens(
+                    payload, budget=32768, capacity=4, tool_loop=True
                 ),
             )
             lease = reservation.lease_nowait()
@@ -521,10 +521,10 @@ class TestAnAudioTurnIsChargedByItsDuration:
             _openai_llama_admission_recost(
                 _Reservation(lease),
                 conversation,
-                request = None,
-                llama_backend = self._Backend(),
-                payload = payload,
-                output_tokens = 256,
+                request=None,
+                llama_backend=self._Backend(),
+                payload=payload,
+                output_tokens=256,
             )
             return queue.snapshot().committed
 
@@ -545,14 +545,14 @@ class TestAnAudioTurnIsChargedByItsDuration:
 
         monkeypatch.setattr(inference_route, "_openai_llama_admission_estimate", spy)
         payload = _Payload(
-            messages = [{"role": "user", "content": "transcribe"}],
-            audio_base64 = _wav_b64(1),
-            max_tokens = 64,
+            messages=[{"role": "user", "content": "transcribe"}],
+            audio_base64=_wav_b64(1),
+            max_tokens=64,
         )
 
         async def run():
             reservation, _ = await inference_route._openai_llama_admission_reserve_async(
-                request = None, llama_backend = self._Backend(), payload = payload
+                request=None, llama_backend=self._Backend(), payload=payload
             )
             reservation.cancel()
 
@@ -563,7 +563,7 @@ class TestAnAudioTurnIsChargedByItsDuration:
     @pytest.mark.parametrize(
         "raw",
         [inference_route._mono_f32_to_wav_bytes(np.zeros(320_000), 16000), b"OggS" * 4**8],
-        ids = ["wav", "ogg"],
+        ids=["wav", "ogg"],
     )
     def test_an_audio_chat_reserves_a_bound_on_its_duration(self, monkeypatch, raw):
         from .llama_backend_double import FakeLlamaCppBackend
@@ -586,7 +586,7 @@ class TestAnAudioTurnIsChargedByItsDuration:
             inference_route, "_decode_audio_mono", lambda _raw: (np.zeros(20 * 16000), 16000)
         )
         app = FastAPI()
-        app.include_router(inference_route.router, prefix = "/v1")
+        app.include_router(inference_route.router, prefix="/v1")
         app.dependency_overrides[get_current_subject] = lambda: "tester"
         body = {
             "max_tokens": 256,
@@ -594,7 +594,7 @@ class TestAnAudioTurnIsChargedByItsDuration:
             "audio_base64": base64.b64encode(raw).decode(),
         }
 
-        response = TestClient(app).post("/v1/chat/completions", json = body)
+        response = TestClient(app).post("/v1/chat/completions", json=body)
 
         assert response.status_code == 200, response.text
         # 25/s over the clip and a trailing 30 s window, the wrapper, output, and the prompt.
@@ -610,9 +610,9 @@ class TestAnAnthropicImageIsChargedLikeAnyOtherImage:
 
     def _request(self, data: str):
         return AnthropicMessagesRequest(
-            model = "default",
-            max_tokens = 128,
-            messages = [
+            model="default",
+            max_tokens=128,
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -634,9 +634,9 @@ class TestAnAnthropicImageIsChargedLikeAnyOtherImage:
         # Clear of the clamp, as the image_url cases above are, so the estimator is what
         # is being compared rather than `min(budget, ...)`.
         big = _openai_llama_admission_tokens(
-            self._request(_image_b64(1024)), budget = 1_000_000, capacity = 4
+            self._request(_image_b64(1024)), budget=1_000_000, capacity=4
         )
-        tiny = _openai_llama_admission_tokens(self._request("AAAA"), budget = 1_000_000, capacity = 4)
+        tiny = _openai_llama_admission_tokens(self._request("AAAA"), budget=1_000_000, capacity=4)
         assert abs(big - tiny) <= _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS, (
             f"a 1 MiB Anthropic image was charged {big} against {tiny} for a 4-char one: "
             "the base64 transport is being priced as prompt text"
@@ -648,7 +648,7 @@ class TestAnAnthropicImageIsChargedLikeAnyOtherImage:
     def test_a_screenshot_does_not_reserve_the_whole_cache(self):
         budget = 32768
         cost = _openai_llama_admission_tokens(
-            self._request(_image_b64(150)), budget = budget, capacity = 4
+            self._request(_image_b64(150)), budget=budget, capacity=4
         )
         assert cost < budget, (
             f"a 150 KiB screenshot was charged {cost} against a {budget}-token cache, so "
@@ -673,9 +673,9 @@ class TestAToolResultScreenshotIsNotPricedByItsBase64:
 
     def _request(self, data: str):
         return AnthropicMessagesRequest(
-            model = "default",
-            max_tokens = 128,
-            messages = [
+            model="default",
+            max_tokens=128,
+            messages=[
                 {"role": "user", "content": [{"type": "text", "text": "take a screenshot"}]},
                 {
                     "role": "assistant",
@@ -709,7 +709,7 @@ class TestAToolResultScreenshotIsNotPricedByItsBase64:
     def test_a_screenshot_a_tool_returned_does_not_reserve_the_whole_cache(self):
         budget = 32768
         cost = _openai_llama_admission_tokens(
-            self._request(_image_b64(150)), budget = budget, capacity = 4
+            self._request(_image_b64(150)), budget=budget, capacity=4
         )
         assert cost < budget, (
             f"a 150 KiB tool-result screenshot was charged {cost} against a {budget}-token "
@@ -718,9 +718,9 @@ class TestAToolResultScreenshotIsNotPricedByItsBase64:
 
     def test_a_big_tool_result_screenshot_costs_what_a_tiny_one_costs(self):
         big = _openai_llama_admission_tokens(
-            self._request(_image_b64(1024)), budget = 1_000_000, capacity = 4
+            self._request(_image_b64(1024)), budget=1_000_000, capacity=4
         )
-        tiny = _openai_llama_admission_tokens(self._request("AAAA"), budget = 1_000_000, capacity = 4)
+        tiny = _openai_llama_admission_tokens(self._request("AAAA"), budget=1_000_000, capacity=4)
         assert abs(big - tiny) <= _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS, (
             f"a 1 MiB tool-result image was charged {big} against {tiny} for a 4-char one: "
             "the base64 transport is being priced as prompt text"
@@ -750,10 +750,10 @@ class TestAToolResultScreenshotIsNotPricedByItsBase64:
         from routes.inference import _openai_llama_admission_image_tokens
 
         text_only = anthropic_messages_to_openai(
-            [message.model_dump() for message in payload.messages], None, tool_result_images = False
+            [message.model_dump() for message in payload.messages], None, tool_result_images=False
         )
         assert data not in str(text_only)
-        assert _openai_llama_admission_image_tokens(SimpleNamespace(is_vision = False)) == 0
+        assert _openai_llama_admission_image_tokens(SimpleNamespace(is_vision=False)) == 0
 
     @pytest.mark.parametrize("source_type", ["base64", "url"])
     @pytest.mark.parametrize("with_text", [False, True])
@@ -779,7 +779,7 @@ class TestAToolResultScreenshotIsNotPricedByItsBase64:
         assert _TINY_PNG not in str(compact) and _OTHER_PNG not in str(compact)
         assert payload.model_dump() == original
         assert (
-            _openai_llama_admission_tokens(payload, budget = 1_000_000, capacity = 4)
+            _openai_llama_admission_tokens(payload, budget=1_000_000, capacity=4)
             >= 2 * _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS
         )
 
@@ -814,9 +814,9 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
         text = {"type": "text", "text": "the tool answered"}
         content = [text, block] if text_first else [block, text]
         return AnthropicMessagesRequest(
-            model = "default",
-            max_tokens = 128,
-            messages = [
+            model="default",
+            max_tokens=128,
+            messages=[
                 {"role": "user", "content": [{"type": "text", "text": "use the tool"}]},
                 {
                     "role": "assistant",
@@ -839,8 +839,8 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
         # Both orders: a filter that stops at the first block would pass one of them.
         for text_first in (True, False):
             for name, block in self._blocks(data).items():
-                payload = self._request(block, text_first = text_first)
-                cost = _openai_llama_admission_tokens(payload, budget = budget, capacity = 4)
+                payload = self._request(block, text_first=text_first)
+                cost = _openai_llama_admission_tokens(payload, budget=budget, capacity=4)
                 assert cost < budget, (
                     f"a 150 KiB {name} block (text_first={text_first}) was charged {cost} "
                     f"against a {budget}-token cache, so that agent runs alone"
@@ -856,7 +856,7 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
         for text_first in (True, False):
             for name, block in self._blocks(data).items():
                 where = f"{name} (text_first={text_first})"
-                payload = self._request(block, text_first = text_first)
+                payload = self._request(block, text_first=text_first)
                 estimate_messages, image_parts = _openai_llama_admission_messages_for_estimate(
                     payload.messages
                 )
@@ -891,11 +891,11 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
             (document, "Title: Memo\n"),
         ):
             for payload in (
-                self._request(block, text_first = True),
+                self._request(block, text_first=True),
                 AnthropicMessagesRequest(
-                    model = "default",
-                    max_tokens = 128,
-                    messages = [{"role": "user", "content": [block]}],
+                    model="default",
+                    max_tokens=128,
+                    messages=[{"role": "user", "content": [block]}],
                 ),
             ):
                 sent = anthropic_messages_to_openai([m.model_dump() for m in payload.messages])
@@ -906,7 +906,7 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
                 assert rendered.startswith(header)
                 assert rendered in str(estimate_messages).replace("\\n", "\n")
                 assert image_parts == 0
-                cost = _openai_llama_admission_tokens(payload, budget = 1_000_000, capacity = 4)
+                cost = _openai_llama_admission_tokens(payload, budget=1_000_000, capacity=4)
                 assert cost > len(rendered) // 8
 
     def test_a_tool_result_the_translation_does_forward_is_still_charged(self):
@@ -916,9 +916,9 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
         """
         data = _image_b64(150)
         payload = AnthropicMessagesRequest(
-            model = "default",
-            max_tokens = 128,
-            messages = [
+            model="default",
+            max_tokens=128,
+            messages=[
                 {"role": "user", "content": [{"type": "text", "text": "use the tool"}]},
                 {
                     "role": "assistant",
@@ -947,7 +947,7 @@ class TestEveryBlockTheTranslationDropsIsPricedTheSameWay:
         ), "content that IS sent was dropped from the estimate, which under-reserves"
         assert image_parts == 0, "a string tool result is prompt text, not an image"
 
-        cost = _openai_llama_admission_tokens(payload, budget = 1_000_000, capacity = 4)
+        cost = _openai_llama_admission_tokens(payload, budget=1_000_000, capacity=4)
         assert (
             cost > len(data) // 8
         ), f"a {len(data)}-char forwarded tool result was charged only {cost}"
@@ -967,50 +967,50 @@ class TestTheToolLoopOpensAtAnEqualShare:
         undercharge Unsloth's own tool traffic.
         """
         payload = _Payload(
-            messages = [{"role": "user", "content": "search my notes"}],
-            enable_tools = True,
-            max_tokens = 128,
+            messages=[{"role": "user", "content": "search my notes"}],
+            enable_tools=True,
+            max_tokens=128,
         )
         assert getattr(payload, "tools", None) is None
-        cost = _openai_llama_admission_tokens(payload, budget = 4096, capacity = 4, tool_loop = True)
+        cost = _openai_llama_admission_tokens(payload, budget=4096, capacity=4, tool_loop=True)
         assert cost == 1024, cost
 
     def test_four_tool_chats_fit_the_cache_at_once(self):
         """Four equal shares are exactly the budget, so four tool chats are admitted
         together instead of one at a time."""
         payload = _Payload(
-            messages = [{"role": "user", "content": "search my notes"}],
-            enable_tools = True,
-            max_tokens = 128,
+            messages=[{"role": "user", "content": "search my notes"}],
+            enable_tools=True,
+            max_tokens=128,
         )
-        cost = _openai_llama_admission_tokens(payload, budget = 262144, capacity = 4, tool_loop = True)
+        cost = _openai_llama_admission_tokens(payload, budget=262144, capacity=4, tool_loop=True)
         assert cost * 4 <= 262144
 
     def test_a_tool_loop_bigger_than_its_share_is_charged_what_it_is(self):
         """The share is a floor, not a cap: a run already sending more than a quarter of
         the cache is charged for it, not admitted alongside three others."""
         payload = _Payload(
-            messages = [{"role": "user", "content": "x " * 4000}],
-            enable_tools = True,
-            max_tokens = 128,
+            messages=[{"role": "user", "content": "x " * 4000}],
+            enable_tools=True,
+            max_tokens=128,
         )
-        cost = _openai_llama_admission_tokens(payload, budget = 4096, capacity = 4, tool_loop = True)
+        cost = _openai_llama_admission_tokens(payload, budget=4096, capacity=4, tool_loop=True)
         assert cost > 1024, cost
         assert cost <= 4096
 
     def test_a_passthrough_forwarding_tools_is_charged_its_own_round(self):
         """One HTTP call is one generation there: the client drives the rounds."""
         payload = _Payload(
-            messages = [{"role": "user", "content": "hi"}],
-            tools = [
+            messages=[{"role": "user", "content": "hi"}],
+            tools=[
                 {
                     "type": "function",
                     "function": {"name": "shell", "parameters": {"type": "object"}},
                 }
             ],
-            max_tokens = 128,
+            max_tokens=128,
         )
-        cost = _openai_llama_admission_tokens(payload, budget = 4096, capacity = 4)
+        cost = _openai_llama_admission_tokens(payload, budget=4096, capacity=4)
         assert cost < 4096, "a forwarded catalogue must not serialise the whole cache"
 
 
@@ -1024,17 +1024,17 @@ class TestTheBudgetIsTheWholeCacheNotOneSlot:
     """
 
     def test_the_partitioned_total_wins_over_one_slot(self):
-        backend = _Payload(context_length = 4096, _kv_cache_context_total = 16384)
+        backend = _Payload(context_length=4096, _kv_cache_context_total=16384)
         assert _openai_llama_admission_budget(backend) == 16384
 
     def test_a_unified_cache_is_unchanged(self):
         # slots == 1 under --kv-unified, so the total IS the per-request window.
-        backend = _Payload(context_length = 8192, _kv_cache_context_total = 8192)
+        backend = _Payload(context_length=8192, _kv_cache_context_total=8192)
         assert _openai_llama_admission_budget(backend) == 8192
 
     def test_an_unread_backend_falls_back_to_context_length(self):
         # Nothing read back yet: the two agree, so the fallback is not a guess.
-        backend = _Payload(context_length = 8192, _kv_cache_context_total = None)
+        backend = _Payload(context_length=8192, _kv_cache_context_total=None)
         assert _openai_llama_admission_budget(backend) == 8192
 
     def test_a_backend_that_cannot_say_keeps_slot_only_admission(self):
@@ -1076,23 +1076,23 @@ class TestARoundIsCostedTheSameWayTheReservationWas:
         async def _run():
             queue = LlamaAdmissionQueue("test")
             opened = _openai_llama_admission_tokens(
-                payload, budget = 4096, capacity = 4, tool_loop = True
+                payload, budget=4096, capacity=4, tool_loop=True
             )
             reservation = queue.reserve(
-                capacity = 4,
-                config = LlamaAdmissionConfig(),
-                tokens = opened,
-                budget = 4096,
+                capacity=4,
+                config=LlamaAdmissionConfig(),
+                tokens=opened,
+                budget=4096,
             )
             lease = reservation.lease_nowait()
             assert lease is not None
             _openai_llama_admission_recost(
                 self._Reservation(lease),
                 payload.messages,
-                request = None,
-                llama_backend = self._Backend(),
-                payload = payload,
-                output_tokens = output_tokens,
+                request=None,
+                llama_backend=self._Backend(),
+                payload=payload,
+                output_tokens=output_tokens,
             )
             return opened, queue.snapshot().committed, queue
 
@@ -1103,7 +1103,7 @@ class TestARoundIsCostedTheSameWayTheReservationWas:
         can only come from the compaction count. Discarding it re-costs a vision tool run
         DOWNWARD by the whole allowance on its first round."""
         payload = _Payload(
-            messages = [
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -1115,10 +1115,10 @@ class TestARoundIsCostedTheSameWayTheReservationWas:
                     ],
                 }
             ],
-            enable_tools = True,
-            max_tokens = 128,
+            enable_tools=True,
+            max_tokens=128,
         )
-        opened, committed, _ = self._round_zero(payload, output_tokens = 128)
+        opened, committed, _ = self._round_zero(payload, output_tokens=128)
         # One image alone is 4224 against this 4096 budget, so the reservation clamps to
         # the whole cache: four times the 1024 share the re-cost used to drop it to.
         assert _OPENAI_LLAMA_ADMISSION_IMAGE_TOKENS > 4096 and opened == 4096, opened
@@ -1141,12 +1141,12 @@ class TestARoundIsCostedTheSameWayTheReservationWas:
         )
 
         payload = _Payload(
-            messages = [{"role": "user", "content": "summarise the news"}],
-            enable_tools = True,
+            messages=[{"role": "user", "content": "summarise the news"}],
+            enable_tools=True,
         )
         assert _effective_openai_max_tokens(payload) is None
         opened, committed, _queue = self._round_zero(
-            payload, output_tokens = _effective_openai_max_tokens(payload)
+            payload, output_tokens=_effective_openai_max_tokens(payload)
         )
         assert opened < 4096, f"an uncapped loop still opens on the whole {4096} cache ({opened})"
         assert opened <= _OPENAI_LLAMA_ADMISSION_UNSTATED_OUTPUT_TOKENS + 64, opened
@@ -1158,12 +1158,12 @@ class TestARoundIsCostedTheSameWayTheReservationWas:
         """Anthropic keeps `system` and `tools` out of `messages` entirely, so for that
         route this is most of the prompt."""
         payload = _Payload(
-            messages = [{"role": "user", "content": "hi"}],
-            system = "You are a careful assistant that cites its sources. " * 200,
-            enable_tools = True,
-            max_tokens = 128,
+            messages=[{"role": "user", "content": "hi"}],
+            system="You are a careful assistant that cites its sources. " * 200,
+            enable_tools=True,
+            max_tokens=128,
         )
-        opened, committed, _ = self._round_zero(payload, output_tokens = 128)
+        opened, committed, _ = self._round_zero(payload, output_tokens=128)
         assert opened > 1024, f"the system text should push this past the share: {opened}"
         assert committed == opened, (
             f"round zero shrank the lease from {opened} to {committed}, dropping the "
@@ -1197,26 +1197,27 @@ class TestARoundStopsPayingForAnEvictedClip:
             _openai_llama_admission_recost,
             _openai_llama_admission_tokens,
         )
+
         async def _run():
             queue = LlamaAdmissionQueue("test")
             opened = _openai_llama_admission_tokens(
-                payload, budget = 4096, capacity = 4, tool_loop = True
+                payload, budget=4096, capacity=4, tool_loop=True
             )
             reservation = queue.reserve(
-                capacity = 4,
-                config = LlamaAdmissionConfig(),
-                tokens = opened,
-                budget = 4096,
+                capacity=4,
+                config=LlamaAdmissionConfig(),
+                tokens=opened,
+                budget=4096,
             )
             lease = reservation.lease_nowait()
             assert lease is not None
             _openai_llama_admission_recost(
                 self._Reservation(lease),
                 conversation,
-                request = None,
-                llama_backend = self._Backend(),
-                payload = payload,
-                output_tokens = 64,
+                request=None,
+                llama_backend=self._Backend(),
+                payload=payload,
+                output_tokens=64,
             )
             return queue.snapshot().committed
 
@@ -1224,7 +1225,7 @@ class TestARoundStopsPayingForAnEvictedClip:
 
     def _payload(self, clip_b64):
         return _Payload(
-            messages = [
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -1235,9 +1236,9 @@ class TestARoundStopsPayingForAnEvictedClip:
                     ],
                 }
             ],
-            video_base64 = None,
-            audio_base64 = None,
-            image_base64 = None,
+            video_base64=None,
+            audio_base64=None,
+            image_base64=None,
         )
 
     def test_the_clip_is_charged_while_the_conversation_still_carries_it(self):
@@ -1258,10 +1259,10 @@ class TestARoundStopsPayingForAnEvictedClip:
         evicted = self._recost(self._payload(clip), [{"role": "user", "content": "text only"}])
         no_video_at_all = self._recost(
             _Payload(
-                messages = [{"role": "user", "content": "text only"}],
-                video_base64 = None,
-                audio_base64 = None,
-                image_base64 = None,
+                messages=[{"role": "user", "content": "text only"}],
+                video_base64=None,
+                audio_base64=None,
+                image_base64=None,
             ),
             [{"role": "user", "content": "text only"}],
         )

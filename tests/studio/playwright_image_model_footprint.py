@@ -18,7 +18,7 @@ from playwright.sync_api import Route, sync_playwright
 
 BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:4173")
 ART_DIR = Path(os.environ.get("PW_ART_DIR", "logs/playwright_image_footprint"))
-ART_DIR.mkdir(parents = True, exist_ok = True)
+ART_DIR.mkdir(parents=True, exist_ok=True)
 
 CHECKPOINT_BYTES = 2_600_000_000
 COMPANION_BYTES = 8_200_000_000
@@ -32,7 +32,7 @@ KLEIN_ROW = re.compile(r"FLUX\.2[\s\-]klein[\s\-]4B")
 
 
 def _json(route: Route, payload: object) -> None:
-    route.fulfill(status = 200, content_type = "application/json", json = payload)
+    route.fulfill(status=200, content_type="application/json", json=payload)
 
 
 def _api_payload(path: str, query: dict[str, list[str]], *, full_footprint: bool) -> object:
@@ -172,8 +172,8 @@ def _api_payload(path: str, query: dict[str, list[str]], *, full_footprint: bool
         base = {"entries": [], "total_bytes": REQUIRED_BYTES}
         if full_footprint:
             base.update(
-                required_bytes = REQUIRED_BYTES,
-                checkpoint_bytes = CHECKPOINT_BYTES,
+                required_bytes=REQUIRED_BYTES,
+                checkpoint_bytes=CHECKPOINT_BYTES,
             )
         return base
     # Nonessential background probes are allowed to settle to an empty object; the test fails on browser exceptions or a
@@ -194,10 +194,10 @@ def klein_row(page):
 
 
 def _open_klein_quant(page) -> None:
-    page.goto(f"{BASE_URL}/images", wait_until = "domcontentloaded")
-    trigger = page.get_by_role("button", name = "Select image model")
+    page.goto(f"{BASE_URL}/images", wait_until="domcontentloaded")
+    trigger = page.get_by_role("button", name="Select image model")
     try:
-        trigger.wait_for(state = "visible", timeout = 30_000)
+        trigger.wait_for(state="visible", timeout=30_000)
     except Exception:
         print(f"selector startup URL: {page.url}")
         print(page.locator("body").inner_text()[:4_000])
@@ -205,26 +205,26 @@ def _open_klein_quant(page) -> None:
     trigger.click()
     klein = klein_row(page)
     try:
-        klein.wait_for(state = "visible", timeout = 30_000)
+        klein.wait_for(state="visible", timeout=30_000)
     except Exception:
         print(page.locator("body").inner_text()[:8_000])
         raise
     klein.click()
-    gguf = page.get_by_text("GGUF", exact = True)
+    gguf = page.get_by_text("GGUF", exact=True)
     if gguf.count() == 1:
         gguf.click()
-    page.get_by_text("Q4_K_M", exact = True).wait_for(state = "visible")
+    page.get_by_text("Q4_K_M", exact=True).wait_for(state="visible")
 
 
 def main() -> None:
     full_footprint = {"enabled": False}
     page_errors: list[str] = []
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless = True)
+        browser = playwright.chromium.launch(headless=True)
         context = browser.new_context(
-            viewport = {"width": 1440, "height": 900},
-            reduced_motion = "reduce",
-            color_scheme = "dark",
+            viewport={"width": 1440, "height": 900},
+            reduced_motion="reduce",
+            color_scheme="dark",
         )
         context.add_init_script("localStorage.setItem('unsloth_auth_token', 'rendered-ui-test');")
 
@@ -239,7 +239,7 @@ def main() -> None:
                     _api_payload(
                         parsed.path,
                         parse_qs(parsed.query),
-                        full_footprint = full_footprint["enabled"],
+                        full_footprint=full_footprint["enabled"],
                     ),
                 )
                 return
@@ -250,35 +250,35 @@ def main() -> None:
         page.on("pageerror", lambda exc: page_errors.append(str(exc)))
 
         _open_klein_quant(page)
-        quant_row = page.locator("button").filter(has_text = "Q4_K_M")
+        quant_row = page.locator("button").filter(has_text="Q4_K_M")
         assert quant_row.count() == 1
         assert "2.6GB" in "".join(quant_row.inner_text().split())
         assert page.locator("[data-model-download-footprint]").count() == 0
         picker = page.locator(".unsloth-model-selector-menu")
         assert picker.count() == 1
-        picker.screenshot(path = str(ART_DIR / "image-model-footprint-before.png"))
-        page.screenshot(path = str(ART_DIR / "image-model-footprint-before-full.png"), full_page = True)
+        picker.screenshot(path=str(ART_DIR / "image-model-footprint-before.png"))
+        page.screenshot(path=str(ART_DIR / "image-model-footprint-before-full.png"), full_page=True)
 
         full_footprint["enabled"] = True
         _open_klein_quant(page)
         footprint = page.locator("[data-model-download-footprint]")
-        footprint.wait_for(state = "visible")
+        footprint.wait_for(state="visible")
         assert footprint.count() == 1
         footprint_text = "".join(footprint.inner_text().split())
         assert footprint_text == "10.8GB"
         picker = page.locator(".unsloth-model-selector-menu")
         assert picker.count() == 1
-        picker.screenshot(path = str(ART_DIR / "image-model-footprint-after.png"))
-        page.screenshot(path = str(ART_DIR / "image-model-footprint-after-full.png"), full_page = True)
+        picker.screenshot(path=str(ART_DIR / "image-model-footprint-after.png"))
+        page.screenshot(path=str(ART_DIR / "image-model-footprint-after-full.png"), full_page=True)
         help_icon = page.locator("[data-model-download-footprint-help]")
         assert help_icon.count() == 1
         help_icon.hover()
         explanation = page.get_by_role("tooltip")
-        explanation.wait_for(state = "visible")
+        explanation.wait_for(state="visible")
         explanation_text = " ".join(explanation.inner_text().split())
         assert "Full required size" in explanation_text
         assert "2.6GBmodel+8.2GBrequiredassets" in "".join(explanation_text.split())
-        page.screenshot(path = str(ART_DIR / "image-model-footprint-hover.png"), full_page = True)
+        page.screenshot(path=str(ART_DIR / "image-model-footprint-hover.png"), full_page=True)
 
         assert not page_errors, page_errors
         browser.close()

@@ -37,12 +37,12 @@ def api(
     body: dict | None = None,
 ) -> tuple[int, dict]:
     data = None if body is None else json.dumps(body).encode()
-    request = urllib.request.Request(BASE_URL + path, data = data, method = method)
+    request = urllib.request.Request(BASE_URL + path, data=data, method=method)
     request.add_header("Content-Type", "application/json")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:
-        with urllib.request.urlopen(request, timeout = 60) as response:
+        with urllib.request.urlopen(request, timeout=60) as response:
             raw = response.read()
             return response.status, json.loads(raw) if raw else {}
     except urllib.error.HTTPError as error:
@@ -57,14 +57,14 @@ def login(page: Page, username: str, password: str) -> None:
     page.goto(f"{BASE_URL}/login")
     # Wait for the layout the server's login_mode implies rather than sampling before the page settles.
     _, status = api("GET", "/api/auth/status")
-    username_field = page.get_by_role("textbox", name = "Username", exact = True)
+    username_field = page.get_by_role("textbox", name="Username", exact=True)
     if status.get("login_mode") == "multi":
-        expect(username_field).to_be_visible(timeout = STEP_TIMEOUT_MS)
+        expect(username_field).to_be_visible(timeout=STEP_TIMEOUT_MS)
         username_field.fill(username)
     else:
         expect(username_field).to_have_count(0)
     page.locator("#password").fill(password)
-    page.get_by_role("button", name = "Login", exact = True).click()
+    page.get_by_role("button", name="Login", exact=True).click()
 
 
 def log_out(page: Page) -> None:
@@ -90,7 +90,7 @@ def run(page: Page, context) -> None:
     username = f"e2e_{int(time.time())}"
     managed_password = f"Managed-{int(time.time())}-password"
     status, owner_login = api(
-        "POST", "/api/auth/login", body = {"username": "unsloth", "password": OWNER_PASSWORD}
+        "POST", "/api/auth/login", body={"username": "unsloth", "password": OWNER_PASSWORD}
     )
     assert status == 200, ("owner login", status, owner_login)
     owner_token = owner_login["access_token"]
@@ -110,7 +110,7 @@ def run(page: Page, context) -> None:
         if initial.get("login_mode") == "single":
             expect(page.locator("#username")).to_have_count(0)
         login(page, "unsloth", OWNER_PASSWORD)
-        expect(page).to_have_url(re.compile(r"/chat"), timeout = STEP_TIMEOUT_MS)
+        expect(page).to_have_url(re.compile(r"/chat"), timeout=STEP_TIMEOUT_MS)
         assert local(page, "unsloth_e2e_private") == "owner-private"
 
         status, created = api("POST", "/api/accounts", owner_token, {"username": username})
@@ -127,12 +127,12 @@ def run(page: Page, context) -> None:
         page.goto(f"{BASE_URL}/login")
         second_tab = context.new_page()
         second_tab.goto(f"{BASE_URL}/login")
-        expect(second_tab.locator("#username")).to_be_visible(timeout = STEP_TIMEOUT_MS)
+        expect(second_tab.locator("#username")).to_be_visible(timeout=STEP_TIMEOUT_MS)
         second_tab.evaluate("() => { window.oldAccountDocument = true; }")
 
         # Usernames are case-insensitive at login; the setup code is the first password.
         login(page, username.upper(), setup_code)
-        expect(page).to_have_url(re.compile(r"/change-password"), timeout = STEP_TIMEOUT_MS)
+        expect(page).to_have_url(re.compile(r"/change-password"), timeout=STEP_TIMEOUT_MS)
         assert local(page, "unsloth_e2e_private") is None
         assert local(page, "chat-draft:e2e") is None
         # Appearance survives the switch; its value may have been replaced by the personalization sync.
@@ -143,7 +143,7 @@ def run(page: Page, context) -> None:
         # reporting that the old document is gone. wait_for_function re-runs in the new document.
         try:
             second_tab.wait_for_function(
-                "() => window.oldAccountDocument === undefined", timeout = STEP_TIMEOUT_MS
+                "() => window.oldAccountDocument === undefined", timeout=STEP_TIMEOUT_MS
             )
         except PlaywrightTimeoutError:
             raise AssertionError("the other tab never reloaded on the account switch") from None
@@ -151,8 +151,8 @@ def run(page: Page, context) -> None:
         page.locator("#current-password").fill(setup_code)
         page.locator("#new-password").fill(managed_password)
         page.locator("#confirm-password").fill(managed_password)
-        page.get_by_role("button", name = "Change password", exact = True).click()
-        expect(page).to_have_url(re.compile(r"/chat"), timeout = STEP_TIMEOUT_MS)
+        page.get_by_role("button", name="Change password", exact=True).click()
+        expect(page).to_have_url(re.compile(r"/chat"), timeout=STEP_TIMEOUT_MS)
         managed_token = local(page, "unsloth_auth_token")
         status, _ = api("GET", "/api/accounts", managed_token)
         assert status == 403, ("managed account listing", status)
@@ -162,7 +162,7 @@ def run(page: Page, context) -> None:
         page.evaluate("() => localStorage.setItem('unsloth_e2e_private', 'managed-private')")
         log_out(page)
         login(page, "unsloth", OWNER_PASSWORD)
-        expect(page).to_have_url(re.compile(r"/chat"), timeout = STEP_TIMEOUT_MS)
+        expect(page).to_have_url(re.compile(r"/chat"), timeout=STEP_TIMEOUT_MS)
         assert local(page, "unsloth_e2e_private") is None
         second_tab.close()
     finally:
@@ -176,8 +176,8 @@ def main() -> int:
         print("SKIP: set STUDIO_E2E_URL and STUDIO_E2E_OWNER_PASSWORD for a disposable Studio")
         return 0
     with sync_playwright() as playwright:
-        browser = getattr(playwright, ENGINE).launch(headless = True)
-        context = browser.new_context(viewport = {"width": 1440, "height": 900}, color_scheme = "light")
+        browser = getattr(playwright, ENGINE).launch(headless=True)
+        context = browser.new_context(viewport={"width": 1440, "height": 900}, color_scheme="light")
         context.set_default_timeout(STEP_TIMEOUT_MS)
         page = context.new_page()
         try:

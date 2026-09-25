@@ -41,7 +41,7 @@ def _documents() -> dict[str, dict]:
     out = {}
     for path in sorted(WORKFLOWS.glob("*.y*ml")):
         try:
-            document = yaml.safe_load(path.read_text(encoding = "utf-8"))
+            document = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError:
             continue
         if isinstance(document, dict):
@@ -128,7 +128,7 @@ def _is_per_commit_on_main(group: str) -> bool:
     group again. Rendering both sides asks the question directly, so which branch supplies
     the SHA is what decides the answer.
     """
-    return _render(group, ref = MAIN, sha = "a" * 40) != _render(group, ref = MAIN, sha = "b" * 40)
+    return _render(group, ref=MAIN, sha="a" * 40) != _render(group, ref=MAIN, sha="b" * 40)
 
 
 def _runs_on_main_push(document: dict) -> bool:
@@ -181,7 +181,7 @@ def test_this_guard_runs_on_a_workflow_only_pull_request():
     all, by design, so it is the one job that sees such a PR.
     """
     lint = WORKFLOWS / "workflow-trigger-lint.yml"
-    text = lint.read_text(encoding = "utf-8")
+    text = lint.read_text(encoding="utf-8")
     assert Path(__file__).name in text, (
         f"{lint.name} no longer runs {Path(__file__).name}. Backend CI does not filter on "
         f".github/workflows/**, so this guard would then be absent from exactly the pull "
@@ -213,8 +213,8 @@ def test_a_pull_request_still_gets_latest_only():
     offenders = {}
     for name, document in _protected().items():
         group = _group(document)
-        first = _render(group, ref = A_PULL_REQUEST, sha = "a" * 40, event_name = "pull_request")
-        second = _render(group, ref = A_PULL_REQUEST, sha = "b" * 40, event_name = "pull_request")
+        first = _render(group, ref=A_PULL_REQUEST, sha="a" * 40, event_name="pull_request")
+        second = _render(group, ref=A_PULL_REQUEST, sha="b" * 40, event_name="pull_request")
         if first != second:
             offenders[name] = group
     assert not offenders, (
@@ -230,7 +230,7 @@ def test_every_group_expression_is_understood():
     for name, document in _protected().items():
         group = _group(document)
         try:
-            _render(group, ref = MAIN, sha = "a" * 40)
+            _render(group, ref=MAIN, sha="a" * 40)
         except Unparsed as exc:
             unreadable[name] = f"{group!r} contains {exc}"
     assert not unreadable, (
@@ -259,8 +259,8 @@ def test_the_evaluator_reads_which_branch_supplies_the_sha():
 
     # ... and the pull request half, which is what disqualifies the unconditional form.
     def _same_on_a_pull_request(group: str) -> bool:
-        return _render(group, ref = A_PULL_REQUEST, sha = "a" * 40) == _render(
-            group, ref = A_PULL_REQUEST, sha = "b" * 40
+        return _render(group, ref=A_PULL_REQUEST, sha="a" * 40) == _render(
+            group, ref=A_PULL_REQUEST, sha="b" * 40
         )
 
     assert _same_on_a_pull_request(gated)
@@ -275,7 +275,7 @@ def test_no_workflow_claims_a_main_protection_it_does_not_have():
     """
     offenders = []
     for path in sorted(WORKFLOWS.glob("*.y*ml")):
-        text = path.read_text(encoding = "utf-8")
+        text = path.read_text(encoding="utf-8")
         if not CLAIMS_PROTECTION.search(text):
             continue
         try:

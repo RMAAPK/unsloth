@@ -21,8 +21,8 @@ from core.inference.diffusion_attention import (
 )
 
 
-def _target(device = "cuda"):
-    return types.SimpleNamespace(device = device)
+def _target(device="cuda"):
+    return types.SimpleNamespace(device=device)
 
 
 # ── normalize ────────────────────────────────────────────────────────────────────
@@ -45,41 +45,41 @@ def test_normalize_rejects_unknown():
 
 def test_sdpa_alias_maps_to_native():
     # sdpa is an alias for native, so nothing to set on the dispatcher.
-    assert select_attention_backend(_target(), "sdpa", speed_active = True) is None
+    assert select_attention_backend(_target(), "sdpa", speed_active=True) is None
 
 
 # ── select policy ─────────────────────────────────────────────────────────────────
 def test_auto_upgrades_to_cudnn_on_nvidia_when_speed_active(monkeypatch):
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: True)
     monkeypatch.setattr(att, "_cuda_capability", lambda: (8, 0))  # Ampere+: cuDNN ok
-    assert select_attention_backend(_target(), "auto", speed_active = True) == "_native_cudnn"
+    assert select_attention_backend(_target(), "auto", speed_active=True) == "_native_cudnn"
 
 
 def test_auto_does_not_pin_cudnn_below_sm80(monkeypatch):
     # cuDNN fused SDPA fails at run time on pre-SM80 (T4 / V100), so auto must stay native rather than pin a backend that crashes.
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: True)
     monkeypatch.setattr(att, "_cuda_capability", lambda: (7, 5))  # Turing T4
-    assert select_attention_backend(_target(), "auto", speed_active = True) is None
+    assert select_attention_backend(_target(), "auto", speed_active=True) is None
 
 
 def test_auto_stays_native_when_speed_off(monkeypatch):
     # off must stay bit-identical, so no backend change even on NVIDIA.
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: True)
-    assert select_attention_backend(_target(), "auto", speed_active = False) is None
+    assert select_attention_backend(_target(), "auto", speed_active=False) is None
 
 
 def test_auto_stays_native_off_nvidia(monkeypatch):
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: False)
-    assert select_attention_backend(_target(device = "mps"), "auto", speed_active = True) is None
+    assert select_attention_backend(_target(device="mps"), "auto", speed_active=True) is None
 
 
 def test_explicit_backend_honored_regardless_of_speed(monkeypatch):
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: True)
     # Pin a high capability so the arch-gated flash4 isn't dropped by the runtime check.
     monkeypatch.setattr(att, "_cuda_capability", lambda: (10, 0))
-    assert select_attention_backend(_target(), "sage", speed_active = False) == "sage"
-    assert select_attention_backend(_target(), "flash4", speed_active = False) == "flash_4_hub"
-    assert select_attention_backend(_target(), "cudnn", speed_active = False) == "_native_cudnn"
+    assert select_attention_backend(_target(), "sage", speed_active=False) == "sage"
+    assert select_attention_backend(_target(), "flash4", speed_active=False) == "flash_4_hub"
+    assert select_attention_backend(_target(), "cudnn", speed_active=False) == "_native_cudnn"
 
 
 def test_explicit_backend_dropped_off_nvidia_cuda(monkeypatch):
@@ -87,70 +87,70 @@ def test_explicit_backend_dropped_off_nvidia_cuda(monkeypatch):
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: False)
     monkeypatch.setattr(att, "_cuda_capability", lambda: (10, 0))
     for alias in ("sage", "flash", "flash4", "cudnn"):
-        assert select_attention_backend(_target(device = "mps"), alias, speed_active = True) is None
+        assert select_attention_backend(_target(device="mps"), alias, speed_active=True) is None
 
 
 def test_aiter_honored_on_rocm(monkeypatch):
     # AITER is the AMD ROCm kernel, so a ROCm CUDA target must honor it rather than drop it via the NVIDIA-only guard.
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: False)  # hip build
-    assert select_attention_backend(_target(), "aiter", speed_active = False) == "aiter"
+    assert select_attention_backend(_target(), "aiter", speed_active=False) == "aiter"
 
 
 def test_aiter_dropped_off_rocm(monkeypatch):
     # aiter on NVIDIA CUDA (or MPS / CPU) is not usable, so it drops to the native default.
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: True)  # NVIDIA
-    assert select_attention_backend(_target(), "aiter", speed_active = False) is None
+    assert select_attention_backend(_target(), "aiter", speed_active=False) is None
     monkeypatch.setattr(att, "_is_cuda_nvidia", lambda target: False)
-    assert select_attention_backend(_target(device = "mps"), "aiter", speed_active = False) is None
+    assert select_attention_backend(_target(device="mps"), "aiter", speed_active=False) is None
 
 
 def test_explicit_native_returns_none():
     # native is the default, so nothing to set.
-    assert select_attention_backend(_target(), "native", speed_active = True) is None
+    assert select_attention_backend(_target(), "native", speed_active=True) is None
 
 
 # ── arch gating (flash3/flash4 need a specific CUDA capability) ─────────────────────
 def test_flash3_dropped_below_hopper(monkeypatch):
     monkeypatch.setattr(att, "_cuda_capability", lambda: (8, 9))  # Ada / consumer
-    assert select_attention_backend(_target(), "flash3", speed_active = False) is None
+    assert select_attention_backend(_target(), "flash3", speed_active=False) is None
 
 
 def test_flash4_dropped_below_blackwell(monkeypatch):
     monkeypatch.setattr(att, "_cuda_capability", lambda: (9, 0))  # Hopper, but FA4 needs SM100
-    assert select_attention_backend(_target(), "flash4", speed_active = False) is None
+    assert select_attention_backend(_target(), "flash4", speed_active=False) is None
     # flash3 still allowed on Hopper.
-    assert select_attention_backend(_target(), "flash3", speed_active = False) == "_flash_3_hub"
+    assert select_attention_backend(_target(), "flash3", speed_active=False) == "_flash_3_hub"
 
 
 def test_arch_gate_does_not_block_when_capability_unknown(monkeypatch):
     # Unknown capability must not block; diffusers' set-time check still guards.
     monkeypatch.setattr(att, "_cuda_capability", lambda: None)
-    assert select_attention_backend(_target(), "flash4", speed_active = False) == "flash_4_hub"
+    assert select_attention_backend(_target(), "flash4", speed_active=False) == "flash_4_hub"
 
 
 def test_flash3_dropped_on_blackwell(monkeypatch):
     # FlashAttention 3 is a Hopper-SM90 rewrite with no Blackwell kernel, so explicit flash3 on a B200 drops to native rather than set fine then crash.
     monkeypatch.setattr(att, "_cuda_capability", lambda: (10, 0))
-    assert select_attention_backend(_target(), "flash3", speed_active = False) is None
+    assert select_attention_backend(_target(), "flash3", speed_active=False) is None
     # FA4 is still honored on Blackwell.
-    assert select_attention_backend(_target(), "flash4", speed_active = False) == "flash_4_hub"
+    assert select_attention_backend(_target(), "flash4", speed_active=False) == "flash_4_hub"
     # flash3 is allowed exactly on Hopper SM90.
     monkeypatch.setattr(att, "_cuda_capability", lambda: (9, 0))
-    assert select_attention_backend(_target(), "flash3", speed_active = False) == "_flash_3_hub"
+    assert select_attention_backend(_target(), "flash3", speed_active=False) == "_flash_3_hub"
 
 
 def test_explicit_cudnn_dropped_below_sm80(monkeypatch):
     # An explicit cuDNN request on pre-Ampere drops to native, the same gate the auto path applies.
     monkeypatch.setattr(att, "_cuda_capability", lambda: (7, 5))
-    assert select_attention_backend(_target(), "cudnn", speed_active = False) is None
+    assert select_attention_backend(_target(), "cudnn", speed_active=False) is None
     # Ampere+ still honors it.
     monkeypatch.setattr(att, "_cuda_capability", lambda: (8, 0))
-    assert select_attention_backend(_target(), "cudnn", speed_active = False) == "_native_cudnn"
+    assert select_attention_backend(_target(), "cudnn", speed_active=False) == "_native_cudnn"
 
 
 # ── apply ─────────────────────────────────────────────────────────────────────────
 class _FakeTransformer:
-    def __init__(self, *, fail = False):
+    def __init__(self, *, fail=False):
         self.fail = fail
         self.set_to = None
 
@@ -161,7 +161,7 @@ class _FakeTransformer:
 
 
 def _pipe(transformer):
-    return types.SimpleNamespace(transformer = transformer)
+    return types.SimpleNamespace(transformer=transformer)
 
 
 def test_apply_none_leaves_native_when_global_already_native(monkeypatch):
@@ -189,7 +189,7 @@ def test_apply_sets_backend():
 def test_apply_sets_backend_on_both_dits():
     # A dual-DiT family (Ideogram) runs both DiTs each step, so the backend must be set on BOTH or status reports a kernel the second never uses.
     t1, t2 = _FakeTransformer(), _FakeTransformer()
-    pipe = types.SimpleNamespace(transformer = t1, unconditional_transformer = t2)
+    pipe = types.SimpleNamespace(transformer=t1, unconditional_transformer=t2)
     engaged = apply_attention_backend(pipe, "_native_cudnn")
     assert engaged == "_native_cudnn"
     assert t1.set_to == "_native_cudnn" and t2.set_to == "_native_cudnn"
@@ -198,7 +198,7 @@ def test_apply_sets_backend_on_both_dits():
 def test_apply_falls_back_on_unavailable_kernel(monkeypatch):
     # An unavailable kernel must not fail the load: returns None (diffusers default).
     monkeypatch.setattr(att, "_active_attention_backend", lambda: "native")
-    t = _FakeTransformer(fail = True)
+    t = _FakeTransformer(fail=True)
     assert apply_attention_backend(_pipe(t), "sage") is None
 
 
@@ -221,7 +221,7 @@ def test_apply_failed_kernel_restores_native_when_polluted(monkeypatch):
 
 
 def test_apply_handles_missing_method():
-    pipe = types.SimpleNamespace(transformer = types.SimpleNamespace())
+    pipe = types.SimpleNamespace(transformer=types.SimpleNamespace())
     assert apply_attention_backend(pipe, "_native_cudnn") is None
 
 
@@ -250,7 +250,7 @@ def test_active_attention_backend_reads_tuple_return():
 
 
 # ── on-demand wheel-only install of optional kernels ─────────────────────────────
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_real_installs(monkeypatch):
     # Unit tests must never shell out to pip: hard-disable the install gate; the install tests re-enable it with a stubbed subprocess.
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ATTENTION_INSTALL", "0")
@@ -267,11 +267,12 @@ class _Recorder:
 
     def __call__(self, cmd, **kwargs):
         self.calls.append(list(cmd))
-        return types.SimpleNamespace(returncode = 0)
+        return types.SimpleNamespace(returncode=0)
 
 
 def _stub_subprocess(monkeypatch, run):
     import subprocess
+
     monkeypatch.setattr(subprocess, "run", run)
 
 
@@ -330,8 +331,8 @@ _XFORMERS_WHEEL = "https://download.pytorch.org/whl/cu130/xformers-0.0.34-cp39-a
 
 def _stub_xformers_wheel(
     monkeypatch,
-    url = _XFORMERS_WHEEL,
-    reason = None,
+    url=_XFORMERS_WHEEL,
+    reason=None,
 ):
     """Pin the resolved xFormers wheel so no test probes the real torch."""
     monkeypatch.setattr(att, "_xformers_wheel_target", lambda: (url, reason))
@@ -397,13 +398,13 @@ def test_a_private_mirrors_credentials_never_reach_the_log(monkeypatch):
     import subprocess as sp
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
-    _stub_xformers_wheel(monkeypatch, url = _CREDENTIALED_WHEEL)
+    _stub_xformers_wheel(monkeypatch, url=_CREDENTIALED_WHEEL)
 
     def _boom(cmd, **kwargs):
         raise sp.CalledProcessError(
-            returncode = 1,
-            cmd = cmd,
-            stderr = f"ERROR: Could not install {_CREDENTIALED_WHEEL} (404)".encode(),
+            returncode=1,
+            cmd=cmd,
+            stderr=f"ERROR: Could not install {_CREDENTIALED_WHEEL} (404)".encode(),
         )
 
     _stub_subprocess(monkeypatch, _boom)
@@ -435,7 +436,7 @@ def test_xformers_install_refused_when_no_matching_wheel_exists(monkeypatch):
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
     _stub_xformers_wheel(
-        monkeypatch, url = None, reason = "no xFormers wheel is published for torch 2.11.0"
+        monkeypatch, url=None, reason="no xFormers wheel is published for torch 2.11.0"
     )
     run = _Recorder()
     _stub_subprocess(monkeypatch, run)
@@ -450,7 +451,7 @@ def test_xformers_refusal_is_logged_with_its_reason(monkeypatch):
     import importlib.util
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
-    _stub_xformers_wheel(monkeypatch, url = None, reason = "torch could not be probed")
+    _stub_xformers_wheel(monkeypatch, url=None, reason="torch could not be probed")
     _stub_subprocess(monkeypatch, _Recorder())
 
     warnings = []
@@ -475,7 +476,7 @@ def test_xformers_refusal_records_no_attempt(monkeypatch):
     import importlib.util
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
-    _stub_xformers_wheel(monkeypatch, url = None, reason = "nope")
+    _stub_xformers_wheel(monkeypatch, url=None, reason="nope")
     _stub_subprocess(monkeypatch, _Recorder())
 
     att._ensure_attention_backend_installed("xformers")
@@ -537,7 +538,7 @@ def test_failed_install_not_retried_in_same_process(monkeypatch):
 
     def _boom(cmd, **kwargs):
         calls.append(list(cmd))
-        raise sp.CalledProcessError(returncode = 1, cmd = cmd)
+        raise sp.CalledProcessError(returncode=1, cmd=cmd)
 
     _stub_subprocess(monkeypatch, _boom)
     att._ensure_attention_backend_installed("sage")  # pre-install attempt (outside lock)
@@ -569,7 +570,7 @@ def test_install_failure_skips_cache_invalidation(monkeypatch):
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
 
     def _boom(cmd, **kwargs):
-        raise sp.CalledProcessError(returncode = 1, cmd = cmd)
+        raise sp.CalledProcessError(returncode=1, cmd=cmd)
 
     _stub_subprocess(monkeypatch, _boom)
     invalidated = []
@@ -597,7 +598,7 @@ def test_install_failure_logs_pip_stderr(monkeypatch):
 
     def _boom(cmd, **kwargs):
         raise sp.CalledProcessError(
-            returncode = 1, cmd = cmd, stderr = b"ERROR: No matching distribution found"
+            returncode=1, cmd=cmd, stderr=b"ERROR: No matching distribution found"
         )
 
     _stub_subprocess(monkeypatch, _boom)
@@ -624,11 +625,11 @@ def test_install_failure_falls_back_to_native(monkeypatch):
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
 
     def _boom(cmd, **kwargs):
-        raise sp.CalledProcessError(returncode = 1, cmd = cmd)
+        raise sp.CalledProcessError(returncode=1, cmd=cmd)
 
     _stub_subprocess(monkeypatch, _boom)
     monkeypatch.setattr(att, "_active_attention_backend", lambda: "native")
-    t = _FakeTransformer(fail = True)
+    t = _FakeTransformer(fail=True)
     assert apply_attention_backend(_pipe(t), "sage") is None
 
 
@@ -688,10 +689,10 @@ def test_kernels_hub_compatible_reads_hub_version(monkeypatch):
     # `import kernels` outright (strict dataclasses gained `str | None` in hub 1.3.0), and
     # 1.3-1.9 sit below the supported floor, so the whole sub-1.10 range is refused.
     for bad in ("0.36.2", "1.0.0", "1.2.4", "1.3.5", "1.9.2", "1.9"):
-        monkeypatch.setattr(importlib.metadata, "version", lambda name, v = bad: v)
+        monkeypatch.setattr(importlib.metadata, "version", lambda name, v=bad: v)
         assert att._kernels_hub_compatible() is False, bad
     for good in ("1.10.0", "1.10.0rc0", "1.23.0", "2.0.0"):
-        monkeypatch.setattr(importlib.metadata, "version", lambda name, v = good: v)
+        monkeypatch.setattr(importlib.metadata, "version", lambda name, v=good: v)
         assert att._kernels_hub_compatible() is True, good
 
     def _boom(name):
@@ -800,7 +801,7 @@ def test_probe_timeout_matches_the_other_wheel_callers(monkeypatch):
 # ── the native dispatch's real kernel set (#8225) ────────────────────────────────
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _clear_sdpa_probe_cache():
     """The probe memoises per (device, dtype) for the process; tests must not inherit it."""
     att._SDPA_PROBE_CACHE.clear()
@@ -812,7 +813,7 @@ def _stub_probe(
     monkeypatch,
     kernels,
     *,
-    record = None,
+    record=None,
 ):
     def _probe(device, dtype):
         if record is not None:
@@ -867,9 +868,9 @@ def test_a_probe_that_raises_is_swallowed(monkeypatch):
 
 def test_a_target_with_no_device_is_never_probed(monkeypatch):
     seen: list = []
-    _stub_probe(monkeypatch, ("math",), record = seen)
-    assert att.available_sdpa_kernels(types.SimpleNamespace(device = "", dtype = None)) == ()
-    assert att.available_sdpa_kernels(types.SimpleNamespace(device = None, dtype = None)) == ()
+    _stub_probe(monkeypatch, ("math",), record=seen)
+    assert att.available_sdpa_kernels(types.SimpleNamespace(device="", dtype=None)) == ()
+    assert att.available_sdpa_kernels(types.SimpleNamespace(device=None, dtype=None)) == ()
     assert seen == []
 
 
@@ -877,12 +878,12 @@ def test_the_probe_runs_once_per_device_and_dtype(monkeypatch):
     # A kernel cannot appear or vanish under a running interpreter, and this sits on the load
     # path, so the probe is memoised. cuda:0 and cuda:1 are the same device TYPE.
     seen: list = []
-    _stub_probe(monkeypatch, ("math",), record = seen)
+    _stub_probe(monkeypatch, ("math",), record=seen)
     for device in ("cuda", "cuda:0", "cuda:1"):
-        assert att.sdpa_math_only(types.SimpleNamespace(device = device, dtype = "fp16")) is True
+        assert att.sdpa_math_only(types.SimpleNamespace(device=device, dtype="fp16")) is True
     assert len(seen) == 1
     # A different dtype is a different question: fused kernels are half-precision only.
-    att.sdpa_math_only(types.SimpleNamespace(device = "cuda", dtype = "fp32"))
+    att.sdpa_math_only(types.SimpleNamespace(device="cuda", dtype="fp32"))
     assert len(seen) == 2
 
 
@@ -892,8 +893,8 @@ def test_a_dtypeless_target_probes_in_half_precision(monkeypatch):
     import torch
 
     seen: list = []
-    _stub_probe(monkeypatch, ("flash", "math"), record = seen)
-    att.available_sdpa_kernels(types.SimpleNamespace(device = "cuda", dtype = None))
+    _stub_probe(monkeypatch, ("flash", "math"), record=seen)
+    att.available_sdpa_kernels(types.SimpleNamespace(device="cuda", dtype=None))
     assert seen == [("cuda", torch.float16)]
 
 
@@ -902,7 +903,7 @@ def test_warn_names_the_quadratic_cost(monkeypatch):
     # allocation size to divide by hand.
     _stub_probe(monkeypatch, ("math",))
     logged: list = []
-    logger = types.SimpleNamespace(warning = lambda fmt, *a: logged.append(fmt % a))
+    logger = types.SimpleNamespace(warning=lambda fmt, *a: logged.append(fmt % a))
 
     assert att.warn_if_sdpa_math_only(_target(), logger) is True
     assert len(logged) == 1
@@ -913,7 +914,7 @@ def test_warn_names_the_quadratic_cost(monkeypatch):
 def test_warn_is_silent_on_a_healthy_device(monkeypatch):
     _stub_probe(monkeypatch, ("flash", "math"))
     logged: list = []
-    logger = types.SimpleNamespace(warning = lambda fmt, *a: logged.append(fmt % a))
+    logger = types.SimpleNamespace(warning=lambda fmt, *a: logged.append(fmt % a))
     assert att.warn_if_sdpa_math_only(_target(), logger) is False
     assert logged == []
 
@@ -926,12 +927,12 @@ def test_apply_native_reports_a_math_only_device(monkeypatch):
     _stub_probe(monkeypatch, ("math",))
     logged: list = []
     logger = types.SimpleNamespace(
-        warning = lambda fmt, *a: logged.append(fmt % a),
-        info = lambda *a, **k: None,
+        warning=lambda fmt, *a: logged.append(fmt % a),
+        info=lambda *a, **k: None,
     )
 
     assert (
-        apply_attention_backend(_pipe(_FakeTransformer()), None, logger = logger, target = _target())
+        apply_attention_backend(_pipe(_FakeTransformer()), None, logger=logger, target=_target())
         is None
     )
     assert len(logged) == 1 and "math_only" in logged[0]
@@ -944,12 +945,12 @@ def test_apply_reports_a_math_only_device_for_a_unet_pipeline(monkeypatch):
     _stub_probe(monkeypatch, ("math",))
     logged: list = []
     logger = types.SimpleNamespace(
-        warning = lambda fmt, *a: logged.append(fmt % a),
-        info = lambda *a, **k: None,
+        warning=lambda fmt, *a: logged.append(fmt % a),
+        info=lambda *a, **k: None,
     )
-    unet_pipe = types.SimpleNamespace(unet = object())
+    unet_pipe = types.SimpleNamespace(unet=object())
 
-    assert apply_attention_backend(unet_pipe, None, logger = logger, target = _target()) is None
+    assert apply_attention_backend(unet_pipe, None, logger=logger, target=_target()) is None
     assert len(logged) == 1 and "math_only" in logged[0]
 
 
@@ -957,7 +958,7 @@ def test_apply_without_a_target_probes_nothing(monkeypatch):
     # The parameter is optional, so every existing caller keeps its exact behaviour.
     monkeypatch.setattr(att, "_active_attention_backend", lambda: "native")
     seen: list = []
-    _stub_probe(monkeypatch, ("math",), record = seen)
+    _stub_probe(monkeypatch, ("math",), record=seen)
     assert apply_attention_backend(_pipe(_FakeTransformer()), None) is None
     assert seen == []
 
@@ -965,15 +966,15 @@ def test_apply_without_a_target_probes_nothing(monkeypatch):
 def test_apply_does_not_warn_when_a_real_backend_engaged(monkeypatch):
     # A pinned kernel is the answer to the question the probe asks, so asking it is pointless.
     seen: list = []
-    _stub_probe(monkeypatch, ("math",), record = seen)
+    _stub_probe(monkeypatch, ("math",), record=seen)
     logged: list = []
     logger = types.SimpleNamespace(
-        warning = lambda fmt, *a: logged.append(fmt % a),
-        info = lambda *a, **k: None,
+        warning=lambda fmt, *a: logged.append(fmt % a),
+        info=lambda *a, **k: None,
     )
     t = _FakeTransformer()
     assert (
-        apply_attention_backend(_pipe(t), "_native_cudnn", logger = logger, target = _target())
+        apply_attention_backend(_pipe(t), "_native_cudnn", logger=logger, target=_target())
         == "_native_cudnn"
     )
     assert seen == [] and logged == []

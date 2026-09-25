@@ -43,8 +43,8 @@ def _drive(
     snaps,
     monkeypatch,
     *,
-    tick_s = 10.0,
-    stall_timeout_s = 600.0,
+    tick_s=10.0,
+    stall_timeout_s=600.0,
 ):
     """Run _run() synchronously over `snaps` on a fake clock, then stop.
 
@@ -55,7 +55,7 @@ def _drive(
     clock = {"t": 1000.0}
     monkeypatch.setattr(ls.time, "monotonic", lambda: clock["t"])
 
-    lg = LlamaServerStatsLogger("http://127.0.0.1:0", cap, stall_timeout_s = stall_timeout_s)
+    lg = LlamaServerStatsLogger("http://127.0.0.1:0", cap, stall_timeout_s=stall_timeout_s)
     lg._interval = 0.001  # bypass the 1s floor for a fast, synchronous run
     state = {"i": 0}
 
@@ -77,7 +77,7 @@ def _stalls(cap):
     return [kw for ev, kw in cap.events if ev == "engine_no_decode_progress"]
 
 
-def _wedged(n, *, decode = 8192.0):
+def _wedged(n, *, decode=8192.0):
     """The user's signature: a held slot that never calls llama_decode().
 
     The gauges are in the snapshot because /metrics renders them from the same table."""
@@ -97,7 +97,7 @@ def _wedged(n, *, decode = 8192.0):
 
 def test_reproduces_the_reported_signature(monkeypatch):
     # 135 samples, every one identical: running=1, waiting=0, both rates 0.0.
-    cap = _drive(_wedged(135), monkeypatch, stall_timeout_s = 0.0)
+    cap = _drive(_wedged(135), monkeypatch, stall_timeout_s=0.0)
     stats = [kw for ev, kw in cap.events if ev == "engine_stats"]
     assert len(stats) == 135
     assert all(s["running"] == 1 and s["waiting"] == 0 for s in stats)
@@ -166,7 +166,7 @@ def test_recovery_rearms_the_report(monkeypatch):
     snaps = (
         _wedged(80)
         + [{"n_decode_total": 9000.0 + i, "requests_processing": 1.0} for i in range(5)]
-        + _wedged(80, decode = 20000.0)
+        + _wedged(80, decode=20000.0)
     )
     cap = _drive(snaps, monkeypatch)
     assert len(_stalls(cap)) == 2
@@ -199,7 +199,7 @@ def test_absent_decode_counter_disables_reporting(monkeypatch):
 
 
 def test_disabled_by_zero_timeout(monkeypatch):
-    cap = _drive(_wedged(120), monkeypatch, stall_timeout_s = 0.0)
+    cap = _drive(_wedged(120), monkeypatch, stall_timeout_s=0.0)
     assert not _stalls(cap)
 
 
@@ -209,7 +209,7 @@ def test_counter_reset_after_reload_is_not_a_stall(monkeypatch):
     snaps = _wedged(20) + [
         {"n_decode_total": float(i), "requests_processing": 1.0} for i in range(5)
     ]
-    cap = _drive(snaps, monkeypatch, stall_timeout_s = 600.0)
+    cap = _drive(snaps, monkeypatch, stall_timeout_s=600.0)
     assert not _stalls(cap), "200s of wedge then a reset must not trip the report"
 
 
@@ -237,7 +237,7 @@ def test_a_non_finite_timeout_still_leaves_the_stall_report_armed(monkeypatch):
     """The end state: a malformed setting must not silence the wedge report."""
     monkeypatch.setenv("UNSLOTH_STUDIO_ENGINE_STALL_TIMEOUT_S", "nan")
     applied = ls._env_float("UNSLOTH_STUDIO_ENGINE_STALL_TIMEOUT_S", 600.0, _Capture())
-    cap = _drive(_wedged(120), monkeypatch, stall_timeout_s = applied)
+    cap = _drive(_wedged(120), monkeypatch, stall_timeout_s=applied)
     assert _stalls(cap), "a nan timeout must not disable the stall report"
 
 

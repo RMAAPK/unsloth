@@ -60,60 +60,60 @@ def test_inject_prompt_tags_empty_returns_prompt():
 def test_supports_lora_matrix():
     # native: flux/z-image yes, qwen no
     assert dl.supports_lora(
-        engine = "sd_cpp", family = "flux.1", model_kind = "gguf", transformer_quant = None
+        engine="sd_cpp", family="flux.1", model_kind="gguf", transformer_quant=None
     )
     assert dl.supports_lora(
-        engine = "sd_cpp", family = "z-image", model_kind = "gguf", transformer_quant = None
+        engine="sd_cpp", family="z-image", model_kind="gguf", transformer_quant=None
     )
     assert not dl.supports_lora(
-        engine = "sd_cpp", family = "qwen-image", model_kind = "gguf", transformer_quant = None
+        engine="sd_cpp", family="qwen-image", model_kind="gguf", transformer_quant=None
     )
     # diffusers: bf16 yes, torchao int8/fp8 yes (load-time bake), nvfp4/mxfp8 no, gguf-diffusers no.
     assert dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "pipeline", transformer_quant = None
+        engine="diffusers", family="flux.1", model_kind="pipeline", transformer_quant=None
     )
     assert dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "single_file", transformer_quant = None
+        engine="diffusers", family="flux.1", model_kind="single_file", transformer_quant=None
     )
     assert dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "single_file", transformer_quant = "fp8"
+        engine="diffusers", family="flux.1", model_kind="single_file", transformer_quant="fp8"
     )
     assert dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "single_file", transformer_quant = "int8"
+        engine="diffusers", family="flux.1", model_kind="single_file", transformer_quant="int8"
     )
     # The quant fast path keeps the PICKER kind ("gguf") while the effective transformer is a dense torchao build, so the quant
     # check must run BEFORE the gguf-kind check; the bake precedes compilation, so compiled does not gate quant builds.
     assert dl.supports_lora(
-        engine = "diffusers",
-        family = "z-image",
-        model_kind = "gguf",
-        transformer_quant = "int8",
-        compiled = True,
+        engine="diffusers",
+        family="z-image",
+        model_kind="gguf",
+        transformer_quant="int8",
+        compiled=True,
     )
     assert not dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "single_file", transformer_quant = "nvfp4"
+        engine="diffusers", family="flux.1", model_kind="single_file", transformer_quant="nvfp4"
     )
     assert not dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "single_file", transformer_quant = "mxfp8"
+        engine="diffusers", family="flux.1", model_kind="single_file", transformer_quant="mxfp8"
     )
     assert not dl.supports_lora(
-        engine = "diffusers", family = "flux.1", model_kind = "gguf", transformer_quant = None
+        engine="diffusers", family="flux.1", model_kind="gguf", transformer_quant=None
     )
     # A torch.compile'd diffusers transformer cannot take a non-hotswap adapter: diffusers needs it loaded before compilation.
     assert not dl.supports_lora(
-        engine = "diffusers",
-        family = "flux.1",
-        model_kind = "pipeline",
-        transformer_quant = None,
-        compiled = True,
+        engine="diffusers",
+        family="flux.1",
+        model_kind="pipeline",
+        transformer_quant=None,
+        compiled=True,
     )
     # compiled is diffusers-only; the native path ignores it.
     assert dl.supports_lora(
-        engine = "sd_cpp",
-        family = "flux.1",
-        model_kind = "gguf",
-        transformer_quant = None,
-        compiled = True,
+        engine="sd_cpp",
+        family="flux.1",
+        model_kind="gguf",
+        transformer_quant=None,
+        compiled=True,
     )
 
 
@@ -186,14 +186,14 @@ def test_resolve_one_rejects_cross_family_catalog_entry(tmp_path, monkeypatch):
     d = tmp_path / "loras"
     d.mkdir()
     (d / "krea-style.safetensors").write_bytes(b"x")
-    (d / "krea-style.json").write_text('{"families": ["krea-2"]}', encoding = "utf-8")
+    (d / "krea-style.json").write_text('{"families": ["krea-2"]}', encoding="utf-8")
     monkeypatch.setattr(dl, "loras_dir", lambda: d)
     # Same family: resolves.
-    r = dl.resolve_one("krea-style", 0.7, family = "krea-2")
+    r = dl.resolve_one("krea-style", 0.7, family="krea-2")
     assert r.path.endswith("krea-style.safetensors")
     # Wrong family: rejected before any download / apply.
     with pytest.raises(ValueError):
-        dl.resolve_one("krea-style", 0.7, family = "flux.1")
+        dl.resolve_one("krea-style", 0.7, family="flux.1")
     # No family context (e.g. legacy caller): unrestricted.
     assert dl.resolve_one("krea-style", 0.7).path.endswith("krea-style.safetensors")
 
@@ -226,7 +226,7 @@ def test_resolve_specs_maps_hub_error_to_valueerror(tmp_path, monkeypatch):
         raise RepositoryNotFoundError(
             "404 Client Error. Repository Not Found for url: "
             "https://huggingface.co/api/models/nope/nope (Request ID: abc)",
-            response = types.SimpleNamespace(headers = {}, request = None),
+            response=types.SimpleNamespace(headers={}, request=None),
         )
 
     monkeypatch.setattr(dl, "resolve_one", _boom)
@@ -266,22 +266,22 @@ def test_lora_spec_and_request_validation():
     from models.inference import DiffusionGenerateRequest, LoraSpec
 
     # empty / missing loras -> unchanged behaviour
-    assert DiffusionGenerateRequest(prompt = "x").loras is None
+    assert DiffusionGenerateRequest(prompt="x").loras is None
     req = DiffusionGenerateRequest(
-        prompt = "x", loras = [{"id": "a", "weight": 0.5}, {"id": "b", "weight": 1.0}]
+        prompt="x", loras=[{"id": "a", "weight": 0.5}, {"id": "b", "weight": 1.0}]
     )
     assert [l.id for l in req.loras] == ["a", "b"]
     # weight bounds enforced
     with pytest.raises(Exception):
-        LoraSpec(id = "a", weight = 3.0)
+        LoraSpec(id="a", weight=3.0)
     with pytest.raises(Exception):
-        LoraSpec(id = "a", weight = -0.1)
+        LoraSpec(id="a", weight=-0.1)
     # default weight
-    assert LoraSpec(id = "a").weight == 1.0
+    assert LoraSpec(id="a").weight == 1.0
     # Duplicate ids are rejected: repeating one would load the same adapter as several suffixed adapters and stack its effect past the weight bound.
     with pytest.raises(Exception):
         DiffusionGenerateRequest(
-            prompt = "x", loras = [{"id": "a", "weight": 0.5}, {"id": "a", "weight": 1.0}]
+            prompt="x", loras=[{"id": "a", "weight": 0.5}, {"id": "a", "weight": 1.0}]
         )
 
 
@@ -297,14 +297,14 @@ class _FakePipe:
     def load_lora_weights(
         self,
         path,
-        adapter_name = None,
+        adapter_name=None,
     ):
         self.loaded.append((path, adapter_name))
 
     def set_adapters(
         self,
         names,
-        adapter_weights = None,
+        adapter_weights=None,
     ):
         self.active = (list(names), list(adapter_weights) if adapter_weights else None)
 
@@ -317,17 +317,18 @@ class _FakePipe:
 def _fake_state(
     pipe,
     *,
-    kind = "pipeline",
-    quant = None,
+    kind="pipeline",
+    quant=None,
 ):
-    fam = types.SimpleNamespace(name = "flux.1")
+    fam = types.SimpleNamespace(name="flux.1")
     return types.SimpleNamespace(
-        pipe = pipe, family = fam, kind = kind, transformer_quant = quant, hf_token = None
+        pipe=pipe, family=fam, kind=kind, transformer_quant=quant, hf_token=None
     )
 
 
 def _backend():
     from core.inference.diffusion import DiffusionBackend
+
     return DiffusionBackend()
 
 
@@ -396,9 +397,9 @@ def test_diffusers_apply_rejects_unsupported_quant():
     import threading
 
     pipe = _FakePipe()
-    with pytest.raises(ValueError, match = "Reload the model with the adapter selection"):
+    with pytest.raises(ValueError, match="Reload the model with the adapter selection"):
         _backend()._apply_loras(
-            _fake_state(pipe, kind = "single_file", quant = "fp8"),
+            _fake_state(pipe, kind="single_file", quant="fp8"),
             [("styleA", 1.0)],
             threading.Event(),
         )
@@ -417,7 +418,7 @@ def test_diffusers_apply_rejects_gguf_adapter(monkeypatch):
         ],
     )
     pipe = _FakePipe()
-    with pytest.raises(ValueError, match = "GGUF LoRA"):
+    with pytest.raises(ValueError, match="GGUF LoRA"):
         _backend()._apply_loras(_fake_state(pipe), [("styleA", 1.0)], threading.Event())
     assert pipe.loaded == []  # never touched the pipe
 
@@ -441,8 +442,8 @@ def test_scan_local_reads_family_sidecar(tmp_path, monkeypatch):
     assert by_id["plain"].weight_default == 1.0
 
     # Family filter: the sdxl-tagged adapter is kept for sdxl and hidden for flux.1; the untagged one is always shown.
-    sdxl_ids = {e.id for e in dl.list_loras(family = "sdxl")}
-    flux_ids = {e.id for e in dl.list_loras(family = "flux.1")}
+    sdxl_ids = {e.id for e in dl.list_loras(family="sdxl")}
+    flux_ids = {e.id for e in dl.list_loras(family="flux.1")}
     assert "trained" in sdxl_ids and "plain" in sdxl_ids
     assert "trained" not in flux_ids and "plain" in flux_ids
 

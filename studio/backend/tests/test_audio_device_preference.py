@@ -25,7 +25,7 @@ from core.inference.audio_device import (  # noqa: E402
 )
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _neutral_audio_device_env(monkeypatch):
     """A server-wide default must not decide the outcome of these tests.
 
@@ -33,7 +33,7 @@ def _neutral_audio_device_env(monkeypatch):
     UNSLOTH_AUDIO_DEVICE would fail these on correct behaviour, and that host is
     exactly the one most likely to run them.
     """
-    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising = False)
+    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising=False)
 
 
 @pytest.mark.parametrize(
@@ -75,7 +75,7 @@ def test_the_environment_supplies_the_default_for_a_request_that_names_none(monk
 
 
 def test_without_the_environment_variable_nothing_is_forced_to_cpu(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising = False)
+    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising=False)
     assert audio_device_default() == "auto"
     assert not audio_device_forces_cpu(None)
 
@@ -83,10 +83,10 @@ def test_without_the_environment_variable_nothing_is_forced_to_cpu(monkeypatch):
 def _torch_with_cuda(monkeypatch):
     """A torch whose CUDA is available, so anything but CPU is a real choice."""
     torch = types.SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        cuda = types.SimpleNamespace(is_available = lambda: True),
-        backends = types.SimpleNamespace(mps = types.SimpleNamespace(is_available = lambda: False)),
+        float16="float16",
+        float32="float32",
+        cuda=types.SimpleNamespace(is_available=lambda: True),
+        backends=types.SimpleNamespace(mps=types.SimpleNamespace(is_available=lambda: False)),
     )
     monkeypatch.setitem(sys.modules, "torch", torch)
     return torch
@@ -118,11 +118,11 @@ def test_a_resident_model_on_the_other_device_is_reloaded_not_reused(monkeypatch
     """A preference is a request about placement. Reusing the old one ignores it."""
     from core.inference import stt_sidecar
 
-    monkeypatch.setattr(stt_sidecar, "_pick_device", lambda _preference = None: ("cpu", "float32"))
+    monkeypatch.setattr(stt_sidecar, "_pick_device", lambda _preference=None: ("cpu", "float32"))
     monkeypatch.setattr(stt_sidecar, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(stt_sidecar, "resolve_model_id", lambda model: model or "small")
 
-    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds = 0.0)
+    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds=0.0)
     sidecar._engine = object()
     sidecar._model_id = "small"
     sidecar._device = "cuda"
@@ -138,15 +138,15 @@ def test_a_resident_model_on_the_other_device_is_reloaded_not_reused(monkeypatch
     monkeypatch.setattr(
         sidecar,
         "_ensure_model_downloaded",
-        lambda model_id, use_resident = True: stt_sidecar._CachedSttSnapshot(
+        lambda model_id, use_resident=True: stt_sidecar._CachedSttSnapshot(
             # The resident shortcut answers with no path; a replacement load needs one.
-            path = None if use_resident else "/snapshots/small",
-            is_multilingual = True,
+            path=None if use_resident else "/snapshots/small",
+            is_multilingual=True,
         ),
     )
     monkeypatch.setattr(sidecar, "_release_engine_locked", lambda: True)
 
-    sidecar.load("small", device = "cpu")
+    sidecar.load("small", device="cpu")
 
     assert builds == ["cpu"], "the CPU preference must have driven a fresh load"
     assert sidecar._device == "cpu"
@@ -160,7 +160,7 @@ def test_the_same_preference_reuses_the_resident_model(monkeypatch):
     monkeypatch.setattr(stt_sidecar, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(stt_sidecar, "resolve_model_id", lambda model: model or "small")
 
-    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds = 0.0)
+    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds=0.0)
     resident = object()
     sidecar._engine = resident
     sidecar._model_id = "small"
@@ -172,7 +172,7 @@ def test_the_same_preference_reuses_the_resident_model(monkeypatch):
 
     monkeypatch.setattr(sidecar, "_build_model", _never)
 
-    assert sidecar.load("small", device = "cpu") is resident
+    assert sidecar.load("small", device="cpu") is resident
 
 
 def test_a_model_loaded_before_the_option_existed_is_not_reloaded(monkeypatch):
@@ -183,7 +183,7 @@ def test_a_model_loaded_before_the_option_existed_is_not_reloaded(monkeypatch):
     monkeypatch.setattr(stt_sidecar, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(stt_sidecar, "resolve_model_id", lambda model: model or "small")
 
-    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds = 0.0)
+    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds=0.0)
     resident = object()
     sidecar._engine = resident
     sidecar._model_id = "small"
@@ -196,7 +196,7 @@ def test_a_model_loaded_before_the_option_existed_is_not_reloaded(monkeypatch):
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not rebuild")),
     )
 
-    assert sidecar.load("small", device = "auto") is resident
+    assert sidecar.load("small", device="auto") is resident
 
 
 def test_the_registry_hands_the_preference_to_the_engines_sidecar(monkeypatch):
@@ -208,8 +208,8 @@ def test_the_registry_hands_the_preference_to_the_engines_sidecar(monkeypatch):
         def load(
             self,
             model,
-            request_cancel_event = None,
-            device = None,
+            request_cancel_event=None,
+            device=None,
         ):
             seen["model"] = model
             seen["device"] = device
@@ -218,7 +218,7 @@ def test_the_registry_hands_the_preference_to_the_engines_sidecar(monkeypatch):
     monkeypatch.setattr(stt_registry, "_model_is_downloaded", lambda _e, _m: True)
     monkeypatch.setattr(stt_registry, "unload", lambda *a, **k: [])
 
-    stt_registry.load("small", "transformers", threading.Event(), device = "cpu")
+    stt_registry.load("small", "transformers", threading.Event(), device="cpu")
 
     assert seen == {"model": "small", "device": "cpu"}
 
@@ -228,8 +228,8 @@ def test_native_audio_holds_tts_weights_in_cpu_ram_when_asked(monkeypatch):
 
     _torch_with_cuda(monkeypatch)
 
-    assert native_audio.NativeAudioBackend(device_preference = "cpu").device == "cpu"
-    assert native_audio.NativeAudioBackend(device_preference = "auto").device == "cuda"
+    assert native_audio.NativeAudioBackend(device_preference="cpu").device == "cpu"
+    assert native_audio.NativeAudioBackend(device_preference="auto").device == "cuda"
     assert native_audio.NativeAudioBackend().device == "cuda"
 
 
@@ -239,14 +239,14 @@ def test_minimax_music_explains_that_cpu_was_chosen_rather_than_missing(monkeypa
     from core.inference import native_audio
 
     _torch_with_cuda(monkeypatch)
-    backend = native_audio.NativeAudioBackend(device_preference = "cpu")
+    backend = native_audio.NativeAudioBackend(device_preference="cpu")
     config = types.SimpleNamespace(
-        identifier = "MiniMaxAI/MiniMax-Music3",
-        audio_type = "minimax_music3",
-        path = None,
+        identifier="MiniMaxAI/MiniMax-Music3",
+        audio_type="minimax_music3",
+        path=None,
     )
 
-    with pytest.raises(RuntimeError, match = "cannot be loaded into CPU RAM"):
+    with pytest.raises(RuntimeError, match="cannot be loaded into CPU RAM"):
         backend.load_model(config)
 
 
@@ -261,10 +261,10 @@ def test_a_caller_that_sends_no_device_leaves_the_placement_alone(monkeypatch):
     monkeypatch.setattr(
         stt_sidecar,
         "_pick_device",
-        lambda preference = None: ("cpu", "float32") if preference == "cpu" else ("cuda", "float16"),
+        lambda preference=None: ("cpu", "float32") if preference == "cpu" else ("cuda", "float16"),
     )
 
-    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds = 0.0)
+    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds=0.0)
     builds: list[str] = []
     monkeypatch.setattr(
         sidecar, "_build_model", lambda p, device, dtype, c: builds.append(device) or object()
@@ -273,15 +273,15 @@ def test_a_caller_that_sends_no_device_leaves_the_placement_alone(monkeypatch):
     monkeypatch.setattr(
         sidecar,
         "_ensure_model_downloaded",
-        lambda model_id, use_resident = True: stt_sidecar._CachedSttSnapshot(
-            path = None if (sidecar._engine is not None and use_resident) else "/snapshots/small",
-            is_multilingual = True,
+        lambda model_id, use_resident=True: stt_sidecar._CachedSttSnapshot(
+            path=None if (sidecar._engine is not None and use_resident) else "/snapshots/small",
+            is_multilingual=True,
         ),
     )
 
-    sidecar.load("small", device = "cpu")  # Voice settings: the user picked CPU
-    sidecar.load("small", device = None)  # OpenAI-compatible route: no opinion
-    sidecar.load("small", device = "cpu")  # the next dictation
+    sidecar.load("small", device="cpu")  # Voice settings: the user picked CPU
+    sidecar.load("small", device=None)  # OpenAI-compatible route: no opinion
+    sidecar.load("small", device="cpu")  # the next dictation
 
     assert builds == ["cpu"], "only the first load should have built anything"
     assert sidecar._device == "cpu"
@@ -296,10 +296,10 @@ def test_an_explicit_change_still_reloads_after_a_no_opinion_call(monkeypatch):
     monkeypatch.setattr(
         stt_sidecar,
         "_pick_device",
-        lambda preference = None: ("cpu", "float32") if preference == "cpu" else ("cuda", "float16"),
+        lambda preference=None: ("cpu", "float32") if preference == "cpu" else ("cuda", "float16"),
     )
 
-    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds = 0.0)
+    sidecar = stt_sidecar.WhisperSttSidecar(keep_alive_seconds=0.0)
     builds: list[str] = []
     monkeypatch.setattr(
         sidecar, "_build_model", lambda p, device, dtype, c: builds.append(device) or object()
@@ -308,15 +308,15 @@ def test_an_explicit_change_still_reloads_after_a_no_opinion_call(monkeypatch):
     monkeypatch.setattr(
         sidecar,
         "_ensure_model_downloaded",
-        lambda model_id, use_resident = True: stt_sidecar._CachedSttSnapshot(
-            path = None if (sidecar._engine is not None and use_resident) else "/snapshots/small",
-            is_multilingual = True,
+        lambda model_id, use_resident=True: stt_sidecar._CachedSttSnapshot(
+            path=None if (sidecar._engine is not None and use_resident) else "/snapshots/small",
+            is_multilingual=True,
         ),
     )
 
-    sidecar.load("small", device = "cpu")
-    sidecar.load("small", device = None)
-    sidecar.load("small", device = "auto")
+    sidecar.load("small", device="cpu")
+    sidecar.load("small", device=None)
+    sidecar.load("small", device="auto")
 
     assert builds == ["cpu", "cuda"]
 
@@ -338,7 +338,7 @@ def test_the_mtmd_reuse_branch_still_records_the_choice(monkeypatch):
     monkeypatch.setattr(sidecar, "_schedule_idle_unload_locked", lambda: None)
     monkeypatch.setattr(stt_mtmd_sidecar, "_training_active", lambda: True)
 
-    sidecar._load_locked("m", "whisper-server", path_revision = 1, device = "cpu")
+    sidecar._load_locked("m", "whisper-server", path_revision=1, device="cpu")
 
     assert sidecar._forced_cpu is True
 

@@ -16,35 +16,35 @@ from core.inference.runtime_context import runtime_context_length
 
 def test_attached_window_wins():
     model = SimpleNamespace(
-        max_seq_length = 8192,
-        args = SimpleNamespace(max_position_embeddings = 40960),
+        max_seq_length=8192,
+        args=SimpleNamespace(max_position_embeddings=40960),
     )
     assert runtime_context_length(model, 4096) == 8192
 
 
 def test_requested_length_beats_the_declared_window():
-    model = SimpleNamespace(args = SimpleNamespace(max_position_embeddings = 40960))
+    model = SimpleNamespace(args=SimpleNamespace(max_position_embeddings=40960))
     assert runtime_context_length(model, 4096) == 4096
 
 
 def test_mlx_model_falls_back_to_its_declared_window():
-    model = SimpleNamespace(args = SimpleNamespace(max_position_embeddings = 40960))
+    model = SimpleNamespace(args=SimpleNamespace(max_position_embeddings=40960))
     assert runtime_context_length(model, 0) == 40960
 
 
 def test_declared_window_read_from_config():
-    model = SimpleNamespace(config = SimpleNamespace(max_position_embeddings = 32768))
+    model = SimpleNamespace(config=SimpleNamespace(max_position_embeddings=32768))
     assert runtime_context_length(model, None) == 32768
 
 
 def test_declared_window_read_from_a_mapping_config():
-    model = SimpleNamespace(config = {"max_position_embeddings": 16384})
+    model = SimpleNamespace(config={"max_position_embeddings": 16384})
     assert runtime_context_length(model, 0) == 16384
 
 
 def test_declared_window_read_from_a_multimodal_text_config():
     model = SimpleNamespace(
-        config = SimpleNamespace(text_config = SimpleNamespace(max_position_embeddings = 131072)),
+        config=SimpleNamespace(text_config=SimpleNamespace(max_position_embeddings=131072)),
     )
     assert runtime_context_length(model, 0) == 131072
 
@@ -55,27 +55,27 @@ def test_a_module_that_is_itself_a_dict_reads_its_attributes():
             super().__init__({"layers": []})
             self.args = args
 
-    model = _MlxLikeModule(SimpleNamespace(max_position_embeddings = 40960))
+    model = _MlxLikeModule(SimpleNamespace(max_position_embeddings=40960))
     assert runtime_context_length(model, 0) == 40960
 
 
 def test_declared_window_read_from_an_underscore_config():
     """mlx exposes a checkpoint's config under either name, so both are scanned."""
-    model = SimpleNamespace(_config = {"max_position_embeddings": 40960})
+    model = SimpleNamespace(_config={"max_position_embeddings": 40960})
     assert runtime_context_length(model, 0) == 40960
 
 
 def test_a_placeholder_outer_window_does_not_shadow_the_real_one():
     """A wrapper carrying 0 / "n/a" must not hide the window on the config below it."""
     model = SimpleNamespace(
-        max_position_embeddings = 0,
-        args = SimpleNamespace(max_position_embeddings = 40960),
+        max_position_embeddings=0,
+        args=SimpleNamespace(max_position_embeddings=40960),
     )
     assert runtime_context_length(model, 0) == 40960
 
     wrapper = SimpleNamespace(
-        config = SimpleNamespace(max_position_embeddings = "n/a"),
-        args = SimpleNamespace(max_position_embeddings = 32768),
+        config=SimpleNamespace(max_position_embeddings="n/a"),
+        args=SimpleNamespace(max_position_embeddings=32768),
     )
     assert runtime_context_length(wrapper, 0) == 32768
 
@@ -114,8 +114,8 @@ def test_no_window_anywhere_stays_unknown():
 
 def test_non_positive_and_non_numeric_values_are_skipped():
     model = SimpleNamespace(
-        max_seq_length = 0,
-        config = SimpleNamespace(max_position_embeddings = "n/a"),
+        max_seq_length=0,
+        config=SimpleNamespace(max_position_embeddings="n/a"),
     )
     assert runtime_context_length(model, -1) is None
-    assert runtime_context_length(SimpleNamespace(max_seq_length = True), 2048) == 2048
+    assert runtime_context_length(SimpleNamespace(max_seq_length=True), 2048) == 2048

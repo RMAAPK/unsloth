@@ -26,28 +26,28 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parent.parent / "studio" / "backend"
 
 
-def main(argv = None) -> int:
+def main(argv=None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
-        "--base", required = True, help = "diffusers base repo (carries the component subfolder)"
+        "--base", required=True, help="diffusers base repo (carries the component subfolder)"
     )
-    p.add_argument("--family", required = True, help = "diffusion/video family name or alias")
+    p.add_argument("--family", required=True, help="diffusion/video family name or alias")
     p.add_argument(
         "--component",
-        default = "text_encoder",
-        help = "pipeline component attribute (also the repo subfolder)",
+        default="text_encoder",
+        help="pipeline component attribute (also the repo subfolder)",
     )
     p.add_argument(
         "--config-subfolder",
-        default = None,
-        help = "where the encoder lives inside --base (default: the component name; "
+        default=None,
+        help="where the encoder lives inside --base (default: the component name; "
         "pass '' for a standalone encoder repo whose config sits at the root, "
         "e.g. HiDream's Llama text_encoder_4)",
     )
-    p.add_argument("--scheme", default = "fp8", choices = ["fp8"])
-    p.add_argument("--out", required = True, help = "output .pt path for the checkpoint")
-    p.add_argument("--dtype", default = "bfloat16", choices = ["bfloat16"])
-    p.add_argument("--hf-token", default = None)
+    p.add_argument("--scheme", default="fp8", choices=["fp8"])
+    p.add_argument("--out", required=True, help="output .pt path for the checkpoint")
+    p.add_argument("--dtype", default="bfloat16", choices=["bfloat16"])
+    p.add_argument("--hf-token", default=None)
     args = p.parse_args(argv)
 
     sys.path.insert(0, str(BACKEND))
@@ -65,8 +65,8 @@ def main(argv = None) -> int:
     if subfolder:
         from_pretrained_kwargs["subfolder"] = subfolder
 
-    print(f"== build TE prequant ({family}/{args.component}/{args.scheme}) ==", flush = True)
-    print(f"  loading dense encoder from {args.base} (subfolder={subfolder!r}) ...", flush = True)
+    print(f"== build TE prequant ({family}/{args.component}/{args.scheme}) ==", flush=True)
+    print(f"  loading dense encoder from {args.base} (subfolder={subfolder!r}) ...", flush=True)
     t0 = time.time()
     config = transformers.AutoConfig.from_pretrained(args.base, **from_pretrained_kwargs)
     # Prefer the checkpoint's own architecture; AutoModel.from_config gives an unusable bare base class.
@@ -79,10 +79,10 @@ def main(argv = None) -> int:
         del encoder
     encoder = getattr(transformers, encoder_cls_name).from_pretrained(
         args.base,
-        torch_dtype = torch.bfloat16,
+        torch_dtype=torch.bfloat16,
         **from_pretrained_kwargs,
     )
-    print(f"  casting in place (layerwise {args.scheme}) ...", flush = True)
+    print(f"  casting in place (layerwise {args.scheme}) ...", flush=True)
 
     class _Target:
         dtype = torch.bfloat16
@@ -111,12 +111,12 @@ def main(argv = None) -> int:
         "state_dict": state_dict,
     }
     out = Path(args.out)
-    out.parent.mkdir(parents = True, exist_ok = True)
+    out.parent.mkdir(parents=True, exist_ok=True)
     torch.save(ckpt, out)
     size_gb = out.stat().st_size / 1e9
-    print(f"  saved {out}  ({size_gb:.2f} GB) in {time.time() - t0:.0f}s", flush = True)
-    print(f"  metadata: {metadata}", flush = True)
-    print("BUILD-TE-PREQUANT-DONE", flush = True)
+    print(f"  saved {out}  ({size_gb:.2f} GB) in {time.time() - t0:.0f}s", flush=True)
+    print(f"  metadata: {metadata}", flush=True)
+    print("BUILD-TE-PREQUANT-DONE", flush=True)
     return 0
 
 

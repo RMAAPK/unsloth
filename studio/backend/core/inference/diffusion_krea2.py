@@ -48,6 +48,7 @@ def _live_cache_dir() -> str:
     ``diffusion.hub_cache_dir`` to avoid a circular import, the same way diffusion_auto_policy does.
     """
     from utils.hf_cache_settings import active_hf_hub_cache
+
     return active_hf_hub_cache()
 
 
@@ -75,7 +76,7 @@ def load_krea2_tokenizer(
         if check_cancelled is not None:
             check_cancelled()
         logger.info("diffusion.krea2 tokenizer compat fallback: %s", exc)
-        return AutoTokenizer.from_pretrained(repo_id, extra_special_tokens = {}, **kwargs)
+        return AutoTokenizer.from_pretrained(repo_id, extra_special_tokens={}, **kwargs)
 
 
 def remap_rope_parameters(text_config) -> None:
@@ -111,12 +112,12 @@ def load_krea2_text_encoder(
     if check_cancelled is not None:
         check_cancelled()
     remap_rope_parameters(getattr(config, "text_config", config))
-    return Qwen3VLModel.from_pretrained(repo_id, config = config, dtype = dtype, **kwargs)
+    return Qwen3VLModel.from_pretrained(repo_id, config=config, dtype=dtype, **kwargs)
 
 
 def _read_model_index(path: Path, source: str) -> dict[str, Any]:
     try:
-        model_index = json.loads(path.read_text(encoding = "utf-8-sig"))
+        model_index = json.loads(path.read_text(encoding="utf-8-sig"))
     # A nesting bomb raises RecursionError, not a ValueError, so it needs naming separately or it stays the one raw
     # traceback left. diffusion_families.pipeline_class_from_index does the same.
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
@@ -152,9 +153,9 @@ def _load_model_index(
     path = hf_hub_download(
         repo_id,
         "model_index.json",
-        token = hf_token or None,
-        local_files_only = local_files_only,
-        cache_dir = _live_cache_dir(),
+        token=hf_token or None,
+        local_files_only=local_files_only,
+        cache_dir=_live_cache_dir(),
     )
     return _read_model_index(Path(path), f"Hub/cache for {repo_id}")
 
@@ -163,9 +164,9 @@ def load_krea2_pipeline(
     repo_id: str,
     dtype,
     hf_token: Optional[str] = None,
-    transformer = None,
+    transformer=None,
     with_transformer: bool = True,
-    text_encoder = None,
+    text_encoder=None,
     local_files_only: bool = False,
     check_cancelled: Optional[Callable[[], None]] = None,
 ):
@@ -202,58 +203,58 @@ def load_krea2_pipeline(
     cache_dir = _live_cache_dir()
     # A few KB, and it configures the components, so it is read before them: read last, a corrupt index only surfaced
     # after the encoder, the VAE and the 26 GB transformer were already built.
-    model_index = _load_model_index(repo_id, hf_token = token, local_files_only = local_files_only)
+    model_index = _load_model_index(repo_id, hf_token=token, local_files_only=local_files_only)
     check_cancelled()
     tokenizer = load_krea2_tokenizer(
         repo_id,
-        hf_token = token,
-        local_files_only = local_files_only,
-        check_cancelled = check_cancelled,
+        hf_token=token,
+        local_files_only=local_files_only,
+        check_cancelled=check_cancelled,
     )
     check_cancelled()
     if text_encoder is None:
         text_encoder = load_krea2_text_encoder(
             repo_id,
             dtype,
-            hf_token = token,
-            local_files_only = local_files_only,
-            check_cancelled = check_cancelled,
+            hf_token=token,
+            local_files_only=local_files_only,
+            check_cancelled=check_cancelled,
         )
         check_cancelled()
     scheduler = diffusers.FlowMatchEulerDiscreteScheduler.from_pretrained(
         repo_id,
-        subfolder = "scheduler",
-        token = token,
-        local_files_only = local_files_only,
-        cache_dir = cache_dir,
+        subfolder="scheduler",
+        token=token,
+        local_files_only=local_files_only,
+        cache_dir=cache_dir,
     )
     check_cancelled()
     vae = diffusers.AutoencoderKLQwenImage.from_pretrained(
         repo_id,
-        subfolder = "vae",
-        torch_dtype = dtype,
-        token = token,
-        local_files_only = local_files_only,
-        cache_dir = cache_dir,
+        subfolder="vae",
+        torch_dtype=dtype,
+        token=token,
+        local_files_only=local_files_only,
+        cache_dir=cache_dir,
     )
     check_cancelled()
     if transformer is None and with_transformer:
         transformer = diffusers.Krea2Transformer2DModel.from_pretrained(
             repo_id,
-            subfolder = "transformer",
-            torch_dtype = dtype,
-            token = token,
-            local_files_only = local_files_only,
-            cache_dir = cache_dir,
+            subfolder="transformer",
+            torch_dtype=dtype,
+            token=token,
+            local_files_only=local_files_only,
+            cache_dir=cache_dir,
         )
         check_cancelled()
     return diffusers.Krea2Pipeline(
-        scheduler = scheduler,
-        vae = vae,
-        text_encoder = text_encoder,
-        tokenizer = tokenizer,
-        transformer = transformer,
-        text_encoder_select_layers = model_index.get("text_encoder_select_layers"),
-        is_distilled = bool(model_index.get("is_distilled", False)),
-        patch_size = int(model_index.get("patch_size", 2)),
+        scheduler=scheduler,
+        vae=vae,
+        text_encoder=text_encoder,
+        tokenizer=tokenizer,
+        transformer=transformer,
+        text_encoder_select_layers=model_index.get("text_encoder_select_layers"),
+        is_distilled=bool(model_index.get("is_distilled", False)),
+        patch_size=int(model_index.get("patch_size", 2)),
     )

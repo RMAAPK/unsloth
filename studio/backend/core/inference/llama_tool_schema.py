@@ -149,7 +149,7 @@ def _relax(schema: Any, *, nested: bool, root: dict) -> Any:
         children = schema.get(keyword)
         if isinstance(children, dict):
             relaxed = {
-                key: _relax(value, nested = child_nested, root = root)
+                key: _relax(value, nested=child_nested, root=root)
                 for key, value in children.items()
             }
             if any(relaxed[key] is not children[key] for key in children):
@@ -157,14 +157,14 @@ def _relax(schema: Any, *, nested: bool, root: dict) -> Any:
     for keyword in _SINGLE_KEYWORDS:
         child = schema.get(keyword)
         if isinstance(child, dict):
-            relaxed = _relax(child, nested = True, root = root)
+            relaxed = _relax(child, nested=True, root=root)
             if relaxed is not child:
                 out = {**out, keyword: relaxed}
     for keyword, child_nested in _LIST_KEYWORDS.items():
         children = schema.get(keyword)
         if isinstance(children, list):
             mode = nested if child_nested is None else child_nested
-            relaxed = [_relax(value, nested = mode, root = root) for value in children]
+            relaxed = [_relax(value, nested=mode, root=root) for value in children]
             if any(new is not old for new, old in zip(relaxed, children)):
                 out = {**out, keyword: relaxed}
     if nested and _reorderable(out, root):
@@ -174,7 +174,7 @@ def _relax(schema: Any, *, nested: bool, root: dict) -> Any:
 
 def relax_nested_object_key_order(parameters: Any) -> Any:
     root = parameters if isinstance(parameters, dict) else {}
-    return _relax(parameters, nested = False, root = root)
+    return _relax(parameters, nested=False, root=root)
 
 
 def unrelaxed(schema: Any) -> Any:

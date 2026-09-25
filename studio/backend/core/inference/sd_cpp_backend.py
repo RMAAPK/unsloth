@@ -1650,7 +1650,7 @@ def _native_condition_images(
     height: Optional[int],
     *,
     full_fidelity: bool,
-    pad_to_output: bool,
+    pad_to_output: bool
 ) -> tuple[int, int, list[bytes]]:
     """(width, height, ordered PNG bytes) for one native reference / edit call, decoded through
     the diffusers engine's helper. A ``full_fidelity`` build gets every image as decoded. An older

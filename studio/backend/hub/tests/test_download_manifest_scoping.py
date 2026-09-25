@@ -16,7 +16,7 @@ def _shared_setup_1(monkeypatch, spelled, tmp_path):
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(spelled)),
+        lambda: SimpleNamespace(hub_cache=str(spelled)),
     )
 
 
@@ -25,14 +25,14 @@ def _shared_setup_2(monkeypatch, tmp_path):
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(tmp_path / "other")),
+        lambda: SimpleNamespace(hub_cache=str(tmp_path / "other")),
     )
     return spelled
 
 
 def _write_manifest(path, payload):
-    path.parent.mkdir(parents = True, exist_ok = True)
-    path.write_text(json.dumps(payload), encoding = "utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def _manifest_payload(
@@ -40,7 +40,7 @@ def _manifest_payload(
     variant,
     hub_cache,
     *,
-    size = 4,
+    size=4,
 ):
     return {
         "version": 1,
@@ -62,10 +62,10 @@ def _redirected_hub_cache(tmp_path):
     an 8.3 short name. Returns (as the caller spells it, what it resolves to).
     """
     target = tmp_path / "resolved" / "hub"
-    target.mkdir(parents = True)
+    target.mkdir(parents=True)
     link = tmp_path / "redirected"
     try:
-        link.symlink_to(tmp_path / "resolved", target_is_directory = True)
+        link.symlink_to(tmp_path / "resolved", target_is_directory=True)
     except (NotImplementedError, OSError):  # pragma: no cover - unprivileged Windows
         pytest.skip("symlinks unavailable on this host")
     return link / "hub", target
@@ -77,22 +77,22 @@ def test_purge_state_preserves_active_legacy_when_deleting_inactive_cache(monkey
     active = tmp_path / "active" / "hub"
     previous = tmp_path / "previous" / "hub"
     for path in (active, previous):
-        path.mkdir(parents = True)
+        path.mkdir(parents=True)
 
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(active)),
+        lambda: SimpleNamespace(hub_cache=str(active)),
     )
 
     # Unowned legacy manifest -> belongs to the active cache.
     legacy = state_dir.manifest_path("model", "Org/Model")
     _write_manifest(legacy, {"version": 1})
     # The inactive cache's own scoped copy is the one being deleted.
-    scoped = state_dir.manifest_path("model", "Org/Model", hub_cache = str(previous))
+    scoped = state_dir.manifest_path("model", "Org/Model", hub_cache=str(previous))
     _write_manifest(scoped, {"version": 1, "hub_cache": str(previous)})
 
-    removed = download_manifest.purge_state("model", "Org/Model", hub_cache = str(previous))
+    removed = download_manifest.purge_state("model", "Org/Model", hub_cache=str(previous))
 
     assert removed is True
     assert not scoped.is_file()
@@ -104,18 +104,18 @@ def test_purge_state_removes_legacy_owned_by_the_deleted_cache(monkeypatch, tmp_
     active = tmp_path / "active" / "hub"
     previous = tmp_path / "previous" / "hub"
     for path in (active, previous):
-        path.mkdir(parents = True)
+        path.mkdir(parents=True)
 
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(active)),
+        lambda: SimpleNamespace(hub_cache=str(active)),
     )
 
     legacy = state_dir.manifest_path("model", "Org/Model")
     _write_manifest(legacy, {"version": 1, "hub_cache": str(previous)})
 
-    removed = download_manifest.purge_state("model", "Org/Model", hub_cache = str(previous))
+    removed = download_manifest.purge_state("model", "Org/Model", hub_cache=str(previous))
 
     assert removed is True
     assert not legacy.is_file()
@@ -140,8 +140,8 @@ def test_scope_digest_is_shared_with_the_ownership_canonicalization(monkeypatch,
         download_manifest._canonical_hub_cache(spelled)
     )
     assert state_dir.manifest_path(
-        "model", "Org/Model", hub_cache = spelled
-    ) == state_dir.manifest_path("model", "Org/Model", hub_cache = resolved)
+        "model", "Org/Model", hub_cache=spelled
+    ) == state_dir.manifest_path("model", "Org/Model", hub_cache=resolved)
 
 
 def test_manifest_under_the_pre_resolve_digest_is_still_found(monkeypatch, tmp_path):
@@ -160,8 +160,8 @@ def test_manifest_under_the_pre_resolve_digest_is_still_found(monkeypatch, tmp_p
         "model",
         "Org/Model",
         "Q4_K_M",
-        hub_cache = spelled,
-        cache_scope = legacy_scope,
+        hub_cache=spelled,
+        cache_scope=legacy_scope,
     )
     _write_manifest(orphan, _manifest_payload("Org/Model", "Q4_K_M", str(spelled)))
 
@@ -169,7 +169,7 @@ def test_manifest_under_the_pre_resolve_digest_is_still_found(monkeypatch, tmp_p
         "model",
         "Org/Model",
         "Q4_K_M",
-        hub_cache = spelled,
+        hub_cache=spelled,
     )
 
     assert manifest is not None
@@ -179,15 +179,15 @@ def test_manifest_under_the_pre_resolve_digest_is_still_found(monkeypatch, tmp_p
 def _legacy_scoped_variant_manifest(
     tmp_path,
     spelled,
-    variant = "Q4_K_M",
+    variant="Q4_K_M",
 ):
     """Plant a variant manifest under the pre-resolve digest, as an old build would."""
     path = state_dir.manifest_path(
         "model",
         "Org/Model",
         variant,
-        hub_cache = spelled,
-        cache_scope = state_dir.legacy_cache_scope_name(spelled),
+        hub_cache=spelled,
+        cache_scope=state_dir.legacy_cache_scope_name(spelled),
     )
     assert path.parent.name != state_dir.cache_scope_name(spelled)
     _write_manifest(path, _manifest_payload("Org/Model", variant, str(spelled)))
@@ -210,22 +210,22 @@ def test_every_enumerator_agrees_about_the_pre_resolve_digest(monkeypatch, tmp_p
     orphan = _legacy_scoped_variant_manifest(tmp_path, spelled)
 
     assert (
-        download_manifest.read_manifest("model", "Org/Model", "Q4_K_M", hub_cache = spelled)
+        download_manifest.read_manifest("model", "Org/Model", "Q4_K_M", hub_cache=spelled)
         is not None
     )
     assert [
         variant
         for variant, _path in download_manifest.iter_variant_manifests(
-            "model", "Org/Model", hub_cache = spelled
+            "model", "Org/Model", hub_cache=spelled
         )
     ] == ["Q4_K_M"]
     index = download_manifest.build_variant_state_index(
         [("model", "Org/Model", spelled)],
-        active_hub_cache = spelled,
+        active_hub_cache=spelled,
     )
-    state = index.for_repo("model", "Org/Model", hub_cache = spelled)
+    state = index.for_repo("model", "Org/Model", hub_cache=spelled)
     assert state.manifest_for("Q4_K_M") is not None
-    assert download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache = spelled)
+    assert download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache=spelled)
     assert not orphan.is_file()
 
 
@@ -241,8 +241,8 @@ def test_pre_resolve_digest_cancel_marker_is_cleared_by_a_new_attempt(monkeypatc
         "model",
         "Org/Model",
         "Q4_K_M",
-        hub_cache = spelled,
-        cache_scope = state_dir.legacy_cache_scope_name(spelled),
+        hub_cache=spelled,
+        cache_scope=state_dir.legacy_cache_scope_name(spelled),
     )
     _write_manifest(
         marker,
@@ -257,11 +257,11 @@ def test_pre_resolve_digest_cancel_marker_is_cleared_by_a_new_attempt(monkeypatc
         },
     )
 
-    assert download_manifest.has_cancel_marker("model", "Org/Model", "Q4_K_M", hub_cache = spelled)
-    download_manifest.clear_cancel_marker("model", "Org/Model", "Q4_K_M", hub_cache = spelled)
+    assert download_manifest.has_cancel_marker("model", "Org/Model", "Q4_K_M", hub_cache=spelled)
+    download_manifest.clear_cancel_marker("model", "Org/Model", "Q4_K_M", hub_cache=spelled)
     assert not marker.is_file()
     assert not download_manifest.has_cancel_marker(
-        "model", "Org/Model", "Q4_K_M", hub_cache = spelled
+        "model", "Org/Model", "Q4_K_M", hub_cache=spelled
     )
 
 
@@ -278,14 +278,14 @@ def test_repo_delete_clears_variant_state_under_a_redirected_cache(monkeypatch, 
         "model",
         "Org/Model",
         "Q4_K_M",
-        [download_manifest.ExpectedFile(path = "model.gguf", size = 4)],
+        [download_manifest.ExpectedFile(path="model.gguf", size=4)],
         "http",
-        hub_cache = spelled,
+        hub_cache=spelled,
     )
-    written = state_dir.manifest_path("model", "Org/Model", "Q4_K_M", hub_cache = spelled)
+    written = state_dir.manifest_path("model", "Org/Model", "Q4_K_M", hub_cache=spelled)
     assert written.is_file()
 
-    assert download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache = spelled)
+    assert download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache=spelled)
     assert not written.is_file()
 
 
@@ -299,22 +299,22 @@ def test_windows_shaped_copy_cache_scope_survives_a_restart(monkeypatch, tmp_pat
     """
     hub_cache = tmp_path / "Hub"
     snapshot = hub_cache / "models--Org--Model" / "snapshots" / "rev0"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "model.gguf").write_bytes(b"x" * 16)
     assert not (snapshot / "model.gguf").is_symlink()
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(hub_cache)),
+        lambda: SimpleNamespace(hub_cache=str(hub_cache)),
     )
 
     assert download_manifest.write_manifest(
         "model",
         "Org/Model",
         "Q4_K_M",
-        [download_manifest.ExpectedFile(path = "model.gguf", size = 16)],
+        [download_manifest.ExpectedFile(path="model.gguf", size=16)],
         "http",
-        hub_cache = hub_cache,
+        hub_cache=hub_cache,
     )
 
     # Second run: the same directory reached as the parent of a scanned entry.
@@ -323,7 +323,7 @@ def test_windows_shaped_copy_cache_scope_survives_a_restart(monkeypatch, tmp_pat
         "model",
         "Org/Model",
         "Q4_K_M",
-        hub_cache = entry.parent,
+        hub_cache=entry.parent,
     )
     assert manifest is not None
     assert download_manifest.verify_against_disk(manifest, snapshot).ok
@@ -332,7 +332,7 @@ def test_windows_shaped_copy_cache_scope_survives_a_restart(monkeypatch, tmp_pat
 def test_normalize_hub_cache_degrades_when_resolve_refuses(monkeypatch, tmp_path):
     """A path Windows can open but not resolve keeps a scope instead of losing one."""
 
-    def _refuse(self, strict = False):
+    def _refuse(self, strict=False):
         raise OSError(5, "Access is denied")
 
     monkeypatch.setattr(Path, "resolve", _refuse)
@@ -352,7 +352,7 @@ def test_degraded_normalization_matches_its_own_recovery_probe(monkeypatch, tmp_
     """
     spellings = ["~/hf-hub", str(tmp_path / "hub") + "/", str(tmp_path / "hub" / "." / "x")]
 
-    def _refuse(self, strict = False):
+    def _refuse(self, strict=False):
         raise OSError(5, "Access is denied")
 
     monkeypatch.setattr(Path, "resolve", _refuse)
@@ -374,7 +374,7 @@ def test_expanduser_failure_does_not_escape_a_plain_read(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "expanduser", _refuse)
 
     assert state_dir.cache_scope_names("~/hf-hub")
-    assert download_manifest.read_manifest("model", "Org/Model", hub_cache = "~/hf-hub") is None
+    assert download_manifest.read_manifest("model", "Org/Model", hub_cache="~/hf-hub") is None
 
 
 def _legacy_scoped_manifest(tmp_path, spelled, resolved, repo_id, variant):
@@ -389,8 +389,8 @@ def _legacy_scoped_manifest(tmp_path, spelled, resolved, repo_id, variant):
         "model",
         repo_id,
         variant,
-        hub_cache = str(resolved),
-        cache_scope = state_dir.legacy_cache_scope_name(str(spelled)),
+        hub_cache=str(resolved),
+        cache_scope=state_dir.legacy_cache_scope_name(str(spelled)),
     )
     _write_manifest(legacy, _manifest_payload(repo_id, variant, str(resolved)))
     assert state_dir.legacy_cache_scope_name(str(spelled)) != state_dir.cache_scope_name(
@@ -416,7 +416,7 @@ def test_repo_delete_clears_legacy_scope_when_handed_a_RESOLVED_root(monkeypatch
 
     # The resolved spelling, as resolve_delete_target_root would hand it over.
     removed = download_manifest.purge_all_state_for_repo(
-        "model", "Org/Model", hub_cache = str(resolved)
+        "model", "Org/Model", hub_cache=str(resolved)
     )
 
     assert removed > 0
@@ -438,7 +438,7 @@ def test_variant_delete_clears_legacy_scope_when_handed_a_RESOLVED_root(monkeypa
     _shared_setup_1(monkeypatch, spelled, tmp_path)
     legacy = _legacy_scoped_manifest(tmp_path, spelled, resolved, "Org/Model", "Q4_K_M")
 
-    removed = download_manifest.purge_state("model", "Org/Model", "Q4_K_M", hub_cache = str(resolved))
+    removed = download_manifest.purge_state("model", "Org/Model", "Q4_K_M", hub_cache=str(resolved))
 
     assert removed is True
     assert not legacy.is_file()
@@ -459,9 +459,9 @@ def test_variant_index_sees_legacy_scope_when_handed_a_RESOLVED_root(monkeypatch
 
     index = download_manifest.build_variant_state_index(
         [("model", "Org/Model", str(resolved))],
-        active_hub_cache = str(resolved),
+        active_hub_cache=str(resolved),
     )
-    state = index.for_repo("model", "Org/Model", hub_cache = str(resolved))
+    state = index.for_repo("model", "Org/Model", hub_cache=str(resolved))
 
     assert state.manifest_for("Q4_K_M") is not None
 
@@ -476,14 +476,14 @@ def test_the_configured_spelling_is_only_borrowed_for_the_SAME_directory(monkeyp
     """
     spelled, resolved = _redirected_hub_cache(tmp_path)
     other = tmp_path / "other" / "hub"
-    other.mkdir(parents = True)
+    other.mkdir(parents=True)
     _shared_setup_1(monkeypatch, spelled, tmp_path)
     active_legacy = _legacy_scoped_manifest(tmp_path, spelled, resolved, "Org/Model", "Q4_K_M")
-    victim = state_dir.manifest_path("model", "Org/Model", "Q8_0", hub_cache = str(other))
+    victim = state_dir.manifest_path("model", "Org/Model", "Q8_0", hub_cache=str(other))
     _write_manifest(victim, _manifest_payload("Org/Model", "Q8_0", str(other)))
 
     # Deleting the repo out of the OTHER cache must not touch the active one.
-    download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache = str(other))
+    download_manifest.purge_all_state_for_repo("model", "Org/Model", hub_cache=str(other))
 
     assert not victim.is_file()
     assert active_legacy.is_file()
@@ -501,18 +501,18 @@ def test_disagreeing_manifests_across_caches_are_refused(monkeypatch, tmp_path):
     from hub.utils import download_manifest
 
     old = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-01-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-01-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
     )
     new = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-02-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("new.gguf", 20, "bbb"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-02-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("new.gguf", 20, "bbb"),),
     )
     first, second = tmp_path / "a" / "repo", tmp_path / "b" / "repo"
     served = {first.parent: old, second.parent: new}
@@ -522,7 +522,7 @@ def test_disagreeing_manifests_across_caches_are_refused(monkeypatch, tmp_path):
     monkeypatch.setattr(
         download_manifest,
         "read_manifest",
-        lambda repo_type, repo_id, variant = None, *, hub_cache = None: (
+        lambda repo_type, repo_id, variant=None, *, hub_cache=None: (
             served.get(Path(hub_cache)) if hub_cache is not None else None
         ),
     )
@@ -543,18 +543,18 @@ def test_a_stale_active_manifest_is_compared_rather_than_returned(monkeypatch, t
     from hub.utils import download_manifest
 
     stale = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-01-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-01-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
     )
     current = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-02-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("new.gguf", 20, "bbb"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-02-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("new.gguf", 20, "bbb"),),
     )
     remembered = tmp_path / "remembered" / "repo"
 
@@ -564,7 +564,7 @@ def test_a_stale_active_manifest_is_compared_rather_than_returned(monkeypatch, t
         download_manifest,
         "read_manifest",
         # hub_cache omitted is the ACTIVE cache lookup.
-        lambda repo_type, repo_id, variant = None, *, hub_cache = None: (
+        lambda repo_type, repo_id, variant=None, *, hub_cache=None: (
             stale if hub_cache is None else current
         ),
     )
@@ -587,7 +587,7 @@ def test_variant_enumeration_sees_legacy_scope_when_handed_a_RESOLVED_root(monke
     _legacy_scoped_manifest(tmp_path, spelled, resolved, "Org/Model", "Q4_K_M")
 
     listed = dict(
-        download_manifest.iter_variant_manifests("model", "Org/Model", hub_cache = str(resolved))
+        download_manifest.iter_variant_manifests("model", "Org/Model", hub_cache=str(resolved))
     )
 
     assert "Q4_K_M" in listed, (
@@ -611,11 +611,11 @@ def test_a_scanned_cache_with_no_manifest_refuses_the_others(monkeypatch, tmp_pa
     from hub.utils import download_manifest
 
     only = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-01-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-01-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
     )
     first, second = tmp_path / "a" / "repo", tmp_path / "b" / "repo"
     served: dict = {first.parent: only, second.parent: None}
@@ -625,7 +625,7 @@ def test_a_scanned_cache_with_no_manifest_refuses_the_others(monkeypatch, tmp_pa
     monkeypatch.setattr(
         download_manifest,
         "read_manifest",
-        lambda repo_type, repo_id, variant = None, *, hub_cache = None: (
+        lambda repo_type, repo_id, variant=None, *, hub_cache=None: (
             served.get(Path(hub_cache)) if hub_cache is not None else None
         ),
     )
@@ -645,11 +645,11 @@ def test_the_active_cache_must_have_a_manifest_when_it_is_scanned(monkeypatch, t
     from hub.utils import download_manifest
 
     other = download_manifest.Manifest(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        variant = "Q4_K_M",
-        started_at = "2026-01-01T00:00:00Z",
-        expected_files = (download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        variant="Q4_K_M",
+        started_at="2026-01-01T00:00:00Z",
+        expected_files=(download_manifest.ExpectedFile("old.gguf", 10, "aaa"),),
     )
     active_repo, remembered = tmp_path / "active" / "repo", tmp_path / "b" / "repo"
 
@@ -659,7 +659,7 @@ def test_the_active_cache_must_have_a_manifest_when_it_is_scanned(monkeypatch, t
     monkeypatch.setattr(
         download_manifest,
         "_canonical_hub_cache",
-        lambda path = None: str(active_repo.parent)
+        lambda path=None: str(active_repo.parent)
         if path in (None, active_repo.parent)
         else str(path),
     )
@@ -667,7 +667,7 @@ def test_the_active_cache_must_have_a_manifest_when_it_is_scanned(monkeypatch, t
         download_manifest,
         "read_manifest",
         # The active cache (hub_cache=None) has none; the remembered one does.
-        lambda repo_type, repo_id, variant = None, *, hub_cache = None: (
+        lambda repo_type, repo_id, variant=None, *, hub_cache=None: (
             None if hub_cache is None else other
         ),
     )
@@ -692,14 +692,14 @@ def test_an_unreadable_cache_root_is_unknown_rather_than_absent(monkeypatch, tmp
     def _explode(self):
         raise PermissionError(13, "Permission denied")
 
-    monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda scan_errors = None: [unreadable])
-    monkeypatch.setattr(hf_cache_state, "hf_cache_root", lambda root = None, **kw: None)
+    monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda scan_errors=None: [unreadable])
+    monkeypatch.setattr(hf_cache_state, "hf_cache_root", lambda root=None, **kw: None)
     monkeypatch.setattr(type(unreadable), "iterdir", _explode)
 
     # The enumeration reports the skip rather than only swallowing it...
     errors: list = []
     assert (
-        hf_cache_state.preferred_repo_cache_dirs("model", "unsloth/Model-GGUF", scan_errors = errors)
+        hf_cache_state.preferred_repo_cache_dirs("model", "unsloth/Model-GGUF", scan_errors=errors)
         == []
     )
     assert errors and isinstance(errors[0], OSError)
@@ -707,16 +707,16 @@ def test_an_unreadable_cache_root_is_unknown_rather_than_absent(monkeypatch, tmp
     # ...and the reading built on it says unknown by omitting cache_path entirely.
     class _Registry:
         def get_job(self, key):
-            return SimpleNamespace(state = "idle")
+            return SimpleNamespace(state="idle")
 
     reading = snapshot_progress.compute_snapshot_progress(
-        repo_type = "model",
-        repo_id = "unsloth/Model-GGUF",
-        job_key = "model:unsloth/Model-GGUF",
-        expected_bytes = 33_000_000_000,
-        hf_token = None,
-        registry = _Registry(),
-        metadata_resolver = lambda *a, **k: (33_000_000_000, frozenset()),
+        repo_type="model",
+        repo_id="unsloth/Model-GGUF",
+        job_key="model:unsloth/Model-GGUF",
+        expected_bytes=33_000_000_000,
+        hf_token=None,
+        registry=_Registry(),
+        metadata_resolver=lambda *a, **k: (33_000_000_000, frozenset()),
     )
     assert "cache_path" not in reading
     # And it survives DownloadProgressResponse, which defaults cache_path to None and would otherwise reinstate
@@ -737,23 +737,23 @@ def test_a_scope_whose_payload_is_lost_reads_back_as_a_digest(monkeypatch, tmp_p
     "@diffusion" -- and the older tag spells it without the "@". Both have to be
     recognisable as digests."""
     hub_cache = tmp_path / "hub"
-    hub_cache.mkdir(parents = True)
+    hub_cache.mkdir(parents=True)
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: SimpleNamespace(hub_cache = str(hub_cache)),
+        lambda: SimpleNamespace(hub_cache=str(hub_cache)),
     )
 
     download_manifest.write_cancel_marker(
-        "model", "Org/Model", "@diffusion", transport = "xet", hub_cache = str(hub_cache)
+        "model", "Org/Model", "@diffusion", transport="xet", hub_cache=str(hub_cache)
     )
     ((variant, path),) = download_manifest.iter_variant_markers(
-        "model", "Org/Model", hub_cache = str(hub_cache)
+        "model", "Org/Model", hub_cache=str(hub_cache)
     )
     assert variant == "@diffusion"
     assert "--variant--@sha256-" in path.name
 
-    payload = json.loads(path.read_text(encoding = "utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
     payload.pop("variant")
     for name, expected_tag in (
         (path.name, "@sha256-"),
@@ -762,7 +762,7 @@ def test_a_scope_whose_payload_is_lost_reads_back_as_a_digest(monkeypatch, tmp_p
         target = path.with_name(name)
         _write_manifest(target, payload)
         ((recovered, _),) = download_manifest.iter_variant_markers(
-            "model", "Org/Model", hub_cache = str(hub_cache)
+            "model", "Org/Model", hub_cache=str(hub_cache)
         )
         assert recovered.startswith(expected_tag)
         assert state_dir.variant_is_hashed_fragment(recovered)
@@ -781,25 +781,25 @@ def test_a_variant_with_nothing_of_its_own_says_so(monkeypatch, tmp_path):
     from hub.services import snapshot_progress
 
     entry = tmp_path / "hub" / "models--unsloth--Model-GGUF"
-    (entry / "blobs").mkdir(parents = True)
+    (entry / "blobs").mkdir(parents=True)
     (entry / "blobs" / "sibling").write_bytes(b"x" * 32)
 
     monkeypatch.setattr(snapshot_progress, "preferred_repo_cache_dirs", lambda *a, **k: [entry])
 
     class _Registry:
         def get_job(self, key):
-            return SimpleNamespace(state = "idle")
+            return SimpleNamespace(state="idle")
 
     def _reading(variant, expected_hashes):
         return snapshot_progress.compute_snapshot_progress(
-            repo_type = "model",
-            repo_id = "unsloth/Model-GGUF",
-            job_key = "model:unsloth/Model-GGUF",
-            expected_bytes = 33_000_000_000,
-            hf_token = None,
-            registry = _Registry(),
-            metadata_resolver = lambda *a, **k: (33_000_000_000, expected_hashes),
-            variant = variant,
+            repo_type="model",
+            repo_id="unsloth/Model-GGUF",
+            job_key="model:unsloth/Model-GGUF",
+            expected_bytes=33_000_000_000,
+            hf_token=None,
+            registry=_Registry(),
+            metadata_resolver=lambda *a, **k: (33_000_000_000, expected_hashes),
+            variant=variant,
         )
 
     ours = _reading("Q4_K_M", frozenset({"ours"}))
@@ -846,12 +846,12 @@ def test_a_root_that_cannot_even_be_stat_ed_is_unknown(monkeypatch, tmp_path):
         return real_stat(path, *args, **kwargs)
 
     monkeypatch.setattr(_os, "stat", _explode)
-    monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda scan_errors = None: [])
+    monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda scan_errors=None: [])
 
     errors: list = []
     assert (
         hf_cache_state.preferred_repo_cache_dirs(
-            "model", "unsloth/Model-GGUF", active_root = root, scan_errors = errors
+            "model", "unsloth/Model-GGUF", active_root=root, scan_errors=errors
         )
         == []
     )

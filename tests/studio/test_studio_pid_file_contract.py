@@ -20,7 +20,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-_RUN_SRC = (_ROOT / "studio" / "backend" / "run.py").read_text(encoding = "utf-8")
+_RUN_SRC = (_ROOT / "studio" / "backend" / "run.py").read_text(encoding="utf-8")
 
 
 def _func_source(source: str, name: str) -> str:
@@ -43,7 +43,7 @@ def test_stop_finds_a_pid_file_named_the_way_the_backend_writes_it(tmp_path, mon
     path = _backend_pid_path(tmp_path, 8901)
     # The same three-line body _write_pid_file emits (create_time is blank when psutil is unavailable, and the CLI must
     # tolerate that).
-    path.write_text(f"{os.getpid()}\n\n127.0.0.1", encoding = "utf-8")
+    path.write_text(f"{os.getpid()}\n\n127.0.0.1", encoding="utf-8")
 
     monkeypatch.setattr(cli, "STUDIO_HOME", tmp_path)
     monkeypatch.setattr(cli, "_PID_FILE", tmp_path / "studio.pid")
@@ -97,4 +97,4 @@ def test_the_legacy_file_stays_a_bare_pid_an_older_cli_can_parse(tmp_path, monke
     exec(_func_source(_RUN_SRC, "_write_pid_file"), ns)
     ns["_write_pid_file"](8901, "127.0.0.1")
 
-    assert (tmp_path / "studio.pid").read_text(encoding = "utf-8").strip().isdigit()
+    assert (tmp_path / "studio.pid").read_text(encoding="utf-8").strip().isdigit()

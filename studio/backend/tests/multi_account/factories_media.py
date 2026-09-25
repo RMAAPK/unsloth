@@ -63,6 +63,7 @@ def _calling_account(actor: str):
 def _seed_media_project(account) -> None:
     from storage import studio_db
     from utils.account_context import run_as
+
     run_as(
         account,
         studio_db.upsert_chat_project,
@@ -140,8 +141,8 @@ def _mp4_bytes() -> bytes:
     import av
 
     buf = io.BytesIO()
-    with av.open(buf, "w", format = "mp4") as container:
-        stream = container.add_stream("libx264", rate = 8)
+    with av.open(buf, "w", format="mp4") as container:
+        stream = container.add_stream("libx264", rate=8)
         stream.width, stream.height, stream.pix_fmt = 64, 64, "yuv420p"
         stream.options = {"crf": "40", "preset": "ultrafast"}
         for index in range(4):
@@ -201,7 +202,7 @@ def seed_search_image(account) -> dict[str, str]:
 
     buf = io.BytesIO()
     Image.new("RGB", (8, 8), (200, 100, 50)).save(
-        buf, format = "JPEG", comment = SENTINEL.encode("ascii")
+        buf, format="JPEG", comment=SENTINEL.encode("ascii")
     )
     directory = run_as(account, search_images._cache_dir)
     (directory / f"{SEARCH_IMAGE_ID}.jpg").write_bytes(buf.getvalue())
@@ -216,7 +217,7 @@ def seed_sandbox(account) -> dict[str, str]:
     from utils.account_context import run_as
 
     workdir = run_as(account, get_sandbox_workdir, SANDBOX_SESSION)
-    with open(os.path.join(workdir, SANDBOX_FILE), "w", encoding = "utf-8") as handle:
+    with open(os.path.join(workdir, SANDBOX_FILE), "w", encoding="utf-8") as handle:
         handle.write(SENTINEL)
     return {"session_id": SANDBOX_SESSION, "filename": SANDBOX_FILE}
 
@@ -229,11 +230,11 @@ def seed_monitor(account) -> dict[str, str]:
     entry_id = run_as(
         account,
         api_monitor.start,
-        endpoint = "/v1/chat/completions",
-        method = "POST",
-        model = "media/none",
-        prompt = SENTINEL,
-        subject = account.username,
+        endpoint="/v1/chat/completions",
+        method="POST",
+        model="media/none",
+        prompt=SENTINEL,
+        subject=account.username,
     )
     return {"entry_id": entry_id}
 
@@ -249,12 +250,12 @@ def seed_model(account) -> dict[str, str]:
     from utils.paths import workspace_root
 
     folder = run_as(account, workspace_root) / "local-models"
-    folder.mkdir(parents = True, exist_ok = True)
+    folder.mkdir(parents=True, exist_ok=True)
     header = b"GGUF" + struct.pack("<I", 3) + struct.pack("<QQ", 0, 0)
     (folder / f"{MODEL_ID}.gguf").write_bytes(header + b"\x00" * 256)
     run_as(account, studio_db.add_scan_folder_with_status, str(folder))
     # Drop the catalog's own 30s memo, so the request rescans instead of reusing a stale root.
-    inference._CATALOG_CACHE.update(at = 0.0, models = [])
+    inference._CATALOG_CACHE.update(at=0.0, models=[])
     inference._managed_catalogs.clear()
     inference._SERVABLE_SCAN_CACHE["entry"] = None
     local_model_resolver.invalidate_index()
@@ -268,85 +269,85 @@ _LINK_IS_THE_CREDENTIAL = (
 
 FACTORIES = {
     "routes.inference:GET:/images/gallery/{image_id}/file": Factory(
-        "media-image", fragment = SENTINEL
+        "media-image", fragment=SENTINEL
     ),
     "routes.inference:GET:/images/gallery/{image_id}/file-signed": Factory(
         "media-image",
-        fragment = SENTINEL,
-        query = IMAGE_LINK_QUERY,
-        owner = (200,),
-        wrong = (200,),
-        unauthenticated = (200,),
-        reason = _LINK_IS_THE_CREDENTIAL,
+        fragment=SENTINEL,
+        query=IMAGE_LINK_QUERY,
+        owner=(200,),
+        wrong=(200,),
+        unauthenticated=(200,),
+        reason=_LINK_IS_THE_CREDENTIAL,
     ),
     "routes.inference:PATCH:/images/gallery/{image_id}": Factory(
-        "media-image", {"archived": True}, fragment = SENTINEL
+        "media-image", {"archived": True}, fragment=SENTINEL
     ),
     "routes.inference:DELETE:/images/gallery/{image_id}": Factory("media-image"),
     # An empty move (to the front) still has to find the item in the caller's own gallery.
     "routes.inference:POST:/images/gallery/{image_id}/move": Factory(
-        "media-image", {"after_id": None}, fragment = SENTINEL
+        "media-image", {"after_id": None}, fragment=SENTINEL
     ),
     "routes.inference:POST:/images/gallery/{image_id}/project": Factory(
-        "media-image-project", {"project_id": MEDIA_PROJECT_ID}, fragment = "sandbox"
+        "media-image-project", {"project_id": MEDIA_PROJECT_ID}, fragment="sandbox"
     ),
     "routes.inference:GET:/audio/gallery/{audio_id}/file": Factory("media-audio"),
     "routes.inference:PATCH:/audio/gallery/{audio_id}": Factory(
-        "media-audio", {"archived": True}, fragment = SENTINEL
+        "media-audio", {"archived": True}, fragment=SENTINEL
     ),
     "routes.inference:DELETE:/audio/gallery/{audio_id}": Factory("media-audio"),
     "routes.inference:POST:/audio/gallery/{audio_id}/move": Factory(
-        "media-audio", {"after_id": None}, fragment = SENTINEL
+        "media-audio", {"after_id": None}, fragment=SENTINEL
     ),
     "routes.inference:POST:/audio/gallery/{audio_id}/project": Factory(
-        "media-audio-project", {"project_id": MEDIA_PROJECT_ID}, fragment = "sandbox"
+        "media-audio-project", {"project_id": MEDIA_PROJECT_ID}, fragment="sandbox"
     ),
     "routes.inference:PATCH:/audio/transcripts/{transcript_id}": Factory(
-        "media-transcript", {"archived": True}, fragment = SENTINEL
+        "media-transcript", {"archived": True}, fragment=SENTINEL
     ),
     "routes.inference:DELETE:/audio/transcripts/{transcript_id}": Factory("media-transcript"),
     "routes.video:GET:/video/gallery/{video_id}/file": Factory("media-video"),
     "routes.video:GET:/video/gallery/{video_id}/file-signed": Factory(
         "media-video",
-        query = VIDEO_LINK_QUERY,
-        owner = (200,),
-        wrong = (200,),
-        unauthenticated = (200,),
-        reason = _LINK_IS_THE_CREDENTIAL,
+        query=VIDEO_LINK_QUERY,
+        owner=(200,),
+        wrong=(200,),
+        unauthenticated=(200,),
+        reason=_LINK_IS_THE_CREDENTIAL,
     ),
     "routes.video:GET:/video/gallery/{video_id}/signed-url": Factory(
-        "media-video", fragment = "file-signed"
+        "media-video", fragment="file-signed"
     ),
     "routes.video:GET:/video/gallery/{video_id}/export": Factory("media-video"),
     "routes.video:PATCH:/video/gallery/{video_id}": Factory(
-        "media-video", {"archived": True}, fragment = SENTINEL
+        "media-video", {"archived": True}, fragment=SENTINEL
     ),
     "routes.video:DELETE:/video/gallery/{video_id}": Factory("media-video"),
     "routes.video:POST:/video/gallery/{video_id}/move": Factory(
-        "media-video", {"after_id": None}, fragment = SENTINEL
+        "media-video", {"after_id": None}, fragment=SENTINEL
     ),
     "routes.video:POST:/video/gallery/{video_id}/project": Factory(
-        "media-video-project", {"project_id": MEDIA_PROJECT_ID}, fragment = "sandbox"
+        "media-video-project", {"project_id": MEDIA_PROJECT_ID}, fragment="sandbox"
     ),
-    "routes.video:GET:/videos/{video_id}": Factory("media-video", fragment = SENTINEL),
+    "routes.video:GET:/videos/{video_id}": Factory("media-video", fragment=SENTINEL),
     "routes.video:GET:/videos/{video_id}/content": Factory("media-video"),
-    "routes.video:DELETE:/videos/{video_id}": Factory("media-video", fragment = VIDEO_ID),
+    "routes.video:DELETE:/videos/{video_id}": Factory("media-video", fragment=VIDEO_ID),
     "routes.inference:GET:/search-images/{image_id}": Factory(
-        "media-search-image", fragment = SENTINEL
+        "media-search-image", fragment=SENTINEL
     ),
-    "routes.inference:GET:/monitor/{entry_id}": Factory("media-monitor", fragment = SENTINEL),
-    "routes.inference:GET:/models/{model_id:path}": Factory("media-model", fragment = MODEL_ID),
+    "routes.inference:GET:/monitor/{entry_id}": Factory("media-monitor", fragment=SENTINEL),
+    "routes.inference:GET:/models/{model_id:path}": Factory("media-model", fragment=MODEL_ID),
     "routes.inference:GET:/sandbox/{session_id}": Factory(
         "media-sandbox",
-        fragment = SANDBOX_FILE,
-        absent = SANDBOX_FILE,
-        owner = (200,),
-        wrong = (200,),
-        reason = "a session id resolves inside the caller's own sandbox root, so another account "
+        fragment=SANDBOX_FILE,
+        absent=SANDBOX_FILE,
+        owner=(200,),
+        wrong=(200,),
+        reason="a session id resolves inside the caller's own sandbox root, so another account "
         "is listed its own empty directory rather than refused",
     ),
     "routes.inference:GET:/sandbox/{session_id}/{filename:path}": Factory(
-        "media-sandbox", fragment = SENTINEL
+        "media-sandbox", fragment=SENTINEL
     ),
     "routes.inference:HEAD:/sandbox/{session_id}/{filename:path}": Factory("media-sandbox"),
 }

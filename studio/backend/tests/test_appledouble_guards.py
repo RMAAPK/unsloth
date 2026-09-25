@@ -82,7 +82,7 @@ def test_a_split_quant_pairs_by_shard_family():
     assert by_family(["._mine.gguf"]) == ["._mine.gguf"]
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class _CachedFile:
     file_name: str
     file_path: Path
@@ -95,17 +95,17 @@ def _cache_repo(tmp_path, entries):
     blobs = tmp_path / "blobs"
     snapshot = tmp_path / "snapshots" / "rev0"
     blobs.mkdir()
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     files = []
     for i, (name, payload, size) in enumerate(entries):
         blob = blobs / f"blob{i}"
         blob.write_bytes(payload)
         entry = snapshot / name
-        entry.parent.mkdir(parents = True, exist_ok = True)
+        entry.parent.mkdir(parents=True, exist_ok=True)
         entry.symlink_to(blob)
         files.append(_CachedFile(Path(name).name, entry, size))
-    revision = SimpleNamespace(files = frozenset(files), snapshot_path = snapshot, refs = {"main"})
-    return SimpleNamespace(revisions = [revision])
+    revision = SimpleNamespace(files=frozenset(files), snapshot_path=snapshot, refs={"main"})
+    return SimpleNamespace(revisions=[revision])
 
 
 def test_cached_repo_files_follows_the_snapshot_entry_to_its_blob(tmp_path):
@@ -152,7 +152,7 @@ def test_a_drafter_budget_prices_the_largest_file_of_a_shared_basename(tmp_path,
     )
     repo.repo_id = "org/d"
     monkeypatch.setattr(
-        huggingface_hub, "scan_cache_dir", lambda **kw: SimpleNamespace(repos = [repo])
+        huggingface_hub, "scan_cache_dir", lambda **kw: SimpleNamespace(repos=[repo])
     )
     seen: dict = {}
     monkeypatch.setattr(
@@ -246,11 +246,13 @@ def test_pick_dspark_stays_reachable_from_module_scope():
     Nesting it back inside the method is how #9074 reverted it, and nothing noticed.
     """
     import core.inference.llama_cpp as llama_cpp
+
     assert callable(getattr(llama_cpp, "_pick_dspark", None))
 
 
 def test_a_sidecar_is_not_offered_as_a_variant():
     from core.inference.llama_cpp import _gguf_files_for_variant
+
     files = ["._model-Q4_K_M.gguf", "model-Q4_K_M.gguf"]
     assert _gguf_files_for_variant(files, "Q4_K_M") == ["model-Q4_K_M.gguf"]
 

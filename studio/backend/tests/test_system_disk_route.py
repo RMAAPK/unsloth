@@ -29,7 +29,7 @@ ROUTE_SOURCE = Path(__file__).resolve().parents[1] / "main.py"
 
 
 def _route_source() -> str:
-    src = ROUTE_SOURCE.read_text(encoding = "utf-8")
+    src = ROUTE_SOURCE.read_text(encoding="utf-8")
     start = src.index('@app.get("/api/system/disk")')
     return src[start : src.index('@app.get("/api/system/gpu-visibility")', start)]
 
@@ -85,6 +85,7 @@ def _real_redactor():
     the real thing is what makes this test able to fail.
     """
     from hub.utils.host_paths import redact_inventory_host_paths
+
     return redact_inventory_host_paths
 
 
@@ -94,9 +95,9 @@ def _load_route(
     hub_cache,
     default_cache,
     studio,
-    xet_cache = None,
-    via_api_key = False,
-    is_owner = True,
+    xet_cache=None,
+    via_api_key=False,
+    is_owner=True,
 ):
     """Run the real route body against stub resolvers, without importing main.py.
 
@@ -105,13 +106,13 @@ def _load_route(
     inside itself replaced. What runs is the shipped code, not a paraphrase of it.
     """
     namespace = {
-        "app": types.SimpleNamespace(get = lambda _path: (lambda fn: fn)),
+        "app": types.SimpleNamespace(get=lambda _path: (lambda fn: fn)),
         "Depends": lambda _dep: None,
         "get_current_subject": lambda: "alice",
         "shutil": shutil,
         "os": os,
         "Path": Path,
-        "logger": types.SimpleNamespace(debug = lambda *_a, **_k: None),
+        "logger": types.SimpleNamespace(debug=lambda *_a, **_k: None),
         "authenticated_via_api_key": lambda: via_api_key,
         "redact_inventory_host_paths": _real_redactor(),
     }
@@ -120,7 +121,7 @@ def _load_route(
     storage.studio_root = lambda: studio
     settings = types.ModuleType("utils.hf_cache_settings")
     settings.get_hf_cache_paths = lambda: types.SimpleNamespace(
-        hub_cache = hub_cache, xet_cache = hub_cache if xet_cache is None else xet_cache
+        hub_cache=hub_cache, xet_cache=hub_cache if xet_cache is None else xet_cache
     )
     accounts = types.ModuleType("utils.account_context")
     accounts.is_owner_context = lambda: is_owner
@@ -139,14 +140,14 @@ def test_the_route_follows_the_configured_models_folder(monkeypatch, tmp_path):
     disk the download is not going to touch.
     """
     configured = tmp_path / "elsewhere" / "hub"
-    configured.mkdir(parents = True)
+    configured.mkdir(parents=True)
     default = tmp_path / "home" / ".cache" / "huggingface" / "hub"
-    default.mkdir(parents = True)
+    default.mkdir(parents=True)
 
     route = _load_route(
-        monkeypatch, hub_cache = configured, default_cache = default, studio = tmp_path / "s"
+        monkeypatch, hub_cache=configured, default_cache=default, studio=tmp_path / "s"
     )
-    assert route(current_subject = "alice")["path"] == str(configured)
+    assert route(current_subject="alice")["path"] == str(configured)
 
 
 def test_the_route_still_answers_when_the_settings_read_fails(monkeypatch, tmp_path):
@@ -166,18 +167,18 @@ def test_the_route_still_answers_when_the_settings_read_fails(monkeypatch, tmp_p
     storage.studio_root = lambda: tmp_path / "s"
     monkeypatch.setitem(sys.modules, "utils.paths.storage_roots", storage)
     namespace = {
-        "app": types.SimpleNamespace(get = lambda _path: (lambda fn: fn)),
+        "app": types.SimpleNamespace(get=lambda _path: (lambda fn: fn)),
         "Depends": lambda _dep: None,
         "get_current_subject": lambda: "alice",
         "shutil": shutil,
         "os": os,
         "Path": Path,
-        "logger": types.SimpleNamespace(debug = lambda *_a, **_k: None),
+        "logger": types.SimpleNamespace(debug=lambda *_a, **_k: None),
         "authenticated_via_api_key": lambda: False,
         "redact_inventory_host_paths": _real_redactor(),
     }
     exec(compile(_route_source(), "<route>", "exec"), namespace)
-    assert namespace["get_disk_space"](current_subject = "alice")["path"] == str(default)
+    assert namespace["get_disk_space"](current_subject="alice")["path"] == str(default)
 
 
 def test_a_disk_reading_is_microseconds(tmp_path):
@@ -235,9 +236,9 @@ def test_the_route_reports_the_tighter_of_the_hub_and_xet_volumes(monkeypatch, t
     tighter reading wins: the volume that runs out first is the one that stops the download.
     """
     hub = tmp_path / "roomy" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
     xet = tmp_path / "cramped" / "xet"
-    xet.mkdir(parents = True)
+    xet.mkdir(parents=True)
 
     roomy = shutil._ntuple_diskusage(1_000_000_000_000, 100_000_000_000, 900_000_000_000)
     cramped = shutil._ntuple_diskusage(1_000_000_000_000, 998_000_000_000, 2_000_000_000)
@@ -252,7 +253,7 @@ def test_the_route_reports_the_tighter_of_the_hub_and_xet_volumes(monkeypatch, t
         os,
         "stat",
         lambda p, *a, **k: types.SimpleNamespace(
-            st_dev = 2 if str(p).startswith(str(tmp_path / "cramped")) else 1
+            st_dev=2 if str(p).startswith(str(tmp_path / "cramped")) else 1
         )
         if str(p).startswith(str(tmp_path))
         else real_stat(p, *a, **k),
@@ -260,12 +261,12 @@ def test_the_route_reports_the_tighter_of_the_hub_and_xet_volumes(monkeypatch, t
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        xet_cache = xet,
-        default_cache = tmp_path / "default",
-        studio = tmp_path / "s",
+        hub_cache=hub,
+        xet_cache=xet,
+        default_cache=tmp_path / "default",
+        studio=tmp_path / "s",
     )
-    reading = route(current_subject = "alice")
+    reading = route(current_subject="alice")
 
     assert reading["free_gb"] == 2.0, "the roomy hub volume masked the full Xet volume"
     assert reading["path"] == str(xet)
@@ -280,8 +281,8 @@ def test_one_volume_is_read_once(monkeypatch, tmp_path):
     costs most on a network mount. The device is resolved first now.
     """
     both = tmp_path / "cache"
-    (both / "hub").mkdir(parents = True)
-    (both / "xet").mkdir(parents = True)
+    (both / "hub").mkdir(parents=True)
+    (both / "xet").mkdir(parents=True)
 
     calls = []
     real_usage = shutil.disk_usage
@@ -289,12 +290,12 @@ def test_one_volume_is_read_once(monkeypatch, tmp_path):
 
     route = _load_route(
         monkeypatch,
-        hub_cache = both / "hub",
-        xet_cache = both / "xet",
-        default_cache = tmp_path / "default",
-        studio = tmp_path / "s",
+        hub_cache=both / "hub",
+        xet_cache=both / "xet",
+        default_cache=tmp_path / "default",
+        studio=tmp_path / "s",
     )
-    route(current_subject = "alice")
+    route(current_subject="alice")
 
     assert (
         len(calls) == 1
@@ -307,16 +308,16 @@ def test_an_api_key_caller_is_not_told_the_host_path(monkeypatch, tmp_path):
     inventory routes already; a capacity reading is not a reason to cross it, and the low-disk
     client reads only the numbers."""
     hub = tmp_path / "cache" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        default_cache = tmp_path / "d",
-        studio = tmp_path / "s",
-        via_api_key = True,
+        hub_cache=hub,
+        default_cache=tmp_path / "d",
+        studio=tmp_path / "s",
+        via_api_key=True,
     )
-    reading = route(current_subject = "alice", via_api_key = True)
+    reading = route(current_subject="alice", via_api_key=True)
 
     assert not reading.get("path"), "the raw host path went out to an API-key caller"
     assert reading["free_gb"] is not None, "the capacity fields must survive redaction"
@@ -326,15 +327,15 @@ def test_a_ui_session_still_sees_the_path(monkeypatch, tmp_path):
     """The control. Redacting for everyone would take the path off the Resources tab, which is
     where a user checks WHICH volume the reading is about."""
     hub = tmp_path / "cache" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        default_cache = tmp_path / "d",
-        studio = tmp_path / "s",
+        hub_cache=hub,
+        default_cache=tmp_path / "d",
+        studio=tmp_path / "s",
     )
-    reading = route(current_subject = "alice", via_api_key = False)
+    reading = route(current_subject="alice", via_api_key=False)
 
     assert reading["path"], "a UI session lost the path it needs to identify the volume"
 
@@ -348,16 +349,16 @@ def test_a_managed_account_is_not_told_the_host_path(monkeypatch, tmp_path):
     here too. The numbers survive, because requestStart calls this for whoever downloads.
     """
     hub = tmp_path / "cache" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        default_cache = tmp_path / "d",
-        studio = tmp_path / "s",
-        is_owner = False,
+        hub_cache=hub,
+        default_cache=tmp_path / "d",
+        studio=tmp_path / "s",
+        is_owner=False,
     )
-    reading = route(current_subject = "bob", via_api_key = False)
+    reading = route(current_subject="bob", via_api_key=False)
 
     assert not reading.get("path"), "the raw host path went out to a managed account"
     assert reading["free_gb"] is not None, "the capacity fields must survive redaction"
@@ -371,16 +372,16 @@ def test_a_single_user_install_still_sees_the_path(monkeypatch, tmp_path):
     for everybody and the test above passes for the wrong reason.
     """
     hub = tmp_path / "cache" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        default_cache = tmp_path / "d",
-        studio = tmp_path / "s",
-        is_owner = True,
+        hub_cache=hub,
+        default_cache=tmp_path / "d",
+        studio=tmp_path / "s",
+        is_owner=True,
     )
-    reading = route(current_subject = "alice", via_api_key = False)
+    reading = route(current_subject="alice", via_api_key=False)
 
     assert reading["path"], "the owner lost the path on a single-user install"
 
@@ -421,12 +422,12 @@ def test_an_unreadable_cache_volume_is_not_reported_as_its_parent(monkeypatch, t
 
     route = _load_route(
         monkeypatch,
-        hub_cache = cache,
-        xet_cache = cache,
-        default_cache = tmp_path / "missing-default",
-        studio = tmp_path / "missing-studio",
+        hub_cache=cache,
+        xet_cache=cache,
+        default_cache=tmp_path / "missing-default",
+        studio=tmp_path / "missing-studio",
     )
-    reading = route(current_subject = "alice", via_api_key = False)
+    reading = route(current_subject="alice", via_api_key=False)
 
     assert reading["path"] != str(
         roomy
@@ -442,9 +443,9 @@ def test_one_unreadable_root_does_not_let_the_other_answer_for_it(monkeypatch, t
     the honest answer, and the client treats it as neither a warning nor a block.
     """
     hub = tmp_path / "mounted" / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
     xet = tmp_path / "local" / "xet"
-    xet.mkdir(parents = True)
+    xet.mkdir(parents=True)
 
     real_stat = os.stat
     real_usage = shutil.disk_usage
@@ -464,12 +465,12 @@ def test_one_unreadable_root_does_not_let_the_other_answer_for_it(monkeypatch, t
 
     route = _load_route(
         monkeypatch,
-        hub_cache = hub,
-        xet_cache = xet,
-        default_cache = tmp_path / "d",
-        studio = tmp_path / "s",
+        hub_cache=hub,
+        xet_cache=xet,
+        default_cache=tmp_path / "d",
+        studio=tmp_path / "s",
     )
-    reading = route(current_subject = "alice", via_api_key = False)
+    reading = route(current_subject="alice", via_api_key=False)
 
     assert (
         reading["free_gb"] is None

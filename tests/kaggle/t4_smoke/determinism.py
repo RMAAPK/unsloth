@@ -72,7 +72,7 @@ def set_deterministic_algorithms(warn_only: bool = True) -> dict:
 
     state: dict[str, Any] = {"requested": True, "warn_only": warn_only}
     try:
-        torch.use_deterministic_algorithms(True, warn_only = warn_only)
+        torch.use_deterministic_algorithms(True, warn_only=warn_only)
         state["use_deterministic_algorithms"] = True
     except Exception as exc:  # noqa: BLE001
         state["use_deterministic_algorithms"] = False
@@ -89,6 +89,7 @@ def set_deterministic_algorithms(warn_only: bool = True) -> dict:
 
 def _trainer_callback_base():
     from transformers import TrainerCallback
+
     return TrainerCallback
 
 
@@ -112,7 +113,7 @@ class StatisticsCallback(_trainer_callback_base()):  # type: ignore[misc]
         args,
         state,
         control,
-        logs = None,
+        logs=None,
         **kwargs,
     ):  # noqa: ANN001
         if not logs or "loss" not in logs:
@@ -125,12 +126,13 @@ class StatisticsCallback(_trainer_callback_base()):  # type: ignore[misc]
         self.logs.append(entry)
 
     def save_logs(self, path: str) -> None:
-        with open(path, "w", encoding = "utf-8") as fh:
-            json.dump(self.logs, fh, indent = 2)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(self.logs, fh, indent=2)
 
 
 def _sampler_base():
     from torch.utils.data import Sampler
+
     return Sampler
 
 

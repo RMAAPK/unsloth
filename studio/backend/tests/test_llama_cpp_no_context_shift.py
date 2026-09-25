@@ -164,6 +164,6 @@ def test_flash_attention_drops_its_value_only_for_a_boolean_build():
 def _iter_lines_with_offset(text: str):
     """Yield (offset, line) pairs over ``text`` without losing offsets."""
     offset = 0
-    for line in text.splitlines(keepends = True):
+    for line in text.splitlines(keepends=True):
         yield offset, line
         offset += len(line)

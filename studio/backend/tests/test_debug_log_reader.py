@@ -27,7 +27,7 @@ def _write(
     count: int,
     prefix: str = "line",
 ) -> None:
-    path.write_text("".join(f"{prefix}{i}\n" for i in range(count)), encoding = "utf-8")
+    path.write_text("".join(f"{prefix}{i}\n" for i in range(count)), encoding="utf-8")
 
 
 def test_an_empty_file_reads_as_no_lines(tmp_path):
@@ -62,7 +62,7 @@ def test_a_last_line_without_a_newline_is_still_shown(tmp_path):
 def test_a_huge_file_is_read_in_a_bounded_window(tmp_path, monkeypatch):
     """The whole point: cost must not scale with the file."""
     path = tmp_path / "big.log"
-    with open(path, "w", encoding = "utf-8") as handle:
+    with open(path, "w", encoding="utf-8") as handle:
         for i in range(200_000):
             handle.write(f"padding line {i} {'a' * 40}\n")
     assert path.stat().st_size > 8 * MAX_TAIL_BYTES
@@ -74,7 +74,7 @@ def test_a_huge_file_is_read_in_a_bounded_window(tmp_path, monkeypatch):
         def __init__(self, handle):
             self._handle = handle
 
-        def read(self, size = -1):
+        def read(self, size=-1):
             chunk = self._handle.read(size)
             read_bytes["total"] += len(chunk)
             return chunk
@@ -90,7 +90,7 @@ def test_a_huge_file_is_read_in_a_bounded_window(tmp_path, monkeypatch):
 
     def _counting_open(
         file,
-        mode = "r",
+        mode="r",
         *args,
         **kwargs,
     ):
@@ -110,7 +110,7 @@ def test_only_appended_lines_come_back(tmp_path):
     path = tmp_path / "a.log"
     path.write_text("a\nb\n")
     first = read_tail(path)
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         handle.write("c\nd\n")
     second = read_since(path, first.cursor)
     assert second.lines == ["c", "d"]
@@ -135,7 +135,7 @@ def test_repeated_polls_never_resend(tmp_path):
     cursor = read_tail(path).cursor
     delivered = 0
     for i in range(1, 201):
-        with open(path, "a", encoding = "utf-8") as handle:
+        with open(path, "a", encoding="utf-8") as handle:
             handle.write(f"{i}\n")
         result = read_since(path, cursor)
         assert result.reset is False, f"unexpected reset on poll {i}"
@@ -148,11 +148,11 @@ def test_a_half_written_line_is_held_back_then_delivered_once(tmp_path):
     path = tmp_path / "a.log"
     path.write_text("a\n")
     cursor = read_tail(path).cursor
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         handle.write("partial")
     held = read_since(path, cursor)
     assert held.lines == []
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         handle.write(" line\n")
     completed = read_since(path, held.cursor)
     assert completed.lines == ["partial line"]
@@ -174,7 +174,7 @@ def test_a_writer_outrunning_the_reader_is_bounded(tmp_path):
     path = tmp_path / "a.log"
     path.write_text("x\n")
     cursor = read_tail(path).cursor
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         for i in range(60_000):
             handle.write(f"flood {i} {'y' * 34}\n")
     result = read_since(path, cursor)
@@ -216,7 +216,7 @@ def test_a_burst_larger_than_one_response_is_delivered_not_dropped(tmp_path):
     path = tmp_path / "a.log"
     path.write_text("x\n")
     cursor = read_tail(path).cursor
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         for i in range(3000):
             handle.write(f"appended{i}\n")
 
@@ -238,7 +238,7 @@ def test_a_record_larger_than_the_window_shows_its_tail_not_an_empty_pane(tmp_pa
     was megabytes long, and the cursor advanced past the record anyway."""
     path = tmp_path / "a.log"
     body = "Z" * (MAX_TAIL_BYTES + 100_000)
-    path.write_text("older line\n" + body + " END\n", encoding = "utf-8")
+    path.write_text("older line\n" + body + " END\n", encoding="utf-8")
 
     result = read_tail(path)
     assert result.lines, "a non-empty log must never read as no lines at all"
@@ -250,7 +250,7 @@ def test_a_record_larger_than_the_window_shows_its_tail_not_an_empty_pane(tmp_pa
 
 def test_an_unterminated_record_larger_than_the_window_still_shows(tmp_path):
     path = tmp_path / "a.log"
-    path.write_text("older line\n" + "Z" * (MAX_TAIL_BYTES + 100_000) + " LIVE", encoding = "utf-8")
+    path.write_text("older line\n" + "Z" * (MAX_TAIL_BYTES + 100_000) + " LIVE", encoding="utf-8")
     result = read_tail(path)
     assert result.lines and result.lines[-1].endswith(" LIVE")
 
@@ -259,7 +259,7 @@ def test_an_oversized_append_with_no_newline_is_not_swallowed(tmp_path):
     path = tmp_path / "a.log"
     path.write_text("start\n")
     cursor = read_tail(path).cursor
-    with open(path, "a", encoding = "utf-8") as handle:
+    with open(path, "a", encoding="utf-8") as handle:
         handle.write("Q" * (MAX_APPEND_BYTES + 50_000) + " END\n")
 
     result = read_since(path, cursor)
@@ -275,6 +275,6 @@ def test_a_colorized_credential_is_masked_before_it_reaches_the_viewer(tmp_path)
     path = tmp_path / "a.log"
     path.write_text(
         "\x1b[36mhf_token\x1b[0m=\x1b[35mhf_AbCdEfGhIjKlMnOpQrStUvWxYz012345\x1b[0m\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     assert "hf_AbCdEfGhIjKlMnOpQrStUvWxYz012345" not in "\n".join(read_tail(path).lines)

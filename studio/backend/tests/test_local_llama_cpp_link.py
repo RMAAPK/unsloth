@@ -29,7 +29,7 @@ from core.inference import llama_cpp as llama_cpp_module
 from core.inference.llama_cpp import LlamaCppBackend
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_whisper_piggyback(monkeypatch):
     # Keep the whisper piggyback probe off the host: these tests exercise the
     # llama local-link contract only.
@@ -39,16 +39,16 @@ def _no_whisper_piggyback(monkeypatch):
 def _make_link(link: Path, target: Path) -> None:
     """Create a directory junction (Windows) / symlink (POSIX); neither needs
     elevation."""
-    target.mkdir(parents = True, exist_ok = True)
+    target.mkdir(parents=True, exist_ok=True)
     if os.name == "nt":
         subprocess.run(
             ["cmd", "/c", "mklink", "/J", str(link), str(target)],
-            check = True,
-            capture_output = True,
-            text = True,
+            check=True,
+            capture_output=True,
+            text=True,
         )
     else:
-        link.symlink_to(target, target_is_directory = True)
+        link.symlink_to(target, target_is_directory=True)
 
 
 def _server_subpath() -> Path:
@@ -84,7 +84,7 @@ def test_active_install_is_local_link(tmp_path: Path) -> None:
 
     # A plain (non-link) llama.cpp dir is Unsloth-managed, not a local link.
     plain = tmp_path / "plain" / "llama.cpp"
-    plain.mkdir(parents = True)
+    plain.mkdir(parents=True)
     assert u._active_install_is_local_link(str(plain / _server_subpath())) is False
 
 
@@ -123,7 +123,7 @@ def test_without_the_studio_app_tree_every_link_stays_external(tmp_path: Path, m
     link.parent.mkdir()
     _make_link(link, app / "llama.cpp")
     binary = str(link / _server_subpath())
-    monkeypatch.delenv("UNSLOTH_STUDIO_APP", raising = False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_APP", raising=False)
     assert u._active_install_is_local_link(binary) is True
     monkeypatch.setenv("UNSLOTH_STUDIO_APP", "   ")
     assert u._active_install_is_local_link(binary) is True
@@ -161,7 +161,7 @@ def _fake_procfs(tmp_path: Path, fake: _FakeProc) -> Path:
     """Build a /proc-shaped tree holding a single llama-server process."""
     root = tmp_path / "fake-proc"
     entry = root / str(fake.info["pid"])
-    entry.mkdir(parents = True)
+    entry.mkdir(parents=True)
     # comm sits between the first "(" and the last ")"; starttime is field 22.
     filler = " ".join(["0"] * 18)  # fields 4..21
     (entry / "stat").write_bytes(
@@ -231,7 +231,7 @@ def _run_orphan_scan(
     else:
         # No /proc means the psutil branch, which is what macOS and Windows take.
         monkeypatch.setattr(llama_cpp_module, "_PROC_ROOT", str(studio_root / "no-such-proc"))
-        monkeypatch.setattr(psutil, "process_iter", lambda attrs = None: iter([fake]))
+        monkeypatch.setattr(psutil, "process_iter", lambda attrs=None: iter([fake]))
     return LlamaCppBackend._kill_orphaned_servers()
 
 
@@ -240,7 +240,7 @@ def test_orphan_cleanup_spares_local_link_tree(tmp_path: Path, monkeypatch, scan
     studio_root = tmp_path / "studio-home"
     studio_root.mkdir()
     external = tmp_path / "external"
-    (external / _server_subpath().parent).mkdir(parents = True)
+    (external / _server_subpath().parent).mkdir(parents=True)
     (external / _server_subpath()).write_text("x")
     _make_link(studio_root / "llama.cpp", external)
 
@@ -257,7 +257,7 @@ def test_orphan_cleanup_kills_under_real_root(tmp_path: Path, monkeypatch, scan)
     # spare-the-link test above is not a no-op.
     studio_root = tmp_path / "studio-home"
     bin_dir = studio_root / "llama.cpp" / _server_subpath().parent
-    bin_dir.mkdir(parents = True)
+    bin_dir.mkdir(parents=True)
     exe = studio_root / "llama.cpp" / _server_subpath()
     exe.write_text("x")
 
@@ -275,7 +275,7 @@ def test_orphan_cleanup_spares_studio_selected_custom_tree(
     studio_root.mkdir()
     custom_root = tmp_path / "user-owned-llama.cpp"
     binary = custom_root / _server_subpath()
-    binary.parent.mkdir(parents = True)
+    binary.parent.mkdir(parents=True)
     binary.write_text("x")
     monkeypatch.setattr(
         path_settings,

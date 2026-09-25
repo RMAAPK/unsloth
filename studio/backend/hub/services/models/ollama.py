@@ -178,7 +178,7 @@ def _ollama_links_roots(ollama_dir: Path) -> tuple[Path, ...]:
 def _ollama_links_dir(ollama_dir: Path) -> Optional[Path]:
     def _ensure_writable_dir(path: Path) -> Optional[Path]:
         try:
-            path.mkdir(parents = True, exist_ok = True)
+            path.mkdir(parents=True, exist_ok=True)
             probe = path / f".write-test-{uuid.uuid4().hex[:8]}"
             probe.mkdir()
             probe.rmdir()
@@ -201,7 +201,7 @@ def _ollama_links_dir(ollama_dir: Path) -> Optional[Path]:
 def _make_ollama_blob_link(link_dir: Path, link_name: str, target: Path) -> Optional[str]:
     """Create a .gguf-named link to an Ollama blob: tries symlink then hardlink, skips the model if neither works (a full multi-GB copy would block the API). Idempotent."""
     try:
-        link_dir.mkdir(parents = True, exist_ok = True)
+        link_dir.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         logger.warning(
             "Could not create Ollama link directory %s: %s",
@@ -313,7 +313,7 @@ def _ollama_model_info_from_manifest(
 
     if manifest is None:
         try:
-            manifest = json.loads(tag_file.read_text(encoding = "utf-8-sig"))
+            manifest = json.loads(tag_file.read_text(encoding="utf-8-sig"))
         except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
             return invalid_manifest(str(e))
     if not isinstance(manifest, dict):
@@ -329,7 +329,7 @@ def _ollama_model_info_from_manifest(
         config_blob = _ollama_blob_path(blobs_dir, config_digest)
         if config_blob is not None and _safe_is_file(config_blob):
             try:
-                cfg = json.loads(config_blob.read_text(encoding = "utf-8-sig"))
+                cfg = json.loads(config_blob.read_text(encoding="utf-8-sig"))
             except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
                 return invalid_manifest(f"config blob could not be parsed: {e}")
             if not isinstance(cfg, dict):
@@ -406,7 +406,7 @@ def _ollama_model_info_from_manifest(
         try:
             if projector_link.is_symlink():
                 try:
-                    previous_projector = projector_link.resolve(strict = True)
+                    previous_projector = projector_link.resolve(strict=True)
                 except FileNotFoundError:
                     pass
             elif projector_link.exists():
@@ -482,17 +482,17 @@ def _ollama_model_info_from_manifest(
     path = gguf_link_path if materialize_links and gguf_link_path else str(model_blob)
     load_id = path if materialize_links else _ollama_manifest_ref(tag_file)
     return LocalModelInfo(
-        id = load_id,
-        inventory_id = _local_inventory_id("ollama", "gguf", model_id),
-        load_id = load_id,
-        model_id = model_id,
-        display_name = display + suffix,
-        path = path,
-        source = "ollama",
-        updated_at = updated_at,
-        model_format = "gguf",
-        runtime = "llama_cpp",
-        capabilities = _capabilities_for_format("gguf", "ollama"),
+        id=load_id,
+        inventory_id=_local_inventory_id("ollama", "gguf", model_id),
+        load_id=load_id,
+        model_id=model_id,
+        display_name=display + suffix,
+        path=path,
+        source="ollama",
+        updated_at=updated_at,
+        model_format="gguf",
+        runtime="llama_cpp",
+        capabilities=_capabilities_for_format("gguf", "ollama"),
     )
 
 
@@ -533,14 +533,14 @@ def scan_ollama_dir(
 
             lock = _materialization_lock(tag_file, ollama_dir) if materialize_links else None
             # A load holds this tag; its lease keeps the link it made, so report that, never block.
-            leased = lock is not None and not lock.acquire(blocking = False)
+            leased = lock is not None and not lock.acquire(blocking=False)
             try:
                 info = _ollama_model_info_from_manifest(
                     ollama_dir,
                     tag_file,
-                    materialize_links = materialize_links,
-                    links_root = links_root,
-                    existing_links_only = leased,
+                    materialize_links=materialize_links,
+                    links_root=links_root,
+                    existing_links_only=leased,
                 )
             finally:
                 if lock is not None and not leased:
@@ -559,6 +559,7 @@ def _known_ollama_dirs() -> List[Path]:
     known_dirs = list(ollama_model_dirs())
     try:
         from hub.storage.scan_folders import list_scan_folders
+
         known_dirs.extend(
             Path(folder["path"]).expanduser()
             for folder in list_scan_folders()
@@ -623,7 +624,7 @@ def _ollama_model_ref_info(ref: str) -> tuple[Path, dict, LocalModelInfo]:
     reads would pair one version's weights with another's projector. Raises on nothing loadable."""
     tag_file, ollama_dir = _validated_ollama_manifest_location(ref)
     try:
-        manifest = json.loads(tag_file.read_text(encoding = "utf-8-sig"))
+        manifest = json.loads(tag_file.read_text(encoding="utf-8-sig"))
     except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
         raise ValueError(f"Could not read Ollama manifest: {e}") from e
     # A manifest of JSON ``null`` is indistinguishable from passing none below, which re-reads.
@@ -632,9 +633,9 @@ def _ollama_model_ref_info(ref: str) -> tuple[Path, dict, LocalModelInfo]:
     info = _ollama_model_info_from_manifest(
         ollama_dir,
         tag_file,
-        materialize_links = False,
-        reject_unsupported_layers = True,
-        manifest = manifest,
+        materialize_links=False,
+        reject_unsupported_layers=True,
+        manifest=manifest,
     )
     if info is None:
         raise ValueError("Could not resolve Ollama model from manifest")
@@ -679,9 +680,9 @@ def _materialize_ollama_model_ref_unlocked(tag_file: Path, ollama_dir: Path) -> 
     info = _ollama_model_info_from_manifest(
         ollama_dir,
         tag_file,
-        materialize_links = True,
-        links_root = links_root,
-        reject_unsupported_layers = True,
+        materialize_links=True,
+        links_root=links_root,
+        reject_unsupported_layers=True,
     )
     if info is None or not info.path:
         raise ValueError("Could not materialize Ollama model from manifest")

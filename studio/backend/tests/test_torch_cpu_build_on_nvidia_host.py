@@ -95,20 +95,20 @@ def _fake_torch(vendor: str):
     """
     torch = types.ModuleType("torch")
     if vendor == "cpu":
-        torch.version = SimpleNamespace(hip = None, cuda = None)
+        torch.version = SimpleNamespace(hip=None, cuda=None)
         torch.__version__ = "2.11.0+cpu"
         available = False
     elif vendor == "cuda_dead":
-        torch.version = SimpleNamespace(hip = None, cuda = "12.4")
+        torch.version = SimpleNamespace(hip=None, cuda="12.4")
         torch.__version__ = "2.6.0+cu124"
         available = False
     else:
-        torch.version = SimpleNamespace(hip = None, cuda = "12.8")
+        torch.version = SimpleNamespace(hip=None, cuda="12.8")
         torch.__version__ = "2.9.1+cu128"
         available = True
     torch.cuda = SimpleNamespace(
-        is_available = lambda: available,
-        device_count = lambda: 2 if available else 0,
+        is_available=lambda: available,
+        device_count=lambda: 2 if available else 0,
     )
     return torch
 
@@ -133,21 +133,21 @@ def _smi(
         # (every AMD, Intel and CPU host), while a nonzero exit is a probe that failed.
         if raises is not None:
             raise raises("nvidia-smi")
-        return SimpleNamespace(returncode = returncode, stdout = stdout)
+        return SimpleNamespace(returncode=returncode, stdout=stdout)
 
     monkeypatch.setattr(nvidia.subprocess, "run", _run)
     monkeypatch.setattr(nvidia, "_linux_nvidia_procfs_gpu_count", lambda: 0)
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_inherited_visibility_mask(monkeypatch):
     """An emptied mask is a deliberate CPU pin and suppresses the whole report, so a
     runner that exports one (a GPU-partitioning CI job) would silently void these."""
     for var in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
-        monkeypatch.delenv(var, raising = False)
+        monkeypatch.delenv(var, raising=False)
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_carried_over_torch_measurement(monkeypatch):
     """The torch snapshot is cached with a TTL, so one test's fake host would answer
     for the next one. Both caches start empty here, as they do in a fresh process."""
@@ -155,7 +155,7 @@ def _no_carried_over_torch_measurement(monkeypatch):
     monkeypatch.setattr(hw, "_physical_gpu_inventory_cache", None)
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_background_inventory_refresh(monkeypatch):
     """Keep the non-blocking refresh from probing the REAL host mid-test.
 
@@ -233,7 +233,7 @@ def test_a_probe_that_cannot_answer_returns_a_result_rather_than_raising(
     monkeypatch, stdout, returncode, failure
 ):
     if failure is None:
-        _smi(monkeypatch, stdout, returncode = returncode)
+        _smi(monkeypatch, stdout, returncode=returncode)
     else:
 
         def _raise(*_args, **_kwargs):
@@ -264,7 +264,7 @@ def test_a_probe_that_cannot_answer_returns_a_result_rather_than_raising(
 def test_the_windows_amd_adapters_are_inventoried_too(monkeypatch):
     # No vendor CLI is guaranteed on Windows AMD, so the DirectX registry map is the source.
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     monkeypatch.setattr(
         hw,
         "_windows_live_adapter_names",
@@ -273,7 +273,7 @@ def test_the_windows_amd_adapters_are_inventoried_too(monkeypatch):
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {
                 0x24CF5: {
                     "name": "AMD Radeon RX 7900 XT",
@@ -384,7 +384,7 @@ def test_a_host_that_really_has_no_gpu_still_reads_no_gpu(monkeypatch):
     monkeypatch.setattr(hw, "TORCH_IMPORT_ERROR", None)
     monkeypatch.setattr(hw, "IS_ROCM", False)
     monkeypatch.setattr(hw.platform, "system", lambda: "Linux")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
 
     _detect(monkeypatch)
 
@@ -417,7 +417,7 @@ def _system_gpu_info(monkeypatch):
     # unknown. In a running backend _detect_hardware_locked has already blocked once.
     hw.get_physical_gpu_inventory()
     hw.torch_build_snapshot()
-    return main._get_cached_system_gpu_info(SimpleNamespace(debug = lambda *args: None))
+    return main._get_cached_system_gpu_info(SimpleNamespace(debug=lambda *args: None))
 
 
 def test_the_system_endpoint_names_the_cards_without_offering_them(
@@ -448,7 +448,7 @@ def test_a_cpu_host_with_no_cards_publishes_neither_field(monkeypatch):
     monkeypatch.setattr(hw, "TORCH_IMPORT_ERROR", None)
     monkeypatch.setattr(hw, "IS_ROCM", False)
     monkeypatch.setattr(hw.platform, "system", lambda: "Linux")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
 
     gpu, _inference_gpu = _system_gpu_info(monkeypatch)
 
@@ -648,8 +648,8 @@ def test_a_deliberate_cpu_install_is_not_reported_as_broken(monkeypatch, tmp_pat
     import sys
 
     monkeypatch.setitem(sys.modules, "torch", _fake_torch("cpu"))
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising = False)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising=False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising=False)
     monkeypatch.setattr(hw.sys, "prefix", str(tmp_path))
 
     assert hw.classify_torch_build() == "torch_cpu_build"
@@ -669,29 +669,29 @@ def test_a_deliberate_cpu_install_is_not_reported_as_broken(monkeypatch, tmp_pat
     # A recorded cpu counts only when the record says someone NAMED it: setup.ps1 selects
     # /cpu automatically on a GPU-less host and records it identically.
     manifest = tmp_path / "unsloth_install_manifest.json"
-    manifest.write_text('{"schema": 1, "expected_torch_tag": "cpu"}', encoding = "utf-8")
+    manifest.write_text('{"schema": 1, "expected_torch_tag": "cpu"}', encoding="utf-8")
     assert hw.classify_torch_build() == "torch_cpu_build"
 
     manifest.write_text(
         '{"schema": 1, "expected_torch_tag": "cpu", "expected_torch_tag_pinned": true}',
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     assert hw.classify_torch_build() is None
 
     manifest.write_text(
         '{"schema": 1, "expected_torch_tag": "cpu", "expected_torch_tag_pinned": false}',
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     assert (
         hw.classify_torch_build() == "torch_cpu_build"
     ), "an automatic CPU selection is not a choice to protect"
 
-    manifest.write_text('{"schema": 1, "expected_torch_tag": "cu124"}', encoding = "utf-8")
+    manifest.write_text('{"schema": 1, "expected_torch_tag": "cu124"}', encoding="utf-8")
     assert hw.classify_torch_build() == "torch_cpu_build"
 
-    manifest.write_text('{"schema": 1}', encoding = "utf-8")
+    manifest.write_text('{"schema": 1}', encoding="utf-8")
     assert hw.classify_torch_build() == "torch_cpu_build"
-    manifest.write_text("{not json", encoding = "utf-8")
+    manifest.write_text("{not json", encoding="utf-8")
     assert hw.classify_torch_build() == "torch_cpu_build"
 
 
@@ -723,9 +723,9 @@ def test_linux_amd_and_intel_cards_are_inventoried_from_sysfs(monkeypatch, tmp_p
         ("card3", "0x1002\n", "not a number"),
     ):
         device = drm / name / "device"
-        device.mkdir(parents = True)
-        (device / "vendor").write_text(vendor, encoding = "utf-8")
-        (device / "mem_info_vram_total").write_text(vram, encoding = "utf-8")
+        device.mkdir(parents=True)
+        (device / "vendor").write_text(vendor, encoding="utf-8")
+        (device / "mem_info_vram_total").write_text(vram, encoding="utf-8")
     (drm / "card0-DP-1").mkdir()
     (drm / "card9").mkdir()
 
@@ -766,7 +766,7 @@ def test_a_token_authenticated_cpu_pin_is_still_a_cpu_pin(monkeypatch, tmp_path)
     a GPU host was reported as broken and offered a repair that would replace it.
     """
     sys = _shared_setup_1(monkeypatch, tmp_path)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising=False)
 
     for pinned in (
         "https://download.pytorch.org/whl/cpu?token=abc/",
@@ -867,14 +867,14 @@ def test_windows_intel_adapters_are_inventoried_too(monkeypatch):
     AMD, so the inventory came back empty and the mismatch was discarded.
     """
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     monkeypatch.setattr(
         hw, "_windows_live_adapter_names", lambda: ["Intel(R) Arc(TM) A770 Graphics"]
     )
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {0x1: {"name": "Intel(R) Arc(TM) A770", "dedicated_memory_bytes": 16 * 1024**3}}
             if vendor_id == hw._INTEL_PCI_VENDOR_ID
             else {}
@@ -888,7 +888,7 @@ def test_windows_intel_adapters_are_inventoried_too(monkeypatch):
     assert inventory["available"] is True
     assert inventory["unknown"] is True
 
-    _smi(monkeypatch, "", returncode = 0)
+    _smi(monkeypatch, "", returncode=0)
     monkeypatch.setattr(hw, "_physical_gpu_inventory_cache", None)
     inventory = hw.get_physical_gpu_inventory()
     assert [d["vendor"] for d in inventory["devices"]] == ["intel"]
@@ -1051,7 +1051,7 @@ def test_the_health_path_never_waits_on_the_gpu_probe(monkeypatch):
 
     monkeypatch.setattr(hw, "_physical_gpu_inventory_refreshing", True)
     before = calls["threads"]
-    hw.get_physical_gpu_inventory(block = False)
+    hw.get_physical_gpu_inventory(block=False)
     assert calls["threads"] == before
 
 
@@ -1080,7 +1080,7 @@ def test_a_stale_cache_is_served_rather_than_re_probed_off_the_request_path(monk
     monkeypatch.setattr(hw, "_physical_gpu_inventory_refreshing", False)
     monkeypatch.setattr(hw, "_physical_gpu_inventory_cache", (hw.time.monotonic() - 3600, warm))
 
-    assert hw.get_physical_gpu_inventory(block = False) is warm
+    assert hw.get_physical_gpu_inventory(block=False) is warm
     assert calls["n"] == 0, "a stale answer beats a subprocess on the request path"
 
     assert hw.get_physical_gpu_inventory() is warm
@@ -1101,7 +1101,7 @@ def test_a_process_that_cannot_start_a_thread_keeps_the_stale_answer(monkeypatch
         raise RuntimeError("can't start new thread")
 
     monkeypatch.setattr(hw.threading, "Thread", _boom)
-    assert hw.get_physical_gpu_inventory(block = False) is warm
+    assert hw.get_physical_gpu_inventory(block=False) is warm
     assert hw._physical_gpu_inventory_refreshing is False
 
 
@@ -1114,12 +1114,12 @@ def test_a_stale_registry_record_is_not_reported_as_a_gpu(monkeypatch):
     cannot restore absent hardware.
     """
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     monkeypatch.setattr(hw, "_windows_live_adapter_names", lambda: ["Microsoft Basic Display"])
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {0x1: {"name": "AMD Radeon RX 6800", "dedicated_memory_bytes": 16 * 1024**3}}
             if vendor_id == hw._AMD_PCI_VENDOR_ID
             else {}
@@ -1133,12 +1133,12 @@ def test_a_stale_registry_record_is_not_reported_as_a_gpu(monkeypatch):
 
 def test_a_live_scan_that_cannot_answer_reports_unknown_rather_than_guessing(monkeypatch):
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     monkeypatch.setattr(hw, "_windows_live_adapter_names", lambda: None)
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {0x1: {"name": "AMD Radeon RX 6800"}} if vendor_id == hw._AMD_PCI_VENDOR_ID else {}
         ),
     )
@@ -1171,8 +1171,8 @@ def test_an_ordinary_intel_igpu_does_not_establish_a_mismatch(monkeypatch, tmp_p
     very CPU build it just replaced.
     """
     sys = _shared_setup_1(monkeypatch, tmp_path)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising = False)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising=False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising=False)
 
     igpu = [{"vendor": "intel", "name": None, "index": 0}]
     assert hw._devices_that_can_establish_a_mismatch(igpu) == []
@@ -1212,7 +1212,7 @@ def test_an_amd_card_named_only_by_its_marketing_string_establishes_a_mismatch(
 
 def test_a_nameless_intel_card_counts_once_xpu_was_actually_chosen(monkeypatch, tmp_path):
     sys = _shared_setup_1(monkeypatch, tmp_path)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising=False)
     nameless = [{"vendor": "intel", "name": None, "index": 0}]
 
     monkeypatch.setenv("UNSLOTH_TORCH_INDEX_FAMILY", "xpu")
@@ -1220,10 +1220,10 @@ def test_a_nameless_intel_card_counts_once_xpu_was_actually_chosen(monkeypatch, 
     monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY")
 
     manifest = tmp_path / "unsloth_install_manifest.json"
-    manifest.write_text('{"schema": 1, "expected_torch_tag": "xpu"}', encoding = "utf-8")
+    manifest.write_text('{"schema": 1, "expected_torch_tag": "xpu"}', encoding="utf-8")
     assert hw._devices_that_can_establish_a_mismatch(nameless) == nameless
 
-    manifest.write_text('{"schema": 1, "expected_torch_tag": "cpu"}', encoding = "utf-8")
+    manifest.write_text('{"schema": 1, "expected_torch_tag": "cpu"}', encoding="utf-8")
     assert hw._devices_that_can_establish_a_mismatch(nameless) == []
 
     xpu_torch = _fake_torch("cpu")
@@ -1243,10 +1243,10 @@ def test_a_leaked_import_error_is_what_stops_the_fake_torch_being_read(monkeypat
     which is why it went red under ``-n 4`` on one shard and green in every serial run.
     """
     sys = _shared_setup_1(monkeypatch, tmp_path)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising = False)
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising=False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_FAMILY", raising=False)
     (tmp_path / "unsloth_install_manifest.json").write_text(
-        '{"schema": 1, "expected_torch_tag": "cpu"}', encoding = "utf-8"
+        '{"schema": 1, "expected_torch_tag": "cpu"}', encoding="utf-8"
     )
     # The on-disk arm is pinned to a CPU wheel, so this does not turn on what torch the
     # host running the suite happens to have installed.
@@ -1326,17 +1326,17 @@ def test_a_healthy_xpu_wheel_is_not_called_unavailable(monkeypatch):
 
     xpu = _fake_torch("cuda_dead")
     xpu.__version__ = "2.9.0+xpu"
-    xpu.xpu = types.SimpleNamespace(is_available = lambda: True)
+    xpu.xpu = types.SimpleNamespace(is_available=lambda: True)
     monkeypatch.setitem(sys.modules, "torch", xpu)
     assert hw.classify_torch_build() is None
 
-    xpu.xpu = types.SimpleNamespace(is_available = lambda: False)
+    xpu.xpu = types.SimpleNamespace(is_available=lambda: False)
     assert hw.classify_torch_build() == "torch_cuda_unavailable"
 
     def _boom():
         raise RuntimeError("Level Zero not initialised")
 
-    xpu.xpu = types.SimpleNamespace(is_available = _boom)
+    xpu.xpu = types.SimpleNamespace(is_available=_boom)
     assert hw.classify_torch_build() == "torch_cuda_unavailable"
 
 
@@ -1378,12 +1378,12 @@ def test_duplicate_registry_records_are_claimed_one_to_one(monkeypatch):
     """
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
     # nvidia-smi ANSWERS (absent), so only the registry vendors go unanswered here.
-    _smi(monkeypatch, "", raises = FileNotFoundError)
+    _smi(monkeypatch, "", raises=FileNotFoundError)
     monkeypatch.setattr(hw, "_windows_live_adapter_names", lambda: ["AMD Radeon RX 7900 XT"])
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {
                 0x1: {"name": "AMD Radeon RX 7900 XT", "dedicated_memory_bytes": 20 * 1024**3},
                 0x2: {"name": "AMD Radeon RX 7900 XT", "dedicated_memory_bytes": 20 * 1024**3},
@@ -1400,7 +1400,7 @@ def test_duplicate_registry_records_are_claimed_one_to_one(monkeypatch):
 
 def test_both_records_survive_when_both_cards_are_live(monkeypatch):
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     monkeypatch.setattr(
         hw,
         "_windows_live_adapter_names",
@@ -1409,7 +1409,7 @@ def test_both_records_survive_when_both_cards_are_live(monkeypatch):
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **_kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **_kw: (
             {
                 0x1: {"name": "AMD Radeon RX 7900 XT"},
                 0x2: {"name": "AMD Radeon RX 7900 XT"},
@@ -1518,14 +1518,14 @@ def test_an_unimportable_torch_still_reports_the_cards(monkeypatch, tmp_path):
         def find_spec(
             self,
             fullname,
-            path = None,
-            target = None,
+            path=None,
+            target=None,
         ):
             if fullname == "torch":
                 return importlib.util.spec_from_loader("torch", _WillNotLoad())
             return None
 
-    monkeypatch.delitem(sys.modules, "torch", raising = False)
+    monkeypatch.delitem(sys.modules, "torch", raising=False)
     monkeypatch.setattr(sys, "meta_path", [_Finder(), *sys.meta_path])
     # _has_torch() below writes hw.TORCH_IMPORT_ERROR as a side effect and nothing puts it
     # back, so snapshot-restore it: left set, it sends every later test in this worker down
@@ -1540,7 +1540,7 @@ def test_an_unimportable_torch_still_reports_the_cards(monkeypatch, tmp_path):
     assert hw.classify_torch_build() == "torch_cuda_unavailable"
 
     for label in ("2.11.0+rocm7.2", "2.9.1+xpu"):
-        monkeypatch.setattr(hw, "_installed_torch_label_on_disk", lambda label = label: label)
+        monkeypatch.setattr(hw, "_installed_torch_label_on_disk", lambda label=label: label)
         assert hw.classify_torch_build() == "torch_cuda_unavailable"
 
     monkeypatch.setattr(hw, "_installed_torch_label_on_disk", lambda: "2.11.0+cpu")
@@ -1554,19 +1554,19 @@ def test_the_disk_label_reader_needs_no_interpreter(tmp_path):
     pkg = tmp_path / "torch"
     pkg.mkdir()
     (pkg / "version.py").write_text(
-        '__version__ = "2.6.0+cu124"\ncuda = "12.4"\n', encoding = "utf-8"
+        '__version__ = "2.6.0+cu124"\ncuda = "12.4"\n', encoding="utf-8"
     )
     with patch.object(
         hw.importlib.util,
         "find_spec",
-        return_value = SimpleNamespace(submodule_search_locations = [str(pkg)]),
+        return_value=SimpleNamespace(submodule_search_locations=[str(pkg)]),
     ):
         assert hw._installed_torch_label_on_disk() == "2.6.0+cu124"
 
-    with patch.object(hw.importlib.util, "find_spec", return_value = None):
+    with patch.object(hw.importlib.util, "find_spec", return_value=None):
         assert hw._installed_torch_label_on_disk() == ""
 
-    with patch.object(hw.importlib.util, "find_spec", side_effect = ValueError("boom")):
+    with patch.object(hw.importlib.util, "find_spec", side_effect=ValueError("boom")):
         assert hw._installed_torch_label_on_disk() == ""
 
 
@@ -1582,13 +1582,13 @@ def test_an_untagged_xpu_build_is_not_called_a_cpu_wheel(monkeypatch):
 
     torch = types.ModuleType("torch")
     torch.__version__ = "2.9.1"  # untagged, as a source or vendor build is
-    torch.version = SimpleNamespace(cuda = None, hip = None, xpu = "20250101")
-    torch.cuda = SimpleNamespace(is_available = lambda: False)
-    torch.xpu = SimpleNamespace(is_available = lambda: False)
+    torch.version = SimpleNamespace(cuda=None, hip=None, xpu="20250101")
+    torch.cuda = SimpleNamespace(is_available=lambda: False)
+    torch.xpu = SimpleNamespace(is_available=lambda: False)
     monkeypatch.setitem(sys.modules, "torch", torch)
     assert hw.classify_torch_build() == "torch_cuda_unavailable"
 
-    torch.version = SimpleNamespace(cuda = None, hip = None, xpu = None)
+    torch.version = SimpleNamespace(cuda=None, hip=None, xpu=None)
     assert hw.classify_torch_build() == "torch_cpu_build"
 
 
@@ -1717,7 +1717,7 @@ def test_an_untagged_conda_cuda_build_that_will_not_import_is_not_a_cpu_wheel(mo
         monkeypatch.setattr(
             hw,
             "_installed_torch_markers_on_disk",
-            lambda marker = marker: {"cuda": None, "hip": None, "xpu": None} | {marker: "1.0"},
+            lambda marker=marker: {"cuda": None, "hip": None, "xpu": None} | {marker: "1.0"},
         )
         assert hw._classification_from_disk_label() == "torch_cuda_unavailable"
 
@@ -1741,7 +1741,7 @@ def test_the_marker_reader_parses_both_shapes_torch_has_shipped(tmp_path):
         "cuda: Optional[str] = '12.8'\n"
         "hip = None\n"
         "xpu: Optional[str] = None\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
     class _Spec:
@@ -1771,7 +1771,7 @@ def test_an_unimportable_gpu_wheel_is_a_mismatch_rather_than_a_detection_failure
     """
     import pathlib
 
-    source = pathlib.Path(hw.__file__).read_text(encoding = "utf-8")
+    source = pathlib.Path(hw.__file__).read_text(encoding="utf-8")
     branch = source[source.index("elif TORCH_IMPORT_ERROR is not None:") :]
     branch = branch[: branch.index('elif platform.system() == "Darwin":')]
     assert (
@@ -1927,7 +1927,7 @@ def test_the_supported_arch_set_matches_the_installer(monkeypatch):
     import re
 
     root = pathlib.Path(hw.__file__).resolve().parents[4]
-    install_sh = (root / "install.sh").read_text(encoding = "utf-8")
+    install_sh = (root / "install.sh").read_text(encoding="utf-8")
     block = install_sh[install_sh.index("_amd_arch_index_family_for_gfx()") :]
     block = block[: block.index("esac")]
     # Only the case LABELS: the values on the right are index families (gfx103X-all), whose
@@ -1944,7 +1944,7 @@ def test_the_supported_arch_set_matches_the_installer(monkeypatch):
         "the backend must accept exactly the architectures the installers ship a wheel "
         f"for; installer has {sorted(shipped | extra)}"
     )
-    stack = (root / "studio" / "install_python_stack.py").read_text(encoding = "utf-8")
+    stack = (root / "studio" / "install_python_stack.py").read_text(encoding="utf-8")
     assert "gfx906" in stack, "the gfx906 path this set carries has gone"
 
 
@@ -2097,7 +2097,8 @@ def test_one_capability_response_describes_one_host(monkeypatch):
 
 def _hardware_source() -> str:
     import pathlib
-    return pathlib.Path(hw.__file__).resolve().read_text(encoding = "utf-8")
+
+    return pathlib.Path(hw.__file__).resolve().read_text(encoding="utf-8")
 
 
 def test_the_hardware_module_loads_without_the_rest_of_the_package(tmp_path):
@@ -2111,7 +2112,7 @@ def test_the_hardware_module_loads_without_the_rest_of_the_package(tmp_path):
     import pathlib
     import re as _re
 
-    source = pathlib.Path(hw.__file__).resolve().read_text(encoding = "utf-8")
+    source = pathlib.Path(hw.__file__).resolve().read_text(encoding="utf-8")
     header = source[: source.index("logger = get_logger(__name__)")]
     imports = _re.findall(r"^\s*(?:from|import)\s+([\w.]+)", header, _re.MULTILINE)
     for module in imports:
@@ -2176,9 +2177,9 @@ def test_the_kfd_probe_rejects_a_non_amd_node(monkeypatch, tmp_path):
     nodes = tmp_path / "nodes"
     for name, gpu_id, vendor in (("0", "0", "4098"), ("1", "5555", "4318")):
         node = nodes / name
-        node.mkdir(parents = True)
-        (node / "gpu_id").write_text(gpu_id, encoding = "utf-8")
-        (node / "properties").write_text(f"vendor_id {vendor}\n", encoding = "utf-8")
+        node.mkdir(parents=True)
+        (node / "gpu_id").write_text(gpu_id, encoding="utf-8")
+        (node / "properties").write_text(f"vendor_id {vendor}\n", encoding="utf-8")
 
     monkeypatch.setattr(hw.platform, "system", lambda: "Linux")
     real_listdir, real_open = hw.os.listdir, open
@@ -2196,7 +2197,7 @@ def test_the_kfd_probe_rejects_a_non_amd_node(monkeypatch, tmp_path):
         hw._linux_kfd_reports_an_amd_gpu() is False
     ), "a CPU node and an NVIDIA-owned node are not an AMD GPU"
 
-    (nodes / "1" / "properties").write_text("vendor_id 4098\n", encoding = "utf-8")
+    (nodes / "1" / "properties").write_text("vendor_id 4098\n", encoding="utf-8")
     assert hw._linux_kfd_reports_an_amd_gpu() is True
     assert real_open is open
 
@@ -2218,26 +2219,26 @@ def test_the_installer_records_who_named_the_flavor(tmp_path, monkeypatch):
     spec.loader.exec_module(manifest_mod)
 
     monkeypatch.setattr(manifest_mod, "venv_root", lambda: tmp_path)
-    monkeypatch.setattr(manifest_mod, "manifest_path", lambda root = None: tmp_path / "m.json")
+    monkeypatch.setattr(manifest_mod, "manifest_path", lambda root=None: tmp_path / "m.json")
     monkeypatch.setattr(manifest_mod, "requirement_digests", lambda *_a, **_k: {})
     monkeypatch.setattr(manifest_mod, "installed_requirements_root", lambda *_a, **_k: None)
     monkeypatch.setattr(manifest_mod, "_installed_version", lambda *_a, **_k: "0")
 
     import json as _json
 
-    manifest_mod.write_manifest(expected_torch_tag = "cpu", expected_torch_tag_pinned = False)
-    written = _json.loads((tmp_path / "m.json").read_text(encoding = "utf-8"))
+    manifest_mod.write_manifest(expected_torch_tag="cpu", expected_torch_tag_pinned=False)
+    written = _json.loads((tmp_path / "m.json").read_text(encoding="utf-8"))
     assert written["expected_torch_tag"] == "cpu"
     assert written["expected_torch_tag_pinned"] is False
 
-    manifest_mod.write_manifest(expected_torch_tag = "cpu", expected_torch_tag_pinned = True)
-    written = _json.loads((tmp_path / "m.json").read_text(encoding = "utf-8"))
+    manifest_mod.write_manifest(expected_torch_tag="cpu", expected_torch_tag_pinned=True)
+    written = _json.loads((tmp_path / "m.json").read_text(encoding="utf-8"))
     assert written["expected_torch_tag_pinned"] is True
 
-    manifest_mod.write_manifest(expected_torch_tag = "cpu")
-    written = _json.loads((tmp_path / "m.json").read_text(encoding = "utf-8"))
+    manifest_mod.write_manifest(expected_torch_tag="cpu")
+    written = _json.loads((tmp_path / "m.json").read_text(encoding="utf-8"))
     assert "expected_torch_tag_pinned" not in written
-    monkeypatch.setattr(manifest_mod, "read_manifest", lambda root = None: written)
+    monkeypatch.setattr(manifest_mod, "read_manifest", lambda root=None: written)
     assert manifest_mod.recorded_torch_flavor_was_pinned() is False
 
 
@@ -2309,7 +2310,7 @@ def test_a_broken_nvidia_smi_still_reports_the_kernel_driver_cards(monkeypatch):
     monkeypatch.setattr(
         nvidia.subprocess,
         "run",
-        lambda *_a, **_k: SimpleNamespace(returncode = 9, stdout = ""),
+        lambda *_a, **_k: SimpleNamespace(returncode=9, stdout=""),
     )
     assert nvidia.get_physical_gpu_inventory()["available"] is True
 
@@ -2359,7 +2360,7 @@ def test_only_the_highest_priority_mask_that_is_set_decides(monkeypatch):
     monkeypatch.setattr(
         hw, "get_physical_gpu_inventory", lambda **_kw: {"devices": amd, "unknown": False}
     )
-    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
 
     monkeypatch.setenv("HIP_VISIBLE_DEVICES", "-1")
     monkeypatch.setenv("ROCR_VISIBLE_DEVICES", "0")
@@ -2391,7 +2392,7 @@ def test_an_unanswerable_refresh_keeps_the_cards_it_already_found(monkeypatch):
     assert len(good["devices"]) == 2 and good["unknown"] is False
 
     monkeypatch.setattr(hw, "_physical_gpu_inventory_cache", (0.0, good))
-    _smi(monkeypatch, "", returncode = 9)
+    _smi(monkeypatch, "", returncode=9)
     after = hw.get_physical_gpu_inventory()
 
     assert [d["name"] for d in after["devices"]] == [d["name"] for d in good["devices"]]
@@ -2408,7 +2409,7 @@ def test_a_vendor_that_answered_none_is_allowed_to_lose_its_cards(monkeypatch):
     good = hw.get_physical_gpu_inventory()
 
     monkeypatch.setattr(hw, "_physical_gpu_inventory_cache", (0.0, good))
-    _smi(monkeypatch, "", raises = FileNotFoundError)
+    _smi(monkeypatch, "", raises=FileNotFoundError)
     after = hw.get_physical_gpu_inventory()
 
     assert after["devices"] == []
@@ -2419,12 +2420,12 @@ def test_a_registry_that_cannot_be_read_is_not_a_host_without_adapters(monkeypat
     """`{}` from the DirectX helper covers both, so the inventory has to ask which."""
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
     # nvidia-smi ANSWERS (absent), so only the registry vendors go unanswered here.
-    _smi(monkeypatch, "", raises = FileNotFoundError)
+    _smi(monkeypatch, "", raises=FileNotFoundError)
     monkeypatch.setattr(hw, "_windows_live_adapter_names", lambda: ["AMD Radeon RX 7900 XT"])
     monkeypatch.setattr(
         hw,
         "_windows_amd_adapter_records_by_luid",
-        lambda vendor_id = hw._AMD_PCI_VENDOR_ID, **kw: (
+        lambda vendor_id=hw._AMD_PCI_VENDOR_ID, **kw: (
             None if kw.get("distinguish_failure") else {}
         ),
     )
@@ -2441,7 +2442,7 @@ def test_the_ranking_callers_still_see_an_empty_map(monkeypatch):
     monkeypatch.setattr(hw.platform, "system", lambda: "Windows")
     monkeypatch.setattr(hw, "_windows_amd_adapter_records_or_none", lambda *a, **k: None)
     assert hw._windows_amd_adapter_records_by_luid() == {}
-    assert hw._windows_amd_adapter_records_by_luid(distinguish_failure = True) is None
+    assert hw._windows_amd_adapter_records_by_luid(distinguish_failure=True) is None
 
 
 # ============================================ a Windows AMD card the registry did not name
@@ -2505,7 +2506,7 @@ def test_a_named_arch_still_wins_over_the_marketing_name(monkeypatch):
     ],
 )
 def test_only_the_installers_rocm_families_count_as_a_rocm_choice(monkeypatch, leaf, chosen):
-    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCH_INDEX_URL", raising=False)
     monkeypatch.setenv("UNSLOTH_TORCH_INDEX_FAMILY", f"https://example.invalid/whl/{leaf}")
     monkeypatch.setattr(hw.sys, "prefix", "/nonexistent-prefix-for-this-test")
     assert hw._expected_rocm_flavor_was_chosen() is chosen
@@ -2535,7 +2536,7 @@ def _installer_rocm_family(leaf: str) -> bool:
     import re as _re
 
     source = (pathlib.Path(__file__).resolve().parents[2] / "install_python_stack.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     tree = ast.parse(source)
     fn = next(
@@ -2544,7 +2545,7 @@ def _installer_rocm_family(leaf: str) -> bool:
         if isinstance(node, ast.FunctionDef) and node.name == "_is_pip_rocm_family_leaf"
     )
     namespace: dict = {"re": _re}
-    exec(compile(ast.Module(body = [fn], type_ignores = []), "<installer>", "exec"), namespace)
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<installer>", "exec"), namespace)
     return namespace["_is_pip_rocm_family_leaf"](leaf)
 
 
@@ -2628,7 +2629,7 @@ def test_an_unreadable_drm_walk_is_not_a_host_without_amd_cards(monkeypatch, tmp
 
     monkeypatch.setattr(hw.os, "listdir", denied)
     assert hw._linux_drm_sysfs_records() == [], "the ranking callers keep the old shape"
-    assert hw._linux_drm_sysfs_records(distinguish_failure = True) is None
+    assert hw._linux_drm_sysfs_records(distinguish_failure=True) is None
 
 
 def test_a_host_with_no_drm_subsystem_has_answered(monkeypatch):
@@ -2638,7 +2639,7 @@ def test_a_host_with_no_drm_subsystem_has_answered(monkeypatch):
         raise FileNotFoundError("/sys/class/drm")
 
     monkeypatch.setattr(hw.os, "listdir", absent)
-    assert hw._linux_drm_sysfs_records(distinguish_failure = True) == []
+    assert hw._linux_drm_sysfs_records(distinguish_failure=True) == []
 
 
 def test_a_card_whose_vendor_cannot_be_read_makes_the_walk_partial(monkeypatch):
@@ -2652,7 +2653,7 @@ def test_a_card_whose_vendor_cannot_be_read_makes_the_walk_partial(monkeypatch):
         return real_open(path, *a, **k)
 
     monkeypatch.setattr("builtins.open", blocked)
-    assert hw._linux_drm_sysfs_records(distinguish_failure = True) is None
+    assert hw._linux_drm_sysfs_records(distinguish_failure=True) is None
     assert hw._linux_drm_sysfs_records() == []
 
 
@@ -2667,12 +2668,12 @@ def test_a_cardn_with_no_pci_vendor_is_not_a_lost_card(monkeypatch):
         return real_open(path, *a, **k)
 
     monkeypatch.setattr("builtins.open", missing)
-    assert hw._linux_drm_sysfs_records(distinguish_failure = True) == []
+    assert hw._linux_drm_sysfs_records(distinguish_failure=True) == []
 
 
 def test_the_inventory_marks_both_sysfs_vendors_unanswered(monkeypatch):
     monkeypatch.setattr(hw.platform, "system", lambda: "Linux")
-    _smi(monkeypatch, "", raises = FileNotFoundError)
+    _smi(monkeypatch, "", raises=FileNotFoundError)
     monkeypatch.setattr(hw, "_linux_drm_sysfs_records", lambda **_kw: None)
 
     inventory = hw.get_physical_gpu_inventory()
@@ -2684,7 +2685,7 @@ def test_the_inventory_marks_both_sysfs_vendors_unanswered(monkeypatch):
 def test_a_previously_seen_amd_card_survives_an_unreadable_walk(monkeypatch):
     """End to end: the distinction is only worth having if the carry-forward uses it."""
     monkeypatch.setattr(hw.platform, "system", lambda: "Linux")
-    _smi(monkeypatch, "", raises = FileNotFoundError)
+    _smi(monkeypatch, "", raises=FileNotFoundError)
     card = {
         "vendor": "amd",
         "index": 0,
@@ -2759,7 +2760,7 @@ def test_the_rocm_and_xpu_helpers_use_the_same_precedence(monkeypatch, helper, u
 def test_the_backend_precedence_matches_install_sh():
     """One rule, two languages: install.sh returns on the URL and never reads the family."""
     source = (pathlib.Path(hw.__file__).resolve().parents[4] / "install.sh").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     block = source[source.index('_url="${UNSLOTH_TORCH_INDEX_URL:-}"') :]
     block = block[: block.index('_family="${UNSLOTH_TORCH_INDEX_FAMILY:-}"')]
@@ -2796,7 +2797,7 @@ def _broken_torch_on_a_gpu_host(monkeypatch):
         "ROCR_VISIBLE_DEVICES",
         "ZE_AFFINITY_MASK",
     ):
-        monkeypatch.delenv(var, raising = False)
+        monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(hw.sys, "prefix", "/nonexistent-prefix-for-this-test")
 
 
@@ -2859,7 +2860,7 @@ def test_the_control_that_advice_points_at_still_has_both_gates():
         / "settings"
         / "components"
         / "desktop-repair-control.tsx"
-    ).read_text(encoding = "utf-8")
+    ).read_text(encoding="utf-8")
     assert "if (!repair || repair.isExternalServer) return null;" in source
 
 
@@ -2881,10 +2882,10 @@ def test_only_a_real_boolean_records_a_deliberate_cpu_choice(monkeypatch, tmp_pa
     manifest = {"schema": 1, "expected_torch_tag": "cpu"}
     if pinned is not None:
         manifest["expected_torch_tag_pinned"] = pinned
-    (tmp_path / "unsloth_install_manifest.json").write_text(json.dumps(manifest), encoding = "utf-8")
+    (tmp_path / "unsloth_install_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     monkeypatch.setattr(hw.sys, "prefix", str(tmp_path))
     for var in ("UNSLOTH_TORCH_INDEX_URL", "UNSLOTH_TORCH_INDEX_FAMILY"):
-        monkeypatch.delenv(var, raising = False)
+        monkeypatch.delenv(var, raising=False)
 
     assert hw._recorded_install_flavor() == ("cpu", chosen)
     assert hw._expected_cpu_flavor_was_chosen() is chosen

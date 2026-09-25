@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class DiffusionDeviceTarget:
     """Resolved torch device + compute dtype + per-backend capability flags."""
 
@@ -205,11 +205,12 @@ def resolve_selected_cuda_ordinal(
     def _free_vram(ordinal: int) -> int:
         try:
             import torch
+
             return int(torch.cuda.mem_get_info(ordinal)[0])
         except Exception:  # noqa: BLE001 -- an unreadable card sorts last rather than failing the load
             return -1
 
-    return max(ordinals, key = lambda ordinal: (_free_vram(ordinal), -ordinal))
+    return max(ordinals, key=lambda ordinal: (_free_vram(ordinal), -ordinal))
 
 
 @contextmanager
@@ -228,6 +229,7 @@ def diffusion_device_scope(ordinal: Optional[int]):
     # yield-after-throw replaces the caller's real refusal with "generator didn't stop after throw()".
     try:
         import torch
+
         scope = torch.cuda.device(ordinal)
         scope.__enter__()
     except Exception:  # noqa: BLE001 -- an unreadable index still runs the probe, unpinned
@@ -262,6 +264,7 @@ def pin_cuda_ordinal(ordinal: Optional[int]) -> None:
         return
     try:
         import torch
+
         torch.cuda.set_device(ordinal)
     except Exception:  # noqa: BLE001 -- placement still works off torch_device; never fail a load here
         pass
@@ -283,6 +286,7 @@ def placed_cuda_ordinal(target: DiffusionDeviceTarget) -> Optional[int]:
         return target.ordinal
     try:
         import torch
+
         return int(torch.cuda.current_device())
     except Exception:  # noqa: BLE001 -- an unreadable device simply leaves the worker alone
         return None
@@ -304,13 +308,13 @@ def resolve_diffusion_device_target(*, ordinal: Optional[int] = None) -> Diffusi
         import torch
     except Exception:
         return DiffusionDeviceTarget(
-            device = "cpu",
-            dtype = None,
-            backend = "cpu",
-            vendor = None,
-            supports_model_cpu_offload = False,
-            supports_default_torch_compile = False,
-            supports_pinned_transfer = False,
+            device="cpu",
+            dtype=None,
+            backend="cpu",
+            vendor=None,
+            supports_model_cpu_offload=False,
+            supports_default_torch_compile=False,
+            supports_pinned_transfer=False,
         )
 
     try:
@@ -327,13 +331,13 @@ def resolve_diffusion_device_target(*, ordinal: Optional[int] = None) -> Diffusi
     if DeviceType is not None and studio_device is not None:
         if _studio_device_is(studio_device, DeviceType, "CUDA"):
             if torch.cuda.is_available():
-                return _cuda_or_rocm_target(torch, is_rocm = is_rocm, ordinal = ordinal)
+                return _cuda_or_rocm_target(torch, is_rocm=is_rocm, ordinal=ordinal)
             return _cpu_target(torch)
         if _studio_device_is(studio_device, DeviceType, "XPU"):
             return _xpu_target(torch)
 
     if torch.cuda.is_available():
-        return _cuda_or_rocm_target(torch, is_rocm = is_rocm, ordinal = ordinal)
+        return _cuda_or_rocm_target(torch, is_rocm=is_rocm, ordinal=ordinal)
 
     xpu = getattr(torch, "xpu", None)
     if xpu is not None and callable(getattr(xpu, "is_available", None)):
@@ -355,42 +359,43 @@ def diffusion_device_target_from_torch_device(
     if device == "cuda":
         try:
             import torch
+
             is_rocm = bool(getattr(getattr(torch, "version", None), "hip", None))
         except Exception:
             is_rocm = False
         return DiffusionDeviceTarget(
-            device = "cuda",
-            dtype = dtype,
-            backend = "rocm" if is_rocm else "cuda",
-            vendor = "amd" if is_rocm else "nvidia",
-            supports_model_cpu_offload = True,
-            supports_default_torch_compile = not is_rocm,
-            supports_pinned_transfer = True,
+            device="cuda",
+            dtype=dtype,
+            backend="rocm" if is_rocm else "cuda",
+            vendor="amd" if is_rocm else "nvidia",
+            supports_model_cpu_offload=True,
+            supports_default_torch_compile=not is_rocm,
+            supports_pinned_transfer=True,
             # An overriding caller's "cuda:1" is a device choice to keep, not one to drop back to ordinal 0.
-            ordinal = int(index) if index.isdigit() else None,
+            ordinal=int(index) if index.isdigit() else None,
         )
     if device == "xpu":
         return DiffusionDeviceTarget(
-            device = "xpu",
-            dtype = dtype,
-            backend = "xpu",
-            vendor = "intel",
-            supports_model_cpu_offload = True,
-            supports_default_torch_compile = False,
-            supports_pinned_transfer = False,
+            device="xpu",
+            dtype=dtype,
+            backend="xpu",
+            vendor="intel",
+            supports_model_cpu_offload=True,
+            supports_default_torch_compile=False,
+            supports_pinned_transfer=False,
         )
     if device == "mps":
         return DiffusionDeviceTarget(
-            device = "mps",
-            dtype = dtype,
-            backend = "mps",
-            vendor = "apple",
-            supports_model_cpu_offload = False,
-            supports_default_torch_compile = False,
-            supports_pinned_transfer = False,
-            supports_float64 = False,
+            device="mps",
+            dtype=dtype,
+            backend="mps",
+            vendor="apple",
+            supports_model_cpu_offload=False,
+            supports_default_torch_compile=False,
+            supports_pinned_transfer=False,
+            supports_float64=False,
         )
-    return _cpu_target(torch = None, dtype = dtype)
+    return _cpu_target(torch=None, dtype=dtype)
 
 
 def _cuda_or_rocm_target(
@@ -422,14 +427,14 @@ def _cuda_or_rocm_target(
             major = 0
         dtype = torch.bfloat16 if major >= 8 else torch.float16
     return DiffusionDeviceTarget(
-        device = "cuda",
-        dtype = dtype,
-        backend = "rocm" if is_rocm else "cuda",
-        vendor = "amd" if is_rocm else "nvidia",
-        supports_model_cpu_offload = True,
-        supports_default_torch_compile = not is_rocm,
-        supports_pinned_transfer = True,
-        ordinal = ordinal,
+        device="cuda",
+        dtype=dtype,
+        backend="rocm" if is_rocm else "cuda",
+        vendor="amd" if is_rocm else "nvidia",
+        supports_model_cpu_offload=True,
+        supports_default_torch_compile=not is_rocm,
+        supports_pinned_transfer=True,
+        ordinal=ordinal,
     )
 
 
@@ -441,13 +446,13 @@ def _xpu_target(torch: Any) -> DiffusionDeviceTarget:
     except Exception:
         bf16_ok = False
     return DiffusionDeviceTarget(
-        device = "xpu",
-        dtype = torch.bfloat16 if bf16_ok else torch.float16,
-        backend = "xpu",
-        vendor = "intel",
-        supports_model_cpu_offload = True,
-        supports_default_torch_compile = False,
-        supports_pinned_transfer = False,
+        device="xpu",
+        dtype=torch.bfloat16 if bf16_ok else torch.float16,
+        backend="xpu",
+        vendor="intel",
+        supports_model_cpu_offload=True,
+        supports_default_torch_compile=False,
+        supports_pinned_transfer=False,
     )
 
 
@@ -455,7 +460,7 @@ def _mps_supports_bfloat16(torch: Any) -> bool:
     """Runtime probe for usable MPS bfloat16 (only on macOS 14+; older macOS raises). Probes with
     a tiny forced compute rather than guessing from the macOS / chip version."""
     try:
-        x = torch.ones(2, dtype = torch.bfloat16, device = "mps")
+        x = torch.ones(2, dtype=torch.bfloat16, device="mps")
         return bool(torch.isfinite((x + x).float()).all().item())
     except Exception:
         return False
@@ -483,14 +488,14 @@ def _mps_or_cpu_target(torch: Any) -> DiffusionDeviceTarget:
         # range; older macOS uses fp32.
         dtype = torch.bfloat16 if _mps_supports_bfloat16(torch) else torch.float32
         return DiffusionDeviceTarget(
-            device = "mps",
-            dtype = dtype,
-            backend = "mps",
-            vendor = "apple",
-            supports_model_cpu_offload = False,
-            supports_default_torch_compile = False,
-            supports_pinned_transfer = False,
-            supports_float64 = False,
+            device="mps",
+            dtype=dtype,
+            backend="mps",
+            vendor="apple",
+            supports_model_cpu_offload=False,
+            supports_default_torch_compile=False,
+            supports_pinned_transfer=False,
+            supports_float64=False,
         )
     return _cpu_target(torch)
 
@@ -500,11 +505,11 @@ def _cpu_target(torch: Any, dtype: Any = None) -> DiffusionDeviceTarget:
     if dtype is None and torch is not None:
         dtype = torch.float32
     return DiffusionDeviceTarget(
-        device = "cpu",
-        dtype = dtype,
-        backend = "cpu",
-        vendor = None,
-        supports_model_cpu_offload = False,
-        supports_default_torch_compile = False,
-        supports_pinned_transfer = False,
+        device="cpu",
+        dtype=dtype,
+        backend="cpu",
+        vendor=None,
+        supports_model_cpu_offload=False,
+        supports_default_torch_compile=False,
+        supports_pinned_transfer=False,
     )

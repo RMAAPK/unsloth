@@ -42,5 +42,5 @@ def test_unknown_inactive_and_pending_names_cost_a_verification(matrix, pbkdf2_c
     storage.set_account_active(bob["account_id"], False)
     assert _rounds_for(client, pbkdf2_calls, "bob", "bob-password") == baseline
 
-    storage.issue_account_setup_code(username = "carol")
+    storage.issue_account_setup_code(username="carol")
     assert _rounds_for(client, pbkdf2_calls, "carol", "not-the-setup-code") == baseline

@@ -1376,7 +1376,7 @@ def _write_copy(
     span: int,
     chunks,
     vectors,
-    seats: list[int],
+    seats: list[int]
 ) -> bool:
     """One more copy of an already-embedded turn, at the next unfilled seat.
 

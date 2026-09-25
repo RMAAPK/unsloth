@@ -16,7 +16,7 @@ HELPER = "grpo_update_SamplingParams"
 
 
 def _read_source() -> str:
-    with open(SOURCE_PATH, "r", encoding = "utf-8") as fh:
+    with open(SOURCE_PATH, "r", encoding="utf-8") as fh:
         return fh.read()
 
 
@@ -34,7 +34,7 @@ def _load_helper():
     )
     assert node is not None, f"{HELPER} is not defined in rl_replacements.py"
     namespace = {"inspect": inspect}
-    exec(compile(ast.Module(body = [node], type_ignores = []), SOURCE_PATH, "exec"), namespace)
+    exec(compile(ast.Module(body=[node], type_ignores=[]), SOURCE_PATH, "exec"), namespace)
     return namespace[HELPER]
 
 
@@ -50,7 +50,7 @@ class SamplingParams:
     stop: list[str] | None = None
     include_stop_str_in_output: bool = False
     logprobs: int | None = None
-    _real_n: int | None = field(default = None, repr = False)
+    _real_n: int | None = field(default=None, repr=False)
 
 
 EOS = "<|im_end|>"
@@ -71,7 +71,7 @@ def _trl_generation_kwargs():
     }
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def helper():
     return _load_helper()
 
@@ -79,12 +79,12 @@ def helper():
 def test_notebook_scalar_fields_reach_generation(helper):
     generation_kwargs = _trl_generation_kwargs()
     user = SamplingParams(
-        min_p = 0.1,
-        top_p = 1.0,
-        top_k = -1,
-        seed = 3407,
-        stop = [EOS],
-        include_stop_str_in_output = True,
+        min_p=0.1,
+        top_p=1.0,
+        top_k=-1,
+        seed=3407,
+        stop=[EOS],
+        include_stop_str_in_output=True,
     )
     result = helper(SamplingParams, generation_kwargs, user)
     assert result["min_p"] == 0.1
@@ -109,7 +109,7 @@ def test_default_sampling_params_overlay_nothing(helper):
 
 def test_set_kwargs_take_precedence_over_field_diff(helper):
     generation_kwargs = _trl_generation_kwargs()
-    user = SamplingParams(min_p = 0.1, seed = 3407, n = 4)
+    user = SamplingParams(min_p=0.1, seed=3407, n=4)
     user._set_kwargs = {"min_p": 0.2, "seed": 3407, "n": 4, "not_a_field": 1}
     result = helper(SamplingParams, generation_kwargs, user)
     assert result["min_p"] == 0.2

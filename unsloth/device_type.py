@@ -199,6 +199,7 @@ if DEVICE_TYPE == "hip":
             try:
                 # Pre-quantized bitsandbytes models use blocksize 64.
                 from bitsandbytes.cextension import ROCM_WARP_SIZE_64
+
                 ALLOW_PREQUANTIZED_MODELS = not ROCM_WARP_SIZE_64
             except Exception as e:
                 print(
@@ -210,6 +211,7 @@ if DEVICE_TYPE == "hip":
                 ALLOW_BITSANDBYTES = False
         elif ALLOW_BITSANDBYTES:
             from bitsandbytes.nn.modules import Params4bit
+
             if "blocksize = 64 if not HIP_ENVIRONMENT else 128" in inspect.getsource(Params4bit):
                 ALLOW_PREQUANTIZED_MODELS = False
 
@@ -233,7 +235,7 @@ def gfx101x_triton_workaround_applied():
     return _GFX101X_TRITON_WORKAROUND_APPLIED
 
 
-def apply_gfx101x_triton_workaround(environ = None, triton_home = None):
+def apply_gfx101x_triton_workaround(environ=None, triton_home=None):
     """Turn Triton's buffer ops off and give Triton and Inductor separate caches: Inductor's cache
     key ignores the knob, so stale buffer-op kernels gave -inf/nan. A user-set value that Triton
     reads as on is left alone; user-chosen cache dirs are kept. Returns whether ops end up off."""
@@ -261,6 +263,7 @@ def apply_gfx101x_triton_workaround(environ = None, triton_home = None):
 def _default_inductor_cache_dir():
     try:
         from torch._inductor.runtime.cache_dir_utils import default_cache_dir
+
         return default_cache_dir()
     except Exception:
         pass
@@ -317,7 +320,7 @@ def resolve_hip_gpu_stats_name(gpu_stats):
             break
 
     if arch_name:
-        match = re.search(r"(gfx[0-9a-z]+)", arch_name, flags = re.I)
+        match = re.search(r"(gfx[0-9a-z]+)", arch_name, flags=re.I)
         if match:
             return f"AMD {match.group(1).lower()} GPU. "
     return "AMD GPU. "
@@ -349,6 +352,7 @@ def get_device_stats() -> tuple[str, str, float]:
         # Report the toolkit like the cuda/xpu arms, not the name already in `name`.
         try:
             import torch_npu
+
             snippet = f"Ascend NPU. torch_npu: {torch_npu.__version__}."
         except Exception:
             snippet = "Ascend NPU."

@@ -49,12 +49,12 @@ LABELS = torch.tensor([[0, 1, 2, 3], [4, 5, 6, 7]])
 
 def _hidden_states():
     """Deterministic without a seed, so the expected value survives a PRNG change."""
-    values = torch.arange(BSZ * Q_LEN * HIDDEN_SIZE, dtype = torch.float32)
+    values = torch.arange(BSZ * Q_LEN * HIDDEN_SIZE, dtype=torch.float32)
     return ((values % 7) - 3.0).reshape(BSZ, Q_LEN, HIDDEN_SIZE)
 
 
 def _lm_head_weight():
-    values = torch.arange(VOCAB_SIZE * HIDDEN_SIZE, dtype = torch.float32)
+    values = torch.arange(VOCAB_SIZE * HIDDEN_SIZE, dtype=torch.float32)
     return ((values % 5) - 2.0).reshape(VOCAB_SIZE, HIDDEN_SIZE)
 
 
@@ -66,10 +66,10 @@ class _FakeModel:
 
     def __call__(self, **kwargs):
         return BaseModelOutputWithPast(
-            last_hidden_state = self.hidden_states,
-            past_key_values = None,
-            hidden_states = None,
-            attentions = None,
+            last_hidden_state=self.hidden_states,
+            past_key_values=None,
+            hidden_states=None,
+            attentions=None,
         )
 
 
@@ -81,7 +81,7 @@ class _FakeCausalLM:
     def __init__(self, config):
         self.config = config
         self.model = _FakeModel(_hidden_states())
-        self.lm_head = torch.nn.Linear(HIDDEN_SIZE, VOCAB_SIZE, bias = False)
+        self.lm_head = torch.nn.Linear(HIDDEN_SIZE, VOCAB_SIZE, bias=False)
         with torch.no_grad():
             self.lm_head.weight.copy_(_lm_head_weight())
 
@@ -89,21 +89,21 @@ class _FakeCausalLM:
 def _fused_loss(
     config,
     monkeypatch,
-    forward = None,
+    forward=None,
 ):
-    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising = False)
-    monkeypatch.delenv("UNSLOTH_RETURN_HIDDEN_STATES", raising = False)
+    monkeypatch.delenv("UNSLOTH_RETURN_LOGITS", raising=False)
+    monkeypatch.delenv("UNSLOTH_RETURN_HIDDEN_STATES", raising=False)
     extra = {}
     if forward is None:
         forward = CausalLM_fast_forward(None)
     else:
         # mistral.py reads input_ids.shape before it reaches the decoder stack.
-        extra["input_ids"] = torch.zeros(BSZ, Q_LEN, dtype = torch.long)
-    output = forward(_FakeCausalLM(config), labels = LABELS.clone(), return_dict = True, **extra)
+        extra["input_ids"] = torch.zeros(BSZ, Q_LEN, dtype=torch.long)
+    output = forward(_FakeCausalLM(config), labels=LABELS.clone(), return_dict=True, **extra)
     return output.loss.item()
 
 
-def _reference_loss(scale, softcapping = 0.0):
+def _reference_loss(scale, softcapping=0.0):
     """Transformers' own order: scale the logits, soft cap, shift, then cross entropy.
 
     Computed in float64 so the expected value is the arithmetic, not the float32 path.
@@ -128,11 +128,11 @@ def _config(cls, **kwargs):
             pytest.skip("this transformers predates the model this case needs")
         try:
             return cls(
-                hidden_size = HIDDEN_SIZE,
-                intermediate_size = 2 * HIDDEN_SIZE,
-                num_hidden_layers = 1,
-                num_attention_heads = 2,
-                vocab_size = VOCAB_SIZE,
+                hidden_size=HIDDEN_SIZE,
+                intermediate_size=2 * HIDDEN_SIZE,
+                num_hidden_layers=1,
+                num_attention_heads=2,
+                vocab_size=VOCAB_SIZE,
                 **kwargs,
             )
         except Exception as error:
@@ -146,10 +146,10 @@ def _config(cls, **kwargs):
     "config,scale",
     [
         # Cohere / Command-R / Aya multiply, Granite 3 divides.
-        (_config(CohereConfig, logit_scale = 0.0625), 0.0625),
-        (_config(GraniteConfig, logits_scaling = 4.0), 1.0 / 4.0),
+        (_config(CohereConfig, logit_scale=0.0625), 0.0625),
+        (_config(GraniteConfig, logits_scaling=4.0), 1.0 / 4.0),
     ],
-    ids = ["cohere", "granite"],
+    ids=["cohere", "granite"],
 )
 def test_fused_ce_applies_the_configured_logit_scale(config, scale, monkeypatch):
     config = config()
@@ -158,7 +158,7 @@ def test_fused_ce_applies_the_configured_logit_scale(config, scale, monkeypatch)
     assert abs(expected - unscaled) > 1.0, "the fixture no longer separates the two losses"
 
     # float32 accumulation over 8 logits, so well inside the default float32 tolerance.
-    assert _fused_loss(config, monkeypatch) == pytest.approx(expected, rel = 1e-6), (
+    assert _fused_loss(config, monkeypatch) == pytest.approx(expected, rel=1e-6), (
         f"fused CE dropped {config.model_type}'s logit scale: it returns the unscaled "
         f"{unscaled:.6f} instead of {expected:.6f}"
     )
@@ -166,8 +166,8 @@ def test_fused_ce_applies_the_configured_logit_scale(config, scale, monkeypatch)
 
 def test_fused_ce_applies_falcon_h1_multiplier_once(monkeypatch):
     """The multiplier is folded into the hidden states, so it must not scale the logits too."""
-    config = _config(FalconH1Config, lm_head_multiplier = 3.0)()
-    assert _fused_loss(config, monkeypatch) == pytest.approx(_reference_loss(3.0), rel = 1e-6)
+    config = _config(FalconH1Config, lm_head_multiplier=3.0)()
+    assert _fused_loss(config, monkeypatch) == pytest.approx(_reference_loss(3.0), rel=1e-6)
 
 
 def test_mistral_fused_ce_reads_the_transforms_the_same_way(monkeypatch):
@@ -176,27 +176,27 @@ def test_mistral_fused_ce_reads_the_transforms_the_same_way(monkeypatch):
     plain = _config(MistralConfig)()
     assert _fused_loss(plain, monkeypatch, MistralForCausalLM_fast_forward) == pytest.approx(
         _reference_loss(1.0),
-        rel = 1e-6,
+        rel=1e-6,
     ), "plain Mistral carries no transform and must be unaffected"
 
     scaled = _config(MistralConfig)()
     scaled.logit_scale = 0.0625
     assert _fused_loss(scaled, monkeypatch, MistralForCausalLM_fast_forward) == pytest.approx(
         _reference_loss(0.0625),
-        rel = 1e-6,
+        rel=1e-6,
     ), "mistral.py's fused branch dropped the configured logit scale"
 
 
 @pytest.mark.parametrize(
     "config,expected",
     [
-        (_config(CohereConfig, logit_scale = 0.0625), (0, 0.0625, 0)),
-        (_config(GraniteConfig, logits_scaling = 4.0), (0, 0, 4.0)),
+        (_config(CohereConfig, logit_scale=0.0625), (0, 0.0625, 0)),
+        (_config(GraniteConfig, logits_scaling=4.0), (0, 0, 4.0)),
         # The exact model_type test the fallback used to do missed the MoE spellings.
-        (_config(GraniteConfig, logits_scaling = 4.0, model_type = "granitemoe"), (0, 0, 4.0)),
-        (_config(FalconH1Config, lm_head_multiplier = 3.0), (0, 3.0, 0)),
+        (_config(GraniteConfig, logits_scaling=4.0, model_type="granitemoe"), (0, 0, 4.0)),
+        (_config(FalconH1Config, lm_head_multiplier=3.0), (0, 3.0, 0)),
     ],
-    ids = ["cohere", "granite", "granitemoe", "falcon_h1"],
+    ids=["cohere", "granite", "granitemoe", "falcon_h1"],
 )
 def test_transforms_resolve_without_unsloth_zoo(config, expected, monkeypatch):
     config = config()
@@ -235,11 +235,11 @@ def test_both_resolver_arms_agree(model_type, fields, monkeypatch):
 
     def build():
         config = MistralConfig(
-            hidden_size = HIDDEN_SIZE,
-            intermediate_size = 2 * HIDDEN_SIZE,
-            num_hidden_layers = 1,
-            num_attention_heads = 2,
-            vocab_size = VOCAB_SIZE,
+            hidden_size=HIDDEN_SIZE,
+            intermediate_size=2 * HIDDEN_SIZE,
+            num_hidden_layers=1,
+            num_attention_heads=2,
+            vocab_size=VOCAB_SIZE,
         )
         config.model_type = model_type
         for name, value in fields.items():
@@ -273,37 +273,37 @@ def test_a_none_valued_field_resolves_to_zero(model_type, field, monkeypatch):
     """None must read as "off". A namespace, not a config: transformers 5 rejects None at
     construction, but a checkpoint carrying one still loads into an older config."""
     monkeypatch.setattr(llama_module, "detect_logit_transforms", None)
-    config = SimpleNamespace(model_type = model_type, **{field: None})
+    config = SimpleNamespace(model_type=model_type, **{field: None})
     assert resolve_logit_transforms(config) == (0, 0, 0)
 
 
 def test_a_none_model_type_does_not_raise(monkeypatch):
     """Remote-code configs do set model_type to None, and `in`-style reads must survive it."""
     monkeypatch.setattr(llama_module, "detect_logit_transforms", None)
-    config = _config(CohereConfig, logit_scale = 0.0625)()
+    config = _config(CohereConfig, logit_scale=0.0625)()
     config.model_type = None
     assert resolve_logit_transforms(config) == (0, 0.0625, 0)
 
 
 def _inference_logits(model, forward):
-    extra = {"input_ids": torch.zeros(BSZ, Q_LEN, dtype = torch.long)} if forward else {}
+    extra = {"input_ids": torch.zeros(BSZ, Q_LEN, dtype=torch.long)} if forward else {}
     forward = forward or CausalLM_fast_forward(None)
-    return forward(model, labels = None, return_dict = True, **extra).logits
+    return forward(model, labels=None, return_dict=True, **extra).logits
 
 
 _SCALE_CASES = [
-    (_config(CohereConfig, logit_scale = 0.0625), 0.0625, 0.0),
+    (_config(CohereConfig, logit_scale=0.0625), 0.0625, 0.0),
     # Granite exercises the divisor fold, which the fused branch never takes.
-    (_config(GraniteConfig, logits_scaling = 4.0), 1.0 / 4.0, 0.0),
-    (_config(Gemma2Config, final_logit_softcapping = 4.0), 1.0, 4.0),
+    (_config(GraniteConfig, logits_scaling=4.0), 1.0 / 4.0, 0.0),
+    (_config(Gemma2Config, final_logit_softcapping=4.0), 1.0, 4.0),
 ]
 _SCALE_IDS = ["cohere", "granite", "gemma2_softcap"]
 
 
 @pytest.mark.parametrize(
-    "forward", [None, MistralForCausalLM_fast_forward], ids = ["llama", "mistral"]
+    "forward", [None, MistralForCausalLM_fast_forward], ids=["llama", "mistral"]
 )
-@pytest.mark.parametrize("config,scale,softcapping", _SCALE_CASES, ids = _SCALE_IDS)
+@pytest.mark.parametrize("config,scale,softcapping", _SCALE_CASES, ids=_SCALE_IDS)
 def test_inference_logits_carry_the_same_transforms(config, scale, softcapping, forward):
     config = config()
     """The labels-free branch returns the logits, so they must arrive already transformed."""
@@ -311,17 +311,17 @@ def test_inference_logits_carry_the_same_transforms(config, scale, softcapping, 
     if softcapping:
         expected = softcapping * torch.tanh(expected / softcapping)
     model = _FakeCausalLM(config)
-    assert torch.allclose(_inference_logits(model, forward), expected, atol = 1e-5)
+    assert torch.allclose(_inference_logits(model, forward), expected, atol=1e-5)
     # Applied in place, so a second call on the SAME model must not compound them.
-    assert torch.allclose(_inference_logits(model, forward), expected, atol = 1e-5)
+    assert torch.allclose(_inference_logits(model, forward), expected, atol=1e-5)
 
 
 @pytest.mark.parametrize(
     "module,forward",
     [(llama_module, None), (mistral_module, MistralForCausalLM_fast_forward)],
-    ids = ["llama", "mistral"],
+    ids=["llama", "mistral"],
 )
-@pytest.mark.parametrize("config,scale,softcapping", _SCALE_CASES, ids = _SCALE_IDS)
+@pytest.mark.parametrize("config,scale,softcapping", _SCALE_CASES, ids=_SCALE_IDS)
 def test_materialized_branch_is_handed_the_same_transforms(
     config, scale, softcapping, module, forward, monkeypatch
 ):
@@ -332,15 +332,15 @@ def test_materialized_branch_is_handed_the_same_transforms(
 
     def spy(**kwargs):
         calls.append(kwargs)
-        return torch.zeros((), requires_grad = True)
+        return torch.zeros((), requires_grad=True)
 
     monkeypatch.setattr(module, "fast_cross_entropy_loss", spy)
     monkeypatch.setenv("UNSLOTH_RETURN_LOGITS", "1")
-    extra = {"input_ids": torch.zeros(BSZ, Q_LEN, dtype = torch.long)} if forward else {}
+    extra = {"input_ids": torch.zeros(BSZ, Q_LEN, dtype=torch.long)} if forward else {}
     (forward or CausalLM_fast_forward(None))(
         _FakeCausalLM(config),
-        labels = LABELS.clone(),
-        return_dict = True,
+        labels=LABELS.clone(),
+        return_dict=True,
         **extra,
     )
 
@@ -360,5 +360,5 @@ def test_transforms_are_applied_scale_first_then_soft_cap():
     assert torch.allclose(
         apply_logit_transforms(logits.clone(), softcapping, scale),
         scale_first,
-        atol = 1e-6,
+        atol=1e-6,
     )

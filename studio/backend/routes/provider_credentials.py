@@ -60,13 +60,13 @@ def current_credential_write(credential: tuple[str, str | None]) -> Iterator[Non
         with auth_storage.credential_generation_guard(subject, generation):
             yield
     except auth_storage.CredentialRotated as exc:
-        raise HTTPException(status_code = 401, detail = "Invalid or expired token") from exc
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
 
 def require_ui_session(via_api_key: bool) -> None:
     """Keep installation-owned credentials behind an interactive UI session."""
     if via_api_key:
-        raise HTTPException(status_code = 403, detail = "Remote access requires a UI session.")
+        raise HTTPException(status_code=403, detail="Remote access requires a UI session.")
 
 
 def resolve_provider_api_key_or_400(
@@ -88,11 +88,11 @@ def resolve_provider_api_key_or_400(
     except Exception as exc:
         logger.warning(
             "external_provider.api_key_decrypt_failed",
-            error_type = type(exc).__name__,
+            error_type=type(exc).__name__,
         )
         raise HTTPException(
-            status_code = 400,
-            detail = (
+            status_code=400,
+            detail=(
                 "Failed to decrypt API key. The server public key may have changed — "
                 "try refreshing the page."
             ),

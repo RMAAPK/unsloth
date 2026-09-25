@@ -221,7 +221,7 @@ def test_an_api_request_without_resolved_server_tools_stays_undated(monkeypatch)
 
 
 def test_an_ollama_connection_keeps_its_modelfile_prompt_when_studio_sends_no_system_turn(
-    monkeypatch,
+    monkeypatch
 ):
     # A synthesized date-only turn at index 0 is what displaces the Modelfile SYSTEM (#10436).
     inf = _install(monkeypatch, "ollama")

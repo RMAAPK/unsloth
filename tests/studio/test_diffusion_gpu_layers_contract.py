@@ -22,11 +22,11 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_PATH = REPO_ROOT / "studio" / "backend" / "core" / "inference" / "llama_cpp.py"
 ROUTE_PATH = REPO_ROOT / "studio" / "backend" / "routes" / "inference.py"
-SRC = SOURCE_PATH.read_text(encoding = "utf-8")
+SRC = SOURCE_PATH.read_text(encoding="utf-8")
 TREE = ast.parse(SRC)
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def llama_cpp():
     """Import the backend module directly; skip if the studio deps aren't installed."""
     backend = str(REPO_ROOT / "studio" / "backend")
@@ -88,13 +88,13 @@ def test_zero_layers_is_not_swallowed_as_falsy(llama_cpp):
 
 def test_shim_without_ngl_is_detected(llama_cpp, tmp_path):
     shim = tmp_path / "shim.py"
-    shim.write_text('ap.add_argument("--maxtok", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--maxtok", type=int)\n', encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is False
 
 
 def test_shim_with_ngl_is_detected(llama_cpp, tmp_path):
     shim = tmp_path / "shim.py"
-    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is True
 
 
@@ -122,20 +122,20 @@ def test_zero_layers_masks_the_child_devices(llama_cpp):
     training VRAM coordinator and a GPU-resident runner survives into a training run.
     Behavioural, not a source-text match: what matters is the token the child gets."""
     arg = llama_cpp.LlamaCppBackend._diffusion_gpu_arg
-    assert arg([3, 1], force_cpu = True) == ""
-    assert arg(None, force_cpu = True) == ""
+    assert arg([3, 1], force_cpu=True) == ""
+    assert arg(None, force_cpu=True) == ""
 
 
 def test_explicit_pick_still_wins_when_layers_are_not_zero(llama_cpp):
     """force_cpu is the only thing above the picker. A host whose GPU torch cannot see
     (Metal, Vulkan, Windows-HIP, Intel XPU) still has to honour an explicit pick."""
     arg = llama_cpp.LlamaCppBackend._diffusion_gpu_arg
-    assert arg([3, 1], cpu_only = True) == "1"
+    assert arg([3, 1], cpu_only=True) == "1"
     assert arg([3, 1]) == "1"
 
 
 def test_no_gpu_and_no_pick_masks_the_child(llama_cpp):
-    assert llama_cpp.LlamaCppBackend._diffusion_gpu_arg(None, cpu_only = True) == ""
+    assert llama_cpp.LlamaCppBackend._diffusion_gpu_arg(None, cpu_only=True) == ""
 
 
 def test_diffusion_load_passes_the_users_split_through():
@@ -184,11 +184,11 @@ def _loaded_diffusion(llama_cpp, *, recorded_layers, requested_ngl):
 def _in_target_state(llama_cpp, b, *, mode, layers):
     return b.adopt_load_intent_if_matched(
         llama_cpp.GgufLoadIntent(
-            model_identifier = "unsloth/DiffusionGemma-GGUF",
-            n_ctx = 4096,
-            gpu_memory_mode = mode,
-            gpu_layers = layers,
-            gpu_ids = [0],
+            model_identifier="unsloth/DiffusionGemma-GGUF",
+            n_ctx=4096,
+            gpu_memory_mode=mode,
+            gpu_layers=layers,
+            gpu_ids=[0],
         )
     )
 
@@ -211,8 +211,8 @@ def _in_target_state(llama_cpp, b, *, mode, layers):
 def test_backend_dedup_compares_the_requested_split(
     llama_cpp, recorded, requested_ngl, mode, layers, expected
 ):
-    b = _loaded_diffusion(llama_cpp, recorded_layers = recorded, requested_ngl = requested_ngl)
-    assert _in_target_state(llama_cpp, b, mode = mode, layers = layers) is expected
+    b = _loaded_diffusion(llama_cpp, recorded_layers=recorded, requested_ngl=requested_ngl)
+    assert _in_target_state(llama_cpp, b, mode=mode, layers=layers) is expected
 
 
 def test_the_dedupe_compares_the_requested_split_through_the_paravirtual_rewrite():
@@ -237,7 +237,7 @@ def test_the_dedupe_compares_the_requested_split_through_the_paravirtual_rewrite
 
 def test_requested_split_survives_a_shim_without_the_flag(llama_cpp):
     """gpu_layers reports what is running; diffusion_requested_ngl reports the ask."""
-    b = _loaded_diffusion(llama_cpp, recorded_layers = -1, requested_ngl = 20)
+    b = _loaded_diffusion(llama_cpp, recorded_layers=-1, requested_ngl=20)
     assert b.gpu_layers == -1
     assert b.diffusion_requested_ngl == 20
 
@@ -257,20 +257,20 @@ def test_requested_split_survives_a_shim_without_the_flag(llama_cpp):
 )
 def test_probe_reads_declarations_not_substrings(llama_cpp, tmp_path, source, expected):
     shim = tmp_path / "shim.py"
-    shim.write_text(source + "\n", encoding = "utf-8")
+    shim.write_text(source + "\n", encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is expected
 
 
 def test_probe_accepts_an_uppercase_extension(llama_cpp, tmp_path):
     """A Windows UNSLOTH_DG_SHIM override may be SHIM.PY; it must still be the file read."""
     shim = tmp_path / "SHIM.PY"
-    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is True
 
 
 def test_probe_falls_back_to_a_substring_scan_on_unparseable_source(llama_cpp, tmp_path):
     shim = tmp_path / "shim.py"
-    shim.write_text('ap.add_argument("--ngl"\n', encoding = "utf-8")  # syntax error
+    shim.write_text('ap.add_argument("--ngl"\n', encoding="utf-8")  # syntax error
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is True
 
 
@@ -282,7 +282,7 @@ def test_probe_keys_on_argv_shape_not_suffix(llama_cpp, tmp_path, name):
     """Any UNSLOTH_DG_SHIM file launches as-is, so the probe must answer for that exact
     file; an extensionless or .pyw override used to fall through to the package."""
     shim = tmp_path / name
-    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(shim)]) is True
 
 
@@ -303,13 +303,13 @@ def test_split_supported_mirrors_the_launch_gate(llama_cpp, tmp_path, monkeypatc
     b = llama_cpp.LlamaCppBackend()
     shim = tmp_path / "shim.py"
 
-    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--ngl", type=int)\n', encoding="utf-8")
     monkeypatch.setattr(
         b, "_find_diffusion_assets", lambda: (["python", str(shim)], "/bin/dg", None)
     )
     assert b.diffusion_split_supported() is True
 
-    shim.write_text('ap.add_argument("--maxtok", type=int)\n', encoding = "utf-8")
+    shim.write_text('ap.add_argument("--maxtok", type=int)\n', encoding="utf-8")
     assert b.diffusion_split_supported() is False
 
     monkeypatch.setattr(b, "_find_diffusion_assets", lambda: None)
@@ -319,7 +319,7 @@ def test_split_supported_mirrors_the_launch_gate(llama_cpp, tmp_path, monkeypatc
 def test_training_guard_mirrors_shim_support():
     """The zero-layer bypass and the split-scaled estimate are only valid when the
     launcher will actually emit --ngl; a dropped split runs GPU-resident."""
-    route_src = ROUTE_PATH.read_text(encoding = "utf-8")
+    route_src = ROUTE_PATH.read_text(encoding="utf-8")
     route_tree = ast.parse(route_src)
     fn = next(
         n
@@ -358,9 +358,9 @@ def test_probe_ignores_a_sibling_shim_next_to_a_custom_override(llama_cpp, tmp_p
     """An override runs as-is; a capable sibling shim.py must not vouch for it, or the
     launch appends --ngl to a parser that exits on it."""
     override = tmp_path / "my_shim"
-    override.write_text('ap.add_argument("--maxtok", type=int)\n', encoding = "utf-8")
+    override.write_text('ap.add_argument("--maxtok", type=int)\n', encoding="utf-8")
     sibling = tmp_path / "shim.py"
-    sibling.write_text('ap.add_argument("--ngl", type=int)\n', encoding = "utf-8")
+    sibling.write_text('ap.add_argument("--ngl", type=int)\n', encoding="utf-8")
     assert llama_cpp._shim_supports_ngl(["python", str(override)]) is False
 
 
@@ -370,13 +370,13 @@ def test_probe_ignores_a_sibling_shim_next_to_a_custom_override(llama_cpp, tmp_p
 def test_zoo_upgrade_reloads_a_dropped_split(llama_cpp):
     """manual/20 against an old shim launched with the default and deduped on the
     ask. Once the shim gains --ngl, the identical ask must reload to apply it."""
-    b = _loaded_diffusion(llama_cpp, recorded_layers = -1, requested_ngl = 20)
-    assert _in_target_state(llama_cpp, b, mode = "manual", layers = 20) is True  # shim still old
+    b = _loaded_diffusion(llama_cpp, recorded_layers=-1, requested_ngl=20)
+    assert _in_target_state(llama_cpp, b, mode="manual", layers=20) is True  # shim still old
     b.diffusion_split_supported = lambda: True  # zoo upgraded in this session
-    assert _in_target_state(llama_cpp, b, mode = "manual", layers = 20) is False  # now applies
-    b2 = _loaded_diffusion(llama_cpp, recorded_layers = 20, requested_ngl = 20)
+    assert _in_target_state(llama_cpp, b, mode="manual", layers=20) is False  # now applies
+    b2 = _loaded_diffusion(llama_cpp, recorded_layers=20, requested_ngl=20)
     b2.diffusion_split_supported = lambda: True
-    assert _in_target_state(llama_cpp, b2, mode = "manual", layers = 20) is True  # applied: rest
+    assert _in_target_state(llama_cpp, b2, mode="manual", layers=20) is True  # applied: rest
 
 
 # ── the dropped split must reach the client ──
@@ -385,7 +385,7 @@ def test_zoo_upgrade_reloads_a_dropped_split(llama_cpp):
 def test_response_models_expose_the_requested_split():
     """A refresh has no in-memory split left, so the wire has to carry the ask."""
     models_src = (REPO_ROOT / "studio" / "backend" / "models" / "inference.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     tree = ast.parse(models_src)
     runtime = next(

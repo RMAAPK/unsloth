@@ -27,7 +27,7 @@ from .llama_backend_double import FakeLlamaCppBackend
 from .asgi_stream_helpers import wait_for_frame
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _fresh_queues():
     llama_admission.reset_llama_admission_queues()
     yield
@@ -40,13 +40,13 @@ def _active_slots() -> int:
     return sum(queue.snapshot().active for queue in queues)
 
 
-_ONE_SLOT = llama_admission.LlamaAdmissionConfig(max_queue = 4)
+_ONE_SLOT = llama_admission.LlamaAdmissionConfig(max_queue=4)
 
 
 def _reserve_one_slot():
     """Take the single slot of a 1-parallel backend. Needs a running loop."""
     queue = llama_admission.get_llama_admission_queue("http://llama.test")
-    reservation = queue.reserve(capacity = 1, config = _ONE_SLOT)
+    reservation = queue.reserve(capacity=1, config=_ONE_SLOT)
     return queue, reservation.lease_nowait()
 
 
@@ -93,7 +93,7 @@ def test_slot_is_freed_at_done_even_if_teardown_never_finishes():
 
         task = asyncio.create_task(_consume())
         try:
-            await asyncio.wait_for(saw_done.wait(), timeout = 5.0)
+            await asyncio.wait_for(saw_done.wait(), timeout=5.0)
             # Give the generator a turn to resume past the [DONE] yield and reach the wedge.
             for _ in range(50):
                 if _active_slots() == 0:
@@ -105,13 +105,13 @@ def test_slot_is_freed_at_done_even_if_teardown_never_finishes():
                 "queue behind a generation that already finished"
             )
             # A second caller must be admitted right away.
-            second = queue.reserve(capacity = 1, config = _ONE_SLOT).lease_nowait()
+            second = queue.reserve(capacity=1, config=_ONE_SLOT).lease_nowait()
             assert second is not None, "next request was refused a free slot"
             second.release()
         finally:
             wedged.set()
             task.cancel()
-            await asyncio.gather(task, return_exceptions = True)
+            await asyncio.gather(task, return_exceptions=True)
         return seen
 
     seen = asyncio.run(_drive())
@@ -152,13 +152,13 @@ def test_stopping_the_disconnect_watcher_cannot_hang():
         await started.wait()
         # Would hang forever if the stop awaited the watcher outright.
         await asyncio.wait_for(
-            inference_route._stop_local_disconnect_cancel_watcher(watcher, timeout_s = 0.2),
-            timeout = 5.0,
+            inference_route._stop_local_disconnect_cancel_watcher(watcher, timeout_s=0.2),
+            timeout=5.0,
         )
         assert not watcher.done(), "watcher should have been abandoned, not awaited"
         release.set()
         watcher.cancel()
-        await asyncio.gather(watcher, return_exceptions = True)
+        await asyncio.gather(watcher, return_exceptions=True)
 
     asyncio.run(_drive())
 
@@ -242,7 +242,7 @@ def test_real_stream_frees_the_slot_at_done_with_a_wedged_teardown(monkeypatch):
 
         task = asyncio.create_task(app(scope, receive, send))
         try:
-            await wait_for_frame(sent_body, task, what = "the [DONE] frame")
+            await wait_for_frame(sent_body, task, what="the [DONE] frame")
             for _ in range(200):
                 if _active_slots() == 0:
                     break
@@ -253,12 +253,12 @@ def test_real_stream_frees_the_slot_at_done_with_a_wedged_teardown(monkeypatch):
                 "request would queue behind a finished generation"
             )
             queue = llama_admission.get_llama_admission_queue("http://llama.test")
-            second = queue.reserve(capacity = 1, config = _ONE_SLOT).lease_nowait()
+            second = queue.reserve(capacity=1, config=_ONE_SLOT).lease_nowait()
             assert second is not None, "next request was refused a free slot"
             second.release()
         finally:
             wedged.set()
             task.cancel()
-            await asyncio.gather(task, return_exceptions = True)
+            await asyncio.gather(task, return_exceptions=True)
 
     asyncio.run(_drive())

@@ -93,13 +93,13 @@ def test_offline_guarded_runtime_contract():
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     proc = subprocess.run(
         [sys.executable, "-c", _DRIVER],
-        cwd = _BACKEND_ROOT,
-        capture_output = True,
-        text = True,
-        encoding = "utf-8",
-        errors = "replace",
-        env = env,
-        timeout = 300,
+        cwd=_BACKEND_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        timeout=300,
     )
     assert (
         "OFFLINE_GUARDED_OK" in proc.stdout

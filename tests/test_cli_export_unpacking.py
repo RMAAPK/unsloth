@@ -105,7 +105,7 @@ def test_cli_export_unpacks_three_tuple(
     runner: CliRunner,
     tmp_path: Path,
     format_flag: str,
-    quant_flag: str | None,
+    quant_flag: str | None
 ) -> None:
     """Each --format path unpacks the 3-tuple without ValueError (pre-fix: 'too many values to unpack (expected 2)')."""
     ckpt = tmp_path / "ckpt"
@@ -142,7 +142,7 @@ def test_cli_export_forwards_private_flag(
     tmp_path: Path,
     format_flag: str,
     quant_flag: str | None,
-    expected_method: str,
+    expected_method: str
 ) -> None:
     """--private flag is forwarded as private=True to backend.export_* for every format."""
     ckpt = tmp_path / "ckpt"

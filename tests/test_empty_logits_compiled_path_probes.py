@@ -109,7 +109,7 @@ def _build(source: str):
     return namespace["EmptyLogits"]()
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def generated_sentinel():
     compiler, installed = _installed_zoo()
     if installed < ZOO_RELEASE_WITH_GENERATED_SENTINEL_FIX:
@@ -155,5 +155,5 @@ def test_these_probes_fail_on_the_sentinel_zoo_used_to_generate():
     way they stay quiet. Without this, a zoo that stopped shipping the fix would look green."""
     stale = _build(PRE_FIX_SENTINEL_SOURCE)
     assert hasattr(stale, "__dataclass_fields__")
-    with pytest.raises(TypeError, match = "replace"):
+    with pytest.raises(TypeError, match="replace"):
         _apply_to_tensors(lambda tensor: tensor, {"logits": stale})

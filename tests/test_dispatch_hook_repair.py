@@ -29,6 +29,7 @@ from accelerate.hooks import AlignDevicesHook, add_hook_to_module  # noqa: E402
 
 def _repair():
     from unsloth.models.vision import _repair_dispatch_hooks
+
     return _repair_dispatch_hooks
 
 
@@ -41,7 +42,7 @@ class _Model(torch.nn.Module):
     def __init__(
         self,
         device_map,
-        hooked = (),
+        hooked=(),
     ):
         super().__init__()
         self.embed_tokens = torch.nn.Embedding(4, 2)
@@ -96,7 +97,7 @@ def test_a_bare_integer_names_the_card_the_map_meant(monkeypatch):
 
 def test_a_failed_attach_is_reported_not_swallowed():
     model = _Model({"embed_tokens": "cuda:99", "layer": NEAR})
-    with pytest.warns(RuntimeWarning, match = "could not re-attach"):
+    with pytest.warns(RuntimeWarning, match="could not re-attach"):
         repaired = _repair()(model)
     assert repaired == 0, "the unattachable module was still counted as repaired"
     assert "embed_tokens" not in _hooked(model)
@@ -104,7 +105,7 @@ def test_a_failed_attach_is_reported_not_swallowed():
 
 def test_a_module_that_already_has_a_hook_is_left_alone():
     """Double-hooking a module moves its inputs twice per forward."""
-    model = _Model({"embed_tokens": FAR, "layer": NEAR}, hooked = ["embed_tokens"])
+    model = _Model({"embed_tokens": FAR, "layer": NEAR}, hooked=["embed_tokens"])
     original = model.embed_tokens._hf_hook
 
     assert _repair()(model) == 0, "nothing else here is repairable"
@@ -150,6 +151,7 @@ def test_a_torch_device_cpu_entry_is_never_hooked_either():
 def _guards_of(tree, callee):
     """The `if` conditions that decide whether `callee` runs, as expressions."""
     import ast
+
     return [
         node.test
         for node in ast.walk(tree)
@@ -165,7 +167,7 @@ def _evaluate(expression, **names):
     """Run a condition lifted out of the loader, with vLLM ownership stubbed to its contract."""
     import ast
 
-    def _vllm_will_load_weights(fast_inference, num_labels = None):
+    def _vllm_will_load_weights(fast_inference, num_labels=None):
         # The real one probes the GPU and the vLLM install, neither of which a CPU runner has. Its
         # one rule that matters here is asserted against the real function below.
         return bool(fast_inference) and num_labels is None
@@ -173,7 +175,7 @@ def _evaluate(expression, **names):
     scope = dict(names)
     scope["_vllm_will_load_weights"] = _vllm_will_load_weights
     return eval(
-        compile(ast.fix_missing_locations(ast.Expression(body = expression)), "<guard>", "eval"),
+        compile(ast.fix_missing_locations(ast.Expression(body=expression)), "<guard>", "eval"),
         scope,
     )
 
@@ -200,7 +202,7 @@ def test_the_llama_loader_stands_aside_under_vllm():
     assert guarded, "the repair is no longer behind a condition at all"
     # Evaluated, not matched by name: the guard is allowed to ask a predicate rather than read the raw
     # flag, and either spelling has to keep vLLM out.
-    assert not any(_evaluate(guard, fast_inference = True, num_labels = None) for guard in guarded), (
+    assert not any(_evaluate(guard, fast_inference=True, num_labels=None) for guard in guarded), (
         "the repair runs on a real vLLM load, so a vLLM load gets accelerate hooks "
         "on a module tree vLLM does not execute"
     )
@@ -247,14 +249,14 @@ def test_a_num_labels_load_is_hooked_even_when_fast_inference_was_asked_for():
         if keyword.arg == "fast_inference"
     ]
     assert passed, "the classification load no longer says whether vLLM owns its weights"
-    assert not any(_evaluate(value, fast_inference = True, num_labels = 2) for value in passed), (
+    assert not any(_evaluate(value, fast_inference=True, num_labels=2) for value in passed), (
         "the classification load hands _attach_bnb_multidevice_hooks a truthy fast_inference, "
         "which returns early, so a split bnb model gets no dispatch hooks"
     )
 
     guarded = _guards_of(tree, "_repair_dispatch_hooks")
     assert guarded, "the repair is no longer behind a condition at all"
-    assert all(_evaluate(guard, fast_inference = True, num_labels = 2) for guard in guarded), (
+    assert all(_evaluate(guard, fast_inference=True, num_labels=2) for guard in guarded), (
         "the end-of-load repair is skipped for a classification load, so the modules "
         "post_patch rebuilt keep no hook and the split model still crosses devices"
     )
@@ -286,10 +288,10 @@ def _normalisation_block():
         "from_pretrained no longer normalises fast_inference in one top-level block, so what "
         "reaches the end-of-load guard is not what this test models"
     )
-    return ast.fix_missing_locations(ast.Module(body = blocks, type_ignores = []))
+    return ast.fix_missing_locations(ast.Module(body=blocks, type_ignores=[]))
 
 
-def _normalise(fast_inference, num_labels = None):
+def _normalise(fast_inference, num_labels=None):
     """What `from_pretrained` leaves in `fast_inference` on the host the caller monkeypatched."""
     import unsloth.models.llama as llama
 
@@ -297,7 +299,7 @@ def _normalise(fast_inference, num_labels = None):
         "os": __import__("os"),
         "torch": torch,
         "print": lambda *a, **k: None,
-        "logger": types.SimpleNamespace(warning_once = lambda *a, **k: None),
+        "logger": types.SimpleNamespace(warning_once=lambda *a, **k: None),
         "DEVICE_TYPE": llama.DEVICE_TYPE,
         "is_vLLM_available": llama.is_vLLM_available,
         "_vllm_will_load_weights": llama._vllm_will_load_weights,
@@ -338,7 +340,7 @@ def test_asking_the_predicate_is_the_raw_flag_on_anything_but_a_classification_l
     import unsloth.models.llama as llama
 
     _host(monkeypatch, device_type, vllm_installed, capability)
-    reached = _normalise(fast_inference, num_labels = None)
+    reached = _normalise(fast_inference, num_labels=None)
     assert bool(llama._vllm_will_load_weights(reached, None)) == bool(reached), (
         f"on {device_type} (vLLM installed = {vllm_installed}, capability = {capability}) a "
         f"fast_inference = {fast_inference} load reaches the end of the load with "
@@ -357,7 +359,7 @@ def test_a_classification_load_is_never_vllms_on_any_machine(
     import unsloth.models.llama as llama
 
     _host(monkeypatch, device_type, vllm_installed, capability)
-    reached = _normalise(True, num_labels = 2)
+    reached = _normalise(True, num_labels=2)
     assert llama._vllm_will_load_weights(reached, 2) is False
     # num_labels = 0 is a real (if odd) classification request; `is not None` is the rule, not truth.
     assert llama._vllm_will_load_weights(reached, 0) is False
@@ -393,7 +395,7 @@ class _Classifier(torch.nn.Module):
         self.model = torch.nn.Module()
         self.model.embed_tokens = torch.nn.Embedding(8, 4)
         self.model.layer = torch.nn.Linear(4, 4)
-        self.score = torch.nn.Linear(4, 2, bias = False)
+        self.score = torch.nn.Linear(4, 2, bias=False)
         self.hf_device_map = dict(device_map)
 
     def get_input_embeddings(self):
@@ -407,13 +409,13 @@ class _Classifier(torch.nn.Module):
         for name, device in self.hf_device_map.items():
             if str(device) in ("cpu", "disk"):
                 continue
-            add_hook_to_module(self.get_submodule(name), AlignDevicesHook(execution_device = device))
+            add_hook_to_module(self.get_submodule(name), AlignDevicesHook(execution_device=device))
         return self
 
     def post_patch(self):
         """What `patch_model_and_tokenizer` does: a NEW Embedding over the same weight."""
         old = self.model.embed_tokens
-        self.model.embed_tokens = torch.nn.Embedding(8, 4, _weight = old.weight, _freeze = False)
+        self.model.embed_tokens = torch.nn.Embedding(8, 4, _weight=old.weight, _freeze=False)
         return self
 
 
@@ -442,7 +444,7 @@ def test_a_split_classification_model_gets_its_rebuilt_embedding_hooked():
         {"model": NEAR, "score": NEAR},
         {"model.embed_tokens": "disk", "model.layer": NEAR},
     ],
-    ids = ["single_device", "two_entries_one_device", "far_entry_is_offload"],
+    ids=["single_device", "two_entries_one_device", "far_entry_is_offload"],
 )
 def test_running_the_repair_on_an_unsplit_classification_load_costs_it_nothing(device_map):
     """Turning the repair on for `num_labels` loads must be free for everyone not split."""
@@ -494,7 +496,7 @@ def test_the_repair_stands_aside_for_an_offloaded_embedding():
 
 @pytest.mark.skipif(
     not has_real_accelerator(),
-    reason = "needs two real devices; `cpu` plus one card is enough, a CPU-only runner is not",
+    reason="needs two real devices; `cpu` plus one card is enough, a CPU-only runner is not",
 )
 def test_the_whole_sequence_against_real_accelerate():
     """dispatch, rebuild as `post_patch` does, repair, then train."""
@@ -504,13 +506,13 @@ def test_the_whole_sequence_against_real_accelerate():
 
     config = transformers.AutoConfig.for_model(
         "llama",
-        vocab_size = 128,
-        hidden_size = 32,
-        intermediate_size = 64,
-        num_hidden_layers = 2,
-        num_attention_heads = 4,
-        num_key_value_heads = 4,
-        tie_word_embeddings = True,
+        vocab_size=128,
+        hidden_size=32,
+        intermediate_size=64,
+        num_hidden_layers=2,
+        num_attention_heads=4,
+        num_key_value_heads=4,
+        tie_word_embeddings=True,
     )
     torch.manual_seed(0)
     model = transformers.AutoModelForCausalLM.from_config(config).to(torch.float32).eval()
@@ -523,7 +525,7 @@ def test_the_whole_sequence_against_real_accelerate():
     }
     for i in range(config.num_hidden_layers):
         device_map[f"model.layers.{i}"] = "cpu"
-    dispatch_model(model, device_map = device_map, main_device = "cpu")
+    dispatch_model(model, device_map=device_map, main_device="cpu")
     assert hasattr(model.get_input_embeddings(), "_hf_hook"), (
         "accelerate did not hook the mapped embedding, so this fixture is not "
         "reproducing the state the repair exists for"
@@ -532,7 +534,7 @@ def test_the_whole_sequence_against_real_accelerate():
     # The shape of unsloth_zoo.patching_utils, which post_patch runs.
     old_in = model.get_input_embeddings().weight
     model.set_input_embeddings(torch.nn.Embedding.from_pretrained(old_in))
-    lm_head = torch.nn.Linear(1, 1, bias = None)
+    lm_head = torch.nn.Linear(1, 1, bias=None)
     del lm_head.weight
     lm_head.weight = old_in
     lm_head.in_features, lm_head.out_features = old_in.shape[1], old_in.shape[0]
@@ -545,7 +547,7 @@ def test_the_whole_sequence_against_real_accelerate():
     ), "the rebuild kept the hook, so there is nothing here to repair"
 
     ids = torch.randint(0, 128, (2, 6))
-    with pytest.raises(RuntimeError, match = "same device"):
+    with pytest.raises(RuntimeError, match="same device"):
         with torch.no_grad():
             model(ids)
 
@@ -566,7 +568,7 @@ def test_the_whole_sequence_against_real_accelerate():
     for parameter in model.parameters():
         parameter.requires_grad_(True)
     model.train()
-    model(ids, labels = ids.clone()).loss.backward()
+    model(ids, labels=ids.clone()).loss.backward()
     input_grad = model.get_input_embeddings().weight.grad
     output_grad = model.lm_head.weight.grad
     assert input_grad is not None and output_grad is not None
@@ -610,7 +612,7 @@ def test_io_same_device_follows_the_root_hook(monkeypatch):
     )
 
     with_root = _Model({"embed_tokens": FAR, "layer": NEAR})
-    add_hook_to_module(with_root, AlignDevicesHook(io_same_device = True))
+    add_hook_to_module(with_root, AlignDevicesHook(io_same_device=True))
     _repair()(with_root)
     assert seen[id(with_root.embed_tokens)].io_same_device is False, (
         "the root already returns the output, so a submodule that does it too "
@@ -755,6 +757,7 @@ def test_a_model_that_cannot_answer_for_its_embeddings_is_not_guessed_at():
 
 def _lift():
     import unsloth.models.vision as V
+
     return V._lift_endpoint_hooks_onto_adapters
 
 
@@ -763,8 +766,8 @@ class _WrappedModel(torch.nn.Module):
 
     def __init__(
         self,
-        wrap_in = True,
-        wrap_out = True,
+        wrap_in=True,
+        wrap_out=True,
     ):
         super().__init__()
         self.embed = _FakeLora(torch.nn.Embedding(4, 2)) if wrap_in else torch.nn.Embedding(4, 2)
@@ -788,7 +791,7 @@ class _FakeLora(torch.nn.Module):
 def test_a_hook_on_base_layer_is_lifted_onto_the_adapter_wrapper():
     model = _WrappedModel()
     for m in (model.embed.base_layer, model.head.base_layer):
-        add_hook_to_module(m, AlignDevicesHook(execution_device = torch.device(FAR)))
+        add_hook_to_module(m, AlignDevicesHook(execution_device=torch.device(FAR)))
 
     lifted = _lift()(model)
 
@@ -798,10 +801,10 @@ def test_a_hook_on_base_layer_is_lifted_onto_the_adapter_wrapper():
 
 def test_the_lifted_hook_takes_the_base_layers_execution_device():
     """A guessed device is worse than none: it relocates a placed module."""
-    model = _WrappedModel(wrap_out = False)
+    model = _WrappedModel(wrap_out=False)
     add_hook_to_module(
         model.embed.base_layer,
-        AlignDevicesHook(execution_device = torch.device(FAR), skip_keys = ["past_key_values"]),
+        AlignDevicesHook(execution_device=torch.device(FAR), skip_keys=["past_key_values"]),
     )
 
     _lift()(model)
@@ -816,8 +819,8 @@ def test_the_lifted_hook_takes_the_base_layers_execution_device():
 
 
 def test_an_unwrapped_endpoint_is_left_alone():
-    model = _WrappedModel(wrap_in = False, wrap_out = False)
-    add_hook_to_module(model.embed, AlignDevicesHook(execution_device = torch.device(FAR)))
+    model = _WrappedModel(wrap_in=False, wrap_out=False)
+    add_hook_to_module(model.embed, AlignDevicesHook(execution_device=torch.device(FAR)))
 
     assert _lift()(model) == 0, "something was lifted onto a module PEFT never wrapped"
 
@@ -827,9 +830,9 @@ def test_a_wrapper_whose_base_was_never_hooked_is_left_alone():
 
 
 def test_a_wrapper_that_already_has_a_hook_is_not_hooked_twice():
-    model = _WrappedModel(wrap_out = False)
-    add_hook_to_module(model.embed.base_layer, AlignDevicesHook(execution_device = torch.device(FAR)))
-    add_hook_to_module(model.embed, AlignDevicesHook(execution_device = torch.device(FAR)))
+    model = _WrappedModel(wrap_out=False)
+    add_hook_to_module(model.embed.base_layer, AlignDevicesHook(execution_device=torch.device(FAR)))
+    add_hook_to_module(model.embed, AlignDevicesHook(execution_device=torch.device(FAR)))
 
     assert _lift()(model) == 0, "a second hook was stacked on the wrapper"
 
@@ -840,6 +843,6 @@ def test_a_lift_on_a_model_that_cannot_answer_for_its_embeddings_is_skipped():
             raise NotImplementedError("this architecture does not say")
 
     model = _Awkward()
-    add_hook_to_module(model.head.base_layer, AlignDevicesHook(execution_device = torch.device(FAR)))
+    add_hook_to_module(model.head.base_layer, AlignDevicesHook(execution_device=torch.device(FAR)))
 
     assert _lift()(model) == 1, "one raising accessor aborted the whole lift"

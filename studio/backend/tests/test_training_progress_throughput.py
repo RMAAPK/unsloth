@@ -80,6 +80,6 @@ def test_token_counter_that_did_not_move_still_gives_seconds_per_step():
 
 
 def test_the_emitter_passes_both_fields():
-    text = (_BACKEND / "core/training/training.py").read_text(encoding = "utf-8")
+    text = (_BACKEND / "core/training/training.py").read_text(encoding="utf-8")
     assert "s_per_step = s_per_step," in text
     assert "tok_per_s = tok_per_s," in text

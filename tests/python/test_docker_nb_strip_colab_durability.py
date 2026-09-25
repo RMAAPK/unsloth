@@ -33,7 +33,7 @@ INTRO = (
 MARK = "Tesla T4 Google Colab instance"
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def strip():
     assert STRIP_PATH.is_file(), f"missing {STRIP_PATH}"
     spec = importlib.util.spec_from_file_location("unsloth_nb_strip_durability", STRIP_PATH)
@@ -47,7 +47,7 @@ def _sha256(path: Path) -> str:
 
 
 def _notebook(path: Path, tag: str) -> None:
-    path.parent.mkdir(parents = True, exist_ok = True)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
@@ -66,7 +66,7 @@ def _notebook(path: Path, tag: str) -> None:
                 "nbformat_minor": 5,
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
 
@@ -79,13 +79,13 @@ def tree(tmp_path: Path):
         _notebook(dest / rel, f"cell-{i}")
         lines.append(f"{_sha256(dest / rel)}  {rel}")
     state = dest / ".unsloth_sync_state"
-    state.write_text("\n".join(lines) + "\n", encoding = "utf-8")
+    state.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return dest, state, names
 
 
 def _state(state: Path) -> dict:
     out = {}
-    for line in state.read_text(encoding = "utf-8").splitlines():
+    for line in state.read_text(encoding="utf-8").splitlines():
         parts = line.split("  ", 1)
         if len(parts) == 2:
             out[parts[1]] = parts[0]
@@ -104,7 +104,7 @@ def test_the_migration_records_what_it_published(strip, tree):
     assert strip.migrate(str(state), str(dest)) == 0
     assert _orphans(dest, state, names) == []
     for rel in names:
-        assert MARK not in (dest / rel).read_text(encoding = "utf-8")
+        assert MARK not in (dest / rel).read_text(encoding="utf-8")
 
 
 def test_a_failing_state_write_publishes_nothing(strip, tree, monkeypatch):
@@ -117,7 +117,7 @@ def test_a_failing_state_write_publishes_nothing(strip, tree, monkeypatch):
 
     assert _orphans(dest, state, names) == []
     for rel in names:
-        assert MARK in (dest / rel).read_text(encoding = "utf-8"), rel
+        assert MARK in (dest / rel).read_text(encoding="utf-8"), rel
     assert not list((dest / "nb").glob("*.tmp")), "a staged copy was left behind"
 
 
@@ -138,7 +138,7 @@ def test_a_state_write_that_fails_partway_strands_nothing(strip, tree, monkeypat
     assert strip.migrate(str(state), str(dest)) == 0
 
     assert _orphans(dest, state, names) == []
-    cleaned = [rel for rel in names if MARK not in (dest / rel).read_text(encoding = "utf-8")]
+    cleaned = [rel for rel in names if MARK not in (dest / rel).read_text(encoding="utf-8")]
     assert len(cleaned) == 2, cleaned
     assert not list((dest / "nb").glob("*.tmp"))
 
@@ -160,7 +160,7 @@ def test_the_rest_is_cleaned_on_the_next_start(strip, tree, monkeypatch):
 
     assert _orphans(dest, state, names) == []
     for rel in names:
-        assert MARK not in (dest / rel).read_text(encoding = "utf-8"), rel
+        assert MARK not in (dest / rel).read_text(encoding="utf-8"), rel
 
 
 def test_a_notebook_that_fails_to_publish_gives_its_record_back(strip, tree, monkeypatch):
@@ -190,7 +190,7 @@ def test_the_state_write_is_fsynced_before_the_rename(strip, tmp_path, monkeypat
     target = tmp_path / "state"
     assert strip._write_state(str(target), ["a  b"]) is True
     assert order == ["fsync", "replace"], order
-    assert target.read_text(encoding = "utf-8") == "a  b\n"
+    assert target.read_text(encoding="utf-8") == "a  b\n"
 
 
 def test_malformed_and_unmanaged_lines_survive_verbatim(strip, tmp_path):
@@ -201,12 +201,12 @@ def test_malformed_and_unmanaged_lines_survive_verbatim(strip, tmp_path):
         "not-a-record\n"
         f"{_sha256(dest / 'nb/x.ipynb')}  nb/x.ipynb\n"
         "deadbeef  nb/gone.ipynb\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
     assert strip.migrate(str(state), str(dest)) == 0
 
-    lines = state.read_text(encoding = "utf-8").splitlines()
+    lines = state.read_text(encoding="utf-8").splitlines()
     assert lines[0] == "not-a-record"
     assert lines[2] == "deadbeef  nb/gone.ipynb"
     assert lines[1] == f"{_sha256(dest / 'nb/x.ipynb')}  nb/x.ipynb"
@@ -235,13 +235,13 @@ def test_a_publish_cut_off_after_its_record_is_recovered(strip, tree, monkeypatc
     stranded = _orphans(dest, state, names)
     assert stranded, "precondition: a record ran ahead of its notebook"
     for rel in stranded:
-        assert MARK in (dest / rel).read_text(encoding = "utf-8"), rel
+        assert MARK in (dest / rel).read_text(encoding="utf-8"), rel
 
     assert strip.migrate(str(state), str(dest)) == 0
 
     assert _orphans(dest, state, names) == []
     for rel in names:
-        assert MARK not in (dest / rel).read_text(encoding = "utf-8"), rel
+        assert MARK not in (dest / rel).read_text(encoding="utf-8"), rel
 
 
 def test_a_real_user_edit_is_still_left_alone(strip, tree):
@@ -250,7 +250,7 @@ def test_a_real_user_edit_is_still_left_alone(strip, tree):
     dest, state, names = tree
     rel = names[0]
     path = dest / rel
-    nb = json.loads(path.read_text(encoding = "utf-8"))
+    nb = json.loads(path.read_text(encoding="utf-8"))
     nb["cells"].append(
         {
             "cell_type": "code",
@@ -260,13 +260,13 @@ def test_a_real_user_edit_is_still_left_alone(strip, tree):
             "execution_count": None,
         }
     )
-    path.write_text(json.dumps(nb), encoding = "utf-8")
-    mine = path.read_text(encoding = "utf-8")
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    mine = path.read_text(encoding="utf-8")
     recorded = _state(state)[rel]
 
     assert strip.migrate(str(state), str(dest)) == 0
 
-    assert path.read_text(encoding = "utf-8") == mine, "the user's notebook was rewritten"
+    assert path.read_text(encoding="utf-8") == mine, "the user's notebook was rewritten"
     assert _state(state)[rel] == recorded
 
 
@@ -277,4 +277,4 @@ def test_the_recovery_keys_on_reproducing_the_record(strip, tree):
     path = dest / names[0]
 
     assert strip._resume(str(path), "0" * 64) is False
-    assert MARK in path.read_text(encoding = "utf-8")
+    assert MARK in path.read_text(encoding="utf-8")

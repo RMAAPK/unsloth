@@ -24,7 +24,7 @@ def in_tmp_cwd(tmp_path, monkeypatch):
 
 def test_markerless_relative_dir_resolves_locally(in_tmp_cwd):
     gguf_dir = in_tmp_cwd / "models" / "qwen"
-    gguf_dir.mkdir(parents = True)
+    gguf_dir.mkdir(parents=True)
     (gguf_dir / "qwen-Q4_K_M.gguf").write_bytes(b"GGUF")
 
     response = _variants("models/qwen")
@@ -107,7 +107,7 @@ def test_online_only_projector_is_not_opened(in_tmp_cwd, monkeypatch):
     monkeypatch.setattr(
         gguf,
         "file_contents_available_locally",
-        lambda path, stat_result = None: Path(path) != projector,
+        lambda path, stat_result=None: Path(path) != projector,
     )
 
     def forbidden(_path):
@@ -136,7 +136,7 @@ def test_direct_auxiliary_gguf_file_is_not_a_variant(in_tmp_cwd, relpath):
     from utils.models.model_config import detect_gguf_model
 
     target = in_tmp_cwd / relpath
-    target.parent.mkdir(parents = True, exist_ok = True)
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(b"GGUF")
 
     assert detect_gguf_model(os.fspath(target)) is None
@@ -151,11 +151,11 @@ def test_direct_gguf_file_quant_round_trips_through_the_load_path(in_tmp_cwd):
     gguf.write_bytes(b"GGUF")
 
     quant = _variants(os.fspath(gguf)).variants[0].quant
-    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = quant)
+    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant=quant)
     assert config is not None and config.is_gguf
     assert config.gguf_file == os.fspath(gguf)
     # from_identifier consults the quant only for a directory, so the listing must not be stricter.
-    assert ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = "Q8_0").is_gguf is True
+    assert ModelConfig.from_identifier(os.fspath(gguf), gguf_variant="Q8_0").is_gguf is True
     assert _variants(os.fspath(gguf)).loadable_variants is None
 
 
@@ -167,7 +167,7 @@ def test_direct_gguf_file_quant_round_trips_case_insensitively(in_tmp_cwd):
     gguf = in_tmp_cwd / "foo-Q4_K_M.gguf"
     gguf.write_bytes(b"GGUF")
 
-    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = "q4_k_m")
+    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant="q4_k_m")
     assert config is not None and config.is_gguf
     assert config.gguf_file == os.fspath(gguf)
     # A directory of the same weights answers the same spelling.
@@ -175,7 +175,7 @@ def test_direct_gguf_file_quant_round_trips_case_insensitively(in_tmp_cwd):
     marked.mkdir()
     (marked / "config.json").write_text("{}")
     (marked / "foo-Q4_K_M.gguf").write_bytes(b"GGUF")
-    dir_config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant = "q4_k_m")
+    dir_config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant="q4_k_m")
     assert dir_config is not None and dir_config.is_gguf
 
 
@@ -188,7 +188,7 @@ def test_direct_gguf_label_is_the_load_resolvers_label(in_tmp_cwd):
     gguf.write_bytes(b"GGUF")
 
     quant = _variants(os.fspath(gguf)).variants[0].quant
-    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = quant)
+    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant=quant)
     assert config is not None and config.is_gguf
     assert config.gguf_file == os.fspath(gguf)
 
@@ -202,7 +202,7 @@ def test_marked_dir_resolves_the_bpw_stripped_label(in_tmp_cwd):
     (marked / "config.json").write_text("{}")
     (marked / "model-IQ4_XS-3.53bpw.gguf").write_bytes(b"GGUF")
 
-    config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant = "IQ4_XS")
+    config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant="IQ4_XS")
     assert config is not None and config.is_gguf
 
 
@@ -235,12 +235,12 @@ def test_parent_quant_does_not_resolve_a_different_basename_quant(in_tmp_cwd):
     from utils.models.model_config import ModelConfig, _find_local_gguf_by_variant
 
     marked = in_tmp_cwd / "m"
-    (marked / "Q8_0").mkdir(parents = True)
+    (marked / "Q8_0").mkdir(parents=True)
     (marked / "config.json").write_text("{}")
     (marked / "Q8_0" / "model-Q4_K_M.gguf").write_bytes(b"GGUF")
 
     assert _find_local_gguf_by_variant(os.fspath(marked), "Q8_0") is None
-    assert ModelConfig.from_identifier(os.fspath(marked), gguf_variant = "Q8_0").is_gguf is False
+    assert ModelConfig.from_identifier(os.fspath(marked), gguf_variant="Q8_0").is_gguf is False
     # The file's own label still resolves it.
     assert _find_local_gguf_by_variant(os.fspath(marked), "Q4_K_M") is not None
 
@@ -253,7 +253,7 @@ def test_direct_file_default_variant_resolves(in_tmp_cwd):
     gguf.write_bytes(b"GGUF")
 
     response = _variants(os.fspath(gguf))
-    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = response.default_variant)
+    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant=response.default_variant)
     assert config is not None and config.is_gguf
     assert config.gguf_file == os.fspath(gguf)
 
@@ -268,7 +268,7 @@ def test_dir_resolver_accepts_the_advertised_hub_style_label(in_tmp_cwd):
     (marked / "F16-checkpoint-Q4_K_M.gguf").write_bytes(b"GGUF")
 
     quant = _variants(os.fspath(marked)).variants[0].quant
-    config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant = quant)
+    config = ModelConfig.from_identifier(os.fspath(marked), gguf_variant=quant)
     assert config is not None and config.is_gguf
 
 
@@ -300,13 +300,13 @@ def test_remote_listing_filters_what_the_remote_detector_refuses(monkeypatch):
     from hub.utils.gguf import list_gguf_variants
 
     info = SimpleNamespace(
-        siblings = [
-            SimpleNamespace(rfilename = "F16-be-checkpoint-Q4_K_M.gguf", size = 100),
-            SimpleNamespace(rfilename = "model-Q8_0.gguf", size = 10),
+        siblings=[
+            SimpleNamespace(rfilename="F16-be-checkpoint-Q4_K_M.gguf", size=100),
+            SimpleNamespace(rfilename="model-Q8_0.gguf", size=10),
         ]
     )
-    api = SimpleNamespace(model_info = lambda *a, **k: info)
-    monkeypatch.setattr("huggingface_hub.HfApi", lambda token = None: api)
+    api = SimpleNamespace(model_info=lambda *a, **k: info)
+    monkeypatch.setattr("huggingface_hub.HfApi", lambda token=None: api)
 
     variants, _, _ = list_gguf_variants("owner/repo")
     assert [v.quant for v in variants] == ["Q8_0"]
@@ -321,7 +321,7 @@ def test_direct_gguf_bpw_label_round_trips_through_the_load_path(in_tmp_cwd):
     gguf.write_bytes(b"GGUF")
 
     quant = _variants(os.fspath(gguf)).variants[0].quant
-    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant = quant)
+    config = ModelConfig.from_identifier(os.fspath(gguf), gguf_variant=quant)
     assert config is not None and config.is_gguf
     assert config.gguf_file == os.fspath(gguf)
 
@@ -351,7 +351,7 @@ def test_local_answers_report_what_a_load_would_serve(in_tmp_cwd):
         (d / "config.json").write_text("{}")
         for rel, data in files:
             target = d / rel
-            target.parent.mkdir(parents = True, exist_ok = True)
+            target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
         return _variants(os.fspath(d))
 
@@ -389,7 +389,7 @@ def test_symlink_outside_the_tree_keeps_its_relative_alias(in_tmp_cwd):
     pool.mkdir()
     (pool / "real.gguf").write_bytes(b"GGUF")
     model = in_tmp_cwd / "m"
-    (model / "BF16").mkdir(parents = True)
+    (model / "BF16").mkdir(parents=True)
     (model / "config.json").write_text("{}")
     (model / "BF16" / "model.gguf").symlink_to(pool / "real.gguf")
 
@@ -418,7 +418,7 @@ def test_relative_identifiers_keep_their_relative_alias(in_tmp_cwd):
     # same way or its spelling is lost.
     from utils.models.model_config import _find_local_gguf_by_variant
 
-    (in_tmp_cwd / "models" / "qwen" / "BF16").mkdir(parents = True)
+    (in_tmp_cwd / "models" / "qwen" / "BF16").mkdir(parents=True)
     (in_tmp_cwd / "models" / "qwen" / "config.json").write_text("{}")
     (in_tmp_cwd / "models" / "qwen" / "BF16" / "model.gguf").write_bytes(b"GGUF")
 
@@ -623,17 +623,17 @@ def test_local_dir_answer_ignores_the_hub_cache_of_the_same_name(in_tmp_cwd, mon
     from types import SimpleNamespace
 
     hub_cache = in_tmp_cwd / "hub"
-    (hub_cache / "models--unsloth--foo" / "snapshots" / "rev" / "Q4_K_M").mkdir(parents = True)
+    (hub_cache / "models--unsloth--foo" / "snapshots" / "rev" / "Q4_K_M").mkdir(parents=True)
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
         lambda: SimpleNamespace(
-            hub_cache = hub_cache,
-            hf_home = in_tmp_cwd,
-            source = "studio",
-            cache_home = in_tmp_cwd,
+            hub_cache=hub_cache,
+            hf_home=in_tmp_cwd,
+            source="studio",
+            cache_home=in_tmp_cwd,
         ),
     )
-    (in_tmp_cwd / "unsloth" / "foo").mkdir(parents = True)
+    (in_tmp_cwd / "unsloth" / "foo").mkdir(parents=True)
     (in_tmp_cwd / "unsloth" / "foo" / "config.json").write_text("{}")
 
     from utils.models.model_config import detect_gguf_model
@@ -666,10 +666,10 @@ def test_wsl_drive_path_is_normalized_like_the_load(in_tmp_cwd, monkeypatch):
         else path,
     )
     gguf_dir = in_tmp_cwd / "mnt" / "c" / "models" / "qwen"
-    gguf_dir.mkdir(parents = True)
+    gguf_dir.mkdir(parents=True)
     (gguf_dir / "qwen-Q4_K_M.gguf").write_bytes(b"GGUF")
     decoy = in_tmp_cwd / "custom" / "c" / "models" / "qwen"
-    decoy.mkdir(parents = True)
+    decoy.mkdir(parents=True)
     (decoy / "qwen-Q8_0.gguf").write_bytes(b"GGUF")
 
     response = _variants(r"C:\models\qwen")

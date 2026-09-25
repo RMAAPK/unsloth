@@ -180,7 +180,7 @@ def main(
         callback = show_version,
         is_eager = True,
         help = "Show version and exit.",
-    ),
+    )
 ):
     # Consume the import-time result once: a host can chdir between repeated app() calls.
     global _startup_guard

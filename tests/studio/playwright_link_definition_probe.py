@@ -43,7 +43,7 @@ EXPECTED_FENCES = {"code": 2, "link": 1, "plain": 1}
 
 
 def info(message: str) -> None:
-    print(message, flush = True)
+    print(message, flush=True)
 
 
 def warm_up(page) -> None:
@@ -55,18 +55,18 @@ def warm_up(page) -> None:
     `plain` case must end with controls on every branch, so waiting for them here is an
     unambiguous readiness signal, and it leaves the chunk cached for the cases that follow.
     """
-    page.goto(f"{BASE}/{PAGE}?case=plain", wait_until = "domcontentloaded")
-    page.wait_for_function("() => window.__probe && window.__probe.ready()", timeout = 60_000)
+    page.goto(f"{BASE}/{PAGE}?case=plain", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.__probe && window.__probe.ready()", timeout=60_000)
     page.wait_for_function(
         "() => window.__probe.counts().copyButtons >= 1",
-        timeout = 120_000,
-        polling = 250,
+        timeout=120_000,
+        polling=250,
     )
 
 
 def run_case(page, case: str) -> dict:
-    page.goto(f"{BASE}/{PAGE}?case={case}", wait_until = "domcontentloaded")
-    page.wait_for_function("() => window.__probe && window.__probe.ready()", timeout = 60_000)
+    page.goto(f"{BASE}/{PAGE}?case={case}", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.__probe && window.__probe.ready()", timeout=60_000)
 
     # The fences themselves mount independently of the action bar, and their count is known per
     # case, so this is a real completion signal rather than an interval. The button count is
@@ -75,8 +75,8 @@ def run_case(page, case: str) -> dict:
     expected = EXPECTED_FENCES[case]
     page.wait_for_function(
         f"() => window.__probe.counts().codeBlocks === {expected}",
-        timeout = 60_000,
-        polling = 250,
+        timeout=60_000,
+        polling=250,
     )
     # Then let the action bar settle, which is quick now the chunk is warm.
     page.wait_for_function(
@@ -88,8 +88,8 @@ def run_case(page, case: str) -> dict:
                 : {value: now, hits: 0};
             return window.__settled.hits >= 3;
         }""",
-        timeout = 60_000,
-        polling = 250,
+        timeout=60_000,
+        polling=250,
     )
     return page.evaluate("() => window.__probe.counts()")
 
@@ -100,13 +100,13 @@ def main() -> int:
         info(f"starting vite dev server on port {PORT}")
         proc = start_vite(PORT)
     wait_for_smoke_page(
-        f"{BASE}/{PAGE}", "smoke-link-definition-probe-main.tsx", proc = proc, info = info
+        f"{BASE}/{PAGE}", "smoke-link-definition-probe-main.tsx", proc=proc, info=info
     )
     results = {}
     try:
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(args = chromium_launch_args())
-            page = browser.new_page(viewport = {"width": 1280, "height": 900})
+            browser = pw.chromium.launch(args=chromium_launch_args())
+            page = browser.new_page(viewport={"width": 1280, "height": 900})
             warm_up(page)
             for case in CASES:
                 results[case] = run_case(page, case)
@@ -117,7 +117,7 @@ def main() -> int:
             stop_process(proc)
             info("vite stopped")
 
-    print(json.dumps({"label": LABEL, "results": results}, indent = 2))
+    print(json.dumps({"label": LABEL, "results": results}, indent=2))
 
     failures = []
     plain = results["plain"]

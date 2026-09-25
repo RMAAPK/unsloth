@@ -835,7 +835,7 @@ async def create_api_key(
 @router.get("/api-keys", response_model = ApiKeyListResponse)
 def list_api_keys(
     current_subject: str = Depends(get_current_subject),
-    _own_credential: None = Depends(_require_a_credential_of_its_own("Managing API keys")),
+    _own_credential: None = Depends(_require_a_credential_of_its_own("Managing API keys"))
 ) -> ApiKeyListResponse:
     """List all API keys for the authenticated user (raw keys are never exposed)."""
     rows = storage.list_api_keys(current_subject, account_id = _key_account_scope())

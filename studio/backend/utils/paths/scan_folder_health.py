@@ -60,7 +60,7 @@ def _probe_dir(path: str, *, depth: int, budget: list[int]) -> tuple[str, Option
         if child_depth <= 0 and name == _HF_SNAPSHOTS_DIR:
             # Spend one more level here rather than raising the depth everywhere: a diffusers pipeline's component directories would otherwise burn the budget.
             child_depth = 1
-        status, cause = _probe_dir(subdir, depth = child_depth, budget = budget)
+        status, cause = _probe_dir(subdir, depth=child_depth, budget=budget)
         if status == STATUS_MISSING:
             # It was in the listing a moment ago and is gone now (a model being deleted, or a download renaming its temp directory), which says nothing about the folder the user registered.
             continue
@@ -72,13 +72,13 @@ def _probe_dir(path: str, *, depth: int, budget: list[int]) -> tuple[str, Option
 def probe_folder(path: str, *, children: bool = False) -> tuple[str, Optional[str]]:
     """Status of ``path`` plus the directory that refused, if any."""
     if not children:
-        return _probe_dir(path, depth = 0, budget = [1])
-    return _probe_dir(path, depth = _PROBE_DEPTH, budget = [_PROBE_OPEN_LIMIT])
+        return _probe_dir(path, depth=0, budget=[1])
+    return _probe_dir(path, depth=_PROBE_DEPTH, budget=[_PROBE_OPEN_LIMIT])
 
 
 def probe_status(path: str, *, children: bool = False) -> str:
     """Open ``path`` and report what the OS says, without walking. With ``children``, also open what is under it: a root can list fine while the models below it are denied, and the scanners skip an unreadable entry silently, so both arrive as the same empty list."""
-    return probe_folder(path, children = children)[0]
+    return probe_folder(path, children=children)[0]
 
 
 def is_readable_dir(path: str) -> bool:
@@ -132,7 +132,7 @@ def clear_scan_failure(path: str) -> None:
 
 def note_scan_folder_scanned(path: str, *, found: bool) -> None:
     """Record the outcome of a scan of ``path``. Empty, gone, refused, or working with one model refused: the scanners return the same list for all of them, because they swallow the error per entry, so ask the OS instead of trying to read it back out of them. Bounded by ``_PROBE_OPEN_LIMIT`` opens per folder."""
-    status, cause = probe_folder(path, children = True)
+    status, cause = probe_folder(path, children=True)
     if status == STATUS_UNKNOWN:
         # Budget gone before the tail was reached, so this proves nothing either way. Settle it on the one directory that refused last time.
         _recheck_cause(path)
@@ -173,7 +173,7 @@ def refresh_failed_scan_folders(folders: list[dict]) -> None:
         if entry is None:
             continue
         previous = entry[0]
-        status, cause = probe_folder(path, children = True)
+        status, cause = probe_folder(path, children=True)
         if status == STATUS_UNKNOWN:
             _recheck_cause(path)
             continue

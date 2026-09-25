@@ -81,7 +81,7 @@ BASE = _EXTERNAL or f"http://127.0.0.1:{PORT}"
 OWNS_SERVER = not _EXTERNAL
 LABEL = os.environ.get("SMOKE_LABEL", "tree")
 OUT = Path(os.environ.get("PW_ART_DIR", "logs/playwright-thread-weight"))
-OUT.mkdir(parents = True, exist_ok = True)
+OUT.mkdir(parents=True, exist_ok=True)
 
 # Sorted: the growth check reads the first and last entries as smallest and largest, so an unsorted override would
 # invert every ratio and report a good run as measuring nothing.
@@ -126,7 +126,7 @@ OBSERVER_INIT = """
 
 
 def info(message: str) -> None:
-    print(f"[thread-weight] {message}", flush = True)
+    print(f"[thread-weight] {message}", flush=True)
 
 
 def metrics(cdp) -> dict[str, float]:
@@ -158,7 +158,7 @@ def long_task_summary(page) -> dict[str, float]:
     return {
         "long_tasks": len(tasks),
         "long_task_ms": round(sum(t["duration"] for t in tasks), 1),
-        "worst_long_task_ms": round(max((t["duration"] for t in tasks), default = 0.0), 1),
+        "worst_long_task_ms": round(max((t["duration"] for t in tasks), default=0.0), 1),
     }
 
 
@@ -383,8 +383,8 @@ def measure_one(context, cdp_throttle_rate: float, size: int) -> dict:
         lambda m: console_warnings.append(m.text[:200]) if m.type in ("warning", "error") else None,
     )
     try:
-        page.goto(f"{BASE}/smoke-thread-weight.html", wait_until = "domcontentloaded")
-        page.wait_for_function("() => Boolean(window.__threadWeight)", timeout = 30_000)
+        page.goto(f"{BASE}/smoke-thread-weight.html", wait_until="domcontentloaded")
+        page.wait_for_function("() => Boolean(window.__threadWeight)", timeout=30_000)
         cdp = context.new_cdp_session(page)
         cdp.send("Performance.enable")
 
@@ -395,13 +395,13 @@ def measure_one(context, cdp_throttle_rate: float, size: int) -> dict:
         # superlinear in the thing being seeded.
         page.wait_for_function(
             "(n) => window.__threadWeight.messageCount() >= n",
-            arg = size,
-            timeout = SEED_TIMEOUT_MS,
+            arg=size,
+            timeout=SEED_TIMEOUT_MS,
         )
         page.wait_for_function(
             "(n) => window.__threadWeight.katexCount() >= n",
-            arg = size // 2,
-            timeout = SEED_TIMEOUT_MS,
+            arg=size // 2,
+            timeout=SEED_TIMEOUT_MS,
         )
         # Shiki is async and per block, and a <pre> exists before it is highlighted, so counting code blocks gates
         # nothing. Wait for the token count to stop moving instead: unfinished highlighting would otherwise land in
@@ -413,7 +413,7 @@ def measure_one(context, cdp_throttle_rate: float, size: int) -> dict:
                 window.__twTokens = n;
                 return settled && n > 0;
             }""",
-            timeout = SEED_TIMEOUT_MS,
+            timeout=SEED_TIMEOUT_MS,
         )
         result["counts"] = page.evaluate("window.__threadWeight.counts()")
         result["viewport"] = page.evaluate("window.__threadWeight.viewportMetrics()")
@@ -473,9 +473,9 @@ def measure_one(context, cdp_throttle_rate: float, size: int) -> dict:
                 window.__twTop = top;
                 return settled;
             }""",
-            timeout = ACTION_TIMEOUT_MS,
+            timeout=ACTION_TIMEOUT_MS,
         )
-        page.locator('[data-role="assistant"]').last.hover(timeout = ACTION_TIMEOUT_MS)
+        page.locator('[data-role="assistant"]').last.hover(timeout=ACTION_TIMEOUT_MS)
         reset_long_tasks(page)
         before = metrics(cdp)
         menu = page.evaluate(MENU_JS, SETTLE_TIMEOUT_MS)
@@ -494,7 +494,7 @@ def measure_one(context, cdp_throttle_rate: float, size: int) -> dict:
             **long_task_summary(page),
         }
 
-        page.locator('[data-role="assistant"]').last.hover(timeout = ACTION_TIMEOUT_MS)
+        page.locator('[data-role="assistant"]').last.hover(timeout=ACTION_TIMEOUT_MS)
         reset_long_tasks(page)
         before = metrics(cdp)
         deleted = page.evaluate(DELETE_JS, SETTLE_TIMEOUT_MS)
@@ -538,16 +538,16 @@ def run() -> dict:
     }
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless = os.environ.get("SMOKE_HEADLESS", "1") == "1",
-            args = chromium_launch_args(),
+            headless=os.environ.get("SMOKE_HEADLESS", "1") == "1",
+            args=chromium_launch_args(),
         )
-        context = browser.new_context(viewport = {"width": 1440, "height": 900})
+        context = browser.new_context(viewport={"width": 1440, "height": 900})
         context.add_init_script(OBSERVER_INIT)
         # Anchored at the origin so it cannot swallow vite's own module URLs, which live under src/features/**/api/ and
         # would otherwise match a bare "/api/" pattern.
         context.route(
             re.compile(rf"^{re.escape(BASE)}/api/"),
-            lambda route: route.fulfill(status = 200, content_type = "application/json", body = "{}"),
+            lambda route: route.fulfill(status=200, content_type="application/json", body="{}"),
         )
         for size in SIZES:
             info(f"measuring N={size}")
@@ -838,8 +838,8 @@ def main() -> int:
         wait_for_smoke_page(
             f"{BASE}/smoke-thread-weight.html",
             "smoke-thread-weight-main.tsx",
-            proc = vite,
-            info = info,
+            proc=vite,
+            info=info,
         )
         results = run()
     finally:
@@ -848,9 +848,9 @@ def main() -> int:
             info("vite stopped")
 
     out = OUT / f"{LABEL}.json"
-    out.write_text(json.dumps(results, indent = 2), encoding = "utf-8")
+    out.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print_table(results)
-    info(json.dumps(results, indent = 2))
+    info(json.dumps(results, indent=2))
     info(f"wrote {out}")
 
     failures = harness_failures(results)

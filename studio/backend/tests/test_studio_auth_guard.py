@@ -41,10 +41,10 @@ def studio_home(monkeypatch, tmp_path):
     Every guard test needs the same four lines of setup and the same teardown, so they live here.
     """
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
-    (home / "sandbox" / _SESSION).mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
+    (home / "sandbox" / _SESSION).mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
-    monkeypatch.delenv("STUDIO_HOME", raising = False)
+    monkeypatch.delenv("STUDIO_HOME", raising=False)
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
         yield home
@@ -69,7 +69,7 @@ _CREDENTIAL_CODE = (
 )
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_subprocess(monkeypatch):
     """A refusal must happen before anything is spawned, so make a spawn an outright failure."""
 
@@ -83,14 +83,14 @@ def _no_subprocess(monkeypatch):
 @pytest.mark.parametrize("command", _CREDENTIAL_COMMANDS)
 @pytest.mark.parametrize("disable_sandbox", [False, True])
 def test_terminal_refuses_studio_credentials(command, disable_sandbox):
-    result = tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = disable_sandbox)
+    result = tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=disable_sandbox)
     assert result == tools._STUDIO_CREDENTIAL_BLOCKED
 
 
 @pytest.mark.parametrize("code", _CREDENTIAL_CODE)
 @pytest.mark.parametrize("disable_sandbox", [False, True])
 def test_python_refuses_studio_credentials(code, disable_sandbox):
-    result = tools._python_exec(code, None, 30, _SESSION, disable_sandbox = disable_sandbox)
+    result = tools._python_exec(code, None, 30, _SESSION, disable_sandbox=disable_sandbox)
     assert result == tools._STUDIO_CREDENTIAL_BLOCKED
 
 
@@ -121,9 +121,9 @@ def test_ordinary_commands_are_not_blocked(command):
 
 def test_a_custom_studio_home_is_covered(monkeypatch, tmp_path):
     auth_dir = tmp_path / "studio-home" / "auth"
-    auth_dir.mkdir(parents = True)
+    auth_dir.mkdir(parents=True)
     key_file = auth_dir / ".cli_api_key_cli_99bb88401742"
-    key_file.write_text(_FAKE_KEY + "\n", encoding = "utf-8")
+    key_file.write_text(_FAKE_KEY + "\n", encoding="utf-8")
 
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path / "studio-home"))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
@@ -170,7 +170,7 @@ def test_equivalent_spellings_of_the_auth_path_are_all_covered(monkeypatch, tmp_
     # The OS opens every one of these as the same file, so matching only the tidiest spelling left
     # the others walking straight past the guard.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
@@ -197,7 +197,7 @@ def test_the_environment_variable_spelling_of_the_studio_home(monkeypatch, tmp_p
     # `cat $STUDIO_HOME/auth/auth.db` reaches the same file as the resolved path: both studio-home
     # variables survive into the tool subprocess environment, so the shell expands this for real.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
@@ -223,7 +223,7 @@ def test_a_studio_home_whose_name_contains_a_space(monkeypatch, tmp_path):
     # macOS installs under "Application Support" put a space in the path, and a shell spells that
     # with a backslash escape. Read as a separator it split the directory name and slipped past.
     home = tmp_path / "Studio Data"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     escaped = str(home).replace(" ", "\\ ")
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
@@ -246,8 +246,8 @@ def test_traversal_out_of_the_sandbox_into_the_auth_dir(monkeypatch, tmp_path):
     # `open('../../auth/auth.db')` reads the protected database while naming neither the directory
     # nor a credential basename. Bypass Permissions skips the blocklist, so only this guard is left.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
-    (home / "auth" / "auth.db").write_text("not a real database", encoding = "utf-8")
+    (home / "auth").mkdir(parents=True)
+    (home / "auth" / "auth.db").write_text("not a real database", encoding="utf-8")
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
@@ -255,7 +255,7 @@ def test_traversal_out_of_the_sandbox_into_the_auth_dir(monkeypatch, tmp_path):
             (tools._bash_exec, "cat ../../auth/auth.db"),
             (tools._python_exec, "print(open('../../auth/auth.db').read())"),
         ):
-            assert call(args, None, 30, _SESSION, disable_sandbox = True) == (
+            assert call(args, None, 30, _SESSION, disable_sandbox=True) == (
                 tools._STUDIO_CREDENTIAL_BLOCKED
             ), args
         # Traversal that lands anywhere else is ordinary work: it is not refused. (The suite blocks
@@ -267,7 +267,7 @@ def test_traversal_out_of_the_sandbox_into_the_auth_dir(monkeypatch, tmp_path):
                     None,
                     30,
                     _SESSION,
-                    disable_sandbox = True,
+                    disable_sandbox=True,
                 )
                 != tools._STUDIO_CREDENTIAL_BLOCKED
             ), ordinary
@@ -310,7 +310,7 @@ def test_an_mcp_call_at_the_auth_dir_never_reaches_the_server(monkeypatch):
 
     for attribute in ("_mcp_server_for_tool", "_call_mcp_tool", "call_mcp_tool"):
         if hasattr(tools, attribute):
-            monkeypatch.setattr(tools, attribute, _never, raising = False)
+            monkeypatch.setattr(tools, attribute, _never, raising=False)
     result = tools.execute_tool(
         name, {"path": "~/.unsloth/studio/auth/.cli_api_key_cli_99bb88401742"}, _SESSION
     )
@@ -371,8 +371,8 @@ def test_edit_file_cannot_reach_the_auth_dir_even_with_the_sandbox_off():
             "path": "~/.unsloth/studio/auth/.bootstrap_password",
             "edits": [{"old_string": "a", "new_string": "b"}],
         },
-        session_id = _SESSION,
-        disable_sandbox = True,
+        session_id=_SESSION,
+        disable_sandbox=True,
     )
     assert result == tools._STUDIO_CREDENTIAL_BLOCKED
 
@@ -386,13 +386,13 @@ def test_the_user_facing_tool_card_is_masked_too():
     from core.inference.tool_loop_controller import ToolCallCompletion, ToolCallDecision
 
     decision = ToolCallDecision(
-        action = "execute",
-        tool_name = "terminal",
-        arguments = {"command": "echo $UNSLOTH_API_KEY"},
-        tool_call_id = "call-1",
+        action="execute",
+        tool_name="terminal",
+        arguments={"command": "echo $UNSLOTH_API_KEY"},
+        tool_call_id="call-1",
     )
     completion = ToolCallCompletion(
-        decision = decision, result = _FAKE_KEY, is_error = False, executed = True
+        decision=decision, result=_FAKE_KEY, is_error=False, executed=True
     )
     assert _FAKE_KEY not in completion.tool_end_payload()["result"]
     assert _FAKE_KEY not in completion.tool_end_event()["result"]
@@ -406,7 +406,7 @@ def test_the_cli_cache_path_still_matches_what_the_guard_blocks():
     spec = importlib.util.find_spec("unsloth_cli.commands.studio")
     if spec is None or not spec.origin or not os.path.isfile(spec.origin):
         pytest.skip("unsloth_cli is not importable from the backend test env")
-    with open(spec.origin, encoding = "utf-8") as f:
+    with open(spec.origin, encoding="utf-8") as f:
         source = f.read()
     assert 'CLI_API_KEY_FILE_PREFIX = ".cli_api_key_"' in source
     assert 'BOOTSTRAP_PASSWORD_FILE = ".bootstrap_password"' in source
@@ -419,7 +419,7 @@ def test_tool_end_payload_masks_a_leaked_studio_key():
     from core.inference.tool_loop_controller import ToolLoopController
 
     key = "sk-unsloth-" + "A" * 48
-    controller = ToolLoopController(tools = [{"type": "function", "function": {"name": "terminal"}}])
+    controller = ToolLoopController(tools=[{"type": "function", "function": {"name": "terminal"}}])
     decision = controller.prepare_call(
         {"id": "call_0", "function": {"name": "terminal", "arguments": '{"command":"env"}'}}
     )
@@ -451,6 +451,7 @@ def test_the_real_stream_generator_masks_a_key_across_chunk_boundaries():
     # deleted the redaction from both of that generator's `_masked` return paths and all 94 tests
     # here still passed, because the test below re-implements the loop instead of running it.
     from core.inference.tool_stream_exec import stream_tool_execution
+
     key = "sk-unsloth-0123456789abcdef0123456789abcdef"
     for chunks in (
         [key],
@@ -459,12 +460,12 @@ def test_the_real_stream_generator_masks_a_key_across_chunk_boundaries():
         ["out ", key[:20], key[20:], " tail"],
     ):
 
-        def invoke(emit, _chunks = chunks):
+        def invoke(emit, _chunks=chunks):
             for chunk in _chunks:
                 emit(chunk)
             return "".join(_chunks)
 
-        generator = stream_tool_execution(invoke, tool_name = "terminal", tool_call_id = "c1")
+        generator = stream_tool_execution(invoke, tool_name="terminal", tool_call_id="c1")
         streamed = []
         try:
             while True:
@@ -523,9 +524,9 @@ def test_the_auth_path_assembled_through_a_shell_variable(monkeypatch, tmp_path)
     # names neither the directory nor a credential basename. auth.db carries no `sk-unsloth-`
     # prefix either, so the result redactor cannot mask the JWT secret on the way back out.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     sandbox = home / "sandbox" / "sess1"
-    sandbox.mkdir(parents = True)
+    sandbox.mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setenv("STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
@@ -562,7 +563,7 @@ def test_a_python_path_built_in_pieces_is_still_the_auth_dir(studio_home):
         # separators into escapes (\U, \A, \t), so the snippet stops being the path it names.
         f'import os\nprint(open(os.path.join("{home.as_posix()}", "auth", "auth.db")).read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # A path built the same way that lands anywhere else is ordinary work.
@@ -571,7 +572,7 @@ def test_a_python_path_built_in_pieces_is_still_the_auth_dir(studio_home):
         'import os\nprint(os.path.join("src", "auth", "views.py"))',
         'print("auth")',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -582,9 +583,9 @@ def test_edit_file_is_checked_on_the_resolved_target(monkeypatch, tmp_path):
     # window of the file back, so an edit there is a read.
     home = tmp_path / "studio-home"
     agent_dir = home / "auth" / "agents" / "opencode"
-    agent_dir.mkdir(parents = True)
-    (agent_dir / "opencode.json").write_text("{}", encoding = "utf-8")
-    (home / "sandbox" / _SESSION).mkdir(parents = True)
+    agent_dir.mkdir(parents=True)
+    (agent_dir / "opencode.json").write_text("{}", encoding="utf-8")
+    (home / "sandbox" / _SESSION).mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
@@ -595,7 +596,7 @@ def test_edit_file_is_checked_on_the_resolved_target(monkeypatch, tmp_path):
                     "edits": [{"old_string": "{}", "new_string": "{ }"}],
                 },
                 _SESSION,
-                disable_sandbox = True,
+                disable_sandbox=True,
             )
             == tools._STUDIO_CREDENTIAL_BLOCKED
         )
@@ -603,7 +604,7 @@ def test_edit_file_is_checked_on_the_resolved_target(monkeypatch, tmp_path):
         assert "Created" in tools._edit_file(
             {"path": "notes.txt", "edits": [{"old_string": "", "new_string": "hi"}]},
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
     finally:
         tools._studio_auth_markers_cache = None
@@ -615,9 +616,9 @@ def test_a_cd_earlier_in_the_command_moves_what_a_relative_path_means(monkeypatc
     # the traversal and the later relative path INDEPENDENTLY against the original cwd misses it:
     # neither half reaches the auth directory, only the composition does.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     sandbox = home / "sandbox" / "sess1"
-    sandbox.mkdir(parents = True)
+    sandbox.mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
@@ -650,11 +651,11 @@ def test_a_chain_of_cds_that_ends_inside_the_auth_dir(studio_home):
         'cd ../..; cd auth; sqlite3 auth.db "select jwt_secret from auth_user"',
         "cd ../.. && cd auth && cat .cli_api_key_cli_1",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in ("cd ../..; cd models; ls", "cd .. && cd data && cat x.csv"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -668,7 +669,7 @@ def test_traversal_through_the_proc_cwd_symlink(studio_home):
         "print(open('/proc/self/cwd/../../auth/auth.db').read())",
         "import sqlite3\nprint(sqlite3.connect('/proc/self/cwd/../../auth/auth.db'))",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     assert (
@@ -677,13 +678,13 @@ def test_traversal_through_the_proc_cwd_symlink(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
     # Reading procfs itself is ordinary work.
     for ordinary in ("cat /proc/self/status", "ls /proc/self/cwd"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -693,14 +694,14 @@ def test_padding_a_command_with_cds_does_not_spend_the_walk(studio_home):
     # The walk counted `cd` commands, so eight no-op ones filled the budget and the two that
     # entered the auth directory after them were never looked at.
     padded = ("cd .; " * 8) + 'cd ../..; cd auth; sqlite3 auth.db "select 1"'
-    assert tools._bash_exec(padded, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._bash_exec(padded, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     distinct = (
         "cd a; cd b; cd c; cd d; cd e; cd f; cd g; cd h; "
         "cd ../..; cd ../../..; cd auth; cat .cli_api_key_cli_1"
     )
-    assert tools._bash_exec(distinct, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._bash_exec(distinct, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     assert (
@@ -709,7 +710,7 @@ def test_padding_a_command_with_cds_does_not_spend_the_walk(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -725,7 +726,7 @@ def test_the_shell_pid_spelling_of_the_proc_cwd_symlink(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -735,7 +736,7 @@ def test_the_shell_pid_spelling_of_the_proc_cwd_symlink(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -745,7 +746,7 @@ def test_the_shell_pid_spelling_of_the_proc_cwd_symlink(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -762,7 +763,7 @@ def test_a_python_path_rooted_in_the_studio_home_variable(studio_home, monkeypat
         "print(sqlite3.connect(p))",
         'import os\nprint(open(os.getenv("STUDIO_HOME") + "/auth/.desktop_secret").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # The same variable pointed anywhere else, and an unrelated variable, stay ordinary work.
@@ -770,7 +771,7 @@ def test_a_python_path_rooted_in_the_studio_home_variable(studio_home, monkeypat
         'import os\nprint(os.environ["UNSLOTH_STUDIO_HOME"] + "/models")',
         'import os\nprint(os.environ.get("HOME") + "/auth")',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -784,11 +785,11 @@ def test_cmd_exe_spells_the_directory_change_in_any_case(studio_home):
         "Cd ../..; cd auth; cat .cli_api_key_cli_1",
         "CD ../.. && cat auth/auth.db",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in ("CD ../.. && ls models", "Cd src & type README.md"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -802,11 +803,11 @@ def test_the_studio_home_variable_is_read_in_any_case(studio_home):
             "import os, sqlite3\n"
             'print(sqlite3.connect(os.environ["%s"] + "/auth/auth.db"))' % var
         )
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), var
     ordinary = 'import os\nprint(open(os.environ["data_dir"] + "/notes.txt").read())'
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -823,7 +824,7 @@ def test_a_wildcard_that_expands_to_the_auth_directory(studio_home):
         "cat ../../auth/auth.d?",
         "cat ../../a?th/.cli_api_key_cli_1",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # A segment that is nothing but a wildcard names the auth directory only in the sense that
@@ -834,7 +835,7 @@ def test_a_wildcard_that_expands_to_the_auth_directory(studio_home):
         "grep -r auth src/*.py",
         "ls data[0].csv",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -850,7 +851,7 @@ def test_home_is_the_workdir_under_bypass_permissions(studio_home):
         "cat ~/../../auth/auth.db",
         "cat $HOME/../../auth/.cli_api_key_cli_1",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -860,7 +861,7 @@ def test_home_is_the_workdir_under_bypass_permissions(studio_home):
         "echo $HOMEBREW_PREFIX",
         "cat backup~/x.txt",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -875,7 +876,7 @@ def test_a_backslash_escape_inside_a_relative_path(studio_home):
         "cd ../..; cat auth/au\\th.db",
         "cat ../../au\\th/auth.db",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -883,7 +884,7 @@ def test_a_backslash_escape_inside_a_relative_path(studio_home):
         "cat notes\\ file.txt",
         "cd ../..; cat models/m.gguf",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -896,7 +897,7 @@ def test_a_quoted_bracket_is_not_a_subshell(studio_home):
         "echo '('; cd ../..; echo ')'; strings auth/auth.db",
         'echo "("; cd ../..; cat auth/auth.db',
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # A real subshell still ends there, and quoted brackets around ordinary work are ordinary.
@@ -904,7 +905,7 @@ def test_a_quoted_bracket_is_not_a_subshell(studio_home):
         "(cd ../..; ls models); cat auth/config.json",
         "echo '('; ls; echo ')'; cat auth/config.json",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -920,7 +921,7 @@ def test_a_child_process_runs_from_the_directory_it_is_handed(studio_home):
         'import subprocess\nsubprocess.run(["ls"], cwd = "../../auth")',
         'import subprocess\nfrom pathlib import Path\nsubprocess.run(["strings", "auth/auth.db"], cwd = Path.cwd().parents[1])',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for code in (
@@ -928,7 +929,7 @@ def test_a_child_process_runs_from_the_directory_it_is_handed(studio_home):
         'import subprocess\nsubprocess.run(["ls", "models"], cwd = "../..")',
         'import subprocess\nsubprocess.run(["cat", "auth/config.json"], cwd = ".")',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -942,7 +943,7 @@ def test_a_subshell_cd_does_not_outlive_the_subshell(studio_home):
         "(cd ../..; ls models); cat auth/config.json",
         "(cd ../..; ls models)\ncat auth/notes.txt",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     for command in (
@@ -951,7 +952,7 @@ def test_a_subshell_cd_does_not_outlive_the_subshell(studio_home):
         "(cd ../../auth; ls)",
         "(cd ../..); cd ../..; cat auth/auth.db",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
 
@@ -966,7 +967,7 @@ def test_only_a_module_that_owns_the_process_directory_changes_it(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -977,7 +978,7 @@ def test_only_a_module_that_owns_the_process_directory_changes_it(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -991,7 +992,7 @@ def test_only_a_module_that_owns_the_process_directory_changes_it(studio_home):
         'from contextlib import chdir as cd\nwith cd("../.."):\n    print(open("auth/auth.db", "rb").read())',
         'import os\nmove = os.chdir\nagain = move\nagain("../..")\nprint(open("auth/auth.db", "rb").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -1010,7 +1011,7 @@ def test_a_cd_in_a_conditional_position_moves_the_directory(studio_home):
         "if false; then :; elif cd ../..; then cat auth/auth.db; fi",
         f"if cd {root}; then cat auth/auth.db; fi",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -1018,7 +1019,7 @@ def test_a_cd_in_a_conditional_position_moves_the_directory(studio_home):
         "echo 'if cd ../..'; grep auth README",
         "if true; then cat auth.py; fi",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1033,7 +1034,7 @@ def test_a_chdir_to_a_parent_walk_moves_the_directory(studio_home):
         'import os\nfrom pathlib import Path\nos.chdir(Path.cwd().parent.parent)\nprint(open("auth/.desktop_secret").read())',
         'import os\nfrom pathlib import Path\nos.chdir(Path.cwd().parents[1] / "auth")\nprint(open("auth.db", "rb").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # The same move, then ordinary work, and a walk from a literal base that is not the sandbox.
@@ -1041,7 +1042,7 @@ def test_a_chdir_to_a_parent_walk_moves_the_directory(studio_home):
         'import os\nfrom pathlib import Path\nos.chdir(Path.cwd().parents[1])\nprint(open("models/m.gguf", "rb").read(4))',
         'import os\nfrom pathlib import Path\nroot = Path("/tmp/project")\nos.chdir(root.parent)\nprint(open("auth/auth.db", "rb").read(4))',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -1058,7 +1059,7 @@ def test_a_quoted_cd_into_the_studio_root_is_not_a_move(studio_home):
         f"cd {root}/models && grep auth README",
         f"cd {root}-backup && ls auth",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     # A real move into the root, in every position a shell runs one, still counts.
@@ -1070,7 +1071,7 @@ def test_a_quoted_cd_into_the_studio_root_is_not_a_move(studio_home):
         f"if true; then cd {root}; cat auth/auth.db; fi",
         f"pushd {root} && cat auth/auth.db",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
 
@@ -1087,7 +1088,7 @@ def test_shell_punctuation_ends_a_credential_name(studio_home):
         "cat /opt/agent_api_key.json|head",
         "cat /tmp/.bootstrap_password&",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # The same punctuation after ordinary work is still ordinary work.
@@ -1097,7 +1098,7 @@ def test_shell_punctuation_ends_a_credential_name(studio_home):
         "cat auth.py;",
         'python -c "import auth"',
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1112,7 +1113,7 @@ def test_a_builtin_wrapped_cd_moves_the_directory(studio_home):
         "command cd ../.. && cat auth/.desktop_secret",
         "builtin cd ../..; cat auth/.cli_api_key_cli_1",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -1120,7 +1121,7 @@ def test_a_builtin_wrapped_cd_moves_the_directory(studio_home):
         "builtin cd ../..; cat models/m.gguf",
         "command ls auth/",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1133,7 +1134,7 @@ def test_a_parent_walk_from_a_named_literal_base_is_that_base(studio_home):
         'from pathlib import Path\nroot = Path("/tmp/project")\nprint(root.parent.parent / "auth" / "auth.db")',
         'from pathlib import Path\nroot = Path("/srv/app")\nprint(root.parent / "auth" / "auth.db")',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # A name bound to the working directory, or rebound so its value is unknown, still counts.
@@ -1141,7 +1142,7 @@ def test_a_parent_walk_from_a_named_literal_base_is_that_base(studio_home):
         'from pathlib import Path\nroot = Path.cwd()\nprint((root.parent.parent / "auth" / "auth.db").read_bytes())',
         'from pathlib import Path\nprint((Path.cwd().parents[1] / "auth" / "auth.db").read_bytes())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -1155,7 +1156,7 @@ def test_pwd_is_the_workdir_under_bypass_permissions(studio_home):
         "cat ${PWD}/../../auth/.desktop_secret",
         "cat $PWD/../../auth/.cli_api_key_cli_1",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # Python reads the same directory by name or by call.
@@ -1164,7 +1165,7 @@ def test_pwd_is_the_workdir_under_bypass_permissions(studio_home):
         'import os\nprint(open(os.getcwd() + "/../../auth/auth.db").read())',
         'from pathlib import Path\nprint((Path.cwd() / ".." / ".." / "auth" / "auth.db").read_bytes())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # Ordinary work names the working directory constantly and must still run.
@@ -1174,7 +1175,7 @@ def test_pwd_is_the_workdir_under_bypass_permissions(studio_home):
         "cat $PWD/notes.md",
         "echo $PWDX",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     assert (
@@ -1183,7 +1184,7 @@ def test_pwd_is_the_workdir_under_bypass_permissions(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1200,7 +1201,7 @@ def test_pushd_and_a_python_chdir_move_the_directory_too(studio_home):
         # cmd.exe environment names are case-insensitive, so %home% expands like %HOME%.
         r"type %home%\..\..\auth\auth.db",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for code in (
@@ -1208,12 +1209,12 @@ def test_pushd_and_a_python_chdir_move_the_directory_too(studio_home):
         "import os\nos.chdir('..')\nos.chdir('..')\nprint(open('auth/auth.db').read())",
         "import os\nos.chdir('../../auth')\nprint(open('.cli_api_key_cli_1').read())",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # Moving anywhere else, and an `auth` that is a string rather than a path, stay ordinary.
     for ordinary in ("pushd ../models; ls", "popd"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     for code in (
@@ -1222,7 +1223,7 @@ def test_pushd_and_a_python_chdir_move_the_directory_too(studio_home):
         "print('authentication helper')",
         "x = 'auth'\nprint(x)",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -1248,7 +1249,7 @@ def test_a_differently_cased_studio_home_value_is_still_ours(monkeypatch, tmp_pa
     # Windows paths are case-insensitive, so a value spelled with a different drive-letter case is
     # the same directory. Comparing it exactly dropped every spelling of the variable.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setenv("STUDIO_HOME", str(home).upper())
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
@@ -1264,10 +1265,10 @@ def test_a_symlinked_studio_home_is_still_ours(monkeypatch, tmp_path):
     # `studio_root()` resolves aliases, so a STUDIO_HOME that is a symlink to the configured root
     # compared unequal to it and every spelling of the variable was dropped from the guard.
     real = tmp_path / "real-home"
-    (real / "auth").mkdir(parents = True)
+    (real / "auth").mkdir(parents=True)
     alias = tmp_path / "alias-home"
     try:
-        alias.symlink_to(real, target_is_directory = True)
+        alias.symlink_to(real, target_is_directory=True)
     except (OSError, NotImplementedError):  # no symlink privilege on this host
         pytest.skip("symlinks unavailable")
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(alias))
@@ -1291,7 +1292,7 @@ def test_a_failed_directory_change_leaves_the_cwd_where_it_was(studio_home):
         "cd definitely-missing; cd ../..; cat auth/auth.db",
         'cd nope || true; cd ../.. ; sqlite3 auth/auth.db "select 1"',
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for code in (
@@ -1300,11 +1301,11 @@ def test_a_failed_directory_change_leaves_the_cwd_where_it_was(studio_home):
         "import os, sqlite3\ntry:\n    os.chdir('nope')\nexcept Exception:\n    pass\n"
         "os.chdir('../..')\nprint(sqlite3.connect('auth/auth.db'))",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for ordinary in ("cd missing; ls", "cd ../data && cat x.csv"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     assert (
@@ -1313,7 +1314,7 @@ def test_a_failed_directory_change_leaves_the_cwd_where_it_was(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1330,7 +1331,7 @@ def test_cd_options_padding_and_a_keyword_chdir(studio_home):
         'cd -L -e ../.. && sqlite3 auth/auth.db "select 1"',
         padded,
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     assert (
@@ -1339,12 +1340,12 @@ def test_cd_options_padding_and_a_keyword_chdir(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
     for ordinary in ("cd -P ../models; ls", "cd -; ls"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     assert (
@@ -1353,7 +1354,7 @@ def test_cd_options_padding_and_a_keyword_chdir(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1370,7 +1371,7 @@ def test_a_glob_is_read_per_token_not_per_command(studio_home):
         f"cat {home}/a[u]th/auth.db",
         "sqlite3 ../../a?th/auth.db 'select 1'",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # Listing a parent, or globbing anywhere else, is ordinary work.
@@ -1380,7 +1381,7 @@ def test_a_glob_is_read_per_token_not_per_command(studio_home):
         f"cat {home}/logs/*.log",
         "grep -rn 'auth' src/*.py",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1394,7 +1395,7 @@ def test_a_pushd_to_an_absolute_home_and_paths_before_the_cd(studio_home):
         f'pushd {home}; sqlite3 auth/auth.db "select jwt_secret from auth_user"',
         f"cd {home} && cat auth/.desktop_secret",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -1402,7 +1403,7 @@ def test_a_pushd_to_an_absolute_home_and_paths_before_the_cd(studio_home):
         "cat auth/auth.db",
         f"pushd {home}/models; ls",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1417,7 +1418,7 @@ def test_a_pathlib_parent_walk_and_the_option_terminator(studio_home):
         "from pathlib import Path\n"
         'print((Path.cwd().parent.parent / "auth" / ".desktop_secret").read_text())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     assert (
@@ -1426,7 +1427,7 @@ def test_a_pathlib_parent_walk_and_the_option_terminator(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1439,7 +1440,7 @@ def test_a_pathlib_parent_walk_and_the_option_terminator(studio_home):
         # two levels above it, which is not this install.
         'from pathlib import Path\nprint((Path.cwd().parents[3] / "auth" / "auth.db"))',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     assert (
@@ -1448,7 +1449,7 @@ def test_a_pathlib_parent_walk_and_the_option_terminator(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1463,7 +1464,7 @@ def test_command_positions_explicit_bases_and_chdir_aliases(studio_home):
         "x=1 && cd ../.. && cat auth/auth.db",
         "if true; then cd ../..; cat auth/auth.db; fi",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # ...and nowhere else: `cd` as an ARGUMENT changes no directory, and reading a project's own
@@ -1473,7 +1474,7 @@ def test_command_positions_explicit_bases_and_chdir_aliases(studio_home):
         'echo "cd ../.."',
         "grep -rn cd ../../src",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     # An alias of os.chdir moves the directory exactly as the name does.
@@ -1481,7 +1482,7 @@ def test_command_positions_explicit_bases_and_chdir_aliases(studio_home):
         "from os import chdir as move\nmove('../..')\nprint(open('auth/auth.db').read())",
         "import os\ngo = os.chdir\ngo('../..')\nprint(open('auth/auth.db').read())",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # A parent walk from an EXPLICIT base is that base's parent, not the sandbox's.
@@ -1491,7 +1492,7 @@ def test_command_positions_explicit_bases_and_chdir_aliases(studio_home):
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -1505,7 +1506,7 @@ def test_a_generic_cwd_keyword_is_not_a_child_process(studio_home):
         'describe("auth/config.json", cwd = "../..")',
         'import subprocess as sp\nsp.run(["ls"], cwd = "build")',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     for code in (
@@ -1517,7 +1518,7 @@ def test_a_generic_cwd_keyword_is_not_a_child_process(studio_home):
         # A renamed from-import leaves the call under a name no fixed table holds.
         'from subprocess import run as launch\nlaunch(["cat", "auth/auth.db"], cwd = "../..")',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
 
@@ -1532,7 +1533,7 @@ def test_a_context_manager_chdir_restores_on_exit(studio_home):
         "    pass\n"
         'print(open("auth/config.json").read())'
     )
-    assert tools._python_exec(after, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(after, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     inside = (
@@ -1540,11 +1541,11 @@ def test_a_context_manager_chdir_restores_on_exit(studio_home):
         'with contextlib.chdir("../.."):\n'
         '    print(open("auth/auth.db", "rb").read())'
     )
-    assert tools._python_exec(inside, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(inside, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     permanent = 'import os\nos.chdir("../..")\nprint(open("auth/auth.db", "rb").read())'
-    assert tools._python_exec(permanent, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(permanent, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -1554,11 +1555,11 @@ def test_a_shell_variable_supplying_the_cd_target(studio_home):
     # `d=../..; cd "$d"` moves the directory every later relative path opens from. Handing the
     # UNexpanded text to the cwd walk read `$d` as a directory name, so the walk never moved.
     command = 'd=../..; cd "$d"; sqlite3 auth/auth.db "select jwt_secret from auth_user"'
-    assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     assert (
-        tools._bash_exec('d=build; cd "$d"; make', None, 30, _SESSION, disable_sandbox = True)
+        tools._bash_exec('d=build; cd "$d"; make', None, 30, _SESSION, disable_sandbox=True)
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -1568,11 +1569,11 @@ def test_a_snippets_own_run_is_not_a_child_process(studio_home):
     # `run`, `call` and `check_output` are ordinary function names. Treating a snippet's own
     # definition as a process launch refused ordinary code in every permission mode.
     ordinary = 'def run(*args, **kwargs):\n    pass\nrun(["auth/config.json"], cwd = "../..")'
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     imported = 'from subprocess import run\nrun(["cat", "auth/auth.db"], cwd = "../..")'
-    assert tools._python_exec(imported, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(imported, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -1583,7 +1584,7 @@ def test_a_command_substitution_inside_double_quotes_is_a_subshell(studio_home):
     # whose move dies with it. Skipping both brackets made the inner `cd` look like it lasted
     # through the rest of the command, and the project's own auth/config.json was refused.
     ordinary = 'echo "$(cd ../..; pwd)"; cat auth/config.json'
-    assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     # Inside the substitution the move is real, and a literal bracket in single quotes is not
@@ -1592,7 +1593,7 @@ def test_a_command_substitution_inside_double_quotes_is_a_subshell(studio_home):
         'echo "$(cd ../..; cat auth/auth.db)"',
         "echo '('; cd ../..; echo ')'; cat auth/auth.db",
     ):
-        assert tools._bash_exec(blocked, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(blocked, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), blocked
 
@@ -1602,7 +1603,7 @@ def test_consecutive_cds_inside_one_subshell(studio_home):
     # A subshell's move has to reach the NEXT command inside the same subshell. Dropping it outright
     # resolved the second `cd` from the outer sandbox and missed the database entirely.
     blocked = '(cd ../..; cd auth; sqlite3 auth.db "select jwt_secret from auth_user")'
-    assert tools._bash_exec(blocked, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._bash_exec(blocked, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     # ...and must not reach past the closing bracket. Entering the directory and leaving
@@ -1611,7 +1612,7 @@ def test_consecutive_cds_inside_one_subshell(studio_home):
         "(cd ../..; cd auth); cat config.json",
         "(cd ../..; ls models); cat auth/config.json",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1625,7 +1626,7 @@ def test_a_chdir_in_an_uncalled_helper_does_not_move_the_walk(studio_home):
         '    os.chdir("../..")\n'
         'print(open("auth/config.json").read())'
     )
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     # A body whose name IS called stays live, and a branch is not a scope.
@@ -1634,7 +1635,7 @@ def test_a_chdir_in_an_uncalled_helper_does_not_move_the_walk(studio_home):
         'print(open("auth/auth.db", "rb").read())',
         'import os\nif x:\n    os.chdir("../..")\nprint(open("auth/auth.db", "rb").read())',
     ):
-        assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), blocked
 
@@ -1644,11 +1645,11 @@ def test_a_wildcard_that_carries_no_literal_hint(studio_home):
     # `../../a?th/.b*` expands onto `auth/.bootstrap_password` while containing none of the literal
     # hints, so the prefilter was returning before the glob analysis that exists for this could run.
     for command in ("cat ../../a?th/.b*", "cat ../../a?th/*"):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in ("ls *.py", "ls ../../m*/", "ls ../../models/*.gguf", "grep -r x src/*.py"):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1664,7 +1665,7 @@ def test_fchdir_is_a_move_with_an_unknown_destination(studio_home):
         "os.fchdir(fd)\n"
         'print(open("auth/auth.db", "rb").read())'
     )
-    assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     ordinary = (
@@ -1673,7 +1674,7 @@ def test_fchdir_is_a_move_with_an_unknown_destination(studio_home):
         "os.fchdir(fd)\n"
         'print(open("notes.txt").read())'
     )
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -1683,7 +1684,7 @@ def test_a_snippets_own_chdir_is_not_a_move(studio_home):
     # A bare `chdir` only moves the walk once an import binds it. A snippet's own definition is an
     # ordinary function, and a call to it was resolving later paths under the studio root.
     ordinary = 'def chdir(path):\n    pass\nchdir("../..")\nprint(open("auth/config.json").read())'
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     for blocked in (
@@ -1691,7 +1692,7 @@ def test_a_snippets_own_chdir_is_not_a_move(studio_home):
         'from os import chdir as move\nmove("../..")\nprint(open("auth/auth.db", "rb").read())',
         'import os\nmove = os.chdir\nmove("../..")\nprint(open("auth/auth.db", "rb").read())',
     ):
-        assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(blocked, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), blocked
 
@@ -1710,7 +1711,7 @@ def test_a_reserved_word_before_cd_still_moves_the_directory(studio_home):
         "time -p cd ../..; cat auth/.cli_api_key_cli_1",
         'nohup cd ../..; sqlite3 auth/auth.db "select jwt_secret from auth_user"',
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -1720,7 +1721,7 @@ def test_a_reserved_word_before_cd_still_moves_the_directory(studio_home):
         "time cat models/m.gguf",
         "echo time cd ../..",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1735,7 +1736,7 @@ def test_a_cd_in_a_function_nothing_calls_does_not_move_the_directory(studio_hom
         "function helper { cd ../..; }; cat auth/auth.db",
         "helper () { cd ../..; helper; }; cat auth/auth.db",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     # Invoking it, or moving outside any function at all, is the same move it always was.
@@ -1745,7 +1746,7 @@ def test_a_cd_in_a_function_nothing_calls_does_not_move_the_directory(studio_hom
         "helper() { echo hi; }; cd ../..; cat auth/auth.db",
         "{ cd ../..; cat auth/auth.db; }",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
 
@@ -1764,7 +1765,7 @@ def test_a_singleton_class_and_an_escaped_builtin_are_the_literals_they_expand_t
         'c\\d ../..; sqlite3 auth/auth.db "select jwt_secret from auth_user"',
         "\\c\\d ../..; cat auth/.desktop_secret",
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     # A broad class still names nothing in particular, and a singleton elsewhere is ordinary.
@@ -1773,7 +1774,7 @@ def test_a_singleton_class_and_an_escaped_builtin_are_the_literals_they_expand_t
         "cat data/[a]/notes.txt",
         "cat notes.txt",
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1790,14 +1791,14 @@ def test_a_chdir_to_the_studio_home_variable_moves_there(studio_home):
         'import os\nos.chdir(os.environ["unsloth_studio_home"])\nprint(open("auth/.desktop_secret").read())',
         'import os\nos.chdir(os.getenv("STUDIO_HOME"))\nprint(open("auth/auth.db").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for ordinary in (
         'import os\nos.chdir("data")\nprint(open("notes.txt").read())',
         'import os\nos.chdir(os.environ["HOME"])\nprint(open("notes.txt").read())',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1818,7 +1819,7 @@ def test_a_child_cwd_and_a_directory_descriptor_both_carry_the_studio_root(studi
         'import os\nroot = os.open("../..", os.O_RDONLY)\n'
         'fd = os.open("auth/.desktop_secret", os.O_RDONLY, dir_fd = root)',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for ordinary in (
@@ -1829,7 +1830,7 @@ def test_a_child_cwd_and_a_directory_descriptor_both_carry_the_studio_root(studi
         'import os\nd = os.open(".", os.O_RDONLY)\n'
         'fd = os.open("auth/config.json", os.O_RDONLY, dir_fd = d)',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1847,7 +1848,7 @@ def test_a_class_body_runs_at_definition_but_its_methods_do_not(studio_home):
         'import os\nclass C:\n    def m(self):\n        os.chdir("../..")\n'
         'C().m()\nprint(open("auth/auth.db").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for ordinary in (
@@ -1857,7 +1858,7 @@ def test_a_class_body_runs_at_definition_but_its_methods_do_not(studio_home):
         'import os\ndef f():\n    os.chdir("../..")\nprint(open("auth/config.json").read())',
         'import os\nclass C:\n    x = 1\nprint(open("notes.txt").read())',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1876,7 +1877,7 @@ def test_an_invoked_lambda_moves_and_so_does_the_platform_os_module(studio_home)
         'import os\nmove = lambda: os.chdir("../..")\nmove()\n'
         'print(open("auth/auth.db").read())',
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     for ordinary in (
@@ -1886,7 +1887,7 @@ def test_an_invoked_lambda_moves_and_so_does_the_platform_os_module(studio_home)
         'import ftplib\nftp = ftplib.FTP()\nftp.chdir("../..")\n'
         'print(open("auth/config.json").read())',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1897,12 +1898,12 @@ def test_ordinary_directory_work_is_not_read_as_a_move_to_the_studio_root(monkey
     # studio path is not the studio directory, and a case-sensitive filesystem tells `Auth` from
     # `auth`. Each read below is the project's OWN auth file, not Studio's.
     home = tmp_path / "studio-home"
-    (home / "auth").mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
     # A case-INSENSITIVE filesystem (Windows, macOS) already has this directory: `Auth` and `auth`
     # are the same one there, which is exactly why the case check below only runs elsewhere.
     if tools._CASE_SENSITIVE_PATHS:
         (home / "Auth").mkdir()
-    (home / "sandbox" / _SESSION / "subdir").mkdir(parents = True)
+    (home / "sandbox" / _SESSION / "subdir").mkdir(parents=True)
     (tmp_path / "backup").mkdir()
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
@@ -1916,7 +1917,7 @@ def test_ordinary_directory_work_is_not_read_as_a_move_to_the_studio_root(monkey
         if tools._CASE_SENSITIVE_PATHS:
             ordinary.append(f"cat {home}/Auth/notes.txt")
         for command in ordinary:
-            assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) != (
+            assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) != (
                 tools._STUDIO_CREDENTIAL_BLOCKED
             ), command
         # The moves themselves still land where they always did.
@@ -1927,7 +1928,7 @@ def test_ordinary_directory_work_is_not_read_as_a_move_to_the_studio_root(monkey
             "cd -- ../..; cat auth/auth.db",
             f"cat {home}/auth/auth.db",
         ):
-            assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+            assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
                 tools._STUDIO_CREDENTIAL_BLOCKED
             ), command
     finally:
@@ -1944,7 +1945,7 @@ def test_enumerating_the_studio_root_for_a_credential_name_is_refused(studio_hom
         f'find {home} -name ".desktop_secret" -exec cat {{}} \;',
         'grep -r sk-unsloth "$UNSLOTH_STUDIO_HOME" --include=auth.db',
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -1953,7 +1954,7 @@ def test_enumerating_the_studio_root_for_a_credential_name_is_refused(studio_hom
         # A command that BINDS the generic variable means its own directory by it.
         'STUDIO_HOME=/opt/app cat "$STUDIO_HOME/auth/config.json"',
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -1963,18 +1964,18 @@ def test_an_uppercase_studio_root_is_reconstructed_with_its_case(monkeypatch, tm
     # back lowercase; the case-sensitive check then rejected the guard's own synthesized path and a
     # move to the real root went through.
     home = tmp_path / "Studio-Home"
-    (home / "auth").mkdir(parents = True)
-    (home / "sandbox" / _SESSION).mkdir(parents = True)
+    (home / "auth").mkdir(parents=True)
+    (home / "sandbox" / _SESSION).mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
     monkeypatch.setattr(tools, "_studio_auth_markers_cache", None)
     try:
         assert tools._studio_home_for_guard() == str(home)
         code = 'import os\nos.chdir(os.environ["UNSLOTH_STUDIO_HOME"])\nopen("auth/auth.db")'
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         )
         assert (
-            tools._python_exec('open("notes.txt")', None, 30, _SESSION, disable_sandbox = True)
+            tools._python_exec('open("notes.txt")', None, 30, _SESSION, disable_sandbox=True)
             != tools._STUDIO_CREDENTIAL_BLOCKED
         )
     finally:
@@ -1996,7 +1997,7 @@ def test_a_foreign_studio_home_variable_is_not_this_installs_root(
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -2006,7 +2007,7 @@ def test_a_foreign_studio_home_variable_is_not_this_installs_root(
             None,
             30,
             _SESSION,
-            disable_sandbox = True,
+            disable_sandbox=True,
         )
         == tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -2021,12 +2022,12 @@ def test_a_definition_time_call_is_not_inert(studio_home):
         f"import os\ndef f(x = os.chdir('../..')): pass\n{read}",
         f"import os\n@os.chdir('../..')\ndef f(): pass\n{read}",
     ):
-        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), code
     # A call in the body of a function nothing invokes still moves nothing.
     inert = f"import os\ndef f():\n    os.chdir('../..')\n{read}"
-    assert tools._python_exec(inert, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(inert, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -2043,7 +2044,7 @@ def test_a_shell_local_studio_home_wins_over_the_backend_one(studio_home):
         "UNSLOTH_STUDIO_HOME=/tmp/a; UNSLOTH_STUDIO_HOME=/tmp/b;"
         ' cat "$UNSLOTH_STUDIO_HOME/auth/config.json"',
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     for refused in (
@@ -2067,7 +2068,7 @@ def test_a_shell_local_studio_home_wins_over_the_backend_one(studio_home):
         # assignment inside it is still data.
         'echo "x \\" UNSLOTH_STUDIO_HOME=/tmp;"; sqlite3 "$UNSLOTH_STUDIO_HOME/auth/auth.db" .dump',
     ):
-        assert tools._bash_exec(refused, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(refused, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), refused
 
@@ -2080,12 +2081,12 @@ def test_a_path_walked_up_from_getcwd_is_resolved(studio_home):
         "import os, sqlite3\nroot = os.path.dirname(os.path.dirname(os.getcwd()))\n"
         'sqlite3.connect(os.path.join(root, "auth", "auth.db"))'
     )
-    assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(code, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     assert (
         tools._python_exec(
-            "import os\nprint(os.getcwd())", None, 30, _SESSION, disable_sandbox = True
+            "import os\nprint(os.getcwd())", None, 30, _SESSION, disable_sandbox=True
         )
         != tools._STUDIO_CREDENTIAL_BLOCKED
     )
@@ -2104,11 +2105,11 @@ def test_a_foreign_studio_home_value_is_not_read_as_this_installs_root(
         'import os\nopen(os.environ["STUDIO_HOME"] + "/auth/config.json").read()',
         'import os\nopen(os.getenv("STUDIO_HOME") + "/auth/config.json").read()',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
     refused = 'import os\nopen(os.environ["UNSLOTH_STUDIO_HOME"] + "/auth/auth.db").read()'
-    assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -2122,7 +2123,7 @@ def test_a_foreign_environment_variable_is_not_the_studio_home(studio_home):
         'import os\nprint(os.environ["UNSLOTH_STUDIO_HOME"])\n'
         'project = os.environ["PROJECT_HOME"]\nopen(project + "/auth/config.json").read()'
     )
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     for refused in (
@@ -2130,7 +2131,7 @@ def test_a_foreign_environment_variable_is_not_the_studio_home(studio_home):
         'import os\nopen(os.environ["UNSLOTH_STUDIO_HOME"] + "/auth/auth.db").read()',
         'import os\nroot = os.getenv("UNSLOTH_STUDIO_HOME")\nopen(root + "/auth/auth.db").read()',
     ):
-        assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), refused
 
@@ -2173,7 +2174,7 @@ def test_the_root_spellings_cache_follows_a_changed_home(studio_home, tmp_path, 
     # guard keeps answering for the previous install.
     assert tools._references_studio_credential_here(f'cp -a "{studio_home}" ./leak', None)
     other = tmp_path / "other-home"
-    (other / "auth").mkdir(parents = True)
+    (other / "auth").mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(other))
     tools._studio_auth_markers_cache = None
     assert tools._references_studio_credential_here(f'cp -a "{other}" ./leak', None)
@@ -2239,7 +2240,7 @@ def test_a_recursive_read_of_the_studio_root_is_refused(studio_home):
         'cp -a "$UNSLOTH_STUDIO_HOME"/./ ./copy',
         f'zip -r out.zip "{home}"',
     ):
-        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._bash_exec(command, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), command
     for ordinary in (
@@ -2258,7 +2259,7 @@ def test_a_recursive_read_of_the_studio_root_is_refused(studio_home):
         "cp -a ./src/. ./copy",
         'cp -a "$UNSLOTH_STUDIO_HOME/projects/p/." ./copy',
     ):
-        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._bash_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -2282,7 +2283,7 @@ def test_a_recursive_python_copy_of_the_studio_root_is_refused(studio_home):
         'import shutil, os\nshutil.make_archive("b", "zip", os.environ["UNSLOTH_STUDIO_HOME"])',
         f'import shutil\nshutil.copytree({str(studio_home)!r}, "./leak")',
     ):
-        assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox = True) == (
+        assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox=True) == (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), refused
     for ordinary in (
@@ -2295,7 +2296,7 @@ def test_a_recursive_python_copy_of_the_studio_root_is_refused(studio_home):
         'print(list(Path(os.environ["UNSLOTH_STUDIO_HOME"]).iterdir()))',
         f'import shutil\nshutil.copytree({str(studio_home / "projects" / "p")!r}, "./dst")',
     ):
-        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+        assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
             tools._STUDIO_CREDENTIAL_BLOCKED
         ), ordinary
 
@@ -2303,11 +2304,11 @@ def test_a_recursive_python_copy_of_the_studio_root_is_refused(studio_home):
 def test_a_parent_walk_from_path_home_lands_in_the_studio_root(studio_home):
     # Both environment builders set HOME to the session workdir, so `Path.home()` is `Path.cwd()`.
     refused = 'from pathlib import Path\nprint(open(Path.home().parents[1] / "auth" / "auth.db", "rb").read())'
-    assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox = True) == (
+    assert tools._python_exec(refused, None, 30, _SESSION, disable_sandbox=True) == (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
     ordinary = 'from pathlib import Path\nprint(open(Path.home() / "notes.txt").read())'
-    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox = True) != (
+    assert tools._python_exec(ordinary, None, 30, _SESSION, disable_sandbox=True) != (
         tools._STUDIO_CREDENTIAL_BLOCKED
     )
 
@@ -2316,6 +2317,7 @@ def test_two_open_secrets_in_one_chunk_hold_from_the_first(studio_home):
     # `rfind` walks right to left and the loop stopped at the first hit, so a chunk holding two
     # open tokens emitted the earlier partial key.
     from core.inference.tool_stream_exec import _hold_back_partial_secret
+
     assert _hold_back_partial_secret("sk-unsloth-abcdsk-unsloth-") == 0
     assert _hold_back_partial_secret("sk-unsloth-0123 done") == len("sk-unsloth-0123 done")
 

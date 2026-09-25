@@ -43,10 +43,10 @@ def _git_commit() -> Optional[str]:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd = str(Path(__file__).resolve().parent),
-            capture_output = True,
-            text = True,
-            timeout = 10,
+            cwd=str(Path(__file__).resolve().parent),
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         return out.stdout.strip() or None if out.returncode == 0 else None
     except Exception:
@@ -69,34 +69,40 @@ def _is_cuda(device: Optional[str]) -> bool:
 
 def _cuda_reset_peak() -> None:
     import torch
+
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
 
 def _cuda_sync() -> None:
     import torch
+
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
 
 def _cuda_peak_alloc() -> Optional[int]:
     import torch
+
     return int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else None
 
 
 def _cuda_peak_reserved() -> Optional[int]:
     import torch
+
     return int(torch.cuda.max_memory_reserved()) if torch.cuda.is_available() else None
 
 
 def _cuda_alloc() -> Optional[int]:
     import torch
+
     return int(torch.cuda.memory_allocated()) if torch.cuda.is_available() else None
 
 
 def _gpu_name() -> Optional[str]:
     try:
         import torch
+
         if torch.cuda.is_available():
             return torch.cuda.get_device_name(0)
     except Exception:
@@ -108,6 +114,7 @@ def _process_rss_bytes() -> Optional[int]:
     """Best-effort current-process RSS, without making the benchmark depend on psutil."""
     try:
         import psutil
+
         return int(psutil.Process().memory_info().rss)
     except Exception:
         pass
@@ -129,11 +136,13 @@ def _versions() -> dict[str, Optional[str]]:
     out: dict[str, Optional[str]] = {"torch": None, "diffusers": None}
     try:
         import torch
+
         out["torch"] = torch.__version__
     except Exception:
         pass
     try:
         import diffusers
+
         out["diffusers"] = diffusers.__version__
     except Exception:
         pass
@@ -146,9 +155,9 @@ def _psnr(ref_png: Path, cand_png: Path) -> float:
     from PIL import Image
 
     with Image.open(ref_png) as im_a:
-        a = np.asarray(im_a.convert("RGB"), dtype = np.float64)
+        a = np.asarray(im_a.convert("RGB"), dtype=np.float64)
     with Image.open(cand_png) as im_b:
-        b = np.asarray(im_b.convert("RGB"), dtype = np.float64)
+        b = np.asarray(im_b.convert("RGB"), dtype=np.float64)
     if a.shape != b.shape:
         # Different geometry means the comparison is meaningless; report worst case.
         return 0.0
@@ -171,7 +180,7 @@ def _wait_for_load(backend: Any, timeout_s: int = 2400) -> None:
             last = phase
             frac = p.get("fraction") or 0.0
             bt = (p.get("bytes_total") or 0) / 1e9
-            print(f"  load phase={phase} frac={frac:.3f} total={bt:.2f}GB", flush = True)
+            print(f"  load phase={phase} frac={frac:.3f} total={bt:.2f}GB", flush=True)
         if phase == "ready":
             return
         if phase == "error":
@@ -183,13 +192,13 @@ def _wait_for_load(backend: Any, timeout_s: int = 2400) -> None:
 def _generate_once(backend: Any, args: argparse.Namespace) -> Any:
     """One generation at the fixed seed; returns the first PIL image."""
     result = backend.generate(
-        prompt = args.prompt,
-        width = args.width,
-        height = args.height,
-        steps = args.steps,
-        guidance = args.guidance,
-        seed = args.seed,
-        batch_size = args.batch_size,
+        prompt=args.prompt,
+        width=args.width,
+        height=args.height,
+        steps=args.steps,
+        guidance=args.guidance,
+        seed=args.seed,
+        batch_size=args.batch_size,
     )
     images = result["images"]
     return images[0]
@@ -209,16 +218,16 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         t0 = time.time()
         backend.begin_load(
             args.model,
-            gguf_filename = args.gguf,
-            base_repo = args.base_repo,
-            family_override = args.family_override,
-            hf_token = os.environ.get("HF_TOKEN"),
-            cpu_offload = args.cpu_offload,
-            memory_mode = args.memory_mode,
-            speed_mode = args.speed_mode,
-            text_encoder_quant = args.text_encoder_quant,
-            transformer_quant = args.transformer_quant,
-            transformer_quant_fast_accum = {"auto": None, "on": True, "off": False}[
+            gguf_filename=args.gguf,
+            base_repo=args.base_repo,
+            family_override=args.family_override,
+            hf_token=os.environ.get("HF_TOKEN"),
+            cpu_offload=args.cpu_offload,
+            memory_mode=args.memory_mode,
+            speed_mode=args.speed_mode,
+            text_encoder_quant=args.text_encoder_quant,
+            transformer_quant=args.transformer_quant,
+            transformer_quant_fast_accum={"auto": None, "on": True, "off": False}[
                 args.fp8_fast_accum
             ],
         )
@@ -231,7 +240,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "final_vram_bytes": _cuda_alloc(),
         }
         status = backend.status()
-        print(f"  loaded: {status}", flush = True)
+        print(f"  loaded: {status}", flush=True)
 
         rss_after_load = _process_rss_bytes()
 
@@ -255,7 +264,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             rss_after_generations.append(_process_rss_bytes())
             if first_image is None:
                 first_image = image
-            print(f"  gen[{i}] {latencies[-1]:.3f}s", flush = True)
+            print(f"  gen[{i}] {latencies[-1]:.3f}s", flush=True)
 
         total = sum(latencies)
         measured_rss = [value for value in rss_after_generations if value is not None]
@@ -284,14 +293,14 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         }
 
         # The fixed-seed image is the accuracy anchor.
-        args._image_out.parent.mkdir(parents = True, exist_ok = True)
+        args._image_out.parent.mkdir(parents=True, exist_ok=True)
         first_image.save(args._image_out)
-        print(f"  saved image -> {args._image_out}", flush = True)
+        print(f"  saved image -> {args._image_out}", flush=True)
     finally:
         try:
             backend.unload()
         except Exception as exc:  # noqa: BLE001 — best-effort cleanup
-            print(f"  warn: unload failed: {exc}", flush = True)
+            print(f"  warn: unload failed: {exc}", flush=True)
 
     return {
         "env": {
@@ -345,23 +354,23 @@ def _write_baseline(args: argparse.Namespace) -> int:
         "dtype": (metrics["env"]["status"] or {}).get("dtype"),
     }
 
-    baseline_path.parent.mkdir(parents = True, exist_ok = True)
-    baseline_path.write_text(json.dumps(metrics, indent = 2))
-    print("\n=== BASELINE WRITTEN ===", flush = True)
-    print(f"  json:      {baseline_path}", flush = True)
-    print(f"  reference: {ref_png}", flush = True)
-    print(f"  load: {metrics['load']}", flush = True)
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    baseline_path.write_text(json.dumps(metrics, indent=2))
+    print("\n=== BASELINE WRITTEN ===", flush=True)
+    print(f"  json:      {baseline_path}", flush=True)
+    print(f"  reference: {ref_png}", flush=True)
+    print(f"  load: {metrics['load']}", flush=True)
     print(
         f"  generate: median={metrics['generate'].get('median_latency_s')}s "
         f"p90={metrics['generate'].get('p90_latency_s')}s "
         f"img/s={metrics['generate'].get('images_per_sec')} "
         f"peak_vram={metrics['generate'].get('peak_vram_bytes')}",
-        flush = True,
+        flush=True,
     )
 
     rss_growth = (metrics["generate"].get("host_rss") or {}).get("post_warmup_growth_bytes")
     if rss_growth is not None:
-        print(f"  host RSS growth after warmup: {rss_growth / 2**20:.1f} MiB", flush = True)
+        print(f"  host RSS growth after warmup: {rss_growth / 2**20:.1f} MiB", flush=True)
     return 0
 
 
@@ -376,7 +385,7 @@ def _compare(args: argparse.Namespace) -> int:
             print(
                 f"error: baseline {baseline_path} is the file this run writes; "
                 f"pass a different --out-dir or rename the baseline",
-                file = sys.stderr,
+                file=sys.stderr,
             )
             return 2
 
@@ -396,9 +405,9 @@ def _compare(args: argparse.Namespace) -> int:
     if base_status.get("dtype") != cur_status.get("dtype"):
         mismatch.append(f"dtype {base_status.get('dtype')!r} -> {cur_status.get('dtype')!r}")
     if mismatch:
-        print("\n!! environment mismatch vs baseline: " + "; ".join(mismatch), flush = True)
+        print("\n!! environment mismatch vs baseline: " + "; ".join(mismatch), flush=True)
         if not args.force_compare:
-            print("   refusing noisy comparison (pass --force-compare to override).", flush = True)
+            print("   refusing noisy comparison (pass --force-compare to override).", flush=True)
             return 2
 
     # PSNR against the stored reference; reference_png is absolute, so fall back to reference.png beside the baseline.
@@ -420,16 +429,16 @@ def _compare(args: argparse.Namespace) -> int:
     base_rss_growth = (base_gen.get("host_rss") or {}).get("post_warmup_growth_bytes")
     cur_rss_growth = (cur_gen.get("host_rss") or {}).get("post_warmup_growth_bytes")
 
-    print("\n=== REGRESSION REPORT ===", flush = True)
-    print(f"  {'metric':<22}{'baseline':>16}{'current':>16}{'delta':>12}", flush = True)
+    print("\n=== REGRESSION REPORT ===", flush=True)
+    print(f"  {'metric':<22}{'baseline':>16}{'current':>16}{'delta':>12}", flush=True)
     print(
         f"  {'median_latency_s':<22}{base_median:>16.4f}{cur_median:>16.4f}{latency_reg * 100:>11.1f}%",
-        flush = True,
+        flush=True,
     )
     if base_peak and cur_peak:
         print(
             f"  {'peak_vram_MB':<22}{base_peak / 1e6:>16.1f}{cur_peak / 1e6:>16.1f}{vram_reg * 100:>11.1f}%",
-            flush = True,
+            flush=True,
         )
 
     if base_rss_growth is not None or cur_rss_growth is not None:
@@ -442,9 +451,9 @@ def _compare(args: argparse.Namespace) -> int:
         )
         print(
             f"  {'host_rss_growth_MiB':<22}{base_rss_label:>16}{cur_rss_label:>16}{rss_delta_label:>12}",
-            flush = True,
+            flush=True,
         )
-    print(f"  {'psnr_dB(vs ref)':<22}{'-':>16}{psnr:>16.2f}{'':>12}", flush = True)
+    print(f"  {'psnr_dB(vs ref)':<22}{'-':>16}{psnr:>16.2f}{'':>12}", flush=True)
 
     failures = []
     if latency_reg > args.max_latency_regression:
@@ -474,13 +483,13 @@ def _compare(args: argparse.Namespace) -> int:
         "vram_regression": vram_reg,
         "failures": list(failures),
     }
-    out_dir.mkdir(parents = True, exist_ok = True)
-    (out_dir / "compare.json").write_text(json.dumps(metrics, indent = 2, allow_nan = False))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "compare.json").write_text(json.dumps(metrics, indent=2, allow_nan=False))
 
     if failures:
-        print("\n  FAIL: " + "; ".join(failures), flush = True)
+        print("\n  FAIL: " + "; ".join(failures), flush=True)
         return 1
-    print("\n  PASS: no regression beyond thresholds.", flush = True)
+    print("\n  PASS: no regression beyond thresholds.", flush=True)
     return 0
 
 
@@ -489,109 +498,109 @@ def _compare(args: argparse.Namespace) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description = "Benchmark + regression guard for the Unsloth diffusion backend.",
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+        description="Benchmark + regression guard for the Unsloth diffusion backend.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument(
-        "--model", default = "unsloth/Z-Image-Turbo-GGUF", help = "GGUF repo id or local path"
+        "--model", default="unsloth/Z-Image-Turbo-GGUF", help="GGUF repo id or local path"
     )
     p.add_argument(
         "--gguf",
-        default = "z-image-turbo-Q4_K_M.gguf",
-        help = "transformer GGUF filename inside --model",
+        default="z-image-turbo-Q4_K_M.gguf",
+        help="transformer GGUF filename inside --model",
     )
-    p.add_argument("--base-repo", default = None, help = "override the diffusers base repo")
-    p.add_argument("--family-override", default = None, help = "force a diffusion family")
+    p.add_argument("--base-repo", default=None, help="override the diffusers base repo")
+    p.add_argument("--family-override", default=None, help="force a diffusion family")
     p.add_argument(
         "--prompt",
-        default = "A cozy reading nook by a rain-streaked window, warm lamplight, "
+        default="A cozy reading nook by a rain-streaked window, warm lamplight, "
         "a cat asleep on a stack of books, highly detailed",
     )
-    p.add_argument("--width", type = int, default = 1024)
-    p.add_argument("--height", type = int, default = 1024)
-    p.add_argument("--steps", type = int, default = 9)
-    p.add_argument("--guidance", type = float, default = 0.0)
-    p.add_argument("--seed", type = int, default = 12345, help = "fixed seed -> deterministic image")
-    p.add_argument("--batch-size", type = int, default = 1)
-    p.add_argument("--warmup", type = int, default = 1, help = "discarded warmup generations")
-    p.add_argument("--iters", type = int, default = 3, help = "measured generations")
+    p.add_argument("--width", type=int, default=1024)
+    p.add_argument("--height", type=int, default=1024)
+    p.add_argument("--steps", type=int, default=9)
+    p.add_argument("--guidance", type=float, default=0.0)
+    p.add_argument("--seed", type=int, default=12345, help="fixed seed -> deterministic image")
+    p.add_argument("--batch-size", type=int, default=1)
+    p.add_argument("--warmup", type=int, default=1, help="discarded warmup generations")
+    p.add_argument("--iters", type=int, default=3, help="measured generations")
     p.add_argument(
         "--memory-mode",
-        default = None,
-        choices = ["auto", "fast", "balanced", "low_vram"],
-        help = "memory policy (default: backend auto)",
+        default=None,
+        choices=["auto", "fast", "balanced", "low_vram"],
+        help="memory policy (default: backend auto)",
     )
     p.add_argument(
         "--speed-mode",
-        default = None,
-        choices = ["off", "default", "max"],
-        help = "speed profile: off is bit-identical; default adds compile + "
+        default=None,
+        choices=["off", "default", "max"],
+        help="speed profile: off is bit-identical; default adds compile + "
         "cudnn.benchmark (near-lossless); max also adds TF32 + fused QKV",
     )
     p.add_argument(
         "--text-encoder-quant",
-        default = None,
-        choices = ["fp8", "nvfp4"],
-        help = "quantise the companion text encoder (fp8 or nvfp4)",
+        default=None,
+        choices=["fp8", "nvfp4"],
+        help="quantise the companion text encoder (fp8 or nvfp4)",
     )
     p.add_argument(
         "--transformer-quant",
-        default = None,
-        choices = ["auto", "int8", "fp8", "nvfp4", "mxfp8"],
-        help = "opt-in fast transformer: load the DENSE bf16 transformer and torchao-"
+        default=None,
+        choices=["auto", "int8", "fp8", "nvfp4", "mxfp8"],
+        help="opt-in fast transformer: load the DENSE bf16 transformer and torchao-"
         "quantise it onto the low-precision tensor cores (faster than GGUF, higher "
         "VRAM). auto picks per GPU; falls back to GGUF if unsupported / no VRAM",
     )
     p.add_argument(
         "--fp8-fast-accum",
-        default = "auto",
-        choices = ["auto", "on", "off"],
-        help = "fp8 accumulate: auto picks by GPU class (fast on consumer, precise on "
+        default="auto",
+        choices=["auto", "on", "off"],
+        help="fp8 accumulate: auto picks by GPU class (fast on consumer, precise on "
         "data-center); on/off force it",
     )
     p.add_argument(
-        "--cpu-offload", action = "store_true", help = "legacy: force whole-module CPU offload"
+        "--cpu-offload", action="store_true", help="legacy: force whole-module CPU offload"
     )
     p.add_argument(
         "--write-baseline",
-        metavar = "PATH",
-        default = None,
-        help = "run once and save metrics JSON + reference.png",
+        metavar="PATH",
+        default=None,
+        help="run once and save metrics JSON + reference.png",
     )
     p.add_argument(
-        "--compare", metavar = "PATH", default = None, help = "run again and diff against a baseline JSON"
+        "--compare", metavar="PATH", default=None, help="run again and diff against a baseline JSON"
     )
     p.add_argument(
         "--max-latency-regression",
-        type = float,
-        default = 0.10,
-        help = "fail if median latency rises by more than this fraction",
+        type=float,
+        default=0.10,
+        help="fail if median latency rises by more than this fraction",
     )
     p.add_argument(
         "--max-vram-regression",
-        type = float,
-        default = 0.10,
-        help = "fail if peak generation VRAM rises by more than this fraction",
+        type=float,
+        default=0.10,
+        help="fail if peak generation VRAM rises by more than this fraction",
     )
     p.add_argument(
         "--max-host-rss-growth-mib",
-        type = float,
-        default = None,
-        help = "fail comparison if peak post-warmup process RSS growth exceeds this many MiB",
+        type=float,
+        default=None,
+        help="fail comparison if peak post-warmup process RSS growth exceeds this many MiB",
     )
     p.add_argument(
         "--min-psnr",
-        type = float,
-        default = 35.0,
-        help = "fail if the fixed-seed image PSNR vs reference drops below this",
+        type=float,
+        default=35.0,
+        help="fail if the fixed-seed image PSNR vs reference drops below this",
     )
     p.add_argument(
         "--force-compare",
-        action = "store_true",
-        help = "compare even when GPU/device/dtype differ from the baseline",
+        action="store_true",
+        help="compare even when GPU/device/dtype differ from the baseline",
     )
     p.add_argument(
-        "--out-dir", default = "outputs/diffusion_bench", help = "where compare.png is written"
+        "--out-dir", default="outputs/diffusion_bench", help="where compare.png is written"
     )
     return p
 
@@ -601,7 +610,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     if isinstance(args.gguf, str):
         args.gguf = args.gguf.strip() or None
     if bool(args.write_baseline) == bool(args.compare):
-        print("error: pass exactly one of --write-baseline / --compare", file = sys.stderr)
+        print("error: pass exactly one of --write-baseline / --compare", file=sys.stderr)
         return 2
     if args.write_baseline:
         return _write_baseline(args)

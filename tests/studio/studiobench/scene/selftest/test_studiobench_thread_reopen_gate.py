@@ -51,7 +51,7 @@ TOTAL = 18
 MARKER = "studiobench turn 8: continue with unit 3"
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class _Frame:
     """One moment of the rebuilt thread, as the page would report it.
 
@@ -72,25 +72,25 @@ class _Frame:
 #: thread. Frame 3 has the whole conversation mounted but is still highlighting, so `elements` is
 #: still moving and the mount is not settled until frame 4 repeats it.
 REBUILD = (
-    _Frame(mounted = 3, elements = 1_200, scroll_height = 2_000, spans = 0, marker = False),
-    _Frame(mounted = 9, elements = 4_800, scroll_height = 6_400, spans = 120, marker = False),
-    _Frame(mounted = 18, elements = 9_700, scroll_height = 12_000, spans = 4_210, marker = True),
-    _Frame(mounted = 18, elements = 11_900, scroll_height = 12_400, spans = 8_940, marker = True),
-    _Frame(mounted = 18, elements = 11_900, scroll_height = 12_400, spans = 8_940, marker = True),
+    _Frame(mounted=3, elements=1_200, scroll_height=2_000, spans=0, marker=False),
+    _Frame(mounted=9, elements=4_800, scroll_height=6_400, spans=120, marker=False),
+    _Frame(mounted=18, elements=9_700, scroll_height=12_000, spans=4_210, marker=True),
+    _Frame(mounted=18, elements=11_900, scroll_height=12_400, spans=8_940, marker=True),
+    _Frame(mounted=18, elements=11_900, scroll_height=12_400, spans=8_940, marker=True),
 )
 
 #: A rebuild that never arrives: the store keeps declaring eighteen messages and the thread stops
 #: at three, settled, with the end of the conversation nowhere on screen. The exact shape the old
 #: condition scored as a fast, successful re-open.
-STALLED = (_Frame(mounted = 3, elements = 1_200, scroll_height = 2_000, spans = 0, marker = False),)
+STALLED = (_Frame(mounted=3, elements=1_200, scroll_height=2_000, spans=0, marker=False),)
 
 #: A correctly windowed rebuild: six rows out of eighteen, anchored at the end, with the last user
 #: turn among them. `full` conditions would refuse this forever, which is why the action picks its
 #: mode from the mount it left.
 WINDOWED = (
-    _Frame(mounted = 2, elements = 900, scroll_height = 11_800, spans = 0, marker = False),
-    _Frame(mounted = 6, elements = 3_400, scroll_height = 12_400, spans = 2_100, marker = True),
-    _Frame(mounted = 6, elements = 3_400, scroll_height = 12_400, spans = 2_100, marker = True),
+    _Frame(mounted=2, elements=900, scroll_height=11_800, spans=0, marker=False),
+    _Frame(mounted=6, elements=3_400, scroll_height=12_400, spans=2_100, marker=True),
+    _Frame(mounted=6, elements=3_400, scroll_height=12_400, spans=2_100, marker=True),
 )
 
 
@@ -106,10 +106,10 @@ class _ThreadPage:
     def __init__(
         self,
         *,
-        frames = REBUILD,
-        unclickable = (),
-        mounted = TOTAL,
-        total = TOTAL,
+        frames=REBUILD,
+        unclickable=(),
+        mounted=TOTAL,
+        total=TOTAL,
     ):
         self.frames = tuple(frames)
         self.unclickable = set(unclickable)
@@ -170,7 +170,7 @@ class _ThreadPage:
     def evaluate(
         self,
         script,
-        arg = None,
+        arg=None,
     ):
         if "probe_attempted" in script:  # readiness.PROBE_JS
             return self._probe()
@@ -191,7 +191,7 @@ class _ThreadPage:
         page = self
 
         class _Handle:
-            def click(self, timeout = None):
+            def click(self, timeout=None):
                 if selector in page.unclickable:
                     raise TimeoutError(f"{selector} is not clickable")
                 page._route(selector)
@@ -222,18 +222,18 @@ class _ThreadPage:
 
 def _ctx(
     page,
-    log = None,
-    budget_ms = 30_000,
+    log=None,
+    budget_ms=30_000,
 ) -> ActionContext:
     return ActionContext(
-        page = page,
-        cdp = None,
-        cell = Cell(cell_id = "r100K.base.rep0", rung = "100K", rung_tokens = 100_000),
-        window = None,
-        args = {"thread_id": "t1", "base_url": BASE_URL},
-        budget_ms = budget_ms,
-        dom = None,
-        log = log or (lambda _m: None),
+        page=page,
+        cdp=None,
+        cell=Cell(cell_id="r100K.base.rep0", rung="100K", rung_tokens=100_000),
+        window=None,
+        args={"thread_id": "t1", "base_url": BASE_URL},
+        budget_ms=budget_ms,
+        dom=None,
+        log=log or (lambda _m: None),
     )
 
 
@@ -247,7 +247,7 @@ def test_a_refused_reopen_leaves_the_thread_where_it_found_it():
     Before the fix `page.goto` had already run by the time the refusal was decided, so the scene
     continued from an empty new chat and every later slot measured that instead.
     """
-    page = _ThreadPage(unclickable = {NEW_CHAT})
+    page = _ThreadPage(unclickable={NEW_CHAT})
     result = A.thread_reopen(_ctx(page))
 
     assert result.ran is False
@@ -262,7 +262,7 @@ def test_a_refused_reopen_leaves_the_thread_where_it_found_it():
 def test_the_refusal_still_says_why_in_the_row_and_in_the_log():
     """Declining the substitution must not make the refusal quieter than it was."""
     said: list[str] = []
-    page = _ThreadPage(unclickable = {NEW_CHAT})
+    page = _ThreadPage(unclickable={NEW_CHAT})
     result = A.thread_reopen(_ctx(page, said.append))
 
     assert "not a thread rebuild" in (result.reason or "")
@@ -272,8 +272,8 @@ def test_the_refusal_still_says_why_in_the_row_and_in_the_log():
 
 def test_click_or_navigate_declines_the_substitute_when_the_caller_refuses_it():
     """The contract the caller relies on: no goto, `ok = False`, and the click failure explained."""
-    page = _ThreadPage(unclickable = {NEW_CHAT})
-    got = A._click_or_navigate(_ctx(page), NEW_CHAT, NEW_CHAT_URL, allow_navigate = False)
+    page = _ThreadPage(unclickable={NEW_CHAT})
+    got = A._click_or_navigate(_ctx(page), NEW_CHAT, NEW_CHAT_URL, allow_navigate=False)
 
     assert got.ok is False
     assert got.path == "failed"
@@ -286,7 +286,7 @@ def test_refusing_the_substitute_does_not_refuse_the_click():
     """`allow_navigate` governs the FALLBACK only. A control that can be clicked is still clicked,
     which is the path every successful run takes."""
     page = _ThreadPage()
-    got = A._click_or_navigate(_ctx(page), NEW_CHAT, NEW_CHAT_URL, allow_navigate = False)
+    got = A._click_or_navigate(_ctx(page), NEW_CHAT, NEW_CHAT_URL, allow_navigate=False)
 
     assert got.ok is True
     assert got.path == "click"
@@ -297,7 +297,7 @@ def test_the_default_still_navigates_for_every_other_caller():
     """The signature gained a keyword and must not have changed what anyone else gets. The reopen
     half of `thread_reopen` depends on this: from an empty new chat the navigation is what puts the
     thread back for the slots that follow."""
-    page = _ThreadPage(unclickable = {NEW_CHAT})
+    page = _ThreadPage(unclickable={NEW_CHAT})
     got = A._click_or_navigate(_ctx(page), NEW_CHAT, NEW_CHAT_URL)
 
     assert got.ok is True
@@ -310,7 +310,7 @@ def test_a_substituted_navigation_on_the_way_back_repairs_the_scene_but_is_not_t
     refused. Returning, it is what puts the thread back on screen for the slots that follow, so it
     is allowed to stand -- and the action still reports NOT RUN, with no timing, because a document
     reload is still not a rebuild."""
-    page = _ThreadPage(unclickable = {SIDEBAR_ROW})
+    page = _ThreadPage(unclickable={SIDEBAR_ROW})
     result = A.thread_reopen(_ctx(page))
 
     assert result.ran is False
@@ -368,7 +368,7 @@ def test_a_thread_that_declares_its_total_and_never_rebuilds_gets_no_timing(monk
     publishes eighteen, three rows mount, nothing else ever arrives. That was scored as a fast
     re-open. It is now a run with no timing and the outstanding condition named."""
     monkeypatch.setattr(A, "_REOPEN_READY_CEILING_S", 0.4)
-    page = _ThreadPage(frames = STALLED)
+    page = _ThreadPage(frames=STALLED)
     result = A.thread_reopen(_ctx(page))
 
     assert result.ran is True
@@ -385,7 +385,7 @@ def test_a_windowed_arm_is_held_to_the_windowed_gate_and_not_to_a_full_mount():
     """The other way this fix could have been wrong. A windowed arm never mounts every message, so
     waiting for a full mount would time out on the arm the whole comparison exists to score. The
     mode is read from the mount the action LEFT, exactly as the cell's opening gate read it."""
-    page = _ThreadPage(frames = WINDOWED, mounted = 6, total = TOTAL)
+    page = _ThreadPage(frames=WINDOWED, mounted=6, total=TOTAL)
     result = A.thread_reopen(_ctx(page))
 
     assert result.expect["reopen_ready_mode"] == "windowed"
@@ -407,7 +407,7 @@ def test_a_thread_whose_end_cannot_be_identified_is_refused_before_it_is_touched
         def evaluate(
             self,
             script,
-            arg = None,
+            arg=None,
         ):
             if '[data-role="user"]' in script:
                 return None
@@ -442,7 +442,7 @@ class _HoverRevealedPage(_ThreadPage):
     def __init__(
         self,
         *,
-        slow = (),
+        slow=(),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -453,7 +453,7 @@ class _HoverRevealedPage(_ThreadPage):
     def evaluate(
         self,
         script,
-        arg = None,
+        arg=None,
     ):
         if "elementFromPoint" in script or "getBoundingClientRect" in script:
             selector = arg[0] if isinstance(arg, list) else arg
@@ -465,7 +465,7 @@ class _HoverRevealedPage(_ThreadPage):
         page = self
 
         class _Handle:
-            def click(self, timeout = None):
+            def click(self, timeout=None):
                 if selector in page.slow:
                     # The retry, faithfully: time passes and then it fails.
                     time.sleep(RETRY_MS / 1000)
@@ -499,7 +499,7 @@ def test_the_failed_click_retry_is_not_charged_to_the_close_or_the_rebuild():
 
     Both clocks now start at the click that WORKED. The retry is not thrown away, it is named.
     """
-    page = _HoverRevealedPage(slow = {NEW_CHAT, SIDEBAR_ROW})
+    page = _HoverRevealedPage(slow={NEW_CHAT, SIDEBAR_ROW})
     result = A.thread_reopen(_ctx(page))
 
     assert result.ran is True, result.reason

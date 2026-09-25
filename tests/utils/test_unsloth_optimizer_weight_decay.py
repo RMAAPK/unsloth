@@ -24,7 +24,7 @@ def _model(torch, nn):
     model.proj = nn.Linear(4, 4)  # .weight decays, .bias does not
     model.norm = nn.LayerNorm(4)  # neither weight nor bias decays
     embed = nn.Module()
-    embed.modules_to_save = nn.ModuleDict({"default": nn.Linear(4, 4, bias = False)})
+    embed.modules_to_save = nn.ModuleDict({"default": nn.Linear(4, 4, bias=False)})
     inner = nn.Module()
     inner.embed_tokens = embed
     model.model = inner
@@ -36,14 +36,14 @@ def _trainer(torch, weight_decay):
     from trl import SFTConfig
 
     args = SFTConfig(
-        output_dir = "/tmp/unsloth-weight-decay-test",
-        weight_decay = weight_decay,
-        learning_rate = 2e-4,
-        optim = "adamw_torch",
-        report_to = [],
+        output_dir="/tmp/unsloth-weight-decay-test",
+        weight_decay=weight_decay,
+        learning_rate=2e-4,
+        optim="adamw_torch",
+        report_to=[],
     )
     args.embedding_learning_rate = 5e-5
-    trainer = SimpleNamespace(args = args, model = None, optimizer = None)
+    trainer = SimpleNamespace(args=args, model=None, optimizer=None)
     trainer.get_decay_parameter_names = MethodType(Trainer.get_decay_parameter_names, trainer)
     return trainer
 
@@ -68,7 +68,7 @@ def test_weight_decay_from_the_config_reaches_the_param_groups():
     torch = pytest.importorskip("torch")
     nn = torch.nn
 
-    groups = _groups(torch, nn, weight_decay = 0.1)
+    groups = _groups(torch, nn, weight_decay=0.1)
     decayed = {name for g in groups if g["weight_decay"] == 0.1 for name in g["names"]}
 
     assert "proj.weight" in decayed, f"weight_decay=0.1 never reached the optimizer: {groups}"
@@ -80,7 +80,7 @@ def test_biases_and_norms_stay_out_of_the_decay():
     torch = pytest.importorskip("torch")
     nn = torch.nn
 
-    groups = _groups(torch, nn, weight_decay = 0.1)
+    groups = _groups(torch, nn, weight_decay=0.1)
     undecayed = {name for g in groups if g["weight_decay"] == 0.0 for name in g["names"]}
 
     assert {"proj.bias", "norm.weight", "norm.bias"} <= undecayed, groups
@@ -90,7 +90,7 @@ def test_the_embedding_group_keeps_its_own_learning_rate():
     torch = pytest.importorskip("torch")
     nn = torch.nn
 
-    groups = _groups(torch, nn, weight_decay = 0.1)
+    groups = _groups(torch, nn, weight_decay=0.1)
     for group in groups:
         if EMBEDDING in group["names"]:
             assert group["lr"] == 5e-5, groups
@@ -102,7 +102,7 @@ def test_zero_weight_decay_is_still_zero():
     torch = pytest.importorskip("torch")
     nn = torch.nn
 
-    groups = _groups(torch, nn, weight_decay = 0.0)
+    groups = _groups(torch, nn, weight_decay=0.0)
     assert all(group["weight_decay"] == 0.0 for group in groups), groups
 
 
@@ -119,7 +119,7 @@ def _optimizer(
     torch,
     model,
     weight_decay,
-    optim = "adamw_torch",
+    optim="adamw_torch",
 ):
     trainer = _trainer(torch, weight_decay)
     trainer.args.optim = optim
@@ -145,7 +145,7 @@ def test_adafactor_schedule_survives_the_split():
     from transformers.optimization import AdafactorSchedule
 
     model = _lora_shaped(torch, nn)
-    optimizer = _optimizer(torch, model, 0.1, optim = "adafactor")
+    optimizer = _optimizer(torch, model, 0.1, optim="adafactor")
     for param in model.parameters():
         if param.requires_grad:
             param.grad = torch.randn_like(param)
@@ -174,7 +174,7 @@ def test_a_lora_run_started_before_this_can_still_resume():
                 "lr": 5e-5,
             },
         ],
-        lr = 2e-4,
+        lr=2e-4,
     )
     for _, param in trainable:
         param.grad = torch.randn_like(param)
@@ -186,14 +186,15 @@ def test_a_lora_run_started_before_this_can_still_resume():
 
 def _decay_names(torch, model):
     from transformers import Trainer
+
     return Trainer.get_decay_parameter_names(None, model)
 
 
 def _legacy_optimizer(
     torch,
     model,
-    lr = 2e-4,
-    embedding_lr = 5e-5,
+    lr=2e-4,
+    embedding_lr=5e-5,
 ):
     """The two groups every checkpoint written before the decay split carries."""
     trainable = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
@@ -210,7 +211,7 @@ def _legacy_optimizer(
                 "lr": embedding_lr,
             },
         ],
-        lr = lr,
+        lr=lr,
     )
 
 
@@ -295,7 +296,7 @@ def test_a_checkpoint_with_the_same_group_count_but_a_different_shape_migrates()
             {"params": trainable, "lr": 2e-4, "weight_decay": 0.0},
             {"params": [], "lr": 5e-5, "weight_decay": 0.0},
         ],
-        lr = 2e-4,
+        lr=2e-4,
     )
     for index, param in enumerate(model.parameters()):
         param.grad = torch.full_like(param, float(index + 1))
@@ -307,8 +308,8 @@ def test_a_checkpoint_with_the_same_group_count_but_a_different_shape_migrates()
         torch.optim.AdamW,
         {"lr": 2e-4},
         5e-5,
-        weight_decay = 0.1,
-        decay_parameter_names = _decay_names(torch, model),
+        weight_decay=0.1,
+        decay_parameter_names=_decay_names(torch, model),
     )
     assert len(new.param_groups) == len(saved["param_groups"]), "count check would have caught it"
     assert [len(g["params"]) for g in new.param_groups] != [
@@ -325,7 +326,7 @@ def test_the_plateau_scheduler_min_lrs_are_remapped_too():
     from unsloth.trainer import _install_legacy_scheduler_resume
 
     model = _model(torch, nn)
-    old = ReduceLROnPlateau(_legacy_optimizer(torch, model), min_lr = [1e-7, 2e-7])
+    old = ReduceLROnPlateau(_legacy_optimizer(torch, model), min_lr=[1e-7, 2e-7])
     saved = old.state_dict()
 
     new_optimizer = _optimizer(torch, model, 0.1)
@@ -333,7 +334,7 @@ def test_the_plateau_scheduler_min_lrs_are_remapped_too():
     # checkpoint legacy, so the sequence matters and is reproduced here.
     new_optimizer.load_state_dict(_legacy_optimizer(torch, model).state_dict())
     new_scheduler = _install_legacy_scheduler_resume(
-        ReduceLROnPlateau(new_optimizer, min_lr = 1e-7), new_optimizer
+        ReduceLROnPlateau(new_optimizer, min_lr=1e-7), new_optimizer
     )
     new_scheduler.load_state_dict(saved)
     assert len(new_scheduler.min_lrs) == len(new_optimizer.param_groups)
@@ -375,7 +376,7 @@ def test_scheduler_state_of_equal_length_is_remapped_by_role_not_position():
     model.proj = nn.Linear(4, 4)  # .weight decays, .bias does not
     trainable = [p for p in model.parameters() if p.requires_grad]
     old_optimizer = torch.optim.AdamW(
-        [{"params": trainable, "lr": 2e-4}, {"params": [], "lr": 5e-5}], lr = 2e-4
+        [{"params": trainable, "lr": 2e-4}, {"params": [], "lr": 5e-5}], lr=2e-4
     )
     saved = LambdaLR(old_optimizer, lambda step: 1.0).state_dict()
     assert saved["base_lrs"] == [2e-4, 5e-5]
@@ -385,8 +386,8 @@ def test_scheduler_state_of_equal_length_is_remapped_by_role_not_position():
         torch.optim.AdamW,
         {"lr": 2e-4},
         5e-5,
-        weight_decay = 0.1,
-        decay_parameter_names = _decay_names(torch, model),
+        weight_decay=0.1,
+        decay_parameter_names=_decay_names(torch, model),
     )
     assert new_optimizer._unsloth_group_roles == ["non_embeddings", "non_embeddings"]
     new_optimizer.load_state_dict(old_optimizer.state_dict())
@@ -502,22 +503,22 @@ def test_a_current_two_group_checkpoint_is_not_mistaken_for_a_legacy_one():
             torch.optim.AdamW,
             {"lr": 2e-4},
             5e-5,
-            weight_decay = 0.1,
-            decay_parameter_names = _decay_names(torch, model),
+            weight_decay=0.1,
+            decay_parameter_names=_decay_names(torch, model),
         )
         assert optimizer._unsloth_group_roles == ["non_embeddings", "non_embeddings"]
         return optimizer
 
     written_by_this_code = build()
     saved = _install_legacy_scheduler_resume(
-        ReduceLROnPlateau(written_by_this_code, min_lr = [1e-7, 2e-7]), written_by_this_code
+        ReduceLROnPlateau(written_by_this_code, min_lr=[1e-7, 2e-7]), written_by_this_code
     ).state_dict()
     assert saved["min_lrs"] == [1e-7, 2e-7]
 
     resumed = build()
     resumed.load_state_dict(written_by_this_code.state_dict())  # not a legacy shape
     scheduler = _install_legacy_scheduler_resume(
-        ReduceLROnPlateau(resumed, min_lr = [1e-7, 2e-7]), resumed
+        ReduceLROnPlateau(resumed, min_lr=[1e-7, 2e-7]), resumed
     )
     scheduler.load_state_dict(saved)
     assert scheduler.min_lrs == [1e-7, 2e-7], scheduler.min_lrs

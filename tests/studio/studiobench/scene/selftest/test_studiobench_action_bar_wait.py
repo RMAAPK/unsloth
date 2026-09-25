@@ -214,14 +214,14 @@ def run_menu(mount_after_ms: float, wait_ms: int = ACTION_BAR_WAIT_MS) -> dict:
     exe = _node()
     with tempfile.TemporaryDirectory() as tmp:
         harness = Path(tmp) / "harness.js"
-        harness.write_text(HARNESS_JS, encoding = "utf-8")
+        harness.write_text(HARNESS_JS, encoding="utf-8")
         menu = Path(tmp) / "menu.js"
-        menu.write_text(MENU_JS, encoding = "utf-8")
+        menu.write_text(MENU_JS, encoding="utf-8")
         got = subprocess.run(
             [exe, str(harness), str(DOM_JS), str(menu), str(mount_after_ms), str(wait_ms)],
-            capture_output = True,
-            text = True,
-            timeout = 120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
     if got.returncode != 0:
         raise AssertionError(f"the MENU_JS harness failed: {got.stderr.strip()[-1200:]}")
@@ -249,7 +249,7 @@ def test_a_control_that_arrives_late_is_waited_for_rather_than_reported_missing(
 
 def test_the_wait_is_bounded_and_a_control_that_never_appears_still_reports_not_run():
     """The gate keeps its teeth. Waiting must not turn a genuinely absent control into a pass."""
-    out = run_menu(float("inf"), wait_ms = 300)
+    out = run_menu(float("inf"), wait_ms=300)
     assert out["ran"] is False, out
     assert out["waitedMs"] >= 250, out
     # The reason has to separate the two cases, because they are different bugs: a reply that had not

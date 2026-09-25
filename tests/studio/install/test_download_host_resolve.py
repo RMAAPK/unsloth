@@ -34,21 +34,21 @@ def _empty_api(*_a, **_k):
     return iter(())
 
 
-def _resolve(tag = "latest", **kw):
+def _resolve(tag="latest", **kw):
     return list(ILP.iter_resolved_published_releases(tag, FORK_REPO, "", **kw))
 
 
 def test_fast_path_yields_latest_without_api(monkeypatch):
     sentinel = object()
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
-    monkeypatch.setattr(ILP, "_download_host_resolved_release", lambda _repo, _tag = "": sentinel)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
+    monkeypatch.setattr(ILP, "_download_host_resolved_release", lambda _repo, _tag="": sentinel)
     monkeypatch.setattr(ILP, "iter_published_release_bundles", _api_raises)
     assert _resolve() == [sentinel]
 
 
 def test_fast_path_yields_pinned_tag_without_api(monkeypatch):
     pin = "b9964-mix-53618c5"
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
     seen: dict[str, str] = {}
 
     class _Bundle:
@@ -58,7 +58,7 @@ def test_fast_path_yields_pinned_tag_without_api(monkeypatch):
     class _Resolved:
         bundle = _Bundle()
 
-    def _fast(_repo, published_release_tag = ""):
+    def _fast(_repo, published_release_tag=""):
         seen["tag"] = published_release_tag
         return _Resolved()
 
@@ -71,11 +71,11 @@ def test_fast_path_yields_pinned_tag_without_api(monkeypatch):
 
 
 def test_fast_path_disabled_by_caller_uses_api(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
     monkeypatch.setattr(ILP, "_download_host_resolved_release", _fast_path_raises)
     monkeypatch.setattr(ILP, "iter_published_release_bundles", _empty_api)
     with pytest.raises(PrebuiltFallback):
-        _resolve(allow_download_host_fast_path = False)
+        _resolve(allow_download_host_fast_path=False)
 
 
 def test_fast_path_disabled_by_env_uses_api(monkeypatch):
@@ -87,16 +87,16 @@ def test_fast_path_disabled_by_env_uses_api(monkeypatch):
 
 
 def test_fast_path_skipped_for_non_latest_request(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
     monkeypatch.setattr(ILP, "_download_host_resolved_release", _fast_path_raises)
     monkeypatch.setattr(ILP, "iter_published_release_bundles", _empty_api)
     with pytest.raises(PrebuiltFallback):
-        _resolve(tag = "b9964")
+        _resolve(tag="b9964")
 
 
 def test_fast_path_none_falls_back_to_api(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
-    monkeypatch.setattr(ILP, "_download_host_resolved_release", lambda _repo, _tag = "": None)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
+    monkeypatch.setattr(ILP, "_download_host_resolved_release", lambda _repo, _tag="": None)
     used = {"api": False}
 
     def _api(*_a, **_k):
@@ -110,10 +110,10 @@ def test_fast_path_none_falls_back_to_api(monkeypatch):
 
 
 def test_fast_path_rejected_checksum_falls_back_to_api(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising = False)
+    monkeypatch.delenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", raising=False)
 
     # Two args: a one-arg stub's TypeError hits the same broad except, so the branch never runs.
-    def _reject(_repo, _tag = ""):
+    def _reject(_repo, _tag=""):
         raise PrebuiltFallback("checksum mismatch")
 
     monkeypatch.setattr(ILP, "_download_host_resolved_release", _reject)
@@ -160,7 +160,7 @@ def _manifest_bytes():
     ).encode("utf-8")
 
 
-def _sha_payload(*, manifest_sha256 = None):
+def _sha_payload(*, manifest_sha256=None):
     # BINARY_ASSET is deliberately absent: real releases key its hash under an
     # upstream-tag alias, so the manifest name must still get a tag-pinned URL.
     # The source archive entry keeps _validate_checksums_against_bundle happy.
@@ -181,7 +181,7 @@ def _stub_downloads(
     sha_payload,
     manifest_bytes,
     *,
-    latest_tag = RELEASE_TAG,
+    latest_tag=RELEASE_TAG,
 ):
     def _no_api(*_a, **_k):
         raise AssertionError("GitHub API was used")
@@ -219,8 +219,8 @@ def test_resolved_release_adds_tag_pinned_url_for_manifest_only_asset(monkeypatc
 def test_resolved_release_rejects_manifest_checksum_mismatch(monkeypatch):
     # A wrong manifest hash in the checksum payload must fail closed, so the router falls back to the API rather than
     # trusting the fast path.
-    _stub_downloads(monkeypatch, _sha_payload(manifest_sha256 = "b" * 64), _manifest_bytes())
-    with pytest.raises(PrebuiltFallback, match = "manifest checksum"):
+    _stub_downloads(monkeypatch, _sha_payload(manifest_sha256="b" * 64), _manifest_bytes())
+    with pytest.raises(PrebuiltFallback, match="manifest checksum"):
         ILP._download_host_resolved_release(FORK_REPO)
 
 
@@ -228,8 +228,8 @@ def test_resolved_release_rejects_release_tag_mismatch(monkeypatch):
     # The checksum asset self-reports RELEASE_TAG, but the authoritative
     # /releases/latest redirect resolves a different tag: the fast path must not
     # pin to the stale self-reported tag (it raises, so the router falls back).
-    _stub_downloads(monkeypatch, _sha_payload(), _manifest_bytes(), latest_tag = "b9999-mix-other")
-    with pytest.raises(RuntimeError, match = "did not match pinned release tag"):
+    _stub_downloads(monkeypatch, _sha_payload(), _manifest_bytes(), latest_tag="b9999-mix-other")
+    with pytest.raises(RuntimeError, match="did not match pinned release tag"):
         ILP._download_host_resolved_release(FORK_REPO)
 
 
@@ -268,8 +268,8 @@ class _FakeOpener:
     def __init__(
         self,
         *,
-        url = None,
-        exc = None,
+        url=None,
+        exc=None,
     ):
         self._url = url
         self._exc = exc
@@ -277,7 +277,7 @@ class _FakeOpener:
     def open(
         self,
         _request,
-        timeout = None,
+        timeout=None,
     ):
         if self._exc is not None:
             raise self._exc
@@ -286,7 +286,7 @@ class _FakeOpener:
 
 def test_latest_release_tag_parses_redirect(monkeypatch):
     final = f"https://github.com/{FORK_REPO}/releases/tag/{RELEASE_TAG}"
-    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(url = final))
+    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(url=final))
     assert ILP._download_host_latest_release_tag(FORK_REPO) == RELEASE_TAG
 
 
@@ -298,11 +298,11 @@ def test_latest_release_tag_none_on_404(monkeypatch):
         {},
         None,  # type: ignore[arg-type]
     )
-    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(exc = not_found))
+    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(exc=not_found))
     assert ILP._download_host_latest_release_tag(FORK_REPO) is None
 
 
 def test_latest_release_tag_none_when_not_a_tag_url(monkeypatch):
     # No /releases/tag/ segment (e.g. redirected somewhere unexpected) -> None.
-    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(url = f"https://github.com/{FORK_REPO}"))
+    monkeypatch.setattr(ILP, "_URL_OPENER", _FakeOpener(url=f"https://github.com/{FORK_REPO}"))
     assert ILP._download_host_latest_release_tag(FORK_REPO) is None

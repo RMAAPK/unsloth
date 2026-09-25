@@ -74,26 +74,26 @@ RUN = {"side": "base", "installExit": 0, "secondInstallExit": 0}
 def _write(
     directory: Path,
     transcript: str = BASELINE,
-    shortcuts = None,
-    artifacts = None,
-    run = None,
+    shortcuts=None,
+    artifacts=None,
+    run=None,
     second: str | None = None,
 ) -> Path:
-    directory.mkdir(parents = True, exist_ok = True)
-    (directory / "transcript.txt").write_text(transcript, encoding = "utf-8")
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "transcript.txt").write_text(transcript, encoding="utf-8")
     # Defaults to the first-run text. The reinstall prints something different on a real runner, but
     # what these fixtures need is a second-run transcript that exists and that matches its opposite
     # side unless a test deliberately changes it.
     (directory / "transcript-second-run.txt").write_text(
-        transcript if second is None else second, encoding = "utf-8"
+        transcript if second is None else second, encoding="utf-8"
     )
     (directory / "shortcuts.json").write_text(
-        json.dumps(SHORTCUTS if shortcuts is None else shortcuts), encoding = "utf-8"
+        json.dumps(SHORTCUTS if shortcuts is None else shortcuts), encoding="utf-8"
     )
     (directory / "artifacts.json").write_text(
-        json.dumps(ARTIFACTS if artifacts is None else artifacts), encoding = "utf-8"
+        json.dumps(ARTIFACTS if artifacts is None else artifacts), encoding="utf-8"
     )
-    (directory / "run.json").write_text(json.dumps(RUN if run is None else run), encoding = "utf-8")
+    (directory / "run.json").write_text(json.dumps(RUN if run is None else run), encoding="utf-8")
     return directory
 
 
@@ -111,9 +111,9 @@ def _run(base: Path, head: Path) -> subprocess.CompletedProcess:
             "--head-sha",
             "b" * 40,
         ],
-        capture_output = True,
-        text = True,
-        timeout = 120,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
 
 
@@ -132,7 +132,7 @@ def _run(base: Path, head: Path) -> subprocess.CompletedProcess:
 def test_a_changed_output_line_is_reported(tmp_path: Path, mutation: str, why: str) -> None:
     base = _write(tmp_path / "base")
     mutated = BASELINE.replace("  shortcut       desktop and Start Menu", mutation)
-    head = _write(tmp_path / "head", transcript = mutated)
+    head = _write(tmp_path / "head", transcript=mutated)
     result = _run(base, head)
     if "must NOT fail" in why:
         assert (
@@ -145,7 +145,7 @@ def test_a_changed_output_line_is_reported(tmp_path: Path, mutation: str, why: s
 def test_a_lost_indent_is_reported(tmp_path: Path) -> None:
     """`step` pads its label to exactly 15 columns and the output lock pins the indent."""
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", transcript = BASELINE.replace("  python", "   python"))
+    head = _write(tmp_path / "head", transcript=BASELINE.replace("  python", "   python"))
     assert _run(base, head).returncode == 2
 
 
@@ -153,9 +153,9 @@ def test_a_relaxed_execution_policy_in_a_shortcut_is_reported(tmp_path: Path) ->
     """The single substitution this whole effort is about, and invisible in the transcript."""
     base = _write(tmp_path / "base")
     relaxed = [
-        dict(SHORTCUTS[0], arguments = SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass"))
+        dict(SHORTCUTS[0], arguments=SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass"))
     ]
-    head = _write(tmp_path / "head", shortcuts = relaxed)
+    head = _write(tmp_path / "head", shortcuts=relaxed)
     result = _run(base, head)
     assert result.returncode == 2
     assert "arguments" in result.stdout and "Bypass" in result.stdout
@@ -163,7 +163,7 @@ def test_a_relaxed_execution_policy_in_a_shortcut_is_reported(tmp_path: Path) ->
 
 def test_a_shortcut_that_stopped_being_created_is_reported(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", shortcuts = [])
+    head = _write(tmp_path / "head", shortcuts=[])
     assert _run(base, head).returncode in (2, 3)
 
 
@@ -171,7 +171,7 @@ def test_a_changed_generated_launcher_is_reported(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
     changed = json.loads(json.dumps(ARTIFACTS))
     changed["files"]["launch-studio.ps1"]["content"] = "Start-Process pwsh\n"
-    head = _write(tmp_path / "head", artifacts = changed)
+    head = _write(tmp_path / "head", artifacts=changed)
     assert _run(base, head).returncode == 2
 
 
@@ -180,7 +180,7 @@ def test_a_second_run_that_rewrites_files_is_reported(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
     noisy = json.loads(json.dumps(ARTIFACTS))
     noisy["rewrittenOnSecondRun"] = ["launch-studio.ps1"]
-    head = _write(tmp_path / "head", artifacts = noisy)
+    head = _write(tmp_path / "head", artifacts=noisy)
     result = _run(base, head)
     assert result.returncode == 2
     assert "second time" in result.stdout
@@ -202,7 +202,7 @@ def test_known_noise_does_not_fail(tmp_path: Path) -> None:
         ]
     )
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", transcript = noisy)
+    head = _write(tmp_path / "head", transcript=noisy)
     result = _run(base, head)
     assert result.returncode == 0, f"noise failed the lane: {result.stdout}"
 
@@ -210,7 +210,7 @@ def test_known_noise_does_not_fail(tmp_path: Path) -> None:
 def test_version_drift_is_normalised_but_still_printed(tmp_path: Path) -> None:
     """Normalising something away without saying so is how a lane stops telling you anything."""
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", transcript = BASELINE.replace("0.12.1", "0.12.4"))
+    head = _write(tmp_path / "head", transcript=BASELINE.replace("0.12.1", "0.12.4"))
     result = _run(base, head)
     assert result.returncode == 0
     assert (
@@ -232,7 +232,7 @@ def test_missing_evidence_is_void_and_not_a_pass(tmp_path: Path) -> None:
 
 def test_an_empty_transcript_is_void(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", transcript = "\n\n  \n")
+    head = _write(tmp_path / "head", transcript="\n\n  \n")
     result = _run(base, head)
     assert result.returncode == 3
     assert "did not run" in result.stdout
@@ -272,7 +272,7 @@ def test_the_self_test_passes() -> None:
     """CI runs this before any real comparison, so a broken normaliser refuses to produce a
     verdict instead of producing a reassuring one."""
     result = subprocess.run(
-        [sys.executable, str(SCRIPT), "--self-test"], capture_output = True, text = True, timeout = 120
+        [sys.executable, str(SCRIPT), "--self-test"], capture_output=True, text=True, timeout=120
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -316,12 +316,12 @@ def test_a_single_shortcut_serialised_as_an_object_still_compares(tmp_path: Path
     contracts would have compared as agreement for entirely the wrong reason.
     """
     base = _write(tmp_path / "base")
-    (base / "shortcuts.json").write_text(json.dumps(SHORTCUTS[0]), encoding = "utf-8")
+    (base / "shortcuts.json").write_text(json.dumps(SHORTCUTS[0]), encoding="utf-8")
     head = _write(tmp_path / "head")
     relaxed = dict(
-        SHORTCUTS[0], arguments = SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass")
+        SHORTCUTS[0], arguments=SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass")
     )
-    (head / "shortcuts.json").write_text(json.dumps(relaxed), encoding = "utf-8")
+    (head / "shortcuts.json").write_text(json.dumps(relaxed), encoding="utf-8")
 
     result = _run(base, head)
     assert (
@@ -338,8 +338,8 @@ def test_a_symmetric_collection_failure_is_void_not_a_pass(tmp_path: Path) -> No
     from the host and both sides share it.
     """
     failed = [{"name": "<collection failed>", "error": "could not create WScript.Shell"}]
-    base = _write(tmp_path / "base", shortcuts = failed)
-    head = _write(tmp_path / "head", shortcuts = failed)
+    base = _write(tmp_path / "base", shortcuts=failed)
+    head = _write(tmp_path / "head", shortcuts=failed)
     result = _run(base, head)
     assert result.returncode == 3, f"a shared collection failure read as agreement: {result.stdout}"
     assert "prove nothing" in result.stdout
@@ -357,8 +357,8 @@ def test_a_symmetric_collection_failure_is_void_not_a_pass(tmp_path: Path) -> No
 
 def test_two_installers_that_both_failed_are_void_not_a_pass(tmp_path: Path) -> None:
     dead = {"installExit": 1, "secondInstallExit": 1}
-    base = _write(tmp_path / "base", transcript = BASELINE, run = dead)
-    head = _write(tmp_path / "head", transcript = BASELINE, run = dead)
+    base = _write(tmp_path / "base", transcript=BASELINE, run=dead)
+    head = _write(tmp_path / "head", transcript=BASELINE, run=dead)
     result = _run(base, head)
     assert result.returncode == 3, f"two failed installs read as agreement: {result.stdout}"
     assert "exited 1" in result.stdout
@@ -366,14 +366,14 @@ def test_two_installers_that_both_failed_are_void_not_a_pass(tmp_path: Path) -> 
 
 def test_one_installer_that_failed_is_void(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", run = {"installExit": 5, "secondInstallExit": 0})
+    head = _write(tmp_path / "head", run={"installExit": 5, "secondInstallExit": 0})
     assert _run(base, head).returncode == 3
 
 
 def test_a_failed_second_install_is_void(tmp_path: Path) -> None:
     """The idempotency install is a measurement too, and one that did not run measured nothing."""
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", run = {"installExit": 0, "secondInstallExit": 3})
+    head = _write(tmp_path / "head", run={"installExit": 0, "secondInstallExit": 3})
     assert _run(base, head).returncode == 3
 
 
@@ -392,7 +392,7 @@ def test_evidence_with_no_recorded_exit_status_is_void(tmp_path: Path) -> None:
 def test_an_unusable_exit_status_is_void(tmp_path: Path, bad) -> None:
     base = _write(tmp_path / "base")
     head = _write(tmp_path / "head")
-    (head / "run.json").write_text(json.dumps(bad), encoding = "utf-8")
+    (head / "run.json").write_text(json.dumps(bad), encoding="utf-8")
     assert _run(base, head).returncode == 3
 
 
@@ -409,7 +409,7 @@ def test_an_unreadable_artifact_is_void_not_a_skipped_comparison(tmp_path: Path)
     broken = json.loads(json.dumps(ARTIFACTS))
     broken["files"]["launch-studio.ps1"] = {"error": "access is denied"}
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", artifacts = broken)
+    head = _write(tmp_path / "head", artifacts=broken)
     result = _run(base, head)
     assert result.returncode == 3, f"an unreadable contract file read as agreement: {result.stdout}"
     assert "never read" in result.stdout
@@ -418,8 +418,8 @@ def test_an_unreadable_artifact_is_void_not_a_skipped_comparison(tmp_path: Path)
 def test_a_symmetric_artifact_read_failure_is_void(tmp_path: Path) -> None:
     broken = json.loads(json.dumps(ARTIFACTS))
     broken["files"]["unsloth.cmd"] = {"error": "access is denied"}
-    base = _write(tmp_path / "base", artifacts = broken)
-    head = _write(tmp_path / "head", artifacts = broken)
+    base = _write(tmp_path / "base", artifacts=broken)
+    head = _write(tmp_path / "head", artifacts=broken)
     assert _run(base, head).returncode == 3
 
 
@@ -427,8 +427,8 @@ def test_an_install_root_that_does_not_exist_is_void(tmp_path: Path) -> None:
     """What the collector writes when the installer did not finish. It is an error field, and an
     error field on both sides compares equal to itself."""
     failed = {"studioHome": r"C:\x", "files": {}, "error": "the install root C:\\x does not exist"}
-    base = _write(tmp_path / "base", artifacts = failed)
-    head = _write(tmp_path / "head", artifacts = failed)
+    base = _write(tmp_path / "base", artifacts=failed)
+    head = _write(tmp_path / "head", artifacts=failed)
     result = _run(base, head)
     assert result.returncode == 3
     assert "not evidence" in result.stdout
@@ -438,7 +438,7 @@ def test_content_captured_on_one_side_only_is_void(tmp_path: Path) -> None:
     half = json.loads(json.dumps(ARTIFACTS))
     half["files"]["launch-studio.ps1"] = {"sha256": "a" * 64}
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", artifacts = half)
+    head = _write(tmp_path / "head", artifacts=half)
     assert _run(base, head).returncode == 3
 
 
@@ -453,7 +453,7 @@ def test_a_shortcut_manifest_of_the_wrong_shape_is_void(tmp_path: Path, blob: st
     disappeared", which is a behaviour difference reported about evidence nobody parsed."""
     base = _write(tmp_path / "base")
     head = _write(tmp_path / "head")
-    (head / "shortcuts.json").write_text(blob, encoding = "utf-8")
+    (head / "shortcuts.json").write_text(blob, encoding="utf-8")
     assert _run(base, head).returncode == 3
 
 
@@ -461,7 +461,7 @@ def test_a_shortcut_manifest_of_the_wrong_shape_is_void(tmp_path: Path, blob: st
 def test_an_artifact_manifest_of_the_wrong_shape_is_void(tmp_path: Path, blob: str) -> None:
     base = _write(tmp_path / "base")
     head = _write(tmp_path / "head")
-    (head / "artifacts.json").write_text(blob, encoding = "utf-8")
+    (head / "artifacts.json").write_text(blob, encoding="utf-8")
     assert _run(base, head).returncode == 3
 
 
@@ -471,7 +471,7 @@ def test_a_byte_order_mark_does_not_turn_good_evidence_into_void(tmp_path: Path,
     rejects one. A lane that goes VOID on a valid file stops being read."""
     base = _write(tmp_path / "base")
     head = _write(tmp_path / "head")
-    text = (head / name).read_text(encoding = "utf-8")
+    text = (head / name).read_text(encoding="utf-8")
     (head / name).write_bytes(b"\xef\xbb\xbf" + text.encode("utf-8"))
     assert _run(base, head).returncode == 0
 
@@ -480,7 +480,7 @@ def test_a_byte_order_mark_does_not_hide_a_real_change(tmp_path: Path) -> None:
     base = _write(tmp_path / "base")
     head = _write(tmp_path / "head")
     relaxed = [
-        dict(SHORTCUTS[0], arguments = SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass"))
+        dict(SHORTCUTS[0], arguments=SHORTCUTS[0]["arguments"].replace("RemoteSigned", "Bypass"))
     ]
     (head / "shortcuts.json").write_bytes(b"\xef\xbb\xbf" + json.dumps(relaxed).encode("utf-8"))
     result = _run(base, head)
@@ -540,13 +540,13 @@ def test_a_renamed_launcher_marker_inside_unsloth_cmd_is_reported(tmp_path: Path
     marked["files"]["unsloth.cmd"]["content"] = "@echo off\nrem unsloth-studio-managed-launcher\n"
     renamed = json.loads(json.dumps(marked))
     renamed["files"]["unsloth.cmd"]["content"] = "@echo off\nrem unsloth-desktop-managed-launcher\n"
-    base = _write(tmp_path / "base", artifacts = marked)
-    head = _write(tmp_path / "head", artifacts = renamed)
+    base = _write(tmp_path / "base", artifacts=marked)
+    head = _write(tmp_path / "head", artifacts=renamed)
     assert _run(base, head).returncode == 2
 
 
 def test_a_version_drift_inside_a_shortcut_is_printed_even_though_it_is_normalised(
-    tmp_path: Path,
+    tmp_path: Path
 ) -> None:
     """normalise_line runs on shortcut fields too, so a launcher retargeted at a different python
     is erased in exactly the same way a patch release is. That is the right call and the wrong one
@@ -555,17 +555,17 @@ def test_a_version_drift_inside_a_shortcut_is_printed_even_though_it_is_normalis
     retargeted = [
         dict(
             SHORTCUTS[0],
-            targetPath = r"C:\Users\runneradmin\.unsloth\python-3.13.14\python.exe",
+            targetPath=r"C:\Users\runneradmin\.unsloth\python-3.13.14\python.exe",
         )
     ]
     bumped = [
         dict(
             SHORTCUTS[0],
-            targetPath = r"C:\Users\runneradmin\.unsloth\python-3.11.9\python.exe",
+            targetPath=r"C:\Users\runneradmin\.unsloth\python-3.11.9\python.exe",
         )
     ]
-    base = _write(tmp_path / "base", shortcuts = retargeted)
-    head = _write(tmp_path / "head", shortcuts = bumped)
+    base = _write(tmp_path / "base", shortcuts=retargeted)
+    head = _write(tmp_path / "head", shortcuts=bumped)
     result = _run(base, head)
     assert result.returncode == 0
     assert "version drift in the shortcut fields" in result.stdout, result.stdout
@@ -576,7 +576,7 @@ def test_the_shortcut_note_is_not_suppressed_by_a_transcript_difference(tmp_path
     """Reading the whole verdict meant a changed output line also stopped the run saying whether
     the launch contract had been looked at at all."""
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", transcript = BASELINE.replace("ready", "prepared"))
+    head = _write(tmp_path / "head", transcript=BASELINE.replace("ready", "prepared"))
     result = _run(base, head)
     assert result.returncode == 2
     assert "every field equal" in result.stdout
@@ -621,26 +621,26 @@ Write-Output 'COLLECTOR-OK'
 """
     result = run_pwsh(
         [PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output = True,
-        text = True,
-        verdict = "COLLECTOR-OK",
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        verdict="COLLECTOR-OK",
+        timeout=300,
     )
     assert "COLLECTOR-OK" in result.stdout, result.stdout + result.stderr
 
-    one = json.loads((tmp_path / "one.json").read_text(encoding = "utf-8-sig"))
+    one = json.loads((tmp_path / "one.json").read_text(encoding="utf-8-sig"))
     assert (
         isinstance(one, list) and len(one) == 1
     ), f"a single shortcut did not serialise as a list: {one!r}"
     assert one[0]["arguments"] == "-ExecutionPolicy RemoteSigned"
 
-    shortcuts = json.loads((out / "shortcuts.json").read_text(encoding = "utf-8-sig"))
+    shortcuts = json.loads((out / "shortcuts.json").read_text(encoding="utf-8-sig"))
     assert isinstance(shortcuts, list), f"shortcuts.json is not a list: {shortcuts!r}"
 
     # Off Windows there is no WScript.Shell, so the collector records an error rather than data.
     # That is the shape the comparer must call VOID, and the one that used to compare equal to
     # itself and exit zero.
-    artifacts = json.loads((out / "artifacts.json").read_text(encoding = "utf-8-sig"))
+    artifacts = json.loads((out / "artifacts.json").read_text(encoding="utf-8-sig"))
     verdict = cmp.Verdict()
     cmp.compare_shortcuts(shortcuts, shortcuts, verdict)
     cmp.compare_artifacts(artifacts, artifacts, verdict)
@@ -655,8 +655,9 @@ Write-Output 'COLLECTOR-OK'
 
 def _differential_workflow() -> dict:
     import yaml
+
     path = REPO / ".github" / "workflows" / "windows-installer-differential-ci.yml"
-    return yaml.safe_load(path.read_text(encoding = "utf-8"))
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
 def test_the_lane_never_installs_in_env_override_mode() -> None:
@@ -735,7 +736,7 @@ def test_unmeasured_idempotency_is_void_not_a_note() -> None:
             },
         },
     }
-    measured = dict(complete, rewrittenOnSecondRun = [])
+    measured = dict(complete, rewrittenOnSecondRun=[])
 
     ok = cmp.Verdict()
     cmp.compare_artifacts(measured, dict(measured), ok)
@@ -840,7 +841,7 @@ def test_the_collector_builds_shortcut_timestamps_before_it_compares_them() -> N
         / "scripts"
         / "Collect-InstallerEvidence.ps1"
     )
-    text = script.read_text(encoding = "utf-8")
+    text = script.read_text(encoding="utf-8")
     built = text.index("$shortcutWrites = [ordered]@{}")
     read = text.index("foreach ($key in $shortcutWrites.Keys)")
     assert built < read, (
@@ -896,7 +897,7 @@ def test_the_collector_treats_a_second_run_shortcut_creation_as_a_write() -> Non
         / "scripts"
         / "Collect-InstallerEvidence.ps1"
     )
-    text = script.read_text(encoding = "utf-8")
+    text = script.read_text(encoding="utf-8")
     assert "created by the second run" in text, (
         "a shortcut present now and absent from the first-run manifest is still ignored, so a "
         "reinstall that created one measures as writing nothing"
@@ -939,7 +940,7 @@ def test_a_contract_missing_on_both_sides_is_void_not_agreement() -> None:
         / "Collect-InstallerEvidence.ps1"
     )
     assert "not found at any supported location" in script.read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     ), "the collector still drops an unresolved contract instead of recording it as an error"
 
 
@@ -956,7 +957,7 @@ def test_two_roots_with_the_same_leaf_name_stay_distinct() -> None:
         / "scripts"
         / "Collect-InstallerEvidence.ps1"
     )
-    text = script.read_text(encoding = "utf-8")
+    text = script.read_text(encoding="utf-8")
     assert "Get-UnslothRootLabel" in text, "the root is no longer canonicalised"
     assert (
         "CommonDesktop" in text and "UserDesktop" in text
@@ -987,7 +988,7 @@ def test_every_collected_contract_is_one_the_windows_installer_writes() -> None:
     """
     repo = Path(__file__).resolve().parents[2]
     script = (repo / ".github" / "scripts" / "Collect-InstallerEvidence.ps1").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     block = script[script.index("$contentFiles = [ordered]@{") :]
     block = block[: block.index("\n}")]
@@ -995,7 +996,7 @@ def test_every_collected_contract_is_one_the_windows_installer_writes() -> None:
     assert contracts, "the contract list is empty"
 
     windows_sources = "\n".join(
-        (repo / name).read_text(encoding = "utf-8", errors = "ignore")
+        (repo / name).read_text(encoding="utf-8", errors="ignore")
         for name in ("install.ps1", "studio/setup.ps1")
     )
     # Move-Item counts: unsloth.cmd is written atomically, WriteAllBytes to a temp then renamed
@@ -1179,12 +1180,12 @@ def test_the_trigger_only_lists_files_this_lane_actually_runs() -> None:
 
     repo = Path(__file__).resolve().parents[2]
     path = repo / ".github" / "workflows" / "windows-installer-differential-ci.yml"
-    workflow = _yaml.safe_load(path.read_text(encoding = "utf-8"))
+    workflow = _yaml.safe_load(path.read_text(encoding="utf-8"))
     # `on` parses as the boolean True in YAML 1.1, which is what PyYAML implements.
     triggers = workflow.get("on", workflow.get(True))
     paths = triggers["pull_request"]["paths"]
 
-    body = path.read_text(encoding = "utf-8")
+    body = path.read_text(encoding="utf-8")
     for script in ("studio/setup.bat", "scripts/uninstall.ps1"):
         if script in paths:
             # Only legitimate if something in the workflow actually invokes it.
@@ -1251,7 +1252,7 @@ def test_a_reinstall_only_output_change_is_reported(tmp_path: Path) -> None:
     -- left the first-run transcripts identical and the artifacts untouched and the lane said PASS.
     """
     base = _write(tmp_path / "base")
-    head = _write(tmp_path / "head", second = BASELINE + "\n  warning        already installed\n")
+    head = _write(tmp_path / "head", second=BASELINE + "\n  warning        already installed\n")
     result = _run(base, head)
     assert result.returncode == 2, result.stdout + result.stderr
     assert "second-run transcript" in result.stdout
@@ -1319,7 +1320,7 @@ def test_a_shortcut_the_second_run_deletes_is_recorded(tmp_path: Path) -> None:
                 "embeddedId": None,
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     out = tmp_path / "evidence"
     (tmp_path / "home").mkdir()
@@ -1331,13 +1332,13 @@ Write-Output 'COLLECTOR-OK'
 """
     result = run_pwsh(
         [PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output = True,
-        text = True,
-        verdict = "COLLECTOR-OK",
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        verdict="COLLECTOR-OK",
+        timeout=300,
     )
     assert "COLLECTOR-OK" in result.stdout, result.stdout + result.stderr
-    artifacts = json.loads((out / "artifacts.json").read_text(encoding = "utf-8-sig"))
+    artifacts = json.loads((out / "artifacts.json").read_text(encoding="utf-8-sig"))
     rewritten = artifacts.get("rewrittenOnSecondRun")
     assert rewritten is not None, "idempotency was not measured at all"
     assert any(
@@ -1356,7 +1357,7 @@ def _collect(tmp_path: Path, home_names: list[str], first_files: dict) -> list:
     home = tmp_path / "home"
     home.mkdir()
     for name in home_names:
-        (home / name).write_text("x", encoding = "utf-8")
+        (home / name).write_text("x", encoding="utf-8")
     first = tmp_path / "first-run-artifacts.json"
     first.write_text(
         json.dumps(
@@ -1368,7 +1369,7 @@ def _collect(tmp_path: Path, home_names: list[str], first_files: dict) -> list:
                 "embeddedId": None,
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     out = tmp_path / "evidence"
     collector = REPO / ".github" / "scripts" / "Collect-InstallerEvidence.ps1"
@@ -1382,13 +1383,13 @@ def _collect(tmp_path: Path, home_names: list[str], first_files: dict) -> list:
             f"-OutDir '{out.as_posix()}' -CompareAgainst '{first.as_posix()}' | Out-Null; "
             f"Write-Output 'COLLECTOR-OK'",
         ],
-        capture_output = True,
-        text = True,
-        verdict = "COLLECTOR-OK",
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        verdict="COLLECTOR-OK",
+        timeout=300,
     )
     assert "COLLECTOR-OK" in result.stdout, result.stdout + result.stderr
-    artifacts = json.loads((out / "artifacts.json").read_text(encoding = "utf-8-sig"))
+    artifacts = json.loads((out / "artifacts.json").read_text(encoding="utf-8-sig"))
     rewritten = artifacts.get("rewrittenOnSecondRun")
     assert rewritten is not None, "idempotency was not measured at all"
     return rewritten
@@ -1427,7 +1428,7 @@ def test_an_unrelated_label_does_not_restart_the_two_installs() -> None:
     there no single label was applied.
     """
     body = (REPO / ".github" / "workflows" / "windows-installer-differential-ci.yml").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     gate = body[body.index("name: Skip unless the label asked for it") :]
     gate = gate[: gate.index("name: Pick the two commits")]
@@ -1482,7 +1483,7 @@ def test_the_lines_this_rule_used_to_eat_are_really_in_the_installers() -> None:
     than described. If these lines ever stop existing the comment above the rule is stale."""
     found = 0
     for name in ("install.ps1", "studio/setup.ps1"):
-        text = (REPO / name).read_text(encoding = "utf-8")
+        text = (REPO / name).read_text(encoding="utf-8")
         for line in text.splitlines():
             if re.search(r'"\s*Run ', line) and ("Write-StudioLine" in line or "substep" in line):
                 found += 1
@@ -1501,7 +1502,7 @@ def test_a_manual_dispatch_compares_against_the_default_branch() -> None:
     against the default branch.
     """
     body = (REPO / ".github" / "workflows" / "windows-installer-differential-ci.yml").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     step = body[body.index("name: Pick the two commits") :]
     step = step[: step.index("- name:", 10)]
@@ -1535,7 +1536,7 @@ def test_a_default_branch_run_gets_a_distinct_base() -> None:
     whose job is to show the lane still works.
     """
     body = (REPO / ".github" / "workflows" / "windows-installer-differential-ci.yml").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     assert "schedule:" in body, "there is no scheduled run any more, so this test is describing"
     step = body[body.index("name: Pick the two commits") :]
@@ -1574,8 +1575,8 @@ def test_an_empty_shortcut_object_is_void_not_one_compared(tmp_path: Path) -> No
     runs the candidate collector on both legs on purpose, so a schema regression is symmetric and
     this is the shape it takes.
     """
-    base = _write(tmp_path / "base", shortcuts = [{}])
-    head = _write(tmp_path / "head", shortcuts = [{}])
+    base = _write(tmp_path / "base", shortcuts=[{}])
+    head = _write(tmp_path / "head", shortcuts=[{}])
     result = _run(base, head)
     assert result.returncode == 3, result.stdout + result.stderr
     assert "no name and no path" in result.stdout, result.stdout
@@ -1583,10 +1584,10 @@ def test_an_empty_shortcut_object_is_void_not_one_compared(tmp_path: Path) -> No
 
 def test_a_shortcut_with_a_name_but_no_launch_contract_is_void(tmp_path: Path) -> None:
     base = _write(
-        tmp_path / "base", shortcuts = [{"name": "Unsloth Studio.lnk", "root": "UserDesktop"}]
+        tmp_path / "base", shortcuts=[{"name": "Unsloth Studio.lnk", "root": "UserDesktop"}]
     )
     head = _write(
-        tmp_path / "head", shortcuts = [{"name": "Unsloth Studio.lnk", "root": "UserDesktop"}]
+        tmp_path / "head", shortcuts=[{"name": "Unsloth Studio.lnk", "root": "UserDesktop"}]
     )
     result = _run(base, head)
     assert result.returncode == 3, result.stdout + result.stderr
@@ -1601,8 +1602,8 @@ def test_a_content_contract_with_no_content_on_either_side_is_void(tmp_path: Pat
     """
     artifacts = copy.deepcopy(ARTIFACTS)
     artifacts["files"]["launch-studio.ps1"] = {}
-    base = _write(tmp_path / "base", artifacts = artifacts)
-    head = _write(tmp_path / "head", artifacts = copy.deepcopy(artifacts))
+    base = _write(tmp_path / "base", artifacts=artifacts)
+    head = _write(tmp_path / "head", artifacts=copy.deepcopy(artifacts))
     result = _run(base, head)
     assert result.returncode == 3, result.stdout + result.stderr
     assert "whose text is the contract" in result.stdout, result.stdout
@@ -1633,10 +1634,10 @@ def test_a_shortcut_argument_change_is_not_normalised_away(tmp_path: Path) -> No
         ]
 
     base = _write(
-        tmp_path / "base", shortcuts = _sc("-File launcher.ps1 --limit 10MB --timeout 10.0s")
+        tmp_path / "base", shortcuts=_sc("-File launcher.ps1 --limit 10MB --timeout 10.0s")
     )
     head = _write(
-        tmp_path / "head", shortcuts = _sc("-File launcher.ps1 --limit 20MB --timeout 30.0s")
+        tmp_path / "head", shortcuts=_sc("-File launcher.ps1 --limit 20MB --timeout 30.0s")
     )
     result = _run(base, head)
     assert result.returncode == 2, result.stdout + result.stderr
@@ -1644,10 +1645,10 @@ def test_a_shortcut_argument_change_is_not_normalised_away(tmp_path: Path) -> No
     # The control: what really does vary between two installs of two commits still goes, or the lane
     # would report a difference on every clean run.
     same_base = _write(
-        tmp_path / "sb", shortcuts = _sc("-File C:\\Temp\\unsloth-probe-0a1b2c3d\\l.ps1")
+        tmp_path / "sb", shortcuts=_sc("-File C:\\Temp\\unsloth-probe-0a1b2c3d\\l.ps1")
     )
     same_head = _write(
-        tmp_path / "sh", shortcuts = _sc("-File C:\\Temp\\unsloth-probe-9f8e7d6c\\l.ps1")
+        tmp_path / "sh", shortcuts=_sc("-File C:\\Temp\\unsloth-probe-9f8e7d6c\\l.ps1")
     )
     assert _run(same_base, same_head).returncode == 0
 
@@ -1657,8 +1658,8 @@ def test_missing_bom_metadata_is_void_not_skipped(tmp_path: Path) -> None:
     regression, and the same collector writes both manifests, so it goes missing symmetrically."""
     artifacts = copy.deepcopy(ARTIFACTS)
     del artifacts["files"]["launch-studio.ps1"]["bom"]
-    base = _write(tmp_path / "base", artifacts = artifacts)
-    head = _write(tmp_path / "head", artifacts = copy.deepcopy(artifacts))
+    base = _write(tmp_path / "base", artifacts=artifacts)
+    head = _write(tmp_path / "head", artifacts=copy.deepcopy(artifacts))
     result = _run(base, head)
     assert result.returncode == 3, result.stdout + result.stderr
     assert "carries no bom metadata on base and head" in result.stdout, result.stdout
@@ -1679,7 +1680,7 @@ def test_no_rev_parse_fallback_can_echo_its_argument() -> None:
     `--verify --quiet` prints nothing on failure, so every rev-parse that has a fallback uses it.
     """
     body = (REPO / ".github" / "workflows" / "windows-installer-differential-ci.yml").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     step = body[body.index("name: Pick the two commits") :]
     step = step[: step.index("- name:", 10)]

@@ -41,7 +41,7 @@ JOB = "smoke-install"
 
 
 def _job() -> dict:
-    doc = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
+    doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     job = doc["jobs"].get(JOB)
     assert job, f"{JOB} is gone from {WORKFLOW.name}; this file checks nothing"
     return job
@@ -54,7 +54,7 @@ def _notebooks() -> list[str]:
 
 
 def _mapping() -> dict:
-    return json.loads(MAPPING.read_text(encoding = "utf-8"))
+    return json.loads(MAPPING.read_text(encoding="utf-8"))
 
 
 def _freeze_names() -> set[str]:
@@ -65,7 +65,7 @@ def _freeze_names() -> set[str]:
     """
     return {
         m.group(1).lower()
-        for line in FREEZE.read_text(encoding = "utf-8").splitlines()
+        for line in FREEZE.read_text(encoding="utf-8").splitlines()
         if (m := re.match(r"^([A-Za-z0-9._-]+)\s*==", line.strip()))
     }
 
@@ -105,7 +105,7 @@ def test_the_freeze_resolves_against_the_interpreter_the_snapshot_names():
     want = _mapping()["python_version"]
     names = {
         m.group(1).lower()
-        for line in FREEZE.read_text(encoding = "utf-8").splitlines()
+        for line in FREEZE.read_text(encoding="utf-8").splitlines()
         if (m := re.match(r"^([A-Za-z0-9._-]+)\s*==", line.strip()))
     }
     if "audioop-lts" in names:
@@ -232,7 +232,7 @@ def _seed_script() -> str:
     return textwrap.dedent(body.group(1))
 
 
-def _run_seed(tmp_path, freeze_text = None) -> list[str]:
+def _run_seed(tmp_path, freeze_text=None) -> list[str]:
     """Execute the workflow's seed script and return the pins it hands pip.
 
     Laid out the way the job lays it out: the script reads `unsloth/scripts/data/...` relative
@@ -244,13 +244,13 @@ def _run_seed(tmp_path, freeze_text = None) -> list[str]:
     import subprocess
 
     data = tmp_path / "unsloth" / "scripts" / "data"
-    data.mkdir(parents = True)
+    data.mkdir(parents=True)
     mapping = _mapping()
     mapping["python_version"] = "%d.%d" % sys.version_info[:2]
-    (data / "colab_to_cpu_pin.json").write_text(json.dumps(mapping), encoding = "utf-8")
+    (data / "colab_to_cpu_pin.json").write_text(json.dumps(mapping), encoding="utf-8")
     (data / "colab_pip_freeze.gpu.txt").write_text(
-        freeze_text if freeze_text is not None else FREEZE.read_text(encoding = "utf-8"),
-        encoding = "utf-8",
+        freeze_text if freeze_text is not None else FREEZE.read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
     # The script writes its output to fixed paths; give it a private TMPDIR-shaped home by
     # rewriting those two literals, which is the only edit made to the production text.
@@ -260,13 +260,13 @@ def _run_seed(tmp_path, freeze_text = None) -> list[str]:
     script = script.replace("/tmp/seed_no_binary.txt", str(tmp_path / "seed_no_binary.txt"))
     run = subprocess.run(
         [sys.executable, "-c", script],
-        cwd = str(tmp_path),
-        capture_output = True,
-        text = True,
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
     )
     assert run.returncode == 0, f"the seed script failed: {run.stdout}\n{run.stderr}"
-    pins = (tmp_path / "seed_pins.txt").read_text(encoding = "utf-8").split()
-    torch_pins = (tmp_path / "seed_torch.txt").read_text(encoding = "utf-8").split()
+    pins = (tmp_path / "seed_pins.txt").read_text(encoding="utf-8").split()
+    torch_pins = (tmp_path / "seed_torch.txt").read_text(encoding="utf-8").split()
     return pins + torch_pins
 
 
@@ -323,7 +323,7 @@ def test_every_dev_pin_in_the_freeze_has_been_judged():
     allowed = {entry.lower() for entry in mapping.get("published_prerelease", [])}
 
     unjudged = []
-    for line in FREEZE.read_text(encoding = "utf-8").splitlines():
+    for line in FREEZE.read_text(encoding="utf-8").splitlines():
         m = re.match(r"^([A-Za-z0-9._-]+)\s*==\s*(.+)$", line.strip())
         if not m or ".dev" not in m.group(2):
             continue
@@ -357,7 +357,7 @@ def test_an_undeclared_dev_pin_is_left_alone_rather_than_guessed_at(tmp_path):
     image had. Anything not named in the mapping passes through untouched, so the resolve fails
     where a human can see it rather than installing something else quietly.
     """
-    freeze = FREEZE.read_text(encoding = "utf-8") + "\nunsloth-not-a-real-pin==2.0.dev3\n"
+    freeze = FREEZE.read_text(encoding="utf-8") + "\nunsloth-not-a-real-pin==2.0.dev3\n"
     seeded = dict(pin.split("==", 1) for pin in _run_seed(tmp_path, freeze) if "==" in pin)
     assert (
         seeded.get("unsloth-not-a-real-pin") == "2.0.dev3"
@@ -573,10 +573,10 @@ def _probe_in_a_venv_without_torchcodec(mode: str) -> str:
     # run everywhere instead of skipping wherever the wheel happens to be installed.
     out = subprocess.run(
         [sys.executable, "-S", "-c", script, mode, str(REPO / "tests")],
-        capture_output = True,
-        text = True,
-        env = {"PATH": os.environ.get("PATH", ""), "PYTHONNOUSERSITE": "1"},
-        cwd = str(REPO),
+        capture_output=True,
+        text=True,
+        env={"PATH": os.environ.get("PATH", ""), "PYTHONNOUSERSITE": "1"},
+        cwd=str(REPO),
     )
     return out.stdout
 
@@ -593,7 +593,7 @@ def _probe_in_a_venv_without_torchcodec(mode: str) -> str:
         # The placeholder: both probes answer.
         ("dist", "VERSION 0.0.0"),
     ],
-    ids = ["bare ModuleType", "ModuleType with a spec", "the placeholder distribution"],
+    ids=["bare ModuleType", "ModuleType with a spec", "the placeholder distribution"],
 )
 def test_the_placeholder_survives_both_probes_transformers_makes(mode, expected):
     """transformers asks two questions while importing audio_utils, and a stub has to answer
@@ -687,7 +687,7 @@ def test_every_helper_the_smoke_steps_import_is_a_path_trigger():
     imported = set(re.findall(r"import\s+(_\w+)", shell))
     assert imported, "no helper imports found in the smoke steps; this guard checks nothing"
 
-    doc = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
+    doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     # `on` is the YAML 1.1 boolean True once parsed, which is why this is not doc["on"].
     triggers = doc[True] if True in doc else doc["on"]
     paths = set(triggers["pull_request"]["paths"])
@@ -724,5 +724,5 @@ def test_loading_the_stub_helper_leaves_sys_path_alone():
 
     # Assembled rather than written out, so the needle does not match this line itself.
     needle = "sys.path" + ".insert(0, str(REPO / " + chr(34) + "tests" + chr(34) + "))"
-    source = Path(__file__).read_text(encoding = "utf-8")
+    source = Path(__file__).read_text(encoding="utf-8")
     assert needle not in source, "a sys.path insert of the tests dir is back in this file"

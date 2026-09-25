@@ -113,7 +113,7 @@ def resident_answers_media_request(
     if _resident_answers_exactly(resident, name):
         return True
     task = IMAGE_TASK if owner == DIFFUSION else VIDEO_TASK
-    pick = resolve_local_media_model(name, task = task)
+    pick = resolve_local_media_model(name, task=task)
     return pick is not None and satisfied_by(resident, name, pick)
 
 
@@ -124,7 +124,7 @@ async def _require_local(
     *,
     kind: str,
     openai_errors: bool,
-    hf_token: Optional[str],
+    hf_token: Optional[str]
 ) -> None:
     """Refuse unless *pick* is provably downloaded in full.
 
@@ -134,22 +134,22 @@ async def _require_local(
     missing = await bounded(
         asyncio.to_thread(missing_download_bytes, owner, pick, hf_token),
         deadline,
-        kind = kind,
-        openai_errors = openai_errors,
+        kind=kind,
+        openai_errors=openai_errors,
     )
     if missing is None:
         raise refuse(
-            UNVERIFIED_MSG.format(model = pick.model_id, kind = kind),
-            status_code = 409,
-            openai_errors = openai_errors,
-            code = "model_not_downloaded",
+            UNVERIFIED_MSG.format(model=pick.model_id, kind=kind),
+            status_code=409,
+            openai_errors=openai_errors,
+            code="model_not_downloaded",
         )
     if missing:
         raise refuse(
             incomplete_message(pick.model_id, missing, kind),
-            status_code = 409,
-            openai_errors = openai_errors,
-            code = "model_not_downloaded",
+            status_code=409,
+            openai_errors=openai_errors,
+            code="model_not_downloaded",
         )
 
 
@@ -162,7 +162,7 @@ async def _acquire_all(locks: list, deadline: float, *, kind: str, openai_errors
     acquired: list = []
     try:
         for held in locks:
-            await bounded(held.acquire(), deadline, kind = kind, openai_errors = openai_errors)
+            await bounded(held.acquire(), deadline, kind=kind, openai_errors=openai_errors)
             acquired.append(held)
     except BaseException:
         for held in reversed(acquired):
@@ -192,7 +192,7 @@ async def _await_loaded(
     deadline: float,
     *,
     kind: str,
-    openai_errors: bool,
+    openai_errors: bool
 ) -> bool:
     """Poll the background load until the REQUESTED model is resident; False if still going.
 
@@ -204,7 +204,7 @@ async def _await_loaded(
     to count bytes, so on a slow or stalled filesystem a single poll can outlive the budget that
     the check at the bottom of the loop is meant to enforce.
     """
-    probe = functools.partial(bounded, deadline = deadline, kind = kind, openai_errors = openai_errors)
+    probe = functools.partial(bounded, deadline=deadline, kind=kind, openai_errors=openai_errors)
     while True:
         progress = await probe(asyncio.to_thread(backend.load_progress)) or {}
         phase = progress.get("phase")
@@ -233,29 +233,31 @@ async def _start_load(
     if owner == DIFFUSION:
         from models.inference import DiffusionLoadRequest
         from routes.inference import load_diffusion_model_gated
+
         await load_diffusion_model_gated(
             DiffusionLoadRequest(
-                model_path = pick.model_path,
-                gguf_filename = pick.gguf_filename,
-                model_kind = pick.model_kind,
-                hf_token = hf_token,
+                model_path=pick.model_path,
+                gguf_filename=pick.gguf_filename,
+                model_kind=pick.model_kind,
+                hf_token=hf_token,
             ),
             current_subject,
-            user_initiated = False,
+            user_initiated=False,
         )
     else:
         from models.inference import VideoLoadRequest
         from routes.video import load_video_model_gated
+
         await load_video_model_gated(
             VideoLoadRequest(
-                model_path = pick.model_path,
-                gguf_filename = pick.gguf_filename,
-                model_kind = pick.model_kind,
-                h3_task = partition,
-                hf_token = hf_token,
+                model_path=pick.model_path,
+                gguf_filename=pick.gguf_filename,
+                model_kind=pick.model_kind,
+                h3_task=partition,
+                hf_token=hf_token,
             ),
             current_subject,
-            user_initiated = False,
+            user_initiated=False,
         )
     logger.info("Media auto-switch: loading %s on the %s backend", pick.model_id, owner)
 
@@ -271,7 +273,7 @@ async def _gated_start_load(
     kind: str,
     openai_errors: bool,
     hf_token: Optional[str],
-    takes_the_gpu: bool,
+    takes_the_gpu: bool
 ) -> bool:
     """Run the final checks and start the load, owning the gates and *locks* throughout.
 
@@ -322,8 +324,8 @@ async def _gated_start_load(
                 await bounded(
                     gates.enter_async_context(gate),
                     deadline,
-                    kind = kind,
-                    openai_errors = openai_errors,
+                    kind=kind,
+                    openai_errors=openai_errors,
                 )
             backend = backend_for(owner)
             if satisfied_by(await asyncio.to_thread(backend.status), name, pick):
@@ -332,19 +334,19 @@ async def _gated_start_load(
                 owner,
                 backend,
                 time.monotonic(),
-                count_pending = False,
-                probe_deadline = deadline,
-                kind = kind,
-                openai_errors = openai_errors,
+                count_pending=False,
+                probe_deadline=deadline,
+                kind=kind,
+                openai_errors=openai_errors,
             ):
                 raise busy(kind, openai_errors)
             await _require_local(
                 owner,
                 pick,
                 deadline,
-                kind = kind,
-                openai_errors = openai_errors,
-                hf_token = hf_token,
+                kind=kind,
+                openai_errors=openai_errors,
+                hf_token=hf_token,
             )
             # Given its own task and waited on with a cap: a first-run native install runs for minutes before
             # begin_load, and holding both media gates and chat's that long blocks every unrelated request. On expiry
@@ -360,7 +362,7 @@ async def _gated_start_load(
                         raise busy(
                             kind,
                             openai_errors,
-                            retry_after = int(exc.detail["retry_after"]),
+                            retry_after=int(exc.detail["retry_after"]),
                         ) from exc
                     raise
             return False
@@ -408,35 +410,35 @@ async def maybe_auto_switch_media_model(
 
     # off the loop: a cold index walks the model roots and reads gguf headers
     pick = await bounded(
-        asyncio.to_thread(resolve_local_media_model, name, task = task),
+        asyncio.to_thread(resolve_local_media_model, name, task=task),
         deadline,
-        kind = kind,
-        openai_errors = openai_errors,
+        kind=kind,
+        openai_errors=openai_errors,
     )
     if pick is None:
         available = format_available(
             await bounded(
                 asyncio.to_thread(available_media_model_ids, task),
                 deadline,
-                kind = kind,
-                openai_errors = openai_errors,
+                kind=kind,
+                openai_errors=openai_errors,
             )
         )
         raise refuse(
             f"No downloaded {kind} model matches '{name}'."
             + (f" Downloaded {kind} models: {available}." if available else ""),
-            status_code = 404,
-            openai_errors = openai_errors,
-            code = "model_not_found",
+            status_code=404,
+            openai_errors=openai_errors,
+            code="model_not_found",
         )
 
     # before anything is evicted: the load would otherwise finish and be refused for lacking txt2img
     if owner == DIFFUSION and await asyncio.to_thread(is_edit_only, pick):
         raise refuse(
-            EDIT_ONLY_MSG.format(model = pick.model_id),
-            status_code = 400,
-            openai_errors = openai_errors,
-            code = "invalid_value",
+            EDIT_ONLY_MSG.format(model=pick.model_id),
+            status_code=400,
+            openai_errors=openai_errors,
+            code="invalid_value",
         )
 
     # re-read: the index build can run for the whole budget, and an idle unload can land in it
@@ -447,8 +449,8 @@ async def maybe_auto_switch_media_model(
         await bounded(
             asyncio.to_thread(before_switch, pick),
             deadline,
-            kind = kind,
-            openai_errors = openai_errors,
+            kind=kind,
+            openai_errors=openai_errors,
         )
 
     lock = switch_lock(owner)
@@ -459,7 +461,7 @@ async def maybe_auto_switch_media_model(
     with note_switcher(owner):
         # the marker covers only the wait: once this request holds the lock it is real work
         with note_waiter(owner):
-            await _acquire_all(locks, deadline, kind = kind, openai_errors = openai_errors)
+            await _acquire_all(locks, deadline, kind=kind, openai_errors=openai_errors)
         handed_over = False
         try:
             backend = backend_for(owner)
@@ -469,18 +471,18 @@ async def maybe_auto_switch_media_model(
                 owner,
                 pick,
                 deadline,
-                kind = kind,
-                openai_errors = openai_errors,
-                hf_token = hf_token,
+                kind=kind,
+                openai_errors=openai_errors,
+                hf_token=hf_token,
             )
             if not await drain(
                 owner,
                 backend,
                 min(deadline, time.monotonic() + _DRAIN_WAIT_S),
                 # probes answer to the switch budget: only a spent budget is the slow-switch 503
-                probe_deadline = deadline,
-                kind = kind,
-                openai_errors = openai_errors,
+                probe_deadline=deadline,
+                kind=kind,
+                openai_errors=openai_errors,
             ):
                 raise busy(kind, openai_errors)
             # its own task, so a timeout below frees the caller without unwinding gate or lock
@@ -492,16 +494,16 @@ async def maybe_auto_switch_media_model(
                     current_subject,
                     locks,
                     deadline,
-                    kind = kind,
-                    openai_errors = openai_errors,
-                    hf_token = hf_token,
-                    takes_the_gpu = takes_the_gpu,
+                    kind=kind,
+                    openai_errors=openai_errors,
+                    hf_token=hf_token,
+                    takes_the_gpu=takes_the_gpu,
                 )
             )
             setup.add_done_callback(_consume_detached_error)
             handed_over = True
             if await bounded(
-                asyncio.shield(setup), deadline, kind = kind, openai_errors = openai_errors
+                asyncio.shield(setup), deadline, kind=kind, openai_errors=openai_errors
             ):
                 return
         finally:
@@ -512,23 +514,23 @@ async def maybe_auto_switch_media_model(
     try:
         # re-resolved: an engine switch (diffusers <-> sd.cpp) replaces the object
         ready = await _await_loaded(
-            backend_for(owner), name, pick, deadline, kind = kind, openai_errors = openai_errors
+            backend_for(owner), name, pick, deadline, kind=kind, openai_errors=openai_errors
         )
     except RuntimeError as exc:
         # the loader already redacts this text; a bare raise would 500 with it
         raise refuse(
             f"'{pick.model_id}' could not be loaded: {exc}",
-            status_code = 503,
-            openai_errors = openai_errors,
-            code = "model_load_failed",
+            status_code=503,
+            openai_errors=openai_errors,
+            code="model_load_failed",
         )
     if not ready:
         raise refuse(
-            LOADING_MSG.format(model = pick.model_id),
-            status_code = 503,
-            openai_errors = openai_errors,
-            code = "model_loading",
-            retry_after = RETRY_AFTER_S,
+            LOADING_MSG.format(model=pick.model_id),
+            status_code=503,
+            openai_errors=openai_errors,
+            code="model_loading",
+            retry_after=RETRY_AFTER_S,
         )
 
 

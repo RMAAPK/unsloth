@@ -306,7 +306,7 @@ class _OwnedJobService:
 
 
 def test_owner_start_while_the_last_managed_account_is_deactivated_keeps_its_own_attribution(
-    monkeypatch,
+    monkeypatch
 ):
     mode = {"multi": True}
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: mode["multi"])

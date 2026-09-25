@@ -81,7 +81,7 @@ def _install(
     under test is the one an install actually produces -- not a fixture's idea of it."""
     install_dir = tmp_path / "whisper.cpp"
     bin_dir = WHISPER.runtime_bin_dir(install_dir, LINUX)
-    bin_dir.mkdir(parents = True)
+    bin_dir.mkdir(parents=True)
     server = WHISPER.installed_server_path(install_dir, LINUX)
     server.write_bytes(SERVER_BYTES)
     server.chmod(0o755)
@@ -99,12 +99,12 @@ def _slim_fields(tmp_path: Path, slim: bool) -> dict:
     if not slim:
         return {}
     return dict(
-        install_kind = "slim",
-        paired_llama_tag = "b9001",
-        linked_from = str(tmp_path / "llama.cpp" / "build" / "bin"),
-        linked_libraries = SLIM_LIBRARIES,
-        runtime_wiring_version = WHISPER.SLIM_RUNTIME_WIRING_VERSION,
-        linked_runtime_directories = (),
+        install_kind="slim",
+        paired_llama_tag="b9001",
+        linked_from=str(tmp_path / "llama.cpp" / "build" / "bin"),
+        linked_libraries=SLIM_LIBRARIES,
+        runtime_wiring_version=WHISPER.SLIM_RUNTIME_WIRING_VERSION,
+        linked_runtime_directories=(),
     )
 
 
@@ -113,11 +113,11 @@ def _marker_path(install_dir: Path) -> Path:
 
 
 def _marker(install_dir: Path) -> dict:
-    return json.loads(_marker_path(install_dir).read_text(encoding = "utf-8"))
+    return json.loads(_marker_path(install_dir).read_text(encoding="utf-8"))
 
 
 def _rewrite_marker(install_dir: Path, marker: dict) -> None:
-    _marker_path(install_dir).write_text(json.dumps(marker, indent = 2), encoding = "utf-8")
+    _marker_path(install_dir).write_text(json.dumps(marker, indent=2), encoding="utf-8")
 
 
 def _intact(install_dir: Path) -> bool:
@@ -164,7 +164,7 @@ def test_the_marker_records_the_server_it_installed(tmp_path, monkeypatch):
 def test_a_slim_marker_records_the_ggml_libraries_it_hardlinked(tmp_path, monkeypatch):
     """A slim bundle ships no ggml of its own: those hardlinks ARE most of its bytes on a
     CUDA or ROCm pairing, and nothing else in the marker describes them."""
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     records = _marker(install_dir)["runtime_files"]
     for name in SLIM_LIBRARIES:
         library = WHISPER.runtime_bin_dir(install_dir, LINUX) / name
@@ -238,14 +238,14 @@ def test_a_corrupt_wired_library_is_rejected(tmp_path, monkeypatch):
     """A hardlinked ggml library left as a stub. linked_libraries is checked for PRESENCE
     by name, so a one-byte libggml.so.0 used to read as intact wiring and the sidecar
     failed with a dynamic linker error the user could do nothing with."""
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     assert _intact(install_dir) is True
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is True
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is True
     library = WHISPER.runtime_bin_dir(install_dir, LINUX) / "libggml.so.0"
     library.write_bytes(b"\x00")
     assert library.is_file()
     assert _intact(install_dir) is False
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is False
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is False
     assert _fast_path(install_dir) is False
 
 
@@ -255,7 +255,7 @@ def test_a_same_size_flip_in_a_ggml_library_is_deliberately_not_caught(tmp_path,
     hundreds of MB and this check runs on every update. Truncation and deletion -- what a
     full disk, an interrupted extract or a half-removed llama install actually produce --
     are what it is built to catch."""
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     library = WHISPER.runtime_bin_dir(install_dir, LINUX) / "libggml.so.0"
     data = bytearray(library.read_bytes())
     data[0] ^= 0xFF
@@ -341,7 +341,7 @@ def test_the_legacy_marker_is_backfilled_once_and_fast_after(tmp_path, monkeypat
 def test_the_backfill_records_the_live_bytes_of_a_slim_tree(tmp_path, monkeypatch):
     """A legacy SLIM install: the wiring it hardlinked has to be recorded too, or the
     backfill would leave the half of the payload that is most of the bytes unprotected."""
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     _legacy(install_dir)
     WHISPER.settle_kept_install(install_dir)
     records = _marker(install_dir)["runtime_files"]
@@ -402,10 +402,10 @@ def test_an_upgrade_does_not_re_download_and_settles_under_the_lock(tmp_path, mo
     _legacy(install_dir)
     selection = _selection()
     bundle = WHISPER.ReleaseBundle(
-        repo = WHISPER.DEFAULT_PUBLISHED_REPO,
-        release_tag = RELEASE_TAG,
-        manifest = {},
-        asset_urls = {},
+        repo=WHISPER.DEFAULT_PUBLISHED_REPO,
+        release_tag=RELEASE_TAG,
+        manifest={},
+        asset_urls={},
     )
 
     downloads = {"n": 0}
@@ -441,10 +441,10 @@ def test_an_upgrade_does_not_re_download_and_settles_under_the_lock(tmp_path, mo
     result = WHISPER.core.install_selected_prebuilt(
         WHISPER._OPS,
         install_dir,
-        host = LINUX,
-        bundle = bundle,
-        selection = selection,
-        force = False,
+        host=LINUX,
+        bundle=bundle,
+        selection=selection,
+        force=False,
     )
     assert result == WHISPER.EXIT_SUCCESS
     assert downloads["n"] == 0
@@ -458,10 +458,10 @@ def test_an_upgrade_does_not_re_download_and_settles_under_the_lock(tmp_path, mo
         WHISPER.core.install_selected_prebuilt(
             WHISPER._OPS,
             install_dir,
-            host = LINUX,
-            bundle = bundle,
-            selection = selection,
-            force = False,
+            host=LINUX,
+            bundle=bundle,
+            selection=selection,
+            force=False,
         )
         == WHISPER.EXIT_SUCCESS
     )
@@ -496,14 +496,14 @@ def test_a_changed_mtime_alone_does_not_reject(tmp_path, monkeypatch):
     --touch: the timestamps move, not a byte changes. mtime_ns is recorded (it is what
     makes the size tier cheap to reason about) and never compared, because the answer to
     a mismatch here is a 200-400 MB re-download."""
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     recorded = _marker(install_dir)["runtime_files"]
     for relative in recorded:
         target = install_dir / relative
-        os.utime(target, ns = (recorded[relative]["mtime_ns"] + 10**9,) * 2)
+        os.utime(target, ns=(recorded[relative]["mtime_ns"] + 10**9,) * 2)
         assert target.stat().st_mtime_ns != recorded[relative]["mtime_ns"]
     assert _intact(install_dir) is True
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is True
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is True
     assert _fast_path(install_dir) is True
 
 
@@ -555,7 +555,7 @@ def _extract_released_studio(tmp_path: Path) -> Path:
     old_dir.mkdir()
     for name in _OLD_MODULES:
         try:
-            blob = git("show", f"{_OLD_TAG}:studio/{name}", timeout = 60)
+            blob = git("show", f"{_OLD_TAG}:studio/{name}", timeout=60)
         except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover - CI without git
             pytest.skip(f"git is unavailable here: {exc}")
         if blob.returncode != 0 or not blob.stdout:  # pragma: no cover - shallow checkout
@@ -593,11 +593,11 @@ def test_a_released_older_studio_ignores_the_new_key(tmp_path, monkeypatch):
     env["PYTHONPATH"] = os.pathsep.join([str(old_dir), str(STUDIO_DIR)])
     completed = subprocess.run(
         [sys.executable, "-c", _OLD_READER, payload],
-        cwd = str(old_dir),
-        capture_output = True,
-        text = True,
-        timeout = 300,
-        env = env,
+        cwd=str(old_dir),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        env=env,
     )
     assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout.strip().splitlines()[-1])
@@ -620,7 +620,7 @@ def _rocm_install(tmp_path: Path, monkeypatch) -> Path:
     """A slim ROCm install with a populated kernel catalog, marker by the real writer."""
     install_dir = tmp_path / "whisper.cpp"
     bin_dir = WHISPER.runtime_bin_dir(install_dir, LINUX)
-    bin_dir.mkdir(parents = True)
+    bin_dir.mkdir(parents=True)
     server = WHISPER.installed_server_path(install_dir, LINUX)
     server.write_bytes(SERVER_BYTES)
     server.chmod(0o755)
@@ -629,7 +629,7 @@ def _rocm_install(tmp_path: Path, monkeypatch) -> Path:
         (bin_dir / name).write_bytes(b"ggml-payload-" + name.encode("utf-8"))
     for directory in ROCM_DIRS:
         library = bin_dir / directory / "library"
-        library.mkdir(parents = True)
+        library.mkdir(parents=True)
         # Two blobs, so removing one leaves the directory non-empty and the old
         # "contains at least one file" check satisfied.
         (library / "TensileLibrary_gfx1100.dat").write_bytes(b"kernel-catalog-gfx1100" * 8)
@@ -638,12 +638,12 @@ def _rocm_install(tmp_path: Path, monkeypatch) -> Path:
     WHISPER.write_prebuilt_metadata(
         install_dir,
         _selection(
-            install_kind = "slim",
-            paired_llama_tag = "b9001",
-            linked_from = str(tmp_path / "llama.cpp" / "build" / "bin"),
-            linked_libraries = SLIM_LIBRARIES,
-            runtime_wiring_version = WHISPER.SLIM_RUNTIME_WIRING_VERSION,
-            linked_runtime_directories = ROCM_DIRS,
+            install_kind="slim",
+            paired_llama_tag="b9001",
+            linked_from=str(tmp_path / "llama.cpp" / "build" / "bin"),
+            linked_libraries=SLIM_LIBRARIES,
+            runtime_wiring_version=WHISPER.SLIM_RUNTIME_WIRING_VERSION,
+            linked_runtime_directories=ROCM_DIRS,
         ),
     )
     return install_dir
@@ -709,13 +709,13 @@ def _paired(monkeypatch, runtime_id: "str | None") -> None:
 
 def test_a_slim_marker_records_which_llama_install_it_was_wired_against(tmp_path, monkeypatch):
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     assert _marker(install_dir)["paired_llama_runtime_id"] == LLAMA_ID_GFX1100
 
 
 def test_a_fat_marker_records_no_pairing_at_all(tmp_path, monkeypatch):
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = False)
+    install_dir = _install(tmp_path, monkeypatch, slim=False)
     assert "paired_llama_runtime_id" not in _marker(install_dir)
 
 
@@ -723,14 +723,14 @@ def test_a_gfx_reselection_within_one_release_is_caught(tmp_path, monkeypatch):
     """The reported case. llama's tag, its ggml tree and whisper's own bytes are all
     unchanged; only the asset behind the hardlinks moved."""
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     assert _intact(install_dir) is True
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is True
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is True
 
     _paired(monkeypatch, LLAMA_ID_GFX1151)
     assert _marker(install_dir)["paired_llama_ggml_tree"] == GGML_TREE, "tree still matches"
     assert _intact(install_dir) is False
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is False
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is False
     assert _fast_path(install_dir) is False
 
 
@@ -738,7 +738,7 @@ def test_the_ggml_tree_alone_does_not_catch_it(tmp_path, monkeypatch):
     """Why a second key was needed: with the runtime id stripped, the same reselection is
     invisible. This is the pre-fix behaviour, pinned so the guard cannot be quietly dropped."""
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     marker = _marker(install_dir)
     marker.pop("paired_llama_runtime_id")
     _rewrite_marker(install_dir, marker)
@@ -749,7 +749,7 @@ def test_the_ggml_tree_alone_does_not_catch_it(tmp_path, monkeypatch):
 
 def test_an_unchanged_llama_install_still_takes_the_fast_path(tmp_path, monkeypatch):
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     assert _fast_path(install_dir) is True
     assert _fast_path(install_dir) is True
 
@@ -760,7 +760,7 @@ def test_a_marker_predating_the_key_is_backfilled_not_re_downloaded(tmp_path, mo
     for every existing user; recording the current pairing makes the NEXT swap detectable."""
     install_dir, _ = _slim_with_live_llama(tmp_path, monkeypatch)
     assert WHISPER.kept_install_needs_settling(install_dir) is True
-    assert _reuse(install_dir, slim = True, tmp_path = tmp_path) is True
+    assert _reuse(install_dir, slim=True, tmp_path=tmp_path) is True
     WHISPER.settle_kept_install(install_dir)
     assert _marker(install_dir)["paired_llama_runtime_id"] == LLAMA_ID_GFX1100
     assert WHISPER.kept_install_needs_settling(install_dir) is False
@@ -773,7 +773,7 @@ def test_a_backfill_with_no_llama_install_to_read_writes_nothing(tmp_path, monke
     """Fails open, not closed: an unreadable llama marker must not stamp None as a pairing,
     and must not fail setup over a metadata refresh either."""
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     marker = _marker(install_dir)
     marker.pop("paired_llama_runtime_id")
     _rewrite_marker(install_dir, marker)
@@ -788,7 +788,7 @@ def test_a_recorded_pairing_against_a_vanished_llama_install_is_rejected(tmp_pat
     """llama removed entirely, whisper's hardlinks still holding its last bytes: the recorded
     id no longer matches anything, which is a reinstall rather than a keep."""
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     _paired(monkeypatch, None)
     assert _intact(install_dir) is False
 
@@ -802,20 +802,20 @@ def _slim_with_live_llama(
     tmp_path,
     monkeypatch,
     *,
-    hardlink = True,
+    hardlink=True,
 ):
     """A slim whisper install whose wiring really does come from a llama bin dir on disk."""
     llama_bin = tmp_path / "llama.cpp" / "build" / "bin"
-    llama_bin.mkdir(parents = True)
+    llama_bin.mkdir(parents=True)
     for name in SLIM_LIBRARIES:
         (llama_bin / name).write_bytes(b"ggml-payload-" + name.encode("utf-8"))
 
     _paired(monkeypatch, LLAMA_ID_GFX1100)
-    install_dir = _install(tmp_path, monkeypatch, slim = True)
+    install_dir = _install(tmp_path, monkeypatch, slim=True)
     bin_dir = WHISPER.runtime_bin_dir(install_dir, LINUX)
     for name in SLIM_LIBRARIES:
         target = bin_dir / name
-        target.unlink(missing_ok = True)
+        target.unlink(missing_ok=True)
         if hardlink:
             os.link(llama_bin / name, target)
         else:
@@ -858,7 +858,7 @@ def test_the_backfill_records_nothing_when_llama_was_swapped_underneath(tmp_path
 def test_a_copied_wiring_is_judged_by_its_bytes_not_its_inode(tmp_path, monkeypatch):
     """_link_or_copy falls back to shutil.copy2 across filesystems, where the inodes differ
     legitimately. Refusing on the inode alone would deny those installs the fast path forever."""
-    install_dir, _ = _slim_with_live_llama(tmp_path, monkeypatch, hardlink = False)
+    install_dir, _ = _slim_with_live_llama(tmp_path, monkeypatch, hardlink=False)
     WHISPER.settle_kept_install(install_dir)
     assert _marker(install_dir).get("paired_llama_runtime_id") == LLAMA_ID_GFX1100
 

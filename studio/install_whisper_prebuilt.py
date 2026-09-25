@@ -121,7 +121,7 @@ class ReleaseCompatibilityError(PrebuiltFallback):
 
 
 def log(message: str) -> None:
-    print(f"[whisper-prebuilt] {message}", file = sys.stdout if _LOG_TO_STDOUT else sys.stderr)
+    print(f"[whisper-prebuilt] {message}", file=sys.stdout if _LOG_TO_STDOUT else sys.stderr)
 
 
 def log_lines(lines: Iterable[str]) -> None:
@@ -207,7 +207,7 @@ _RUN_STAGED_PREBUILT_VALIDATION = False
 
 
 # ── Host detection (probes shared with install_llama_prebuilt) ──
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class HostInfo:
     system: str
     machine: str
@@ -247,18 +247,18 @@ def host_from_llama(base: Any) -> HostInfo:
         raise PrebuiltFallback(f"unsupported CPU architecture for whisper.cpp prebuilt: {machine}")
 
     return HostInfo(
-        system = system,
-        machine = machine,
-        whisper_os = whisper_os,
-        whisper_arch = whisper_arch,
-        archive_ext = ".zip" if base.is_windows else ".tar.gz",
-        is_windows = base.is_windows,
-        is_macos = base.is_macos,
-        is_apple_silicon = base.is_macos and whisper_arch == "arm64",
-        has_usable_nvidia = base.has_usable_nvidia,
-        has_rocm = base.has_rocm,
-        rocm_gfx = base.rocm_gfx_target,
-        macos_version = base.macos_version,
+        system=system,
+        machine=machine,
+        whisper_os=whisper_os,
+        whisper_arch=whisper_arch,
+        archive_ext=".zip" if base.is_windows else ".tar.gz",
+        is_windows=base.is_windows,
+        is_macos=base.is_macos,
+        is_apple_silicon=base.is_macos and whisper_arch == "arm64",
+        has_usable_nvidia=base.has_usable_nvidia,
+        has_rocm=base.has_rocm,
+        rocm_gfx=base.rocm_gfx_target,
+        macos_version=base.macos_version,
     )
 
 
@@ -277,10 +277,10 @@ def apply_host_overrides(
     if force_cpu:
         return replace(
             host,
-            has_usable_nvidia = False,
-            has_rocm = False,
-            rocm_gfx = None,
-            is_apple_silicon = False,
+            has_usable_nvidia=False,
+            has_rocm=False,
+            rocm_gfx=None,
+            is_apple_silicon=False,
         )
     updates: dict[str, Any] = {}
     if has_rocm or rocm_gfx:
@@ -304,7 +304,7 @@ def auto_detect_backend(host: HostInfo) -> str:
 
 
 def resolve_backend(host: HostInfo, requested: str | None, *, cpu_fallback: bool) -> str:
-    return core.resolve_backend(_OPS, host, requested, cpu_fallback = cpu_fallback)
+    return core.resolve_backend(_OPS, host, requested, cpu_fallback=cpu_fallback)
 
 
 # ── Asset naming (pure, unit tested) ──
@@ -322,12 +322,12 @@ def whisper_asset_name(release_tag: str, host: HostInfo, accel: str) -> str:
 # ── Manifest (release-side artifact catalogue; generic parser in the core) ──
 def validate_schema_version(payload: dict[str, Any], *, label: str) -> None:
     core.validate_schema_version(
-        payload, label = label, schema_version = SCHEMA_VERSION, error = PrebuiltFallback
+        payload, label=label, schema_version=SCHEMA_VERSION, error=PrebuiltFallback
     )
 
 
 def parse_manifest(payload: Any, *, label: str = MANIFEST_ASSET_NAME) -> dict[str, Any]:
-    return core.parse_manifest(_OPS, payload, label = label)
+    return core.parse_manifest(_OPS, payload, label=label)
 
 
 def _macos_min_os_ok(host: HostInfo, min_os: Any) -> bool:
@@ -525,9 +525,9 @@ def slim_pairing_for_artifact(
     if not llama_runtime_pairs(
         llama_tag,
         requires_tag,
-        installed_ggml_tree = installed_llama_ggml_tree(),
-        required_ggml_tree = artifact.get("requires_ggml_tree"),
-        installed_repo = installed_llama_tree_repo(),
+        installed_ggml_tree=installed_llama_ggml_tree(),
+        required_ggml_tree=artifact.get("requires_ggml_tree"),
+        installed_repo=installed_llama_tree_repo(),
     ):
         log(
             f"slim_selection: {asset} skipped: installed llama tag {llama_tag!r} "
@@ -685,9 +685,9 @@ def _slim_release_incompatibility(manifest: dict[str, Any], host: HostInfo) -> s
         llama_runtime_pairs(
             installed_tag,
             tag,
-            installed_ggml_tree = installed_tree,
-            required_ggml_tree = tree,
-            installed_repo = installed_repo,
+            installed_ggml_tree=installed_tree,
+            required_ggml_tree=tree,
+            installed_repo=installed_repo,
         )
         for tag, tree in required_pairs
     ):
@@ -719,7 +719,7 @@ def expected_sha256_for(
     *,
     manifest_sha256: str | None = None,
 ) -> str:
-    return core.expected_sha256_for(_OPS, checksums, asset_name, manifest_sha256 = manifest_sha256)
+    return core.expected_sha256_for(_OPS, checksums, asset_name, manifest_sha256=manifest_sha256)
 
 
 # ── Verified download (retries once on checksum mismatch) ──
@@ -727,13 +727,13 @@ def download_file_verified(
     url: str, destination: Path, *, expected_sha256: str, label: str
 ) -> None:
     core.download_file_verified_strict(
-        _OPS, url, destination, expected_sha256 = expected_sha256, label = label
+        _OPS, url, destination, expected_sha256=expected_sha256, label=label
     )
 
 
 # ── GitHub release resolution ──
 def github_release(repo: str, tag: str) -> dict[str, Any]:
-    return core.github_release(_OPS, repo, tag, error = PrebuiltFallback)
+    return core.github_release(_OPS, repo, tag, error=PrebuiltFallback)
 
 
 def fetch_release_bundle(repo: str, release_tag: str) -> ReleaseBundle:
@@ -765,7 +765,7 @@ def _download_host_json_once(url: str) -> Any:
     silently dropped auth: a private published repo 404s and the caller drops to
     the "-mix-" suffix compare this exists to replace, and an anonymous
     huggingface.co fetch shares the per-IP limit that 429s CI fleets."""
-    data = download_bytes(url, timeout = 30, attempts = 1, headers = auth_headers(url))
+    data = download_bytes(url, timeout=30, attempts=1, headers=auth_headers(url))
     return json.loads(data.decode("utf-8"))
 
 
@@ -819,15 +819,15 @@ def _assemble_install_tree(bundle_root: Path, staged_root: Path, host: HostInfo)
     server's RUNPATH=$ORIGIN resolves its libs.
     """
     bin_dir = runtime_bin_dir(staged_root, host)
-    bin_dir.mkdir(parents = True, exist_ok = True)
+    bin_dir.mkdir(parents=True, exist_ok=True)
     for entry in sorted(bundle_root.iterdir()):
         if entry.name == METADATA_FILENAME:
             continue
         dest = bin_dir / entry.name
         if entry.is_dir() and not entry.is_symlink():
-            shutil.copytree(entry, dest, symlinks = True)
+            shutil.copytree(entry, dest, symlinks=True)
         else:
-            shutil.copy2(entry, dest, follow_symlinks = False)
+            shutil.copy2(entry, dest, follow_symlinks=False)
     server = bin_dir / server_binary_name(host)
     if not server.exists():
         raise PrebuiltFallback("staged install is missing the whisper-server binary")
@@ -852,12 +852,12 @@ def _validate_staged_server(staged_root: Path, host: HostInfo) -> None:
     try:
         result = subprocess.run(
             [str(server), "--help"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 60,
-            env = env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            env=env,
             **llama.windows_hidden_subprocess_kwargs(),
         )
     except (OSError, subprocess.SubprocessError) as exc:
@@ -880,11 +880,11 @@ def _elf_needed(path: Path) -> set[str] | None:
         try:
             result = subprocess.run(
                 [*command, str(path)],
-                capture_output = True,
-                text = True,
-                encoding = "utf-8",
-                errors = "replace",
-                timeout = 10,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
             )
         except (OSError, subprocess.SubprocessError):
             continue
@@ -954,7 +954,7 @@ def _runtime_library_sources(llama_bin_dir: Path, backend: str | None) -> list[P
 
 
 def _link_or_copy(source: Path, destination: Path) -> None:
-    destination.parent.mkdir(parents = True, exist_ok = True)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists() or destination.is_symlink():
         destination.unlink()
     try:
@@ -983,7 +983,7 @@ def link_ggml_runtime(
         raise PrebuiltFallback(
             f"no ggml libraries found in {llama_bin_dir} to pair the slim whisper install"
         )
-    whisper_bin_dir.mkdir(parents = True, exist_ok = True)
+    whisper_bin_dir.mkdir(parents=True, exist_ok=True)
     for source in sources:
         # Follows a libggml.so.0 -> libggml.so.0.x symlink to its inode, so every
         # created name is a real hardlink surviving a dir swap.
@@ -1031,19 +1031,19 @@ def prepare_runtime_payload(staged_root: Path, host: HostInfo, selection: Any) -
         return None
     source = Path(selection.linked_from)
     destination = runtime_bin_dir(staged_root, host)
-    linked = link_ggml_runtime(source, destination, backend = selection.backend)
+    linked = link_ggml_runtime(source, destination, backend=selection.backend)
     linked_dirs = link_runtime_directories(
         source,
         destination,
-        backend = selection.backend,
-        host = host,
+        backend=selection.backend,
+        host=host,
     )
     log(f"slim install: hardlinked {len(linked)} ggml libraries from {selection.linked_from}")
     return replace(
         selection,
-        linked_libraries = tuple(linked),
-        runtime_wiring_version = SLIM_RUNTIME_WIRING_VERSION,
-        linked_runtime_directories = tuple(linked_dirs),
+        linked_libraries=tuple(linked),
+        runtime_wiring_version=SLIM_RUNTIME_WIRING_VERSION,
+        linked_runtime_directories=tuple(linked_dirs),
     )
 
 
@@ -1221,12 +1221,12 @@ def selection_from_artifact(
 ) -> InstallSelection:
     selection = core.selection_from_artifact(
         _OPS,
-        published_repo = published_repo,
-        release_tag = release_tag,
-        manifest = manifest,
-        artifact = artifact,
-        backend = backend,
-        asset_sha256 = asset_sha256,
+        published_repo=published_repo,
+        release_tag=release_tag,
+        manifest=manifest,
+        artifact=artifact,
+        backend=backend,
+        asset_sha256=asset_sha256,
     )
     if artifact.get("install_kind") != "slim":
         return selection
@@ -1236,9 +1236,9 @@ def selection_from_artifact(
     if runtime is None or not llama_runtime_pairs(
         runtime[1],
         artifact.get("requires_llama_tag"),
-        installed_ggml_tree = installed_llama_ggml_tree(),
-        required_ggml_tree = artifact.get("requires_ggml_tree"),
-        installed_repo = installed_llama_tree_repo(),
+        installed_ggml_tree=installed_llama_ggml_tree(),
+        required_ggml_tree=artifact.get("requires_ggml_tree"),
+        installed_repo=installed_llama_tree_repo(),
     ):
         raise PrebuiltFallback(
             "the paired llama.cpp runtime changed underneath the slim whisper selection"
@@ -1246,9 +1246,9 @@ def selection_from_artifact(
     llama_bin_dir, llama_tag, _profile = runtime
     return replace(
         selection,
-        install_kind = "slim",
-        paired_llama_tag = llama_tag,
-        linked_from = str(llama_bin_dir),
+        install_kind="slim",
+        paired_llama_tag=llama_tag,
+        linked_from=str(llama_bin_dir),
     )
 
 
@@ -1536,7 +1536,7 @@ def resolve_newest_release_tag(repo: str) -> str:
 
 def resolve_release_tag(published_repo: str, *, published_release_tag: str | None) -> str:
     return core.resolve_release_tag(
-        _OPS, published_repo, published_release_tag = published_release_tag
+        _OPS, published_repo, published_release_tag=published_release_tag
     )
 
 
@@ -1545,7 +1545,7 @@ def fetch_release_for_install(
 ) -> tuple[ReleaseBundle, dict[str, str]]:
     try:
         return core.fetch_release_for_install(
-            _OPS, repo, published_release_tag = published_release_tag
+            _OPS, repo, published_release_tag=published_release_tag
         )
     except PrebuiltFallback:
         raise
@@ -1557,7 +1557,7 @@ def fetch_release_for_install(
         ) from exc
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class WhisperReleasePlan:
     bundle: ReleaseBundle
     selection: InstallSelection | None
@@ -1597,7 +1597,7 @@ def _published_release_tags(repo: str) -> list[str]:
         and isinstance(release.get("tag_name"), str)
         and release.get("tag_name")
     ]
-    releases.sort(key = lambda release: release.get("published_at") or "", reverse = True)
+    releases.sort(key=lambda release: release.get("published_at") or "", reverse=True)
     return [str(release["tag_name"]) for release in releases]
 
 
@@ -1606,7 +1606,7 @@ def _fetch_release_candidate(repo: str, release_tag: str) -> ReleaseBundle:
     manifest_url = release_asset_download_url(repo, release_tag, MANIFEST_ASSET_NAME)
     try:
         payload = _download_host_json(manifest_url)
-        manifest = parse_manifest(payload, label = f"{MANIFEST_ASSET_NAME} in {repo}@{release_tag}")
+        manifest = parse_manifest(payload, label=f"{MANIFEST_ASSET_NAME} in {repo}@{release_tag}")
     except Exception as exc:
         raise PrebuiltFallback(
             f"could not read {MANIFEST_ASSET_NAME} from {repo}@{release_tag}: {exc}"
@@ -1619,10 +1619,10 @@ def _fetch_release_candidate(repo: str, release_tag: str) -> ReleaseBundle:
     )
     asset_urls = {name: release_asset_download_url(repo, release_tag, name) for name in asset_names}
     return ReleaseBundle(
-        repo = repo,
-        release_tag = release_tag,
-        manifest = manifest,
-        asset_urls = asset_urls,
+        repo=repo,
+        release_tag=release_tag,
+        manifest=manifest,
+        asset_urls=asset_urls,
     )
 
 
@@ -1642,19 +1642,19 @@ def _plan_bundle(
         plan_selection(
             host,
             bundle,
-            published_repo = published_repo,
-            backend = requested_backend,
-            checksums = checksums,
+            published_repo=published_repo,
+            backend=requested_backend,
+            checksums=checksums,
         )
         if verify_checksums
         else None
     )
     return WhisperReleasePlan(
-        bundle = bundle,
-        selection = selection,
-        artifact = artifact,
-        resolved_backend = resolved_backend,
-        used_fallback = used_fallback,
+        bundle=bundle,
+        selection=selection,
+        artifact=artifact,
+        resolved_backend=resolved_backend,
+        used_fallback=used_fallback,
     )
 
 
@@ -1681,7 +1681,7 @@ def _release_plan_for_host(
     # An upstream version pin searches manifests directly.
     if not requested_specific_tag or published_release_tag:
         first_bundle, first_checksums = fetch_release_for_install(
-            published_repo, published_release_tag = published_release_tag
+            published_repo, published_release_tag=published_release_tag
         )
         if not _bundle_matches_whisper_tag(first_bundle, whisper_tag):
             first_error = PrebuiltFallback(
@@ -1700,9 +1700,9 @@ def _release_plan_for_host(
                     host,
                     first_bundle,
                     first_checksums,
-                    published_repo = published_repo,
-                    requested_backend = requested_backend,
-                    verify_checksums = verify_checksums,
+                    published_repo=published_repo,
+                    requested_backend=requested_backend,
+                    verify_checksums=verify_checksums,
                 )
 
     if published_release_tag:
@@ -1738,9 +1738,9 @@ def _release_plan_for_host(
             host,
             bundle,
             checksums,
-            published_repo = published_repo,
-            requested_backend = requested_backend,
-            verify_checksums = verify_checksums,
+            published_repo=published_repo,
+            requested_backend=requested_backend,
+            verify_checksums=verify_checksums,
         )
         log(
             f"selected compatible published release {bundle.release_tag} "
@@ -1755,9 +1755,9 @@ def _release_plan_for_host(
             # So the marker-only check holds the install while that release is newest for this macOS.
             plan = replace(
                 plan,
-                walk_back = walk_back,
-                selection = (
-                    replace(plan.selection, walk_back = walk_back)
+                walk_back=walk_back,
+                selection=(
+                    replace(plan.selection, walk_back=walk_back)
                     if plan.selection is not None
                     else None
                 ),
@@ -1790,9 +1790,9 @@ def plan_selection(
         _OPS,
         host,
         bundle,
-        published_repo = published_repo,
-        backend = backend,
-        checksums = checksums,
+        published_repo=published_repo,
+        backend=backend,
+        checksums=checksums,
     )
 
 
@@ -1913,7 +1913,7 @@ def _api_newest_release_tag_for_upstream(
     wanted = _normalized_upstream_tag(whisper_tag)
     try:
         releases = llama.github_releases(
-            repo, max_pages = llama.DEFAULT_GITHUB_RELEASE_SCAN_MAX_PAGES
+            repo, max_pages=llama.DEFAULT_GITHUB_RELEASE_SCAN_MAX_PAGES
         )
     except Exception as exc:  # noqa: BLE001 - unreachable is a reason to do the work
         log(f"could not list the {COMPONENT} releases packaging {whisper_tag} ({exc})")
@@ -1965,8 +1965,8 @@ def existing_install_current_without_plan(
     marker = _existing_install_is_intact(
         install_dir,
         host,
-        published_repo = published_repo,
-        requested_backend = requested_backend,
+        published_repo=published_repo,
+        requested_backend=requested_backend,
     )
     if marker is None:
         return False
@@ -2029,9 +2029,9 @@ def install_prebuilt(
     force: bool = False,
 ) -> int:
     host = apply_host_overrides(
-        detect_host(), has_rocm = has_rocm, rocm_gfx = rocm_gfx, force_cpu = cpu_fallback
+        detect_host(), has_rocm=has_rocm, rocm_gfx=rocm_gfx, force_cpu=cpu_fallback
     )
-    requested_backend = resolve_backend(host, backend, cpu_fallback = cpu_fallback)
+    requested_backend = resolve_backend(host, backend, cpu_fallback=cpu_fallback)
     os_token, arch_token = host_platform_tokens(host)
     log(
         f"target {COMPONENT} from {published_repo} "
@@ -2040,19 +2040,19 @@ def install_prebuilt(
     if not force and existing_install_current_without_plan(
         install_dir,
         host,
-        whisper_tag = whisper_tag,
-        published_repo = published_repo,
-        published_release_tag = published_release_tag,
-        requested_backend = requested_backend,
+        whisper_tag=whisper_tag,
+        published_repo=published_repo,
+        published_release_tag=published_release_tag,
+        requested_backend=requested_backend,
     ):
         return 0
     try:
         plan = _release_plan_for_host(
             host,
-            published_repo = published_repo,
-            published_release_tag = published_release_tag,
-            whisper_tag = whisper_tag,
-            requested_backend = requested_backend,
+            published_repo=published_repo,
+            published_release_tag=published_release_tag,
+            whisper_tag=whisper_tag,
+            requested_backend=requested_backend,
         )
     except (ReleaseCompatibilityError, core.ReleaseIntegrityError):
         # The lookup ANSWERED, so keeping would paper over a real answer. Two kinds:
@@ -2082,8 +2082,8 @@ def install_prebuilt(
             else _existing_install_is_intact(
                 install_dir,
                 host,
-                published_repo = published_repo,
-                requested_backend = requested_backend,
+                published_repo=published_repo,
+                requested_backend=requested_backend,
             )
         )
         if marker is None:
@@ -2104,10 +2104,10 @@ def install_prebuilt(
     return core.install_selected_prebuilt(
         _OPS,
         install_dir,
-        host = host,
-        bundle = plan.bundle,
-        selection = plan.selection,
-        force = force,
+        host=host,
+        bundle=plan.bundle,
+        selection=plan.selection,
+        force=force,
     )
 
 
@@ -2139,15 +2139,15 @@ def resolve_prebuilt(
     backend: str | None,
     cpu_fallback: bool,
 ) -> dict[str, Any]:
-    requested_backend = resolve_backend(host, backend, cpu_fallback = cpu_fallback)
+    requested_backend = resolve_backend(host, backend, cpu_fallback=cpu_fallback)
     try:
         plan = _release_plan_for_host(
             host,
-            published_repo = published_repo,
-            published_release_tag = published_release_tag,
-            whisper_tag = whisper_tag,
-            requested_backend = requested_backend,
-            verify_checksums = False,
+            published_repo=published_repo,
+            published_release_tag=published_release_tag,
+            whisper_tag=whisper_tag,
+            requested_backend=requested_backend,
+            verify_checksums=False,
         )
     except PrebuiltFallback as exc:
         return unavailable_payload(published_repo, exc)
@@ -2172,76 +2172,76 @@ def resolve_prebuilt(
 # The declarative form of everything above, for descriptor-driven consumers; the shipped CLI runs
 # through this module's wrappers so the monkeypatch seams stay intact.
 DESCRIPTOR = core.ComponentDescriptor(
-    component = COMPONENT,
-    log_prefix = "whisper-prebuilt",
-    published_repo = DEFAULT_PUBLISHED_REPO,
-    manifest_asset_name = MANIFEST_ASSET_NAME,
-    sha256_asset_name = SHA256_ASSET_NAME,
-    metadata_filename = METADATA_FILENAME,
-    user_agent = USER_AGENT,
-    supported_backends = SUPPORTED_BACKENDS,
-    schema_version = SCHEMA_VERSION,
-    fallback_backend = FALLBACK_BACKEND,
-    detect_host = detect_host,
-    host_platform_tokens = host_platform_tokens,
-    server_binary_name = server_binary_name,
-    runtime_bin_dir = runtime_bin_dir,
+    component=COMPONENT,
+    log_prefix="whisper-prebuilt",
+    published_repo=DEFAULT_PUBLISHED_REPO,
+    manifest_asset_name=MANIFEST_ASSET_NAME,
+    sha256_asset_name=SHA256_ASSET_NAME,
+    metadata_filename=METADATA_FILENAME,
+    user_agent=USER_AGENT,
+    supported_backends=SUPPORTED_BACKENDS,
+    schema_version=SCHEMA_VERSION,
+    fallback_backend=FALLBACK_BACKEND,
+    detect_host=detect_host,
+    host_platform_tokens=host_platform_tokens,
+    server_binary_name=server_binary_name,
+    runtime_bin_dir=runtime_bin_dir,
 )
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description = "Install a prebuilt whisper.cpp (whisper-server) for Unsloth Studio"
+        description="Install a prebuilt whisper.cpp (whisper-server) for Unsloth Studio"
     )
     parser.add_argument(
         "--install-dir",
-        default = None,
-        help = (
+        default=None,
+        help=(
             "managed whisper.cpp directory, e.g. <UNSLOTH_HOME>/whisper.cpp. Required for an "
             "install; omit it only with --resolve-prebuilt (a read-only probe)."
         ),
     )
     parser.add_argument(
         "--whisper-tag",
-        default = os.environ.get("UNSLOTH_WHISPER_TAG", "latest"),
-        help = "upstream whisper.cpp tag hint (default 'latest' or $UNSLOTH_WHISPER_TAG)",
+        default=os.environ.get("UNSLOTH_WHISPER_TAG", "latest"),
+        help="upstream whisper.cpp tag hint (default 'latest' or $UNSLOTH_WHISPER_TAG)",
     )
     parser.add_argument(
         "--published-repo",
-        default = DEFAULT_PUBLISHED_REPO,
-        help = f"GitHub repo publishing the prebuilt releases (default {DEFAULT_PUBLISHED_REPO})",
+        default=DEFAULT_PUBLISHED_REPO,
+        help=f"GitHub repo publishing the prebuilt releases (default {DEFAULT_PUBLISHED_REPO})",
     )
     parser.add_argument(
         "--published-release-tag",
-        default = os.environ.get("UNSLOTH_WHISPER_RELEASE_TAG") or None,
-        help = "explicit release tag to install (default: the newest published release)",
+        default=os.environ.get("UNSLOTH_WHISPER_RELEASE_TAG") or None,
+        help="explicit release tag to install (default: the newest published release)",
     )
     parser.add_argument(
         "--backend",
-        default = os.environ.get("UNSLOTH_WHISPER_BACKEND", "auto"),
-        choices = ("auto", *SUPPORTED_BACKENDS),
-        help = "accelerator backend; 'auto' detects from hardware",
+        default=os.environ.get("UNSLOTH_WHISPER_BACKEND", "auto"),
+        choices=("auto", *SUPPORTED_BACKENDS),
+        help="accelerator backend; 'auto' detects from hardware",
     )
-    parser.add_argument("--has-rocm", action = "store_true", help = "treat this host as ROCm-capable")
-    parser.add_argument("--rocm-gfx", default = None, help = "ROCm gfx target override, e.g. gfx1100")
+    parser.add_argument("--has-rocm", action="store_true", help="treat this host as ROCm-capable")
+    parser.add_argument("--rocm-gfx", default=None, help="ROCm gfx target override, e.g. gfx1100")
     parser.add_argument(
-        "--cpu-fallback", action = "store_true", help = "force the CPU asset regardless of hardware"
+        "--cpu-fallback", action="store_true", help="force the CPU asset regardless of hardware"
     )
     parser.add_argument(
         "--resolve-prebuilt",
-        nargs = "?",
-        const = "latest",
-        default = None,
-        help = "report whether a prebuilt exists for this host without downloading",
+        nargs="?",
+        const="latest",
+        default=None,
+        help="report whether a prebuilt exists for this host without downloading",
     )
     parser.add_argument(
         "--output-format",
-        choices = ("plain", "json"),
-        default = "plain",
-        help = "resolver output format (default plain)",
+        choices=("plain", "json"),
+        default="plain",
+        help="resolver output format (default plain)",
     )
     parser.add_argument(
-        "--force", action = "store_true", help = "reinstall even if the install already matches"
+        "--force", action="store_true", help="reinstall even if the install already matches"
     )
     return parser
 
@@ -2256,24 +2256,24 @@ def main(argv: list[str] | None = None) -> int:
         try:
             host = apply_host_overrides(
                 detect_host(),
-                has_rocm = args.has_rocm,
-                rocm_gfx = args.rocm_gfx,
-                force_cpu = args.cpu_fallback,
+                has_rocm=args.has_rocm,
+                rocm_gfx=args.rocm_gfx,
+                force_cpu=args.cpu_fallback,
             )
             payload = resolve_prebuilt(
                 host,
-                published_repo = args.published_repo,
-                published_release_tag = args.published_release_tag,
-                whisper_tag = args.resolve_prebuilt,
-                backend = args.backend,
-                cpu_fallback = args.cpu_fallback,
+                published_repo=args.published_repo,
+                published_release_tag=args.published_release_tag,
+                whisper_tag=args.resolve_prebuilt,
+                backend=args.backend,
+                cpu_fallback=args.cpu_fallback,
             )
         except PrebuiltFallback as exc:
             payload = unavailable_payload(args.published_repo, exc)
         except Exception as exc:  # noqa: BLE001 - probe must never crash the caller
             log(f"resolve failed: {exc}")
             payload = unavailable_payload(args.published_repo, exc)
-        emit_resolver_output(payload, output_format = args.output_format)
+        emit_resolver_output(payload, output_format=args.output_format)
         return EXIT_SUCCESS
 
     # Install path: progress logs go to stdout so setup surfaces them.
@@ -2285,14 +2285,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return install_prebuilt(
             install_dir,
-            whisper_tag = args.whisper_tag,
-            published_repo = args.published_repo,
-            published_release_tag = args.published_release_tag,
-            backend = args.backend,
-            has_rocm = args.has_rocm,
-            rocm_gfx = args.rocm_gfx,
-            cpu_fallback = args.cpu_fallback,
-            force = args.force,
+            whisper_tag=args.whisper_tag,
+            published_repo=args.published_repo,
+            published_release_tag=args.published_release_tag,
+            backend=args.backend,
+            has_rocm=args.has_rocm,
+            rocm_gfx=args.rocm_gfx,
+            cpu_fallback=args.cpu_fallback,
+            force=args.force,
         )
     except BusyInstallConflict as exc:
         log(str(exc))

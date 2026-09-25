@@ -125,7 +125,7 @@ _PLATFORM_TITLES = frozenset(
 )
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class _ListState:
     """The open list items, innermost last, by the column their content starts."""
 
@@ -134,7 +134,7 @@ class _ListState:
     empty_item: bool = False
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Release:
     """One published GitHub release."""
 
@@ -145,7 +145,7 @@ class Release:
     published_at: str
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class ReleaseSource:
     release: Release | None
     source: str | None
@@ -193,7 +193,7 @@ def _markdown_lines(text: str) -> list[str]:
     return text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Text:
     """A line that is not a heading, as the scanner read it."""
 
@@ -204,7 +204,7 @@ class Text:
     opens_paragraph: bool = False
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Heading:
     """A heading the renderer would show, at document level."""
 
@@ -369,10 +369,10 @@ def scan_blocks(text: str):
         if setext:
             # The whole paragraph is the heading, already emitted line by line, so the caller takes those lines back. Dashes mean level 2.
             yield Heading(
-                level = 2,
-                title = " ".join(paragraph),
-                lines = (*paragraph_source, line),
-                retract = len(paragraph_source),
+                level=2,
+                title=" ".join(paragraph),
+                lines=(*paragraph_source, line),
+                retract=len(paragraph_source),
             )
             paragraph = []
             paragraph_source = []
@@ -444,19 +444,19 @@ def scan_blocks(text: str):
             paragraph_source = []
         if match is None:
             yield Text(
-                line = line,
-                is_full_changelog = bool(
+                line=line,
+                is_full_changelog=bool(
                     _FULL_CHANGELOG_LINE.match(visible) and not lists.columns and not quoted
                 ),
-                opens_paragraph = opens_paragraph,
+                opens_paragraph=opens_paragraph,
             )
             continue
 
         # An empty heading ends the section above and, being neither generated nor an upgrade block, starts a kept one.
         yield Heading(
-            level = len(match.group("hashes")),
-            title = match.group("title") or "",
-            lines = (line,),
+            level=len(match.group("hashes")),
+            title=match.group("title") or "",
+            lines=(line,),
         )
 
 
@@ -496,23 +496,23 @@ def get_release_notes(version: str, refresh: bool = False) -> dict[str, Any]:
     """Return the newest release's notes for the update popup. `version` is echoed back, not used to select a release: the pip popup offers a PyPI version (`2026.8.7`) and releases are tagged with the Unsloth version (`v0.1.60-beta`), so no tag could match it. `refresh` retries a cached failure, so the UI's retry is not stuck behind the failure TTL once connectivity returns."""
     version = version.strip()
     if not is_supported_version_query(version):
-        return _notes_response(version = version, error = "Unsupported version.")
+        return _notes_response(version=version, error="Unsupported version.")
 
     if os.environ.get(DISABLE_ENV_VAR) == "1":
-        return _notes_response(version = version)
+        return _notes_response(version=version)
 
-    remote = get_latest_release(refresh = refresh)
+    remote = get_latest_release(refresh=refresh)
     if remote.release is None:
-        return _notes_response(version = version, error = remote.error)
+        return _notes_response(version=version, error=remote.error)
 
     return _notes_response(
-        version = version,
-        markdown = strip_release_body(remote.release.body),
-        heading = remote.release.name or remote.release.tag,
-        tag = remote.release.tag,
-        html_url = remote.release.html_url,
-        source = remote.source,
-        error = remote.error,
+        version=version,
+        markdown=strip_release_body(remote.release.body),
+        heading=remote.release.name or remote.release.tag,
+        tag=remote.release.tag,
+        html_url=remote.release.html_url,
+        source=remote.source,
+        error=remote.error,
     )
 
 
@@ -539,25 +539,25 @@ def get_latest_release(refresh: bool = False) -> ReleaseSource:
                 break
             if now >= deadline:
                 return ReleaseSource(
-                    release = None,
-                    source = None,
-                    error = "Release notes are still loading.",
+                    release=None,
+                    source=None,
+                    error="Release notes are still loading.",
                 )
-            _cache_condition.wait(timeout = deadline - now)
+            _cache_condition.wait(timeout=deadline - now)
 
     try:
         try:
             source, ttl = _fetch_latest_release()
         except Exception:
             source = ReleaseSource(
-                release = None,
-                source = None,
-                error = "Could not fetch release notes.",
+                release=None,
+                source=None,
+                error="Could not fetch release notes.",
             )
             ttl = RELEASES_FAILURE_TTL_SECONDS
 
         with _cache_condition:
-            _remote_cache = _ReleaseCacheEntry(source = source, expires_at = time.monotonic() + ttl)
+            _remote_cache = _ReleaseCacheEntry(source=source, expires_at=time.monotonic() + ttl)
         return source
     finally:
         with _cache_condition:
@@ -573,9 +573,9 @@ def _fetch_latest_release() -> tuple[ReleaseSource, float]:
     if _rate_limited_until > now:
         return (
             ReleaseSource(
-                release = None,
-                source = None,
-                error = "GitHub is rate limiting release note requests.",
+                release=None,
+                source=None,
+                error="GitHub is rate limiting release note requests.",
             ),
             _rate_limited_until - now,
         )
@@ -583,7 +583,7 @@ def _fetch_latest_release() -> tuple[ReleaseSource, float]:
     url = os.environ.get(RELEASES_URL_ENV_VAR, "").strip() or RELEASES_API_URL
     if not url.startswith(("http://", "https://")):
         return (
-            ReleaseSource(release = None, source = None, error = "Invalid releases URL."),
+            ReleaseSource(release=None, source=None, error="Invalid releases URL."),
             RELEASES_FAILURE_TTL_SECONDS,
         )
 
@@ -597,10 +597,10 @@ def _fetch_latest_release() -> tuple[ReleaseSource, float]:
     if _remote_etag:
         headers["If-None-Match"] = _remote_etag
 
-    request = urllib.request.Request(url, headers = headers)
+    request = urllib.request.Request(url, headers=headers)
     deadline = time.monotonic() + RELEASES_TIMEOUT_SECONDS
     try:
-        with urllib.request.urlopen(request, timeout = RELEASES_TIMEOUT_SECONDS) as response:
+        with urllib.request.urlopen(request, timeout=RELEASES_TIMEOUT_SECONDS) as response:
             chunks: list[bytes] = []
             received = 0
             while received <= RELEASES_MAX_BYTES:
@@ -608,9 +608,9 @@ def _fetch_latest_release() -> tuple[ReleaseSource, float]:
                 if remaining <= 0:
                     return (
                         ReleaseSource(
-                            release = None,
-                            source = None,
-                            error = "Release notes took too long to load.",
+                            release=None,
+                            source=None,
+                            error="Release notes took too long to load.",
                         ),
                         RELEASES_FAILURE_TTL_SECONDS,
                     )
@@ -626,46 +626,46 @@ def _fetch_latest_release() -> tuple[ReleaseSource, float]:
         if len(body) > RELEASES_MAX_BYTES:
             return (
                 ReleaseSource(
-                    release = None,
-                    source = None,
-                    error = "Release notes response was too large.",
+                    release=None,
+                    source=None,
+                    error="Release notes response was too large.",
                 ),
                 RELEASES_FAILURE_TTL_SECONDS,
             )
-        payload = json.loads(body.decode("utf-8", errors = "replace"))
+        payload = json.loads(body.decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as error:
         return _http_error_source(error)
     except TimeoutError:
         return (
             ReleaseSource(
-                release = None,
-                source = None,
-                error = "Release notes took too long to load.",
+                release=None,
+                source=None,
+                error="Release notes took too long to load.",
             ),
             RELEASES_FAILURE_TTL_SECONDS,
         )
     except OSError:
         return (
             ReleaseSource(
-                release = None,
-                source = None,
-                error = "Could not reach GitHub for release notes.",
+                release=None,
+                source=None,
+                error="Could not reach GitHub for release notes.",
             ),
             RELEASES_FAILURE_TTL_SECONDS,
         )
     except (UnicodeError, json.JSONDecodeError):
         return (
-            ReleaseSource(release = None, source = None, error = "Malformed release data."),
+            ReleaseSource(release=None, source=None, error="Malformed release data."),
             RELEASES_FAILURE_TTL_SECONDS,
         )
 
     release = select_release(payload)
     if release is None:
         return (
-            ReleaseSource(release = None, source = None, error = "No published release found."),
+            ReleaseSource(release=None, source=None, error="No published release found."),
             RELEASES_FAILURE_TTL_SECONDS,
         )
-    source = ReleaseSource(release = release, source = "github")
+    source = ReleaseSource(release=release, source="github")
     _remote_etag = etag
     _remote_last_good = source
     return source, RELEASES_SUCCESS_TTL_SECONDS
@@ -699,15 +699,15 @@ def _http_error_source(error: urllib.error.HTTPError) -> tuple[ReleaseSource, fl
         ttl = max(_rate_limited_until - now, 0.0)
         return (
             ReleaseSource(
-                release = None,
-                source = None,
-                error = "GitHub is rate limiting release note requests.",
+                release=None,
+                source=None,
+                error="GitHub is rate limiting release note requests.",
             ),
             ttl,
         )
 
     return (
-        ReleaseSource(release = None, source = None, error = "Could not fetch release notes."),
+        ReleaseSource(release=None, source=None, error="Could not fetch release notes."),
         RELEASES_FAILURE_TTL_SECONDS,
     )
 
@@ -735,11 +735,11 @@ def select_release(payload: Any) -> Release | None:
         if not _RELEASE_TAG_PATTERN.match(tag):
             continue
         candidate = Release(
-            tag = tag,
-            name = entry.get("name") if isinstance(entry.get("name"), str) else "",
-            body = entry.get("body") if isinstance(entry.get("body"), str) else "",
-            html_url = entry.get("html_url") if isinstance(entry.get("html_url"), str) else "",
-            published_at = published,
+            tag=tag,
+            name=entry.get("name") if isinstance(entry.get("name"), str) else "",
+            body=entry.get("body") if isinstance(entry.get("body"), str) else "",
+            html_url=entry.get("html_url") if isinstance(entry.get("html_url"), str) else "",
+            published_at=published,
         )
         if newest is None or candidate.published_at > newest.published_at:
             newest = candidate
@@ -999,7 +999,7 @@ def _open_lists(
         padding = 1
     while columns and columns[-1] > indent:
         columns = columns[:-1]
-    return _ListState((*columns, indent + len(marker) + padding), empty_item = empty)
+    return _ListState((*columns, indent + len(marker) + padding), empty_item=empty)
 
 
 def _opens_html_block(line: str, after_paragraph: bool) -> bool:

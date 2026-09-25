@@ -58,11 +58,11 @@ def _load_prebuilt_module():
 def _extract_functions(path: Path, names) -> dict:
     """exec just the named top-level functions out of a module that is too
     heavy to import."""
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     wanted = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in names]
     found = {n.name for n in wanted}
     assert found == set(names), f"{path.name}: missing {sorted(set(names) - found)}"
-    module = ast.Module(body = wanted, type_ignores = [])
+    module = ast.Module(body=wanted, type_ignores=[])
     ns: dict = {"os": os, "sys": sys, "Path": Path}
     exec(compile(module, str(path), "exec"), ns)
     return ns
@@ -106,17 +106,17 @@ def bundle_dir(tmp_path):
     return d
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _clean_rocm_env(monkeypatch):
     for var in ("UNSLOTH_LLAMA_NO_SYSTEM_ROCM", "HIP_PATH", "HIP_PATH_57", "ROCM_PATH"):
-        monkeypatch.delenv(var, raising = False)
+        monkeypatch.delenv(var, raising=False)
 
 
 def _call(
     impl,
     bundle,
     present,
-    platform = "linux",
+    platform="linux",
 ):
     """Run one copy of the helper against a fake host.
 
@@ -185,7 +185,7 @@ class TestNativeLinuxGates:
     @pytest.mark.parametrize("platform", ["win32", "darwin"])
     def test_no_op_off_linux(self, bundle_dir, platform):
         for where, impl in _impls().items():
-            assert self._run(impl, bundle_dir, self._HOST, platform = platform) == [], where
+            assert self._run(impl, bundle_dir, self._HOST, platform=platform) == [], where
 
     def test_no_op_on_wsl(self, bundle_dir):
         """WSL has its own ordering path (plus HSA_ENABLE_DXG_DETECTION); /dev/dxg
@@ -313,7 +313,7 @@ class TestNativeLinuxRootResolution:
         LD_LIBRARY_PATH without an is-dir filter, so a non-directory must not
         reach it."""
         root = tmp_path / "rocm"
-        (root / "lib").mkdir(parents = True)
+        (root / "lib").mkdir(parents=True)
         (root / "lib" / "libhsa-runtime64.so").write_text("")
         (root / "lib" / "llvm").mkdir()
         (root / "lib" / "llvm" / "lib").write_text("not a directory")
@@ -330,7 +330,7 @@ class TestNativeLinuxRootResolution:
         for where, impl in _impls().items():
             with (
                 patch.object(sys, "platform", "linux"),
-                patch.dict(os.environ, {"ROCM_PATH": str(root)}, clear = True),
+                patch.dict(os.environ, {"ROCM_PATH": str(root)}, clear=True),
                 patch("os.path.exists", _exists),
             ):
                 out = impl(str(bundle_dir))
@@ -381,7 +381,7 @@ def _function_ast(path: Path, name: str) -> ast.FunctionDef:
     stripped: llama_cpp.py quotes its annotations ('list[str]') for the
     older-typing lint and documents itself as mirroring the installer. Neither is
     drift; the code is."""
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == name:
             for child in ast.walk(node):
@@ -406,33 +406,33 @@ class TestBinaryEnvNativeOrdering:
     @staticmethod
     def _linux_host():
         return prebuilt_mod.HostInfo(
-            system = "Linux",
-            machine = "x86_64",
-            is_windows = False,
-            is_linux = True,
-            is_macos = False,
-            is_x86_64 = True,
-            is_arm64 = False,
-            nvidia_smi = None,
-            driver_cuda_version = None,
-            compute_caps = [],
-            visible_cuda_devices = None,
-            has_physical_nvidia = False,
-            has_usable_nvidia = False,
-            has_rocm = True,
+            system="Linux",
+            machine="x86_64",
+            is_windows=False,
+            is_linux=True,
+            is_macos=False,
+            is_x86_64=True,
+            is_arm64=False,
+            nvidia_smi=None,
+            driver_cuda_version=None,
+            compute_caps=[],
+            visible_cuda_devices=None,
+            has_physical_nvidia=False,
+            has_usable_nvidia=False,
+            has_rocm=True,
         )
 
     def test_system_rocm_precedes_bundle_dir(self, tmp_path):
         binary = tmp_path / "bundle" / "llama-server"
-        binary.parent.mkdir(parents = True)
+        binary.parent.mkdir(parents=True)
         binary.write_text("")
         sys_rocm = tmp_path / "sysrocm"  # dedupe_existing_dirs drops missing dirs
         sys_rocm.mkdir()
-        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value = []):
+        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value=[]):
             with patch.object(
-                prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value = [str(sys_rocm)]
+                prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value=[str(sys_rocm)]
             ):
-                with patch.dict(os.environ, {}, clear = True):
+                with patch.dict(os.environ, {}, clear=True):
                     env = prebuilt_mod.binary_env(binary, tmp_path, self._linux_host())
         ld = [str(Path(p).resolve()) for p in env["LD_LIBRARY_PATH"].split(os.pathsep)]
         assert ld.index(str(sys_rocm.resolve())) < ld.index(str(binary.parent.resolve()))
@@ -441,15 +441,15 @@ class TestBinaryEnvNativeOrdering:
         """HSA_ENABLE_DXG_DETECTION belongs to the WSL branch only; setting it on
         bare metal changes HSA agent enumeration for every native AMD user."""
         binary = tmp_path / "bundle" / "llama-server"
-        binary.parent.mkdir(parents = True)
+        binary.parent.mkdir(parents=True)
         binary.write_text("")
         sys_rocm = tmp_path / "sysrocm"
         sys_rocm.mkdir()
-        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value = []):
+        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value=[]):
             with patch.object(
-                prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value = [str(sys_rocm)]
+                prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value=[str(sys_rocm)]
             ):
-                with patch.dict(os.environ, {}, clear = True):
+                with patch.dict(os.environ, {}, clear=True):
                     env = prebuilt_mod.binary_env(binary, tmp_path, self._linux_host())
         assert "HSA_ENABLE_DXG_DETECTION" not in env
 
@@ -457,27 +457,27 @@ class TestBinaryEnvNativeOrdering:
         """_bundled_hip_present globs the directory it is handed; passing
         install_dir would look for libggml-hip.so in the wrong place and no-op."""
         binary = tmp_path / "bundle" / "llama-server"
-        binary.parent.mkdir(parents = True)
+        binary.parent.mkdir(parents=True)
         binary.write_text("")
         seen = []
 
-        def _spy(binary_dir = ""):
+        def _spy(binary_dir=""):
             seen.append(binary_dir)
             return []
 
-        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value = []):
+        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value=[]):
             with patch.object(prebuilt_mod, "_native_linux_system_rocm_lib_dirs", _spy):
-                with patch.dict(os.environ, {}, clear = True):
+                with patch.dict(os.environ, {}, clear=True):
                     prebuilt_mod.binary_env(binary, tmp_path, self._linux_host())
         assert seen == [str(binary.parent)]
 
     def test_no_prepend_leaves_bundle_dir_first(self, tmp_path):
         binary = tmp_path / "bundle" / "llama-server"
-        binary.parent.mkdir(parents = True)
+        binary.parent.mkdir(parents=True)
         binary.write_text("")
-        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value = []):
-            with patch.object(prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value = []):
-                with patch.dict(os.environ, {}, clear = True):
+        with patch.object(prebuilt_mod, "_wsl_system_rocm_lib_dirs", return_value=[]):
+            with patch.object(prebuilt_mod, "_native_linux_system_rocm_lib_dirs", return_value=[]):
+                with patch.dict(os.environ, {}, clear=True):
                     env = prebuilt_mod.binary_env(binary, tmp_path, self._linux_host())
         assert env["LD_LIBRARY_PATH"].split(os.pathsep)[0] == str(binary.parent)
 
@@ -487,7 +487,7 @@ class TestLlamaCppRuntimeNativeOrdering:
     function, so this half stays a source check (as the WSL sibling does)."""
 
     def test_prepends_before_binary_dir(self):
-        source = _LLAMA_CPP_PATH.read_text(encoding = "utf-8")
+        source = _LLAMA_CPP_PATH.read_text(encoding="utf-8")
         idx_helper = source.find("lib_dirs.extend(_native_linux_system_rocm_lib_dirs(binary_dir))")
         idx_binary = source.find("lib_dirs.append(binary_dir)")
         assert (
@@ -500,7 +500,7 @@ class TestLlamaCppRuntimeNativeOrdering:
 
     def test_dxg_detection_stays_on_the_wsl_branch(self):
         """HSA_ENABLE_DXG_DETECTION must be set from the WSL helper's result only."""
-        source = _LLAMA_CPP_PATH.read_text(encoding = "utf-8")
+        source = _LLAMA_CPP_PATH.read_text(encoding="utf-8")
         idx_wsl = source.find("lib_dirs.extend(_wsl_system_rocm_lib_dirs())")
         idx_dxg = source.find('env.setdefault("HSA_ENABLE_DXG_DETECTION", "1")', idx_wsl)
         idx_native = source.find("lib_dirs.extend(_native_linux_system_rocm_lib_dirs(binary_dir))")

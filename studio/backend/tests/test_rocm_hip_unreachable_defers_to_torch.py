@@ -67,19 +67,19 @@ def rocm(monkeypatch):
     nothing (#8662 for the same trap in the APU tests)."""
     monkeypatch.setattr(LlamaCppBackend, "_torch_is_rocm", staticmethod(lambda torch: True))
     for _var in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-        monkeypatch.delenv(_var, raising = False)
+        monkeypatch.delenv(_var, raising=False)
     monkeypatch.setattr(amd, "_run_amd_smi", lambda *a, **k: _payload((0, 4096, 24576)))
 
 
 def _fake_torch(monkeypatch, *, hip_up: bool):
     """A ROCm torch whose HIP either can or cannot open the card amd-smi just listed."""
     torch_mod = types.ModuleType("torch")
-    torch_mod.version = types.SimpleNamespace(hip = "6.2.41134")
+    torch_mod.version = types.SimpleNamespace(hip="6.2.41134")
     torch_mod.cuda = types.SimpleNamespace(
-        is_available = lambda: hip_up,
-        device_count = lambda: 1 if hip_up else 0,
-        get_device_properties = lambda _o: types.SimpleNamespace(
-            name = "Radeon RX 7900 XTX", gcnArchName = "gfx1100"
+        is_available=lambda: hip_up,
+        device_count=lambda: 1 if hip_up else 0,
+        get_device_properties=lambda _o: types.SimpleNamespace(
+            name="Radeon RX 7900 XTX", gcnArchName="gfx1100"
         ),
     )
     monkeypatch.setitem(sys.modules, "torch", torch_mod)
@@ -89,7 +89,7 @@ def _fake_torch(monkeypatch, *, hip_up: bool):
 class TestHipCannotOpenTheDevice:
     @pytest.fixture
     def hip_is_down(self, rocm, monkeypatch):
-        return _fake_torch(monkeypatch, hip_up = False)
+        return _fake_torch(monkeypatch, hip_up=False)
 
     def test_the_amd_smi_branch_declines(self, hip_is_down):
         assert LlamaCppBackend._get_gpu_memory_amd_smi() == []
@@ -114,5 +114,5 @@ class TestHipCannotOpenTheDevice:
 
 def test_a_reachable_hip_still_answers_from_amd_smi(rocm, monkeypatch):
     """The gate must not cost the saving on a working host: no mem_get_info here."""
-    _fake_torch(monkeypatch, hip_up = True)
+    _fake_torch(monkeypatch, hip_up=True)
     assert LlamaCppBackend._get_gpu_memory_amd_smi() == [(0, 20480, 24576)]

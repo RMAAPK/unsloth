@@ -150,10 +150,10 @@ print("RESULT" + json.dumps({
 def _probe() -> dict:
     proc = subprocess.run(
         [sys.executable, "-c", _SNIPPET],
-        cwd = str(_BACKEND_DIR),
-        capture_output = True,
-        text = True,
-        timeout = 900,
+        cwd=str(_BACKEND_DIR),
+        capture_output=True,
+        text=True,
+        timeout=900,
     )
     assert (
         proc.returncode == 0
@@ -202,7 +202,7 @@ def _watchdog_probe_budget_s() -> float:
     assert _COMMANDS_RS.is_file(), f"{_COMMANDS_RS} moved; update this guard"
     match = re.search(
         r"const HEALTH_PROBE_TIMEOUT: Duration = Duration::from_secs\((\d+)\)",
-        _COMMANDS_RS.read_text(encoding = "utf-8"),
+        _COMMANDS_RS.read_text(encoding="utf-8"),
     )
     assert match, "commands.rs no longer sets a whole-seconds probe timeout"
     return float(match.group(1))
@@ -239,7 +239,7 @@ def test_the_desktop_watchdog_still_reads_the_marker():
     """Cross-language guard: the marker only does anything because commands.rs reads it,
     and either side can be changed without the other."""
     assert _COMMANDS_RS.is_file(), f"{_COMMANDS_RS} moved; update this guard"
-    rust = _COMMANDS_RS.read_text(encoding = "utf-8")
+    rust = _COMMANDS_RS.read_text(encoding="utf-8")
     probe = rust[rust.index("async fn check_health_inner") :]
     end = probe.find("\n}\n")
     if end != -1:

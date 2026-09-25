@@ -145,7 +145,7 @@ class OCRModelEvaluator:
         input_messages: List[Dict],
         max_new_tokens: int,
         temperature: float,
-        min_p: float,
+        min_p: float
     ) -> str:
         """Generate response from the model."""
 
@@ -194,7 +194,7 @@ class OCRModelEvaluator:
         generated_response: str,
         ground_truth: str,
         word_error: float,
-        char_error: float,
+        char_error: float
     ):
         """Save individual sample result to file."""
         output_file = os.path.join(output_dir, f"sample_{sample_idx}.txt")

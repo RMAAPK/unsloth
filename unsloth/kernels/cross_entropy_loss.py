@@ -72,7 +72,7 @@ def _cross_entropy_forward(
     mask = col_offsets < VOCAB_SIZE
 
     label_idx = tl.load(labels_ptr).to(tl.int32)
-    logits = tl.load(logits_ptr + col_offsets, mask = mask, other = -float("inf")).to(tl.float32)
+    logits = tl.load(logits_ptr + col_offsets, mask=mask, other=-float("inf")).to(tl.float32)
 
     # Cohere logit scaling t * x; Gemma 2 softcapping t * tanh(1/t * x).
     if DO_LOGIT_SCALING:
@@ -160,7 +160,7 @@ def _chunked_cross_entropy_forward(
     mask = col_offsets < VOCAB_SIZE
 
     label_idx = tl.load(labels_ptr).to(tl.int32)
-    logits = tl.load(logits_ptr + col_offsets, mask = mask, other = -float("inf")).to(tl.float32)
+    logits = tl.load(logits_ptr + col_offsets, mask=mask, other=-float("inf")).to(tl.float32)
 
     # Cohere logit scaling t * x; Gemma 2 softcapping t * tanh(1/t * x).
     # Do logit scaling for Cohere
@@ -242,7 +242,7 @@ def _cross_entropy_backward(
     else:
         dloss = 0.0
 
-    x = tl.load(logits_ptr + col_offsets, mask = mask, other = -float("inf")).to(tl.float32)
+    x = tl.load(logits_ptr + col_offsets, mask=mask, other=-float("inf")).to(tl.float32)
 
     # d/dx [s * x] = s for Cohere scaling; d/dx [t * tanh(1/t * x)] = 1 - tanh^2(1/t * x) for Gemma 2 softcapping.
     if DO_LOGIT_SCALING:
@@ -273,7 +273,7 @@ def _cross_entropy_backward(
         y = y * (1.0 - partial * partial)
 
     # If y == 0 then dC/dx = 0, and it is already masked to 0, so dloss = 0.
-    tl.store(logits_ptr + col_offsets, dloss * y, mask = mask)
+    tl.store(logits_ptr + col_offsets, dloss * y, mask=mask)
 
 
 _cross_entropy_backward = triton.jit(_cross_entropy_backward)
@@ -302,7 +302,7 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
 
         div, mod = divmod(vocab_size, MAX_FUSED_SIZE)
         n_chunks: int = div + (mod != 0)
-        losses = torch.empty(n_rows, dtype = torch.float32, device = device)
+        losses = torch.empty(n_rows, dtype=torch.float32, device=device)
 
         DO_SOFTCAPPING: bool = bool(logit_softcapping != 0)
         DO_LOGIT_SCALING: bool = bool(logit_scaling != 0)
@@ -314,7 +314,7 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
             BLOCK_SIZE, num_warps = calculate_settings(vocab_size)
             if is_cdna():
                 num_warps = num_warps // 2
-            logsumexp = torch.empty(n_rows, dtype = torch.float32, device = device)
+            logsumexp = torch.empty(n_rows, dtype=torch.float32, device=device)
 
             with torch_gpu_device(device):
                 _cross_entropy_forward[(n_rows,)](
@@ -323,13 +323,13 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
                     losses,
                     logsumexp,
                     labels,
-                    VOCAB_SIZE = vocab_size,
-                    BLOCK_SIZE = BLOCK_SIZE,
-                    DO_SOFTCAPPING = DO_SOFTCAPPING,
-                    SOFTCAP = logit_softcapping,
-                    DO_LOGIT_SCALING = DO_LOGIT_SCALING,
-                    LOGIT_SCALE = logit_scaling,
-                    num_warps = num_warps,
+                    VOCAB_SIZE=vocab_size,
+                    BLOCK_SIZE=BLOCK_SIZE,
+                    DO_SOFTCAPPING=DO_SOFTCAPPING,
+                    SOFTCAP=logit_softcapping,
+                    DO_LOGIT_SCALING=DO_LOGIT_SCALING,
+                    LOGIT_SCALE=logit_scaling,
+                    num_warps=num_warps,
                 )
         else:
             # For large vocabs > 65336 like Gemma 256K
@@ -338,8 +338,8 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
                     n_rows,
                     n_chunks,
                 ),
-                dtype = torch.float32,
-                device = device,
+                dtype=torch.float32,
+                device=device,
             )
 
             with torch_gpu_device(device):
@@ -354,17 +354,17 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
                     losses,
                     logsumexp,
                     labels,
-                    VOCAB_SIZE = vocab_size,
-                    N_CHUNKS = n_chunks,
-                    BLOCK_SIZE = MAX_FUSED_SIZE,
-                    DO_SOFTCAPPING = DO_SOFTCAPPING,
-                    SOFTCAP = logit_softcapping,
-                    DO_LOGIT_SCALING = DO_LOGIT_SCALING,
-                    LOGIT_SCALE = logit_scaling,
-                    num_warps = 32 if not is_cdna() else 16,
+                    VOCAB_SIZE=vocab_size,
+                    N_CHUNKS=n_chunks,
+                    BLOCK_SIZE=MAX_FUSED_SIZE,
+                    DO_SOFTCAPPING=DO_SOFTCAPPING,
+                    SOFTCAP=logit_softcapping,
+                    DO_LOGIT_SCALING=DO_LOGIT_SCALING,
+                    LOGIT_SCALE=logit_scaling,
+                    num_warps=32 if not is_cdna() else 16,
                 )
             # logsumexp(chunked_logsumexp) - x, with the -x done separately.
-            logsumexp = torch.logsumexp(logsumexp, dim = 1)
+            logsumexp = torch.logsumexp(logsumexp, dim=1)
             losses += logsumexp
             losses.masked_fill_(labels == -100, 0)  # Don't forget to mask padding out!
 
@@ -401,13 +401,13 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
                 dlosses.stride(0),
                 logsumexp,
                 labels,
-                VOCAB_SIZE = vocab_size,
-                BLOCK_SIZE = BLOCK_SIZE,
-                DO_SOFTCAPPING = ctx.DO_SOFTCAPPING,
-                SOFTCAP = ctx.logit_softcapping,
-                DO_LOGIT_SCALING = ctx.DO_LOGIT_SCALING,
-                LOGIT_SCALE = ctx.logit_scaling,
-                num_warps = 8,
+                VOCAB_SIZE=vocab_size,
+                BLOCK_SIZE=BLOCK_SIZE,
+                DO_SOFTCAPPING=ctx.DO_SOFTCAPPING,
+                SOFTCAP=ctx.logit_softcapping,
+                DO_LOGIT_SCALING=ctx.DO_LOGIT_SCALING,
+                LOGIT_SCALE=ctx.logit_scaling,
+                num_warps=8,
             )
         return (
             logits,
@@ -420,9 +420,9 @@ class Fast_CrossEntropyLoss(torch.autograd.Function):
 def fast_cross_entropy_loss(
     logits,
     labels,
-    logit_softcapping = 0,
-    logit_scaling = 0,
-    n_items = None,
+    logit_softcapping=0,
+    logit_scaling=0,
+    n_items=None,
 ):
     """
     Arguments:
@@ -454,14 +454,15 @@ if (Version(torch.__version__) < Version("2.4.0")) and not hasattr(
     fast_cross_entropy_loss = torch._disable_dynamo(fast_cross_entropy_loss)
 
 
-def patch_loss_functions(torch_compile = True):
-    _patch_loss_functions(fast_cross_entropy_loss, torch_compile = torch_compile)
+def patch_loss_functions(torch_compile=True):
+    _patch_loss_functions(fast_cross_entropy_loss, torch_compile=torch_compile)
 
     # Redirect LOSS_MAPPING aliases still pointing at stock ForCausalLMLoss (e.g.
     # ForConditionalGeneration for Qwen3.5, Csm). unsloth_zoo also does this; remove once the floor
     # pin passes unslothai/unsloth-zoo#656.
     try:
         import transformers.loss.loss_utils as _lu
+
         _unsloth_loss = _lu.LOSS_MAPPING.get("ForCausalLM")
         if _unsloth_loss is not None:
             for _key, _fn in list(_lu.LOSS_MAPPING.items()):

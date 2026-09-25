@@ -14,7 +14,7 @@ from routes.rag import _sanitize_filename, _save_upload
 from storage import rag_db
 
 
-def _wait(job_id, timeout = 30.0):
+def _wait(job_id, timeout=30.0):
     import time
 
     deadline = time.time() + timeout
@@ -28,13 +28,13 @@ def _wait(job_id, timeout = 30.0):
 
 def _ingest(project_id, filename, path):
     return ingestion.start_ingestion(
-        store.project_scope(project_id), None, None, filename, path, project_id = project_id
+        store.project_scope(project_id), None, None, filename, path, project_id=project_id
     )
 
 
 def test_project_document_persists_under_its_scope(rag_home, stub_embeddings, tmp_path):
     path = tmp_path / "notes.txt"
-    path.write_text("alpha bravo charlie " * 50, encoding = "utf-8")
+    path.write_text("alpha bravo charlie " * 50, encoding="utf-8")
     _, job_id = _ingest("P1", "notes.txt", str(path))
     assert _wait(job_id)["status"] == "completed"
 
@@ -122,7 +122,7 @@ def test_sanitizer_normalizes_what_a_label_cannot_carry(raw, expected):
 def test_uploaded_unicode_name_is_persisted_verbatim(rag_home, stub_embeddings):
     payload = b"alpha bravo charlie " * 50
     stored_path, filename, _ = _save_upload(
-        UploadFile(file = io.BytesIO(payload), filename = "报告 2026.txt")
+        UploadFile(file=io.BytesIO(payload), filename="报告 2026.txt")
     )
     assert filename == "报告 2026.txt"
 

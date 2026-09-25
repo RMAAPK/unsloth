@@ -44,7 +44,7 @@ ZOO_FLOOR_WITH_THE_VISION_CHUNKER = Version("2026.9.5")
 def _zoo_requirements() -> list[Requirement]:
     import tomllib
 
-    data = tomllib.loads(PYPROJECT.read_text(encoding = "utf-8"))
+    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     project = data.get("project") or {}
     raws: list[str] = list(project.get("dependencies") or [])
     for extra in (project.get("optional-dependencies") or {}).values():
@@ -61,7 +61,7 @@ def _zoo_requirements() -> list[Requirement]:
 
 
 def _the_chunker_is_required() -> bool:
-    source = RL_REPLACEMENTS.read_text(encoding = "utf-8")
+    source = RL_REPLACEMENTS.read_text(encoding="utf-8")
     return "grpo_vision_chunks" in source and "needs an unsloth_zoo build that exports" in source
 
 
@@ -101,7 +101,7 @@ def test_the_declared_zoo_floor_carries_the_chunker_the_vision_paths_require() -
 
 def test_the_upgrade_message_names_the_release_the_floor_names() -> None:
     """A message that says only "upgrade unsloth_zoo" leaves the user guessing which one."""
-    source = RL_REPLACEMENTS.read_text(encoding = "utf-8")
+    source = RL_REPLACEMENTS.read_text(encoding="utf-8")
     lines = source.splitlines()
     raised = [
         "\n".join(lines[i : i + 5])

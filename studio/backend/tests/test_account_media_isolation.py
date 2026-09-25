@@ -21,7 +21,7 @@ ALICE = AccountContext("a" * 32, "alice")
 BOB = AccountContext("b" * 32, "bob")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def isolated(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
@@ -61,7 +61,7 @@ def _save(kind):
     if kind == "images":
         return image_gallery.save(Image.new("RGB", (8, 8)), meta)
     if kind == "audio":
-        meta.update(audio_type = "snac", sample_rate = 24000, created_at = "2026-08-06T00:00:00Z")
+        meta.update(audio_type="snac", sample_rate=24000, created_at="2026-08-06T00:00:00Z")
         return audio_gallery.save(b"RIFF\x24\x00\x00\x00WAVEfmt ", meta)
     meta["created_at"] = "2026-08-06T00:00:00Z"
     return video_gallery.save(b"\x00\x00\x00\x18ftypmp42", meta)
@@ -79,9 +79,9 @@ def _client(account):
 
     app.dependency_overrides[get_current_subject] = subject
     app.dependency_overrides[authenticated_via_api_key] = lambda: False
-    app.include_router(inference.studio_router, prefix = "/api/inference")
-    app.include_router(video.router, prefix = "/api/inference")
-    app.include_router(video.openai_router, prefix = "/v1")
+    app.include_router(inference.studio_router, prefix="/api/inference")
+    app.include_router(video.router, prefix="/api/inference")
+    app.include_router(video.openai_router, prefix="/v1")
     return TestClient(app)
 
 
@@ -92,7 +92,7 @@ def test_gallery_object_routes_do_not_resolve_another_accounts_ids(kind, account
     root = f"/api/inference/{kind}/gallery"
     with _client(other) as client:
         assert client.get(f"{root}/{record['id']}/file").status_code == 404
-        assert client.patch(f"{root}/{record['id']}", json = {"starred": True}).status_code == 404
+        assert client.patch(f"{root}/{record['id']}", json={"starred": True}).status_code == 404
         assert client.delete(f"{root}/{record['id']}").status_code == 404
         assert record["id"] not in client.get(root).text
         if kind == "video":
@@ -130,13 +130,13 @@ def test_signed_links_authorize_only_the_original_account_and_media(kind, module
     root = f"/api/inference/{kind}/gallery"
     with _client(BOB) as client:
         assert (
-            client.get(f"{root}/{record['id']}/file-signed", params = {"token": token}).status_code
+            client.get(f"{root}/{record['id']}/file-signed", params={"token": token}).status_code
             == 200
         )
-        assert client.get(f"{root}/guessed/file-signed", params = {"token": token}).status_code == 401
+        assert client.get(f"{root}/guessed/file-signed", params={"token": token}).status_code == 401
         tampered = token.replace(ALICE.account_id, BOB.account_id)
         assert (
-            client.get(f"{root}/{record['id']}/file-signed", params = {"token": tampered}).status_code
+            client.get(f"{root}/{record['id']}/file-signed", params={"token": tampered}).status_code
             == 401
         )
     verify = (
@@ -166,13 +166,13 @@ def test_search_ids_and_clear_fences_are_private(monkeypatch):
 
 def test_openai_video_jobs_are_private_in_memory_and_after_rehydration():
     job = video._VideoJob(
-        id = "private-job",
-        created_at = 100,
-        prompt = "private",
-        model = "private/model",
-        size = "512x512",
-        seconds = "2",
-        status = "failed",
+        id="private-job",
+        created_at=100,
+        prompt="private",
+        model="private/model",
+        size="512x512",
+        seconds="2",
+        status="failed",
     )
     run_as(ALICE, video._remember_job, job)
     assert run_as(BOB, video._lookup_video, job.id) is None
@@ -212,7 +212,7 @@ def test_a_failed_replacement_load_leaves_residency_with_the_resident_model(monk
     backend = video_module.get_video_backend()
     monkeypatch.setattr(gpu_arbiter, "_owner", None)
     monkeypatch.setattr(gpu_arbiter, "_owner_account", None)
-    monkeypatch.setattr(gpu_arbiter, "_prior_account", None, raising = False)
+    monkeypatch.setattr(gpu_arbiter, "_prior_account", None, raising=False)
     resident = {**backend.status(), "loaded": True, "repo_id": "alice/private-video"}
     monkeypatch.setattr(backend, "status", lambda: resident)
     monkeypatch.setattr(backend, "_state", object())
@@ -228,9 +228,9 @@ def test_a_failed_replacement_load_leaves_residency_with_the_resident_model(monk
     run_as(
         BOB,
         backend._run_load,
-        repo_id = "bob/model",
-        _load_token = backend._load_token,
-        _cancel_event = threading.Event(),
+        repo_id="bob/model",
+        _load_token=backend._load_token,
+        _cancel_event=threading.Event(),
     )
     assert gpu_arbiter.owner_account() == ALICE.account_id
     with _client(BOB) as client:

@@ -180,7 +180,7 @@ def render_fix_implications(result: BatchResult, *, top_n: int = 3) -> str:
 
     ranked = sorted(
         by_mechanism.items(),
-        key = lambda item: (-max(value for _, value, _ in item[1]), item[0]),
+        key=lambda item: (-max(value for _, value, _ in item[1]), item[0]),
     )
     lines = [
         "FIX IMPLICATIONS (ranked by the largest measured step, which is a RANGE when the two "

@@ -23,7 +23,7 @@ SIG_PATH = REPO_ROOT / "docker" / "unsloth_nb_content_sig.py"
 _INSTALL = "!pip install --upgrade unsloth transformers==4.56.2\n"
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def sig():
     assert SIG_PATH.is_file(), f"missing {SIG_PATH}"
     spec = importlib.util.spec_from_file_location("unsloth_nb_content_sig_t", SIG_PATH)
@@ -38,7 +38,7 @@ def _write(path: Path, *sources) -> Path:
         cells.append({"cell_type": cell_type, "source": [text], "metadata": {}})
     path.write_text(
         json.dumps({"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     return path
 

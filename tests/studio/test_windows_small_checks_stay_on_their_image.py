@@ -42,7 +42,7 @@ EXPECTED_IMAGES = {
 
 
 def _job() -> dict:
-    return yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))["jobs"][JOB]
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"][JOB]
 
 
 def _cells() -> list[dict]:
@@ -145,5 +145,5 @@ def test_the_merged_job_did_not_absorb_the_two_long_jobs():
     Their cost is execution, not slot occupancy, so folding them in would serialise ~20
     minutes behind checks that take seconds.
     """
-    jobs = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))["jobs"]
+    jobs = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
     assert {"inference-smoke", "no-vs-cpu"} <= set(jobs), sorted(jobs)

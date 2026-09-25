@@ -93,6 +93,7 @@ def _diffusers_is_an_index_install() -> bool:
     """
     try:
         from importlib.metadata import distribution
+
         dist = distribution("diffusers")
     except Exception:  # noqa: BLE001 - no diffusers at all is the installer's job, not this one
         return False
@@ -111,6 +112,7 @@ def _repair_env() -> dict[str, str]:
     env["VIRTUAL_ENV"] = sys.prefix
     try:
         from utils.mlx_repair import _uv_executable
+
         uv = _uv_executable()
     except Exception:  # noqa: BLE001 - without uv the installer falls back to pip
         uv = None
@@ -152,7 +154,8 @@ def _record_failure() -> None:
     """Suppress startup retries until an explicit update clears the failure key."""
     try:
         from studio.install_manifest import update_manifest
-        update_manifest(diffusers_main_repair = "failed")
+
+        update_manifest(diffusers_main_repair="failed")
     except Exception as exc:  # noqa: BLE001 - unrecorded means the next start tries again
         logger.warning("diffusers self-heal could not record its failure: %s", exc)
 
@@ -163,6 +166,7 @@ def _installer_would_skip() -> bool:
         return True
     try:
         from studio.install_manifest import read_manifest
+
         manifest = read_manifest() or {}
     except Exception:  # noqa: BLE001 - an unreadable manifest is no record of a failed try
         return False
@@ -186,20 +190,20 @@ def _run_installer(flag: str, timeout: float) -> "tuple[int | None, str]":
         kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     proc = subprocess.Popen(
         [sys.executable, str(_INSTALLER), flag],
-        env = utf8_child_env(_repair_env()),
-        stdout = subprocess.PIPE,
-        stderr = subprocess.STDOUT,
-        text = True,
-        encoding = "utf-8",
-        errors = "replace",
+        env=utf8_child_env(_repair_env()),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
         **kwargs,
     )
     # Tracked, so a backend that exits mid-install takes the installer and its uv/git children down.
     adopt_pid(proc.pid)
     try:
-        output, _ = proc.communicate(timeout = timeout)
+        output, _ = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        terminate_pid(proc.pid, owner_verified = True)
+        terminate_pid(proc.pid, owner_verified=True)
         proc.kill()
         proc.wait()
         return None, ""
@@ -298,4 +302,4 @@ def repair_diffusers_before_imports(echo: Callable[[str], None] = lambda _line: 
     else:
         return False
     logger.info("installing the pinned Diffusers main build. Set %s=1 to disable.", DISABLE_ENV_VAR)
-    return _run_repair(echo, prefetch = prefetch)
+    return _run_repair(echo, prefetch=prefetch)

@@ -73,7 +73,7 @@ def offbox_server(monkeypatch):
                 return
             conn.close()
 
-    threading.Thread(target = _accept_quietly, daemon = True).start()
+    threading.Thread(target=_accept_quietly, daemon=True).start()
     try:
         yield hostname, address, port
     finally:
@@ -90,7 +90,7 @@ def test_a_server_configured_by_name_is_reachable(monkeypatch, offbox_server):
     hostname, _address, port = offbox_server
     monkeypatch.setenv("UNSLOTH_E2E_BASE_URL", f"http://{hostname}:{port}")
 
-    socket.create_connection((hostname, port), timeout = 10).close()
+    socket.create_connection((hostname, port), timeout=10).close()
 
 
 def test_a_server_configured_by_address_is_reachable(monkeypatch, offbox_server):
@@ -98,7 +98,7 @@ def test_a_server_configured_by_address_is_reachable(monkeypatch, offbox_server)
     _hostname, address, port = offbox_server
     monkeypatch.setenv("STUDIO_TEST_URL", f"http://{address}:{port}")
 
-    socket.create_connection((address, port), timeout = 10).close()
+    socket.create_connection((address, port), timeout=10).close()
 
 
 def test_resolving_an_address_literal_does_not_make_it_dialable():
@@ -113,7 +113,7 @@ def test_resolving_an_address_literal_does_not_make_it_dialable():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        with pytest.raises(OSError, match = "outbound network blocked"):
+        with pytest.raises(OSError, match="outbound network blocked"):
             sock.connect(("169.254.169.254", 80))
     finally:
         sock.close()
@@ -121,7 +121,7 @@ def test_resolving_an_address_literal_does_not_make_it_dialable():
 
 def test_an_unconfigured_name_fails_at_resolution():
     """Blocked names fail the way an unresolvable name does, which callers already handle."""
-    with pytest.raises(socket.gaierror, match = "name resolution blocked"):
+    with pytest.raises(socket.gaierror, match="name resolution blocked"):
         socket.getaddrinfo("huggingface.co", 443, socket.AF_INET, socket.SOCK_STREAM)
 
 
@@ -133,7 +133,7 @@ def test_a_byte_hostname_is_read_rather_than_waved_through():
     to allow it. That made ``getaddrinfo(b"huggingface.co", 443)`` a way straight out:
     real resolution, and the address it returned dialable afterwards.
     """
-    with pytest.raises(socket.gaierror, match = "name resolution blocked"):
+    with pytest.raises(socket.gaierror, match="name resolution blocked"):
         socket.getaddrinfo(b"huggingface.co", 443, socket.AF_INET, socket.SOCK_STREAM)
 
 
@@ -171,17 +171,17 @@ def test_a_fixture_can_ask_for_the_traffic_it_needs(
     """
     _hostname, address, port = offbox_server
     # Undo what the fixture configured, so the address is a stranger again.
-    monkeypatch.delenv("UNSLOTH_E2E_BASE_URL", raising = False)
+    monkeypatch.delenv("UNSLOTH_E2E_BASE_URL", raising=False)
     forget_resolved_servers()
 
-    with pytest.raises(OSError, match = "outbound network blocked"):
-        socket.create_connection((address, port), timeout = 10)
+    with pytest.raises(OSError, match="outbound network blocked"):
+        socket.create_connection((address, port), timeout=10)
 
     with allow_outbound_network():
-        socket.create_connection((address, port), timeout = 10).close()
+        socket.create_connection((address, port), timeout=10).close()
 
-    with pytest.raises(OSError, match = "outbound network blocked"):
-        socket.create_connection((address, port), timeout = 10)
+    with pytest.raises(OSError, match="outbound network blocked"):
+        socket.create_connection((address, port), timeout=10)
 
 
 def test_the_proxy_bypass_covers_the_local_server_too(monkeypatch, no_proxy_bypass_value):
@@ -224,6 +224,6 @@ def test_loopback_stays_open():
     server.bind(("127.0.0.1", 0))
     server.listen(1)
     try:
-        socket.create_connection(server.getsockname(), timeout = 10).close()
+        socket.create_connection(server.getsockname(), timeout=10).close()
     finally:
         server.close()

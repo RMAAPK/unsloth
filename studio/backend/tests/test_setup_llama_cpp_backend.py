@@ -27,12 +27,12 @@ from unsloth_pwsh_runner import run_pwsh
 _STUDIO = Path(__file__).resolve().parents[2]
 _SETUP_SH = _STUDIO / "setup.sh"
 _SETUP_PS1 = _STUDIO / "setup.ps1"
-_SKIP_NO_BASH = pytest.mark.skipif(shutil.which("bash") is None, reason = "bash unavailable")
-_SKIP_NO_PWSH = pytest.mark.skipif(shutil.which("pwsh") is None, reason = "pwsh unavailable")
+_SKIP_NO_BASH = pytest.mark.skipif(shutil.which("bash") is None, reason="bash unavailable")
+_SKIP_NO_PWSH = pytest.mark.skipif(shutil.which("pwsh") is None, reason="pwsh unavailable")
 
 
 def _backend_block() -> str:
-    text = _SETUP_SH.read_text(encoding = "utf-8")
+    text = _SETUP_SH.read_text(encoding="utf-8")
     m = re.search(r"# Reporting only:.*?esac", text, re.DOTALL)
     assert m, "UNSLOTH_LLAMA_CPP_BACKEND block not found in setup.sh"
     return m.group(0)
@@ -61,7 +61,7 @@ def _run(value: str | None, system: str = "Linux") -> tuple[list[str], str]:
         'printf "%s\\n" "${_PREBUILT_CMD[@]}"'
     )
     out = subprocess.run(
-        ["bash", "-c", harness], capture_output = True, text = True, env = env, check = True
+        ["bash", "-c", harness], capture_output=True, text=True, env=env, check=True
     )
     return out.stdout.split(), out.stderr
 
@@ -85,7 +85,7 @@ def test_backend_cpu_is_accepted(value):
 @pytest.mark.parametrize("value", ["cpu", "CPU", " cpu "])
 def test_backend_cpu_macos_warns(value):
     # macOS has no CPU-only bundle: the universal build already runs on CPU.
-    args, stderr = _run(value, system = "Darwin")
+    args, stderr = _run(value, system="Darwin")
     assert args == []
     assert "macOS" in stderr
 
@@ -110,7 +110,7 @@ def test_backend_vulkan_is_reported(value):
 @_SKIP_NO_BASH
 @pytest.mark.parametrize("value", ["vulkan", "VULKAN"])
 def test_backend_vulkan_macos_warns(value):
-    args, stderr = _run(value, system = "Darwin")
+    args, stderr = _run(value, system="Darwin")
     assert args == []
     assert "Metal" in stderr
 
@@ -135,7 +135,7 @@ def test_backend_unknown_warns(value):
 def test_arm64_recovery_uses_transient_cpu_fallback():
     # The arm64 Linux GPU-build recovery must stay transient (--cpu-fallback), never
     # the persisted --force-cpu, so a later update can still heal to a GPU bundle (#6097).
-    text = _SETUP_SH.read_text(encoding = "utf-8")
+    text = _SETUP_SH.read_text(encoding="utf-8")
     m = re.search(r"_ARM64_CPU_CMD=\((.*?)\)", text, re.DOTALL)
     assert m, "arm64 CPU recovery command not found in setup.sh"
     block = m.group(1)
@@ -149,19 +149,19 @@ def test_ordinary_prebuilt_failure_does_not_re_derive_the_backend():
     # marker the scripts cannot read -- arrives as exit 5 and fails closed there.
     # Re-deriving it here from the environment alone would miss the marker case
     # and disagree with the installer on the rest.
-    sh = _SETUP_SH.read_text(encoding = "utf-8")
+    sh = _SETUP_SH.read_text(encoding="utf-8")
     failure = sh.index('step "llama.cpp" "prebuilt install failed"')
     branch = sh[failure : sh.index("_NEED_LLAMA_SOURCE_BUILD=true", failure)]
     assert "_explicit_llama" not in branch
 
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     failure = ps1.index('step "llama.cpp" "prebuilt install failed"')
     branch = ps1[failure : ps1.index("$NeedLlamaSourceBuild = $true", failure)]
     assert "explicitLlama" not in branch
 
 
 def test_unavailable_named_backend_never_falls_through_to_source():
-    sh = _SETUP_SH.read_text(encoding = "utf-8")
+    sh = _SETUP_SH.read_text(encoding="utf-8")
     unavailable = sh.index('elif [ "$_PREBUILT_STATUS" -eq 5 ]; then')
     ordinary_fallback = sh.index('elif [ "$_PREBUILT_STATUS" -eq 2 ]; then', unavailable)
     guarded = sh[unavailable:ordinary_fallback]
@@ -169,7 +169,7 @@ def test_unavailable_named_backend_never_falls_through_to_source():
     assert "_NEED_LLAMA_SOURCE_BUILD=true" not in guarded
     assert "setup_fail 1" in guarded
 
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     unavailable = ps1.index("} elseif ($prebuiltExit -eq 5) {")
     ordinary_fallback = ps1.index("} elseif ($prebuiltExit -eq 2) {", unavailable)
     guarded = ps1[unavailable:ordinary_fallback]
@@ -179,7 +179,7 @@ def test_unavailable_named_backend_never_falls_through_to_source():
 
 
 def test_explicit_backend_source_build_fails_closed():
-    sh = _SETUP_SH.read_text(encoding = "utf-8")
+    sh = _SETUP_SH.read_text(encoding="utf-8")
     local_branch = sh.index('if [ "$_LOCAL_LLAMA_CPP_LINKED" = true ]; then')
     prebuilt_branch = sh.index('elif [ "$_LLAMA_FORCE_COMPILE" = "1" ]; then', local_branch)
     guarded = sh[local_branch:prebuilt_branch]
@@ -190,7 +190,7 @@ def test_explicit_backend_source_build_fails_closed():
     assert "Explicit backend selection requires a matching prebuilt bundle" in guarded
     assert "setup_fail 1" in guarded
 
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     local_branch = ps1.index("if ($LocalLlamaCppLinked) {")
     prebuilt_branch = ps1.index(
         '} elseif ($env:UNSLOTH_LLAMA_FORCE_COMPILE -eq "1") {', local_branch
@@ -205,14 +205,14 @@ def test_force_compile_sets_need_source_build_before_backend_guard():
     # A forced source build combined with any concrete backend must reach the
     # explicit-backend rejection. The source-build state must therefore be set
     # before the guard runs.
-    sh = _SETUP_SH.read_text(encoding = "utf-8")
+    sh = _SETUP_SH.read_text(encoding="utf-8")
     force_compile_set = sh.index(
         'if [ "$_LLAMA_FORCE_COMPILE" = "1" ]; then\n    _NEED_LLAMA_SOURCE_BUILD=true'
     )
     backend_guard = sh.index('elif [ -n "$_explicit_llama_source_backend" ] && ')
     assert force_compile_set < backend_guard
 
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     force_compile_set = ps1.index(
         'if ($env:UNSLOTH_LLAMA_FORCE_COMPILE -eq "1") {\n    $NeedLlamaSourceBuild = $true'
     )
@@ -221,16 +221,16 @@ def test_force_compile_sets_need_source_build_before_backend_guard():
 
 
 def test_legacy_force_vulkan_gets_the_same_strict_fallback():
-    sh = _SETUP_SH.read_text(encoding = "utf-8")
+    sh = _SETUP_SH.read_text(encoding="utf-8")
     assert '1|true|yes|on) _explicit_llama_source_backend="vulkan"' in sh
 
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     assert '$sourceLegacyForceVulkan -in @("1", "true", "yes", "on")' in ps1
     assert '$explicitLlamaSourceBackend = "vulkan"' in ps1
 
 
 def _source_backend_choice_block() -> str:
-    text = _SETUP_SH.read_text(encoding = "utf-8")
+    text = _SETUP_SH.read_text(encoding="utf-8")
     m = re.search(
         r'_source_backend_choice="\$\(printf.*?\n.*?_explicit_llama_source_backend=""\n'
         r".*?\nfi\n",
@@ -274,13 +274,13 @@ def test_llama_backend_source_choice_in_setup_sh(
         'printf "%s:%s" "$_source_backend_choice" "$_explicit_llama_source_backend"'
     )
     out = subprocess.run(
-        ["bash", "-c", harness], capture_output = True, text = True, env = env, check = True
+        ["bash", "-c", harness], capture_output=True, text=True, env=env, check=True
     )
     assert out.stdout == f"{expected_backend}:{expected_explicit}"
 
 
-def _ps1_search(pattern: str, flags = 0) -> str:
-    m = re.search(pattern, _SETUP_PS1.read_text(encoding = "utf-8"), flags)
+def _ps1_search(pattern: str, flags=0) -> str:
+    m = re.search(pattern, _SETUP_PS1.read_text(encoding="utf-8"), flags)
     assert m, f"setup.ps1 block not found: {pattern}"
     return m.group(0)
 
@@ -323,10 +323,10 @@ def test_llama_backend_source_choice_in_setup_ps1(backend, force_vulkan, expecte
             # fails to parse, so the probe never ran on a host that has pwsh.
             f'{normalize}\n"RESULT:${{sourceLlamaBackend}}:$explicitLlamaSourceBackend"',
         ],
-        capture_output = True,
-        text = True,
-        env = env,
-        check = True,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
     )
     expected_backend = (backend or "").strip().lower()
     assert out.stdout.strip() == f"RESULT:{expected_backend}:{expected_explicit}"
@@ -361,10 +361,10 @@ def _run_ps1(value: str | None) -> str:
     )
     out = run_pwsh(
         ["pwsh", "-NoProfile", "-Command", harness],
-        capture_output = True,
-        text = True,
-        env = env,
-        check = True,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
     )
     return out.stdout
 
@@ -394,7 +394,7 @@ def test_ps1_backend_gpu_opt_out_is_accepted(value):
 
 
 def test_ps1_forced_vulkan_fails_closed_on_windows_arm64():
-    ps1 = _SETUP_PS1.read_text(encoding = "utf-8")
+    ps1 = _SETUP_PS1.read_text(encoding="utf-8")
     branch = ps1.index(
         'if ($llamaBackend -eq "vulkan" -or $explicitLlamaSourceBackend -eq "vulkan")'
     )

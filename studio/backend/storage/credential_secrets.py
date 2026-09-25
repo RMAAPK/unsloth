@@ -69,7 +69,7 @@ def reset_schema_state_for_tests() -> None:
 def get_connection() -> sqlite3.Connection:
     db_path = studio_db_path()
     ensure_dir(db_path.parent)
-    conn = sqlite3.connect(str(db_path), timeout = 5.0)
+    conn = sqlite3.connect(str(db_path), timeout=5.0)
     conn.row_factory = sqlite3.Row
     try:
         os.chmod(db_path.parent, 0o700)
@@ -278,7 +278,8 @@ def _note_a_credential_this_host_held() -> None:
     """
     try:
         from hub.utils.hf_tokens import note_host_credential_identity
-        note_host_credential_identity(get_hf_token(), a_credential_was_held = hf_token_row_exists())
+
+        note_host_credential_identity(get_hf_token(), a_credential_was_held=hf_token_row_exists())
     except Exception:  # noqa: BLE001 -- bookkeeping must never fail a settings write
         pass
 
@@ -310,7 +311,7 @@ def save_provider_api_key(
     *,
     connection: sqlite3.Connection | None = None,
 ) -> None:
-    upsert_secret(PROVIDER_API_KEY_KIND, provider_id, api_key, connection = connection)
+    upsert_secret(PROVIDER_API_KEY_KIND, provider_id, api_key, connection=connection)
 
 
 def save_provider_api_key_if_absent(provider_id: str, api_key: str) -> bool:
@@ -320,13 +321,14 @@ def save_provider_api_key_if_absent(provider_id: str, api_key: str) -> bool:
 def delete_provider_api_key(
     provider_id: str, *, connection: sqlite3.Connection | None = None
 ) -> bool:
-    return delete_secret(PROVIDER_API_KEY_KIND, provider_id, connection = connection)
+    return delete_secret(PROVIDER_API_KEY_KIND, provider_id, connection=connection)
 
 
 def resolve_provider_api_key(provider_id: Optional[str], encrypted_api_key: Optional[str]) -> str:
     """Resolve an explicit request key first, then the installation's saved key."""
     if encrypted_api_key:
         from core.inference.key_exchange import decrypt_api_key
+
         return decrypt_api_key(encrypted_api_key)
     if provider_id:
         return get_provider_api_key(provider_id) or ""

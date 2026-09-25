@@ -375,7 +375,7 @@ def test_a_root_that_cannot_hold_a_lock_still_writes(tmp_path: pathlib.Path, mon
 
 
 def test_remove_manifest_keeps_the_live_one_when_the_parked_name_cannot_be_cleared(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """setup.ps1 reads True here as permission to replace pip, torch and triton, and the
     dependency pass refuses to run behind a parked copy it cannot clear. Dropping the live
@@ -399,7 +399,7 @@ def test_remove_manifest_keeps_the_live_one_when_the_parked_name_cannot_be_clear
 
 
 def test_remove_manifest_refuses_an_unclearable_parked_copy_with_no_live_manifest(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """An interrupted run already took the live manifest. Nothing is parked by this call, so
     a surviving copy is that dead run's, and answering True would send setup.ps1 into its
@@ -415,7 +415,7 @@ def test_remove_manifest_refuses_an_unclearable_parked_copy_with_no_live_manifes
 
 
 def test_a_dead_runs_parked_copy_does_not_outlive_the_next_invalidation(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """It would otherwise be read as this pass's evidence."""
     (tmp_path / im.PREVIOUS_MANIFEST_NAME).write_text("{}", encoding = "utf-8")
@@ -838,7 +838,7 @@ def test_a_module_only_distribution_still_answers_on_its_version(sidecar: pathli
 
 
 def test_a_module_only_distribution_whose_module_is_gone_is_not_current(
-    sidecar: pathlib.Path,
+    sidecar: pathlib.Path
 ) -> None:
     """The case the directory probe was there for, on the path that replaces it: an
     interrupted pip leaves the METADATA and takes the module with it."""
@@ -935,7 +935,7 @@ def test_the_shim_refuses_what_it_does_not_implement() -> None:
 
 
 def test_an_absent_tiktoken_is_optional_but_a_present_one_is_held_to_its_record(
-    sidecar: pathlib.Path,
+    sidecar: pathlib.Path
 ) -> None:
     """Absence is what is optional: a sidecar without tiktoken is current, and setup's
     top-up adds it. Present, tiktoken's RECORD is held to the disk like every other
@@ -955,7 +955,7 @@ def test_an_absent_tiktoken_is_optional_but_a_present_one_is_held_to_its_record(
 
 
 def test_write_manifest_never_raises_on_a_payload_json_cannot_encode(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """`extra` is caller-composed and the docstring promises this never raises. It is the last
     act of a pass that has already installed everything, so a TypeError out of json.dumps
@@ -1003,7 +1003,7 @@ def test_both_writers_refuse_the_same_unencodable_payload(tmp_path: pathlib.Path
 
 
 def test_the_pass_lock_reads_as_contended_only_while_a_peer_holds_it(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """A second pass on one venv must see the first one, across processes."""
     child_code = "\n".join(

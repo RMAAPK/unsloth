@@ -28,7 +28,7 @@ ALICE = AccountContext("a" * 32, "alice")
 BOB = AccountContext("b" * 32, "bob")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def isolated_home(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(studio_db, "_schema_ready", set())
@@ -106,6 +106,7 @@ def test_read_failure_fails_closed(monkeypatch):
 
     def sqlite_error():
         import sqlite3
+
         return sqlite3.OperationalError("unable to open database file")
 
     monkeypatch.setattr(studio_db, "get_app_setting", boom)
@@ -135,7 +136,7 @@ def test_account_path_would_have_raised_without_the_owner_hop(as_account):
     ],
 )
 def test_stored_value_coercion(monkeypatch, stored, expected):
-    monkeypatch.setattr(studio_db, "get_app_setting", lambda key, fallback = None: stored)
+    monkeypatch.setattr(studio_db, "get_app_setting", lambda key, fallback=None: stored)
     assert mpu.get_managed_private_provider_urls_allowed() is expected
 
 

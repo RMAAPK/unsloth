@@ -77,7 +77,7 @@ class SpillOrder(Enum):
     BACK_FIRST = "back_first"
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class PlanOptions:
     # Compute buffer + CUDA context + scratch, charged on every device. 1 GiB was too thin and failed CONSISTENTLY:
     # the planner fills to ``budget - overhead_bytes_per_device``, leaving exactly this much free whatever the budget
@@ -108,7 +108,7 @@ class PlanOptions:
     # What the host brings to bear on spilled weights. Spilled generation runs on the CPU backend -- ggml only moves
     # an op to the GPU at batch >= 32 (ggml-cuda.cu, op_offload_min_batch_size) and decode is batch 1 -- so the
     # penalty scales with core count: 2.42 / 5.83 / 11.82 / 14.94 t/s at 4 / 16 / 64 / 192 threads.
-    host: HostProfile = field(default_factory = HostProfile)
+    host: HostProfile = field(default_factory=HostProfile)
     # q8_0 measured 35% slower generation, and without GGML_CUDA_FA_ALL_QUANTS only four MATCHED K/V combinations are
     # compiled (a mismatched pair falls to CPU and stalls). Off by default; matched pairs only when enabled.
     allow_kv_quant: bool = False
@@ -121,7 +121,7 @@ class PlanOptions:
     kv_on_host: bool = False
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Plan:
     """What to launch with, and why."""
 
@@ -129,11 +129,11 @@ class Plan:
     # llama.cpp's own defaults then apply.
     changed: bool = False
     n_ctx: int = 0
-    ot_patterns: tuple[str, ...] = field(default_factory = tuple)
+    ot_patterns: tuple[str, ...] = field(default_factory=tuple)
     load_mode_none: bool = False
     cache_type_k: Optional[str] = None
     cache_type_v: Optional[str] = None
-    spilled_blocks: tuple[int, ...] = field(default_factory = tuple)
+    spilled_blocks: tuple[int, ...] = field(default_factory=tuple)
     spilled_lm_head: bool = False
     # No rung fits. mmap has to stay, because it is the only thing that makes an over-commit pageable rather than
     # OOM-killed.
@@ -165,11 +165,11 @@ def _select_blocks(
     """Blocks to spill to free at least ``deficit``, and what they actually free."""
     remaining = [b for b in blocks if b.spillable_bytes > 0]
     if order is SpillOrder.FRONT_FIRST:
-        remaining.sort(key = lambda b: b.index)
+        remaining.sort(key=lambda b: b.index)
     elif order is SpillOrder.BACK_FIRST:
-        remaining.sort(key = lambda b: -b.index)
+        remaining.sort(key=lambda b: -b.index)
     else:
-        remaining.sort(key = lambda b: -b.spillable_bytes)
+        remaining.sort(key=lambda b: -b.spillable_bytes)
 
     chosen: list[BlockLayout] = []
     freed = 0
@@ -178,7 +178,7 @@ def _select_blocks(
             residual = deficit - freed
             # Prefer the SMALLEST block that closes the gap: the last pick must not overshoot by a whole large block.
             covering = [b for b in remaining if b.spillable_bytes >= residual]
-            pick = min(covering, key = lambda b: b.spillable_bytes) if covering else remaining[0]
+            pick = min(covering, key=lambda b: b.spillable_bytes) if covering else remaining[0]
         else:
             pick = remaining[0]
         remaining.remove(pick)
@@ -207,7 +207,7 @@ def _spill_penalty_ms(
                     "experts",
                     spilled,
                     Access.SCATTERED,
-                    activation_fraction = layout.n_expert_used / layout.n_expert,
+                    activation_fraction=layout.n_expert_used / layout.n_expert,
                 )
             )
         else:
@@ -216,7 +216,7 @@ def _spill_penalty_ms(
         groups.append(TensorGroup("lm_head", layout.lm_head_bytes, Access.SINGLE_MATVEC))
     if not groups:
         return 0.0
-    return generation_penalty_ms(Placement(host_groups = groups), host)
+    return generation_penalty_ms(Placement(host_groups=groups), host)
 
 
 def _kv_elem_bytes(quantised: bool) -> int:
@@ -272,7 +272,7 @@ def resident_floor_bytes(
         + layout.lm_head_bytes
         + layout.other_resident_bytes
         + layout.recurrent_bytes
-        + cache_bytes(layout, n_ctx, kv_quantised = kv_quantised, kv_bytes_floor = kv_bytes_floor)
+        + cache_bytes(layout, n_ctx, kv_quantised=kv_quantised, kv_bytes_floor=kv_bytes_floor)
     )
 
 
@@ -290,9 +290,9 @@ def all_resident_bytes(
         resident_floor_bytes(
             layout,
             n_ctx,
-            kv_quantised = kv_quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            kv_on_host = kv_on_host,
+            kv_quantised=kv_quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            kv_on_host=kv_on_host,
         )
         + layout.spillable_bytes
     )
@@ -374,31 +374,31 @@ def plan_placement(
     opts = opts or PlanOptions()
 
     if not layout.complete or not vram_bytes_per_device:
-        return Plan(reason = "layout or device inventory incomplete, leaving llama.cpp defaults")
+        return Plan(reason="layout or device inventory incomplete, leaving llama.cpp defaults")
     if opts.host.unified_memory:
         # One pool: "spilling" renames bytes on the same chips and frees nothing. Metal also keeps mmap zero copy
         # (buffer_from_host_ptr), so the no-mmap rule inverts there too.
-        return Plan(reason = "unified memory host, spilling frees no device memory")
+        return Plan(reason="unified memory host, spilling frees no device memory")
     budget = _usable_vram(vram_bytes_per_device, opts)
     if budget <= 0:
-        return Plan(reason = "no creditable VRAM after per-device overhead and reserved allocations")
+        return Plan(reason="no creditable VRAM after per-device overhead and reserved allocations")
 
     n_ctx = requested_ctx if requested_ctx > 0 else layout.n_ctx_train
     if layout.n_ctx_train:
         n_ctx = min(n_ctx, layout.n_ctx_train)
     if n_ctx <= 0:
-        return Plan(reason = "no usable context length")
+        return Plan(reason="no usable context length")
 
     # PREFER_RESIDENT gets its say before the ladder: a smaller fully resident context outruns a larger spilled one,
     # when the caller allows it to move.
     if (
         opts.context_policy is ContextPolicy.PREFER_RESIDENT
         and all_resident_bytes(
-            layout, n_ctx, kv_bytes_floor = kv_bytes_floor, kv_on_host = opts.kv_on_host
+            layout, n_ctx, kv_bytes_floor=kv_bytes_floor, kv_on_host=opts.kv_on_host
         )
         > budget
     ):
-        shrunk = max_context_for(layout, vram_bytes_per_device, opts = opts)
+        shrunk = max_context_for(layout, vram_bytes_per_device, opts=opts)
         if shrunk >= opts.min_ctx:
             return _finish(
                 layout,
@@ -407,7 +407,7 @@ def plan_placement(
                 [],
                 False,
                 host_ram_bytes,
-                reason = (
+                reason=(
                     f"shrank context {n_ctx} -> {min(shrunk, n_ctx)} to keep every tensor "
                     "resident, which outruns a larger spilled context"
                 ),
@@ -435,10 +435,10 @@ def plan_placement(
             shrunk = max_context_for(
                 layout,
                 vram_bytes_per_device,
-                spill_all_ffn = True,
-                spill_lm_head = opts.allow_lm_head_spill,
-                kv_quantised = quantised,
-                opts = opts,
+                spill_all_ffn=True,
+                spill_lm_head=opts.allow_lm_head_spill,
+                kv_quantised=quantised,
+                opts=opts,
             )
             shrunk = min(shrunk, n_ctx)
             if shrunk >= opts.min_ctx:
@@ -458,14 +458,14 @@ def plan_placement(
                     return plan
 
     floor = resident_floor_bytes(
-        layout, n_ctx, kv_bytes_floor = kv_bytes_floor, kv_on_host = opts.kv_on_host
+        layout, n_ctx, kv_bytes_floor=kv_bytes_floor, kv_on_host=opts.kv_on_host
     )
     return Plan(
-        changed = False,
-        n_ctx = n_ctx,
-        insufficient = True,
-        vram_bytes = floor,
-        reason = (
+        changed=False,
+        n_ctx=n_ctx,
+        insufficient=True,
+        vram_bytes=floor,
+        reason=(
             f"even with every spillable tensor on the host the load needs "
             f"{floor / GIB:.2f} GiB of VRAM against {budget / GIB:.2f} GiB usable; "
             "keeping mmap so llama.cpp can page rather than be OOM-killed. "
@@ -560,7 +560,7 @@ def _per_device_usage(
     cache = (
         0
         if opts.kv_on_host
-        else cache_bytes(layout, n_ctx, kv_quantised = quantised, kv_bytes_floor = kv_bytes_floor)
+        else cache_bytes(layout, n_ctx, kv_quantised=quantised, kv_bytes_floor=kv_bytes_floor)
     )
     # Scaled without under-booking the caller's total. Uniform when unsupplied.
     total_weight = sum(weights)
@@ -629,10 +629,10 @@ def _per_device_shortfall(
         spilled_indices,
         spill_lm_head,
         vram_bytes_per_device,
-        quantised = quantised,
-        kv_bytes_floor = kv_bytes_floor,
-        split_weights_per_device = split_weights_per_device,
-        kv_layer_weights = kv_layer_weights,
+        quantised=quantised,
+        kv_bytes_floor=kv_bytes_floor,
+        split_weights_per_device=split_weights_per_device,
+        kv_layer_weights=kv_layer_weights,
     )
     if error is not None:
         return error
@@ -669,10 +669,10 @@ def _select_blocks_per_device(
         set(),
         spill_lm_head,
         vram_bytes_per_device,
-        quantised = quantised,
-        kv_bytes_floor = kv_bytes_floor,
-        split_weights_per_device = split_weights_per_device,
-        kv_layer_weights = kv_layer_weights,
+        quantised=quantised,
+        kv_bytes_floor=kv_bytes_floor,
+        split_weights_per_device=split_weights_per_device,
+        kv_layer_weights=kv_layer_weights,
     )
     if error is not None:
         return None
@@ -700,10 +700,10 @@ def _select_blocks_per_device(
             {block.index for block in chosen},
             spill_lm_head,
             vram_bytes_per_device,
-            quantised = quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            split_weights_per_device = split_weights_per_device,
-            kv_layer_weights = kv_layer_weights,
+            quantised=quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            split_weights_per_device=split_weights_per_device,
+            kv_layer_weights=kv_layer_weights,
         )
         is not None
     ):
@@ -727,9 +727,9 @@ def _plan_at(
     needed = all_resident_bytes(
         layout,
         n_ctx,
-        kv_quantised = quantised,
-        kv_bytes_floor = kv_bytes_floor,
-        kv_on_host = opts.kv_on_host,
+        kv_quantised=quantised,
+        kv_bytes_floor=kv_bytes_floor,
+        kv_on_host=opts.kv_on_host,
     )
     if needed <= budget:
         return _finish(
@@ -739,9 +739,9 @@ def _plan_at(
             [],
             False,
             host_ram_bytes,
-            quantised = quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            reason = (
+            quantised=quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            reason=(
                 f"the whole load fits in VRAM ({needed / GIB:.2f} of "
                 f"{budget / GIB:.2f} GiB usable), so nothing is spilled"
             ),
@@ -756,10 +756,10 @@ def _plan_at(
                 opts,
                 n_ctx,
                 vram_bytes_per_device,
-                quantised = quantised,
-                kv_bytes_floor = kv_bytes_floor,
-                split_weights_per_device = split_weights_per_device,
-                kv_layer_weights = kv_layer_weights,
+                quantised=quantised,
+                kv_bytes_floor=kv_bytes_floor,
+                split_weights_per_device=split_weights_per_device,
+                kv_layer_weights=kv_layer_weights,
             )
             if per_device is not None:
                 per_device_freed = sum(block.spillable_bytes for block in per_device)
@@ -773,10 +773,10 @@ def _plan_at(
             {b.index for b in chosen},
             False,
             vram_bytes_per_device,
-            quantised = quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            split_weights_per_device = split_weights_per_device,
-            kv_layer_weights = kv_layer_weights,
+            quantised=quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            split_weights_per_device=split_weights_per_device,
+            kv_layer_weights=kv_layer_weights,
         )
         if uneven is not None:
             if opts.allow_lm_head_spill and layout.lm_head_bytes:
@@ -785,11 +785,11 @@ def _plan_at(
                     opts,
                     n_ctx,
                     vram_bytes_per_device,
-                    quantised = quantised,
-                    kv_bytes_floor = kv_bytes_floor,
-                    spill_lm_head = True,
-                    split_weights_per_device = split_weights_per_device,
-                    kv_layer_weights = kv_layer_weights,
+                    quantised=quantised,
+                    kv_bytes_floor=kv_bytes_floor,
+                    spill_lm_head=True,
+                    split_weights_per_device=split_weights_per_device,
+                    kv_layer_weights=kv_layer_weights,
                 )
                 if with_head is not None:
                     with_head_freed = sum(block.spillable_bytes for block in with_head)
@@ -802,16 +802,16 @@ def _plan_at(
                             with_head,
                             True,
                             host_ram_bytes,
-                            quantised = quantised,
-                            kv_bytes_floor = kv_bytes_floor,
-                            reason = (
+                            quantised=quantised,
+                            kv_bytes_floor=kv_bytes_floor,
+                            reason=(
                                 "spilled the output head after its device could not cover "
                                 "the local shortfall with FFN blocks alone"
                             ),
                         )
             return Plan(
-                n_ctx = n_ctx,
-                reason = (
+                n_ctx=n_ctx,
+                reason=(
                     f"the selected spill still does not fit device by device: {uneven}; "
                     "leaving llama.cpp's own fitter to place it"
                 ),
@@ -823,9 +823,9 @@ def _plan_at(
             chosen,
             False,
             host_ram_bytes,
-            quantised = quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            reason = (
+            quantised=quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            reason=(
                 f"spilled the FFN of {len(chosen)} of {len(layout.blocks)} blocks "
                 f"({freed / GIB:.2f} GiB) to cover a {deficit / GIB:.2f} GiB deficit, "
                 "keeping the KV cache resident"
@@ -843,15 +843,15 @@ def _plan_at(
                 {b.index for b in chosen},
                 True,
                 vram_bytes_per_device,
-                quantised = quantised,
-                kv_bytes_floor = kv_bytes_floor,
-                split_weights_per_device = split_weights_per_device,
-                kv_layer_weights = kv_layer_weights,
+                quantised=quantised,
+                kv_bytes_floor=kv_bytes_floor,
+                split_weights_per_device=split_weights_per_device,
+                kv_layer_weights=kv_layer_weights,
             )
             if uneven is not None:
                 return Plan(
-                    n_ctx = n_ctx,
-                    reason = (
+                    n_ctx=n_ctx,
+                    reason=(
                         "spilling every block and lm_head still does not fit device by "
                         f"device: {uneven}; leaving llama.cpp's own fitter to place it"
                     ),
@@ -863,9 +863,9 @@ def _plan_at(
                 chosen,
                 True,
                 host_ram_bytes,
-                quantised = quantised,
-                kv_bytes_floor = kv_bytes_floor,
-                reason = (
+                quantised=quantised,
+                kv_bytes_floor=kv_bytes_floor,
+                reason=(
                     f"spilled every block's FFN ({freed / GIB:.2f} GiB) plus lm_head "
                     f"({layout.lm_head_bytes / GIB:.2f} GiB) to cover a "
                     f"{deficit / GIB:.2f} GiB deficit"
@@ -909,16 +909,16 @@ def _finish(
         # -nkvo moved the cache and the recurrent state out of VRAM, not out of existence: they are host RAM now, and
         # the mmap decision below has to see them or it answers against a footprint short by the whole cache.
         host_bytes += (
-            cache_bytes(layout, n_ctx, kv_quantised = quantised, kv_bytes_floor = kv_bytes_floor)
+            cache_bytes(layout, n_ctx, kv_quantised=quantised, kv_bytes_floor=kv_bytes_floor)
             + layout.recurrent_bytes
         )
     vram_bytes = (
         all_resident_bytes(
             layout,
             n_ctx,
-            kv_quantised = quantised,
-            kv_bytes_floor = kv_bytes_floor,
-            kv_on_host = opts.kv_on_host,
+            kv_quantised=quantised,
+            kv_bytes_floor=kv_bytes_floor,
+            kv_on_host=opts.kv_on_host,
         )
         - spilled_bytes
     )
@@ -933,20 +933,20 @@ def _finish(
     cache_type = opts.kv_quant_type if quantised else None
     changed = bool(patterns) or load_mode_none or cache_type is not None
     return Plan(
-        changed = changed,
-        n_ctx = n_ctx,
-        ot_patterns = tuple(patterns),
-        load_mode_none = load_mode_none,
+        changed=changed,
+        n_ctx=n_ctx,
+        ot_patterns=tuple(patterns),
+        load_mode_none=load_mode_none,
         # Matched pairs only: an unmatched K/V combination is not compiled without GGML_CUDA_FA_ALL_QUANTS and
         # silently falls back to CPU.
-        cache_type_k = cache_type,
-        cache_type_v = cache_type,
-        spilled_blocks = tuple(indices),
-        spilled_lm_head = spill_lm_head,
-        vram_bytes = vram_bytes,
-        host_bytes = host_bytes,
-        predicted_gen_penalty_ms = _spill_penalty_ms(layout, chosen, spill_lm_head, opts.host),
-        reason = reason,
+        cache_type_k=cache_type,
+        cache_type_v=cache_type,
+        spilled_blocks=tuple(indices),
+        spilled_lm_head=spill_lm_head,
+        vram_bytes=vram_bytes,
+        host_bytes=host_bytes,
+        predicted_gen_penalty_ms=_spill_penalty_ms(layout, chosen, spill_lm_head, opts.host),
+        reason=reason,
     )
 
 

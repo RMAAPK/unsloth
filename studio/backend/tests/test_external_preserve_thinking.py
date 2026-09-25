@@ -17,12 +17,12 @@ def test_llama_history_keeps_reasoning_and_tool_calls(content, vision, with_tool
         {"id": "call_1", "type": "function", "function": {"name": "lookup", "arguments": "{}"}}
     ]
     message = ChatMessage(
-        role = "assistant",
-        content = content,
-        reasoning_content = "prior thought",
-        tool_calls = calls if with_tool else None,
+        role="assistant",
+        content=content,
+        reasoning_content="prior thought",
+        tool_calls=calls if with_tool else None,
     )
-    result = _build_external_messages([message], vision, provider_type = "llama_cpp")
+    result = _build_external_messages([message], vision, provider_type="llama_cpp")
     assert len(result) == 1
     assert result[0]["reasoning_content"] == "prior thought"
     if with_tool:
@@ -38,9 +38,9 @@ def test_llama_reasoning_survives_dropped_server_tool_cards(content, vision):
         "function": {"name": "web_search", "arguments": '{"_server_tool": true}'},
     }
     message = ChatMessage(
-        role = "assistant", content = content, reasoning_content = "prior thought", tool_calls = [card]
+        role="assistant", content=content, reasoning_content="prior thought", tool_calls=[card]
     )
-    result = _build_external_messages([message], vision, provider_type = "llama_cpp")
+    result = _build_external_messages([message], vision, provider_type="llama_cpp")
     assert len(result) == 1
     assert result[0]["reasoning_content"] == "prior thought"
     assert "tool_calls" not in result[0]
@@ -50,8 +50,8 @@ def test_llama_reasoning_survives_dropped_server_tool_cards(content, vision):
     "provider", ["custom", "openai", "vllm", "ollama", "anthropic", "openrouter"]
 )
 def test_other_providers_keep_existing_reasoning_policy(provider):
-    message = ChatMessage(role = "assistant", content = "answer", reasoning_content = "prior thought")
-    result = _build_external_messages([message], False, provider_type = provider)
+    message = ChatMessage(role="assistant", content="answer", reasoning_content="prior thought")
+    result = _build_external_messages([message], False, provider_type=provider)
     assert "reasoning_content" not in result[0]
 
 
@@ -59,7 +59,7 @@ def test_other_providers_keep_existing_reasoning_policy(provider):
 @pytest.mark.parametrize("value", [True, False, None])
 def test_tool_transport_reasoning_policy(provider, value):
     client = ExternalProviderClient(
-        provider_type = provider, base_url = "http://localhost:8080/v1", api_key = ""
+        provider_type=provider, base_url="http://localhost:8080/v1", api_key=""
     )
-    transport = OAICompatTransport(client, model = "test", preserve_thinking = value)
+    transport = OAICompatTransport(client, model="test", preserve_thinking=value)
     assert transport.preserves_reasoning is (provider == "llama_cpp" and value is True)

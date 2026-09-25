@@ -32,12 +32,12 @@ def check_review(page):
 
     def reject_api(route):
         requests.append(route.request.url)
-        route.fulfill(status = 500, body = "Unexpected API request")
+        route.fulfill(status=500, body="Unexpected API request")
 
     page.route(lambda url: urlparse(url).path.startswith("/api/"), reject_api)
     page.goto(f"{BASE}/smoke-research-review.html")
-    dialog = page.get_by_role("dialog", name = "Review the research plan")
-    expect(dialog).to_be_visible(timeout = 30_000)
+    dialog = page.get_by_role("dialog", name="Review the research plan")
+    expect(dialog).to_be_visible(timeout=30_000)
     page.keyboard.press("Escape")
     expect(dialog).to_be_hidden()
     page.evaluate("() => { window.__review.setDraft(); window.__review.setError(); }")
@@ -45,7 +45,7 @@ def check_review(page):
 
     # Scope to the message: the panel's own button already reopened on the base.
     button = page.get_by_test_id("research-message").get_by_role(
-        "button", name = "Review plan", exact = True
+        "button", name="Review plan", exact=True
     )
     button.click()
     expect(dialog).to_be_visible()
@@ -66,7 +66,7 @@ def check_review(page):
 
     page.evaluate("() => { window.__review.complete(); window.__review.closePanel(); }")
     completed = page.evaluate("() => window.__review.state()")
-    page.get_by_test_id("research-message").get_by_role("button", name = "View activity").click()
+    page.get_by_test_id("research-message").get_by_role("button", name="View activity").click()
     viewed = page.evaluate("() => window.__review.state()")
     assert viewed["openRunId"] == "review-run"
     assert viewed["sessions"] == completed["sessions"]
@@ -82,7 +82,7 @@ def main():
         if not EXTERNAL:
             proc = start_vite(PORT)
         wait_for_smoke_page(
-            f"{BASE}/smoke-research-review.html", "smoke-research-review-main.tsx", proc = proc
+            f"{BASE}/smoke-research-review.html", "smoke-research-review-main.tsx", proc=proc
         )
         with sync_playwright() as pw:
             name = os.environ.get("SMOKE_BROWSER", "chromium")
@@ -91,7 +91,7 @@ def main():
             browser_type = getattr(pw, name)
             executable = os.environ.get("PW_EXECUTABLE")
             browser = browser_type.launch(
-                args = chromium_launch_args() if name == "chromium" else [],
+                args=chromium_launch_args() if name == "chromium" else [],
                 **({"executable_path": executable} if executable else {}),
             )
             try:

@@ -130,7 +130,7 @@ def _recorded_master_root() -> Path | None:
     # nothing calling it in production.
     definitive = True
     try:
-        recorded = (studio / "share" / MASTER_ROOT_NOTE).read_text(encoding = "utf-8").strip()
+        recorded = (studio / "share" / MASTER_ROOT_NOTE).read_text(encoding="utf-8").strip()
     except (FileNotFoundError, NotADirectoryError, ValueError, UnicodeDecodeError):
         recorded = ""
     except OSError:
@@ -341,7 +341,7 @@ def rag_uploads_root() -> Path:
 def _xdg_user_dir(key: str) -> Path | None:
     config = Path.home() / ".config" / "user-dirs.dirs"
     try:
-        lines = config.read_text(encoding = "utf-8").splitlines()
+        lines = config.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError):
         return None
     prefix = f"{key}="
@@ -447,7 +447,7 @@ def tensorboard_root() -> Path:
 
 
 def _mkdir(path: Path) -> Path:
-    path.mkdir(parents = True, exist_ok = True)
+    path.mkdir(parents=True, exist_ok=True)
     return path
 
 
@@ -577,7 +577,7 @@ def _lmstudio_downloads_folder() -> str:
     if not settings_path.is_file():
         return ""
     try:
-        settings = json.loads(settings_path.read_text(encoding = "utf-8-sig"))
+        settings = json.loads(settings_path.read_text(encoding="utf-8-sig"))
         downloads = settings.get("downloadsFolder", "")
         # A number or list here is a corrupt file, not a path; str() would stat "123".
         return downloads if isinstance(downloads, str) else ""
@@ -598,7 +598,7 @@ def lmstudio_model_dirs() -> list[Path]:
     # Legacy cache location.
     candidates.append(Path.home() / ".cache" / "lm-studio" / "models")
 
-    return _existing_dirs(candidates, resolve = False)
+    return _existing_dirs(candidates, resolve=False)
 
 
 def ollama_model_dirs() -> list[Path]:
@@ -614,7 +614,7 @@ def ollama_model_dirs() -> list[Path]:
     candidates.append(Path.home() / ".ollama" / "models")
     candidates.append(Path("/usr/share/ollama/.ollama/models"))
     candidates.append(Path("/var/lib/ollama/.ollama/models"))
-    return _existing_dirs(candidates, resolve = False)
+    return _existing_dirs(candidates, resolve=False)
 
 
 def _hermes_native_home() -> Path:
@@ -663,7 +663,7 @@ def hermes_model_dirs() -> list[Path]:
     """
     return _existing_dirs(
         [_hermes_root() / "models", _hermes_native_home() / "models"],
-        resolve = False,
+        resolve=False,
     )
 
 
@@ -687,7 +687,7 @@ def well_known_model_dirs() -> list[Path]:
     for name in ("models", "Models"):
         candidates.append(Path.home() / name)
 
-    return _existing_dirs(candidates, resolve = True)
+    return _existing_dirs(candidates, resolve=True)
 
 
 def _user_set_hf_home() -> bool:
@@ -844,13 +844,13 @@ def _matplotlib_defaults(root: Path) -> dict[str, str]:
     # and the plot style flips back and forth across launches.
     if not (
         _nothing_at(managed / "matplotlibrc")
-        and _nothing_at(managed / "stylelib", ending = ".mplstyle")
+        and _nothing_at(managed / "stylelib", ending=".mplstyle")
     ):
         return pinned
     config_dir = _matplotlib_config_dir()
     if config_dir is not None and not (
         _nothing_at(config_dir / "matplotlibrc")
-        and _nothing_at(config_dir / "stylelib", ending = ".mplstyle")
+        and _nothing_at(config_dir / "stylelib", ending=".mplstyle")
     ):
         return {}
     return pinned
@@ -944,7 +944,7 @@ def _torch_version_fields() -> dict[str, str]:
     origin = getattr(importlib.util.find_spec("torch"), "origin", None)
     if not origin:
         return {}
-    text = (Path(origin).parent / "version.py").read_text(encoding = "utf-8")
+    text = (Path(origin).parent / "version.py").read_text(encoding="utf-8")
     found = re.findall(
         r"""^(__version__|debug|cuda|hip|xpu)\s*(?::[^=\n]+)?=\s*([^\s#]+)""",
         text,
@@ -1031,7 +1031,7 @@ def _usable_dir(value: str) -> bool:
     except (OSError, ValueError):
         return False
     try:
-        handle, probe = tempfile.mkstemp(dir = value, prefix = ".unsloth-write-probe.")
+        handle, probe = tempfile.mkstemp(dir=value, prefix=".unsloth-write-probe.")
     except (OSError, ValueError):
         return False
     # Guarded like the unlink below: an EIO or ENOSPC on close escaping here would take the
@@ -1085,7 +1085,7 @@ def _private_dir(path: str) -> bool:
     """
     parent = Path(path).parent
     try:
-        parent.mkdir(parents = True, exist_ok = True)
+        parent.mkdir(parents=True, exist_ok=True)
     except (OSError, ValueError):
         return False
     if not _holding_dir_is_safe(parent):
@@ -1320,7 +1320,7 @@ def _setup_cache_env() -> None:
             try:
                 created = True
                 try:
-                    Path(value).mkdir(parents = True, exist_ok = False)
+                    Path(value).mkdir(parents=True, exist_ok=False)
                 except FileExistsError:
                     created = False
                 if key == "UNSLOTH_COMPILE_LOCATION" and created:
@@ -1328,7 +1328,8 @@ def _setup_cache_env() -> None:
                     # from it without inferring that from its contents. Only when
                     # this call made it: the marker is what licenses an rmtree.
                     from utils.cache_cleanup import CACHE_MARKER
-                    (Path(value) / CACHE_MARKER).touch(exist_ok = True)
+
+                    (Path(value) / CACHE_MARKER).touch(exist_ok=True)
             except (OSError, ImportError):
                 pass
             # A toolchain path we invented and could not make is worse than none: torch treats
@@ -1464,7 +1465,7 @@ def resolve_under_root(
         _assert_contained(path, root)
         return path
 
-    cleaned = _clean_relative_path(raw, strip_prefixes = strip_prefixes)
+    cleaned = _clean_relative_path(raw, strip_prefixes=strip_prefixes)
     candidate = root / cleaned
     _assert_contained(candidate, root)
     return candidate
@@ -1489,8 +1490,8 @@ def default_run_dir_name(model_name: str) -> str:
 def resolve_output_dir(path_value: str | None = None) -> Path:
     return resolve_under_root(
         path_value,
-        root = outputs_root(),
-        strip_prefixes = ("outputs",),
+        root=outputs_root(),
+        strip_prefixes=("outputs",),
     )
 
 
@@ -1502,8 +1503,8 @@ def resolve_export_dir(path_value: str | None = None) -> Path:
     """
     return resolve_under_root(
         path_value,
-        root = exports_root(),
-        strip_prefixes = ("exports",),
+        root=exports_root(),
+        strip_prefixes=("exports",),
     )
 
 
@@ -1527,16 +1528,16 @@ def resolve_export_write_dir(path_value: str | None = None) -> Path:
         return require_within_account(path)
     return resolve_under_root(
         path_value,
-        root = exports_root(),
-        strip_prefixes = ("exports",),
+        root=exports_root(),
+        strip_prefixes=("exports",),
     )
 
 
 def resolve_tensorboard_dir(path_value: str | None = None) -> Path:
     return resolve_under_root(
         path_value,
-        root = tensorboard_root(),
-        strip_prefixes = ("runs", "tensorboard"),
+        root=tensorboard_root(),
+        strip_prefixes=("runs", "tensorboard"),
     )
 
 

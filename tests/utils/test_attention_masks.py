@@ -29,11 +29,11 @@ from unsloth.utils import packing as packing_utils
 
 
 def _make_seq_info(lengths):
-    lengths = torch.tensor(lengths, dtype = torch.int32)
+    lengths = torch.tensor(lengths, dtype=torch.int32)
     cu = torch.cat(
         [
-            torch.zeros(1, dtype = torch.int32),
-            torch.cumsum(lengths, dim = 0, dtype = torch.int32),
+            torch.zeros(1, dtype=torch.int32),
+            torch.cumsum(lengths, dim=0, dtype=torch.int32),
         ]
     )
     max_len = int(lengths.max().item())
@@ -44,15 +44,15 @@ def test_sdpa_packed_attention_mask_sliding_window():
     seq_info = _make_seq_info([5, 3])
     mask = packing_utils.build_sdpa_packed_attention_mask(
         seq_info,
-        dtype = torch.float32,
-        device = torch.device("cpu"),
-        sliding_window = 3,
+        dtype=torch.float32,
+        device=torch.device("cpu"),
+        sliding_window=3,
     )
 
     assert mask.shape == (1, 1, 8, 8)
 
     block_first = mask[0, 0, :5, :5]
-    upper = torch.triu(torch.ones_like(block_first), diagonal = 1).bool()
+    upper = torch.triu(torch.ones_like(block_first), diagonal=1).bool()
     assert torch.all(block_first[upper] == float("-inf"))
     assert block_first[3, 0].item() == float("-inf")
     assert block_first[4, 1].item() == float("-inf")
@@ -65,8 +65,8 @@ def test_xformers_block_mask_sliding_window(monkeypatch):
         def __init__(
             self,
             lengths,
-            window = None,
-            device = None,
+            window=None,
+            device=None,
         ):
             self.lengths = lengths
             self.window = window
@@ -74,21 +74,21 @@ def test_xformers_block_mask_sliding_window(monkeypatch):
 
         @classmethod
         def from_seqlens(cls, lengths):
-            return cls(tuple(lengths), device = "cuda:0")
+            return cls(tuple(lengths), device="cuda:0")
 
         def make_local_attention(self, window_size):
-            return _FakeMask(self.lengths, window = window_size, device = self.device)
+            return _FakeMask(self.lengths, window=window_size, device=self.device)
 
         def to(self, device):
-            return _FakeMask(self.lengths, window = self.window, device = device)
+            return _FakeMask(self.lengths, window=self.window, device=device)
 
-    monkeypatch.setattr(packing_utils, "_XFormersBlockMask", _FakeMask, raising = False)
+    monkeypatch.setattr(packing_utils, "_XFormersBlockMask", _FakeMask, raising=False)
     packing_utils.clear_packed_caches()
 
     seq_info = _make_seq_info([4, 4])
     mask = packing_utils.build_xformers_block_causal_mask(
         seq_info,
-        sliding_window = 2,
+        sliding_window=2,
     )
 
     assert isinstance(mask, _FakeMask)
@@ -110,7 +110,7 @@ def test_xformers_block_mask_cache_is_scoped_to_device(monkeypatch):
         def to(self, device):
             return _FakeMask(self.lengths, device)
 
-    monkeypatch.setattr(packing_utils, "_XFormersBlockMask", _FakeMask, raising = False)
+    monkeypatch.setattr(packing_utils, "_XFormersBlockMask", _FakeMask, raising=False)
     packing_utils.clear_packed_caches()
 
     lengths = (4, 4)
@@ -244,19 +244,20 @@ def test_xformers_bias_move_skips_matching_metadata_device():
     not has_real_cuda()
     or torch.cuda.device_count() < 2
     or packing_utils._XFormersBlockMask is None,
-    reason = "needs xFormers and two CUDA devices",
+    reason="needs xFormers and two CUDA devices",
 )
 def test_real_xformers_packed_mask_validates_on_each_device():
     from xformers.ops.fmha.common import Inputs
+
     packing_utils.clear_packed_caches()
     try:
         masks = []
         for index in (0, 1):
             device = torch.device(f"cuda:{index}")
-            lengths = torch.tensor([4, 4], dtype = torch.int32, device = device)
+            lengths = torch.tensor([4, 4], dtype=torch.int32, device=device)
             masks.append(
                 packing_utils.build_xformers_block_causal_mask(
-                    (lengths, torch.empty(0, dtype = torch.int32, device = device), 4)
+                    (lengths, torch.empty(0, dtype=torch.int32, device=device), 4)
                 )
             )
 
@@ -265,37 +266,37 @@ def test_real_xformers_packed_mask_validates_on_each_device():
         assert masks[1] is not masks[0]
 
         config = attention_dispatch.AttentionConfig(
-            backend = attention_dispatch.XFORMERS,
-            n_kv_heads = 1,
-            n_groups = 1,
+            backend=attention_dispatch.XFORMERS,
+            n_kv_heads=1,
+            n_groups=1,
         )
         context = attention_dispatch.AttentionContext(
-            bsz = 1,
-            q_len = 8,
-            kv_seq_len = 8,
-            n_heads = 1,
-            head_dim = 64,
-            requires_grad = True,
-            seq_info = None,
-            attention_mask = None,
-            causal_mask = masks[0],
+            bsz=1,
+            q_len=8,
+            kv_seq_len=8,
+            n_heads=1,
+            head_dim=64,
+            requires_grad=True,
+            seq_info=None,
+            attention_mask=None,
+            causal_mask=masks[0],
         )
         queries = []
         outputs = []
         for index in (0, 1):
             device = torch.device(f"cuda:{index}")
             query = torch.zeros(
-                (1, 8, 1, 64), dtype = torch.float16, device = device, requires_grad = True
+                (1, 8, 1, 64), dtype=torch.float16, device=device, requires_grad=True
             )
-            Inputs(query = query, key = query, value = query, attn_bias = masks[index]).validate_inputs()
+            Inputs(query=query, key=query, value=query, attn_bias=masks[index]).validate_inputs()
             model_query = query.transpose(1, 2)
             outputs.append(
                 attention_dispatch.run_attention(
-                    config = config,
-                    context = context,
-                    Q = model_query,
-                    K = model_query,
-                    V = model_query,
+                    config=config,
+                    context=context,
+                    Q=model_query,
+                    K=model_query,
+                    V=model_query,
                 )
             )
             queries.append(query)
@@ -327,14 +328,14 @@ def test_run_attention_sdpa_passes_sliding_window(monkeypatch):
         *,
         dtype,
         device,
-        sliding_window = None,
+        sliding_window=None,
     ):
         captured["window"] = sliding_window
         return original_builder(
             seq_info_arg,
-            dtype = dtype,
-            device = device,
-            sliding_window = sliding_window,
+            dtype=dtype,
+            device=device,
+            sliding_window=sliding_window,
         )
 
     monkeypatch.setattr(
@@ -350,22 +351,22 @@ def test_run_attention_sdpa_passes_sliding_window(monkeypatch):
     monkeypatch.setattr(attention_dispatch, "scaled_dot_product_attention", _fake_sdpa)
 
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.SDPA,
-        n_kv_heads = 1,
-        n_groups = 1,
+        backend=attention_dispatch.SDPA,
+        n_kv_heads=1,
+        n_groups=1,
     )
 
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 5,
-        kv_seq_len = 5,
-        n_heads = 1,
-        head_dim = 1,
-        requires_grad = False,
-        seq_info = seq_info,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = sliding_window,
+        bsz=1,
+        q_len=5,
+        kv_seq_len=5,
+        n_heads=1,
+        head_dim=1,
+        requires_grad=False,
+        seq_info=seq_info,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=sliding_window,
     )
 
     Q = torch.zeros(1, 1, 5, 1)
@@ -373,11 +374,11 @@ def test_run_attention_sdpa_passes_sliding_window(monkeypatch):
     V = torch.zeros_like(Q)
 
     attention_dispatch.run_attention(
-        config = config,
-        context = context,
-        Q = Q,
-        K = K,
-        V = V,
+        config=config,
+        context=context,
+        Q=Q,
+        K=K,
+        V=V,
     )
 
     assert captured["window"] == sliding_window
@@ -391,7 +392,7 @@ def test_run_attention_xformers_passes_sliding_window(monkeypatch):
     sliding_window = 3
 
     class _FakeBias:
-        def __init__(self, device = "cuda:0"):
+        def __init__(self, device="cuda:0"):
             self.device = torch.device(device)
 
         def to(self, device):
@@ -402,8 +403,8 @@ def test_run_attention_xformers_passes_sliding_window(monkeypatch):
     def _fake_builder(
         seq_info_arg,
         *,
-        sliding_window = None,
-        base_mask = None,
+        sliding_window=None,
+        base_mask=None,
     ):
         captured["window"] = sliding_window
         captured["base"] = base_mask
@@ -413,33 +414,33 @@ def test_run_attention_xformers_passes_sliding_window(monkeypatch):
         Q,
         K,
         V,
-        attn_bias = None,
+        attn_bias=None,
         **_,
     ):
         captured["bias"] = attn_bias
         return torch.zeros_like(Q)
 
     monkeypatch.setattr(attention_dispatch, "build_xformers_block_causal_mask", _fake_builder)
-    monkeypatch.setattr(attention_dispatch, "xformers_attention", _fake_attention, raising = False)
-    monkeypatch.setattr(attention_dispatch, "XFORMERS_BLOCK_DIAG_CLS", _FakeBias, raising = False)
+    monkeypatch.setattr(attention_dispatch, "xformers_attention", _fake_attention, raising=False)
+    monkeypatch.setattr(attention_dispatch, "XFORMERS_BLOCK_DIAG_CLS", _FakeBias, raising=False)
 
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.XFORMERS,
-        n_kv_heads = 1,
-        n_groups = 1,
+        backend=attention_dispatch.XFORMERS,
+        n_kv_heads=1,
+        n_groups=1,
     )
 
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 4,
-        kv_seq_len = 4,
-        n_heads = 1,
-        head_dim = 1,
-        requires_grad = False,
-        seq_info = seq_info,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = sliding_window,
+        bsz=1,
+        q_len=4,
+        kv_seq_len=4,
+        n_heads=1,
+        head_dim=1,
+        requires_grad=False,
+        seq_info=seq_info,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=sliding_window,
     )
 
     Q = torch.zeros(1, 1, 4, 1)
@@ -447,11 +448,11 @@ def test_run_attention_xformers_passes_sliding_window(monkeypatch):
     V = torch.zeros_like(Q)
 
     attention_dispatch.run_attention(
-        config = config,
-        context = context,
-        Q = Q,
-        K = K,
-        V = V,
+        config=config,
+        context=context,
+        Q=Q,
+        K=K,
+        V=V,
     )
 
     assert captured["window"] == sliding_window
@@ -479,10 +480,10 @@ def test_run_attention_flash_varlen_receives_window_and_softcap(monkeypatch):
     monkeypatch.setattr(attention_dispatch, "HAS_FLASH_ATTENTION", True)
 
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.FLASH_VARLEN,
-        n_kv_heads = 1,
-        n_groups = 1,
-        flash_varlen_kwargs = {
+        backend=attention_dispatch.FLASH_VARLEN,
+        n_kv_heads=1,
+        n_groups=1,
+        flash_varlen_kwargs={
             "dropout_p": 0.0,
             "softmax_scale": 1.0,
             "causal": True,
@@ -492,16 +493,16 @@ def test_run_attention_flash_varlen_receives_window_and_softcap(monkeypatch):
     )
 
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 4,
-        kv_seq_len = 4,
-        n_heads = 1,
-        head_dim = 2,
-        requires_grad = False,
-        seq_info = seq_info,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = sliding_window,
+        bsz=1,
+        q_len=4,
+        kv_seq_len=4,
+        n_heads=1,
+        head_dim=2,
+        requires_grad=False,
+        seq_info=seq_info,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=sliding_window,
     )
 
     Q = torch.zeros(1, 1, 4, 2)
@@ -509,11 +510,11 @@ def test_run_attention_flash_varlen_receives_window_and_softcap(monkeypatch):
     V = torch.zeros_like(Q)
 
     attention_dispatch.run_attention(
-        config = config,
-        context = context,
-        Q = Q,
-        K = K,
-        V = V,
+        config=config,
+        context=context,
+        Q=Q,
+        K=K,
+        V=V,
     )
 
     assert captured["kwargs"]["softcap"] == softcap
@@ -542,25 +543,25 @@ def test_run_attention_sdpa_windows_an_unpacked_unmasked_batch(monkeypatch):
     monkeypatch.setattr(attention_dispatch, "scaled_dot_product_attention", _fake_sdpa)
 
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.SDPA,
-        n_kv_heads = 1,
-        n_groups = 1,
+        backend=attention_dispatch.SDPA,
+        n_kv_heads=1,
+        n_groups=1,
     )
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 6,
-        kv_seq_len = 6,
-        n_heads = 1,
-        head_dim = 1,
-        requires_grad = True,
-        seq_info = None,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = 3,
+        bsz=1,
+        q_len=6,
+        kv_seq_len=6,
+        n_heads=1,
+        head_dim=1,
+        requires_grad=True,
+        seq_info=None,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=3,
     )
     Q = torch.zeros(1, 1, 6, 1)
 
-    attention_dispatch.run_attention(config = config, context = context, Q = Q, K = Q, V = Q)
+    attention_dispatch.run_attention(config=config, context=context, Q=Q, K=Q, V=Q)
 
     mask = captured["mask"]
     assert mask is not None, "a declared window must not fall through to plain is_causal"
@@ -579,22 +580,22 @@ def test_run_attention_sdpa_leaves_a_short_sequence_alone(monkeypatch):
         lambda Q, K, V, **kw: (captured.update(kw), torch.zeros_like(Q))[1],
     )
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.SDPA, n_kv_heads = 1, n_groups = 1
+        backend=attention_dispatch.SDPA, n_kv_heads=1, n_groups=1
     )
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 4,
-        kv_seq_len = 4,
-        n_heads = 1,
-        head_dim = 1,
-        requires_grad = True,
-        seq_info = None,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = 8,
+        bsz=1,
+        q_len=4,
+        kv_seq_len=4,
+        n_heads=1,
+        head_dim=1,
+        requires_grad=True,
+        seq_info=None,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=8,
     )
     Q = torch.zeros(1, 1, 4, 1)
-    attention_dispatch.run_attention(config = config, context = context, Q = Q, K = Q, V = Q)
+    attention_dispatch.run_attention(config=config, context=context, Q=Q, K=Q, V=Q)
     assert captured["attn_mask"] is None and captured["is_causal"] is True
 
 
@@ -605,7 +606,7 @@ def test_mistral_hands_the_dispatcher_its_configured_window():
     from pathlib import Path
 
     src = Path(attention_dispatch.__file__).resolve().parents[1] / "models" / "mistral.py"
-    tree = ast.parse(src.read_text(encoding = "utf-8"))
+    tree = ast.parse(src.read_text(encoding="utf-8"))
     contexts = [
         node
         for node in ast.walk(tree)
@@ -627,7 +628,7 @@ def test_a_zero_configured_window_is_full_causal_not_a_blank_mask():
     from pathlib import Path
 
     src = Path(attention_dispatch.__file__).resolve().parents[1] / "models" / "mistral.py"
-    text = src.read_text(encoding = "utf-8")
+    text = src.read_text(encoding="utf-8")
     assert "isinstance(sw_cfg, int) and sw_cfg <= 0" in text, (
         "a non-positive configured window must be normalised before it reaches window_size "
         "or the dispatcher"
@@ -644,22 +645,22 @@ def test_run_attention_sdpa_ignores_a_zero_window(monkeypatch):
         lambda Q, K, V, **kw: (captured.update(kw), torch.zeros_like(Q))[1],
     )
     config = attention_dispatch.AttentionConfig(
-        backend = attention_dispatch.SDPA, n_kv_heads = 1, n_groups = 1
+        backend=attention_dispatch.SDPA, n_kv_heads=1, n_groups=1
     )
     context = attention_dispatch.AttentionContext(
-        bsz = 1,
-        q_len = 4,
-        kv_seq_len = 4,
-        n_heads = 1,
-        head_dim = 1,
-        requires_grad = True,
-        seq_info = None,
-        attention_mask = None,
-        causal_mask = None,
-        sliding_window = 0,
+        bsz=1,
+        q_len=4,
+        kv_seq_len=4,
+        n_heads=1,
+        head_dim=1,
+        requires_grad=True,
+        seq_info=None,
+        attention_mask=None,
+        causal_mask=None,
+        sliding_window=0,
     )
     Q = torch.zeros(1, 1, 4, 1)
-    attention_dispatch.run_attention(config = config, context = context, Q = Q, K = Q, V = Q)
+    attention_dispatch.run_attention(config=config, context=context, Q=Q, K=Q, V=Q)
     mask = captured["attn_mask"]
     assert mask is None or bool(mask.any()), "a zero window must not mask everything"
 

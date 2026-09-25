@@ -45,20 +45,20 @@ def policy(monkeypatch):
         keep_resident: bool,
         no_ram_reserve: bool,
         extras,
-        supports_load_mode = False,
-        weights_in_host_memory = True,
-        gpu_offload_confirmed = False,
-        env = None,
+        supports_load_mode=False,
+        weights_in_host_memory=True,
+        gpu_offload_confirmed=False,
+        env=None,
     ):
         monkeypatch.setattr(mm, "get_keep_resident", lambda: keep_resident)
         monkeypatch.setattr(mm, "get_no_ram_reserve", lambda: no_ram_reserve)
         monkeypatch.setattr(mm, "should_mlock", lambda: keep_resident and not no_ram_reserve)
         return apply_model_memory_policy(
             extras,
-            supports_load_mode = supports_load_mode,
-            weights_in_host_memory = weights_in_host_memory,
-            gpu_offload_confirmed = gpu_offload_confirmed,
-            env = env,
+            supports_load_mode=supports_load_mode,
+            weights_in_host_memory=weights_in_host_memory,
+            gpu_offload_confirmed=gpu_offload_confirmed,
+            env=env,
         )
 
     return run
@@ -79,7 +79,7 @@ class TestFlagPolicy:
         assert out == ["--temp", "0.7"]
 
     def test_keep_resident_prefers_load_mode_when_supported(self, policy):
-        managed, out = policy(True, False, ["--temp", "0.7"], supports_load_mode = True)
+        managed, out = policy(True, False, ["--temp", "0.7"], supports_load_mode=True)
         assert managed == ["--load-mode", "mmap+mlock"]
         assert out == ["--temp", "0.7"]
 
@@ -87,7 +87,7 @@ class TestFlagPolicy:
         # A user --load-mode would last-wins-override the managed one, and
         # "--load-mode mlock" is a RAM reservation no-reserve must veto.
         _, out = policy(
-            True, False, ["--load-mode", "none", "--temp", "0.7"], supports_load_mode = True
+            True, False, ["--load-mode", "none", "--temp", "0.7"], supports_load_mode=True
         )
         assert out == ["--temp", "0.7"]
         _, out = policy(False, True, ["-lm", "mlock", "--temp", "0.7"])
@@ -139,12 +139,12 @@ class TestFlagPolicy:
         # --mlock takes no value, so stripping it must not swallow "0.7".
         assert strip_shadowing_flags(
             ["--mlock", "0.7"],
-            strip_context = False,
-            strip_cache = False,
-            strip_spec = False,
-            strip_template = False,
-            strip_split_mode = False,
-            strip_mlock = True,
+            strip_context=False,
+            strip_cache=False,
+            strip_spec=False,
+            strip_template=False,
+            strip_split_mode=False,
+            strip_mlock=True,
         ) == ["0.7"]
 
 
@@ -175,16 +175,17 @@ class TestPersistence:
             "storage.studio_db.upsert_app_settings", lambda updates: store.update(updates)
         )
 
-        assert mm.set_model_memory_settings(keep_resident = True) == (True, False)
-        assert mm.set_model_memory_settings(no_ram_reserve = True) == (True, True)
+        assert mm.set_model_memory_settings(keep_resident=True) == (True, False)
+        assert mm.set_model_memory_settings(no_ram_reserve=True) == (True, True)
         # Only keep_resident is sent; no_ram_reserve must not reset.
-        assert mm.set_model_memory_settings(keep_resident = False) == (False, True)
+        assert mm.set_model_memory_settings(keep_resident=False) == (False, True)
 
     @pytest.mark.parametrize("value", ["banana", 2.5, object()])
     def test_rejects_non_boolean(self, value):
         import utils.model_memory_settings as mm
+
         with pytest.raises(ValueError):
-            mm.set_model_memory_settings(keep_resident = value)
+            mm.set_model_memory_settings(keep_resident=value)
 
     @pytest.mark.parametrize(
         ("stored", "expected"),
@@ -257,6 +258,7 @@ class TestMemoryEnv:
     @pytest.fixture
     def toggles(self, monkeypatch):
         import utils.model_memory_settings as mm
+
         def set(keep, no_res):
             monkeypatch.setattr(mm, "get_keep_resident", lambda: keep)
             monkeypatch.setattr(mm, "get_no_ram_reserve", lambda: no_res)
@@ -375,8 +377,8 @@ class TestReloadRequired:
         state,
         monkeypatch,
         *,
-        is_loaded = True,
-        is_active = True,
+        is_loaded=True,
+        is_active=True,
     ):
         import routes.inference
         import routes.settings as rs
@@ -419,7 +421,7 @@ class TestReloadRequired:
     def test_no_model_loaded_never_asks_for_a_reload(self, monkeypatch):
         assert (
             self._required(
-                False, True, (False, True), monkeypatch, is_loaded = False, is_active = False
+                False, True, (False, True), monkeypatch, is_loaded=False, is_active=False
             )
             is False
         )
@@ -429,7 +431,7 @@ class TestReloadRequired:
         health check flips is_loaded; keying on that reported no reload while
         the process was already coming up on the pre-save placement."""
         assert (
-            self._required(False, True, (True, False), monkeypatch, is_loaded = False, is_active = True)
+            self._required(False, True, (True, False), monkeypatch, is_loaded=False, is_active=True)
             is True
         )
 
@@ -481,7 +483,7 @@ class TestManagedFlagIsNotReset:
     )
     def test_nothing_after_the_managed_flag_can_reset_it(self, policy, load_mode, preset):
         managed, extras = policy(
-            True, False, preset + ["--temp", "0.7"], supports_load_mode = load_mode
+            True, False, preset + ["--temp", "0.7"], supports_load_mode=load_mode
         )
         assert managed  # residency emitted something
         # The resolved state of the full argv must still be mlock.
@@ -584,7 +586,7 @@ class TestCacheInvalidationRace:
         reading = threading.Event()
         slow = {}
 
-        def get_app_setting(key, fallback = None):
+        def get_app_setting(key, fallback=None):
             # SELECT first, then stall, so the reader holds the OLD value.
             value = store.get(key, fallback)
             if slow.get("ident") == threading.get_ident():
@@ -601,10 +603,10 @@ class TestCacheInvalidationRace:
             slow["ident"] = threading.get_ident()
             mm.get_keep_resident()
 
-        thread = threading.Thread(target = reader)
+        thread = threading.Thread(target=reader)
         thread.start()
         assert reading.wait(5), "reader never reached the DB"
-        mm.set_model_memory_settings(keep_resident = True)
+        mm.set_model_memory_settings(keep_resident=True)
         gate.set()
         thread.join(5)
         assert not thread.is_alive()
@@ -617,7 +619,7 @@ class TestCacheInvalidationRace:
         mm._cache.clear()
         calls = []
 
-        def get_app_setting(key, fallback = None):
+        def get_app_setting(key, fallback=None):
             calls.append(key)
             return True
 
@@ -637,8 +639,8 @@ class TestHostResidencyGate:
             True,
             False,
             ["--temp", "0.7"],
-            supports_load_mode = True,
-            weights_in_host_memory = False,
+            supports_load_mode=True,
+            weights_in_host_memory=False,
         )
         assert managed == []
         assert out == ["--temp", "0.7"]
@@ -648,22 +650,22 @@ class TestHostResidencyGate:
             True,
             False,
             ["--temp", "0.7"],
-            supports_load_mode = True,
-            weights_in_host_memory = True,
+            supports_load_mode=True,
+            weights_in_host_memory=True,
         )
         assert managed == ["--load-mode", "mmap+mlock"]
         assert out == ["--temp", "0.7"]
 
     def test_the_gate_does_not_leak_into_the_legacy_flag_path(self, policy):
-        managed, _ = policy(True, False, [], supports_load_mode = False, weights_in_host_memory = False)
+        managed, _ = policy(True, False, [], supports_load_mode=False, weights_in_host_memory=False)
         assert managed == []
-        managed, _ = policy(True, False, [], supports_load_mode = False, weights_in_host_memory = True)
+        managed, _ = policy(True, False, [], supports_load_mode=False, weights_in_host_memory=True)
         assert managed == ["--mlock"]
 
     def test_no_ram_reserve_still_strips_a_user_flag_off_a_discrete_gpu(self, policy):
         # The gate only suppresses what the policy ADDS. Removal is unchanged.
         managed, out = policy(
-            False, True, ["--mlock", "--temp", "0.7"], weights_in_host_memory = False
+            False, True, ["--mlock", "--temp", "0.7"], weights_in_host_memory=False
         )
         assert managed == []
         assert out == ["--temp", "0.7"]
@@ -671,7 +673,7 @@ class TestHostResidencyGate:
     def test_both_off_is_still_a_pass_through_either_way(self, policy):
         for host in (True, False):
             extras = ["--mlock", "--no-mmap", "--temp", "0.7"]
-            managed, out = policy(False, False, extras, weights_in_host_memory = host)
+            managed, out = policy(False, False, extras, weights_in_host_memory=host)
             assert managed == []
             assert out == extras
 
@@ -692,7 +694,7 @@ class TestRacingReadReturnsTheNewValue:
         slow = {}
         stalled = {"done": False}
 
-        def get_app_setting(key, fallback = None):
+        def get_app_setting(key, fallback=None):
             value = store.get(key, fallback)
             # Stall the first read only; the retry must see the committed write.
             if slow.get("ident") == threading.get_ident() and not stalled["done"]:
@@ -713,10 +715,10 @@ class TestRacingReadReturnsTheNewValue:
             slow["ident"] = threading.get_ident()
             seen["value"] = mm.get_keep_resident()
 
-        thread = threading.Thread(target = reader)
+        thread = threading.Thread(target=reader)
         thread.start()
         assert reading.wait(5), "reader never reached the DB"
-        mm.set_model_memory_settings(keep_resident = True)
+        mm.set_model_memory_settings(keep_resident=True)
         gate.set()
         thread.join(5)
         assert not thread.is_alive()
@@ -729,7 +731,7 @@ class TestRacingReadReturnsTheNewValue:
         mm._cache.clear()
         reads = []
 
-        def get_app_setting(key, fallback = None):
+        def get_app_setting(key, fallback=None):
             reads.append(key)
             mm._invalidate(key)  # a write lands during every read
             return True
@@ -743,7 +745,7 @@ class TestRacingReadReturnsTheNewValue:
 
         mm._cache.clear()
 
-        def boom(key, fallback = None):
+        def boom(key, fallback=None):
             raise RuntimeError("database is locked")
 
         monkeypatch.setattr("storage.studio_db.get_app_setting", boom)
@@ -819,8 +821,9 @@ class TestFullOffloadDetection:
     has to derive manual mode and a user -ngl for itself."""
 
     @staticmethod
-    def _backend(n_layers, n_cpu_moe = 0):
+    def _backend(n_layers, n_cpu_moe=0):
         from core.inference.llama_cpp import LlamaCppBackend
+
         return type(
             "_B",
             (),
@@ -836,12 +839,12 @@ class TestFullOffloadDetection:
         n_layers,
         mode,
         layers,
-        extras = None,
-        n_cpu_moe = 0,
+        extras=None,
+        n_cpu_moe=0,
     ):
         backend = self._backend(n_layers, n_cpu_moe)
         return backend._offloads_every_layer(
-            gpu_memory_mode = mode, gpu_layers = layers, extra_args = extras
+            gpu_memory_mode=mode, gpu_layers=layers, extra_args=extras
         )
 
     def test_manual_at_the_pickers_maximum_is_a_full_offload(self):
@@ -854,7 +857,7 @@ class TestFullOffloadDetection:
         assert self._check(32, "manual", 0) is False
 
     def test_manual_with_cpu_experts_is_not_a_full_offload(self):
-        assert self._check(32, "manual", 33, n_cpu_moe = 4) is False
+        assert self._check(32, "manual", 33, n_cpu_moe=4) is False
 
     def test_a_user_ngl_override_counts_in_auto_mode(self):
         assert self._check(32, "auto", None, ["-ngl", "99"]) is True
@@ -1019,7 +1022,7 @@ class TestMlockActiveReflectsWhatWillActuallyBePassed:
     def _backend(
         loaded,
         mlock_applicable,
-        state = None,
+        state=None,
     ):
         # A host-resident load with residency on carries the lock, so its state
         # says so; a gated one carries nothing. Keeping the two in step matters,
@@ -1068,9 +1071,9 @@ class TestHostMemoryGate:
     def _gate(
         monkeypatch,
         *,
-        apple = False,
-        amd = False,
-        vulkan_igpu = False,
+        apple=False,
+        amd=False,
+        vulkan_igpu=False,
         **kwargs,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
@@ -1079,12 +1082,12 @@ class TestHostMemoryGate:
 
         monkeypatch.setattr(utils.hardware, "is_apple_silicon", lambda: apple)
         monkeypatch.setattr(
-            LlamaCppBackend, "_amd_apu_wants_unified_memory", staticmethod(lambda idx = None: amd)
+            LlamaCppBackend, "_amd_apu_wants_unified_memory", staticmethod(lambda idx=None: amd)
         )
         monkeypatch.setattr(
             LlamaCppBackend,
             "_vulkan_targets_are_igpus",
-            staticmethod(lambda binary, idx = None: vulkan_igpu),
+            staticmethod(lambda binary, idx=None: vulkan_igpu),
         )
         backend = type(
             "_B",
@@ -1094,8 +1097,8 @@ class TestHostMemoryGate:
                 "_n_cpu_moe": 0,
                 "_weights_in_host_memory": LlamaCppBackend._weights_in_host_memory,
                 "_offloads_every_layer": LlamaCppBackend._offloads_every_layer,
-                "_amd_apu_wants_unified_memory": staticmethod(lambda idx = None: amd),
-                "_vulkan_targets_are_igpus": staticmethod(lambda binary, idx = None: vulkan_igpu),
+                "_amd_apu_wants_unified_memory": staticmethod(lambda idx=None: amd),
+                "_vulkan_targets_are_igpus": staticmethod(lambda binary, idx=None: vulkan_igpu),
             },
         )()
         params = {
@@ -1108,24 +1111,24 @@ class TestHostMemoryGate:
         return backend._weights_in_host_memory(**params)
 
     def test_a_discrete_full_offload_is_not_host_resident(self, monkeypatch):
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True) is False
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True) is False
 
     def test_a_partial_offload_is_host_resident(self, monkeypatch):
-        assert self._gate(monkeypatch, fully_gpu_offloaded = False) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=False) is True
 
     @pytest.mark.parametrize("flag", ["-ncmoe", "--n-cpu-moe", "-cmoe", "--cpu-moe"])
     def test_cpu_moe_extras_survive_an_auto_full_offload(self, monkeypatch, flag):
         """The auto branch sets fully_gpu_offloaded, but an extra that pins
         experts on the CPU still leaves weights in RAM, so it must not be
         short-circuited past."""
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = [flag, "4"]) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=[flag, "4"]) is True
 
     def test_a_tensor_override_survives_an_auto_full_offload(self, monkeypatch):
         assert (
             self._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                extra_args = ["--override-tensor", "blk.*=CPU"],
+                fully_gpu_offloaded=True,
+                extra_args=["--override-tensor", "blk.*=CPU"],
             )
             is True
         )
@@ -1137,37 +1140,37 @@ class TestHostMemoryGate:
     ):
         """Auto keeps the user's -ngl and appends it after ours, and llama.cpp is
         last-wins, so the prediction is void and the weights are in RAM."""
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = [flag, count]) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=[flag, count]) is True
 
     @pytest.mark.parametrize("extras", [["--fit", "on"], ["--fit=on"], ["-fit", "1"]])
     def test_a_pass_through_fit_on_beats_the_auto_full_offload_prediction(
         self, monkeypatch, extras
     ):
         """--fit on re-enables the fitter, which may leave a prefix on the CPU."""
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = extras) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=extras) is True
 
     @pytest.mark.parametrize("extras", [["--fit", "off"], ["-fit", "off"], ["--fit=off"]])
     def test_a_pass_through_fit_off_leaves_the_prediction_alone(self, monkeypatch, extras):
         """It restates what we already pass, and a disabled fitter cannot move
         anything to the CPU, so pinning here is the redundant host copy."""
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = extras) is False
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=extras) is False
 
     def test_the_fit_value_is_last_wins(self, monkeypatch):
         on_last = ["--fit", "off", "--fit", "on"]
         off_last = ["--fit", "on", "--fit", "off"]
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = on_last) is True
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = off_last) is False
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=on_last) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=off_last) is False
 
     def test_a_pass_through_full_offload_still_skips_the_lock(self, monkeypatch):
         """The guard must not over-fire: -ngl above the block count is a real
         full offload, so page-locking a redundant host copy stays skipped."""
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = ["-ngl", "33"]) is False
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=["-ngl", "33"]) is False
 
     def test_apple_silicon_is_always_host_resident(self, monkeypatch):
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, apple = True) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, apple=True) is True
 
     def test_an_amd_unified_apu_is_always_host_resident(self, monkeypatch):
-        assert self._gate(monkeypatch, fully_gpu_offloaded = True, amd = True) is True
+        assert self._gate(monkeypatch, fully_gpu_offloaded=True, amd=True) is True
 
     def test_a_vulkan_igpu_is_host_resident(self, monkeypatch):
         """An iGPU's reported VRAM is shared system RAM, which the repo already
@@ -1175,9 +1178,9 @@ class TestHostMemoryGate:
         assert (
             self._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                is_vulkan_backend = True,
-                vulkan_igpu = True,
+                fully_gpu_offloaded=True,
+                is_vulkan_backend=True,
+                vulkan_igpu=True,
             )
             is True
         )
@@ -1186,9 +1189,9 @@ class TestHostMemoryGate:
         assert (
             self._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                is_vulkan_backend = True,
-                vulkan_igpu = False,
+                fully_gpu_offloaded=True,
+                is_vulkan_backend=True,
+                vulkan_igpu=False,
             )
             is False
         )
@@ -1198,9 +1201,9 @@ class TestHostMemoryGate:
         assert (
             self._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                is_vulkan_backend = False,
-                vulkan_igpu = True,
+                fully_gpu_offloaded=True,
+                is_vulkan_backend=False,
+                vulkan_igpu=True,
             )
             is False
         )
@@ -1210,8 +1213,9 @@ class TestVulkanIgpuDetection:
     @staticmethod
     def _probe(monkeypatch, rows):
         from core.inference.llama_cpp import LlamaCppBackend
+
         monkeypatch.setattr(
-            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary = None: rows)
+            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary=None: rows)
         )
         return LlamaCppBackend._vulkan_targets_are_igpus
 
@@ -1250,7 +1254,7 @@ class TestVulkanIgpuDetection:
     def test_a_raising_probe_never_fails_the_load(self, monkeypatch):
         from core.inference.llama_cpp import LlamaCppBackend
 
-        def boom(binary = None):
+        def boom(binary=None):
             raise OSError("no vulkan loader")
 
         monkeypatch.setattr(LlamaCppBackend, "_run_vulkan_probe", staticmethod(boom))
@@ -1353,7 +1357,7 @@ class TestNonReservingLoadModesSurvive:
     def test_keep_resident_still_strips_every_mode(self, policy):
         """The mlock branch is unchanged: a trailing mode of ANY value resets
         the whole thing and would drop the managed lock."""
-        managed, out = policy(True, False, ["--load-mode", "dio"], supports_load_mode = True)
+        managed, out = policy(True, False, ["--load-mode", "dio"], supports_load_mode=True)
         assert managed == ["--load-mode", "mmap+mlock"]
         assert out == []
 
@@ -1389,30 +1393,30 @@ class TestPreSpawnWindow:
         import routes.settings as rs
 
         backend = _fake_backend(
-            is_active = False,
-            _memory_pending_launch = (True, False),
-            _memory_state = (True, False),
-            _memory_policy_active = True,
+            is_active=False,
+            _memory_pending_launch=(True, False),
+            _memory_state=(True, False),
+            _memory_policy_active=True,
         )
-        _install_backend(monkeypatch, backend, keep = False, no_res = True)
+        _install_backend(monkeypatch, backend, keep=False, no_res=True)
         assert rs._model_memory_reload_required() is True
 
     def test_nothing_running_still_never_asks(self, monkeypatch):
         import routes.settings as rs
 
-        backend = _fake_backend(_memory_state = (True, False), _memory_policy_active = True)
-        _install_backend(monkeypatch, backend, keep = False, no_res = True)
+        backend = _fake_backend(_memory_state=(True, False), _memory_policy_active=True)
+        _install_backend(monkeypatch, backend, keep=False, no_res=True)
         assert rs._model_memory_reload_required() is False
 
     def test_a_pending_launch_that_matches_needs_no_reload(self, monkeypatch):
         import routes.settings as rs
 
         backend = _fake_backend(
-            _memory_pending_launch = (True, False),
-            _memory_state = (True, False),
-            _memory_policy_active = True,
+            _memory_pending_launch=(True, False),
+            _memory_state=(True, False),
+            _memory_policy_active=True,
         )
-        _install_backend(monkeypatch, backend, keep = True, no_res = False)
+        _install_backend(monkeypatch, backend, keep=True, no_res=False)
         assert rs._model_memory_reload_required() is False
 
 
@@ -1423,7 +1427,7 @@ class TestMlockActiveReporting:
     def test_with_nothing_loaded_it_reports_the_intent(self, monkeypatch):
         import routes.settings as rs
 
-        _install_backend(monkeypatch, _fake_backend(), keep = True, no_res = False)
+        _install_backend(monkeypatch, _fake_backend(), keep=True, no_res=False)
         body = rs._model_memory_response()
         assert body.mlock_active is True
         assert body.memlock_limit_bytes == mm_settings.memlock_limit_bytes()
@@ -1433,8 +1437,8 @@ class TestMlockActiveReporting:
         about ulimit -l would be noise."""
         import routes.settings as rs
 
-        backend = _fake_backend(is_active = True, is_loaded = True, _memory_state = None)
-        _install_backend(monkeypatch, backend, keep = True, no_res = False)
+        backend = _fake_backend(is_active=True, is_loaded=True, _memory_state=None)
+        _install_backend(monkeypatch, backend, keep=True, no_res=False)
         body = rs._model_memory_response()
         assert body.mlock_active is False
         assert body.memlock_limit_bytes is None
@@ -1444,19 +1448,19 @@ class TestMlockActiveReporting:
         import routes.settings as rs
 
         backend = _fake_backend(
-            is_active = True,
-            is_loaded = True,
-            _memory_state = (False, False),
-            _memory_mlock_applicable = False,
+            is_active=True,
+            is_loaded=True,
+            _memory_state=(False, False),
+            _memory_mlock_applicable=False,
         )
-        _install_backend(monkeypatch, backend, keep = True, no_res = False)
+        _install_backend(monkeypatch, backend, keep=True, no_res=False)
         assert rs._model_memory_response().mlock_active is False
 
     def test_a_lock_that_was_taken_reports_active(self, monkeypatch):
         import routes.settings as rs
 
-        backend = _fake_backend(is_active = True, is_loaded = True, _memory_state = (True, False))
-        _install_backend(monkeypatch, backend, keep = True, no_res = False)
+        backend = _fake_backend(is_active=True, is_loaded=True, _memory_state=(True, False))
+        _install_backend(monkeypatch, backend, keep=True, no_res=False)
         body = rs._model_memory_response()
         assert body.mlock_active is True
         assert body.memlock_limit_bytes == mm_settings.memlock_limit_bytes()
@@ -1467,19 +1471,19 @@ class TestMlockActiveReporting:
         import routes.settings as rs
 
         backend = _fake_backend(
-            is_active = True,
-            is_loaded = True,
-            _memory_state = resolve_effective_memory_state(["--mlock"], {}),
-            _memory_mlock_applicable = False,
+            is_active=True,
+            is_loaded=True,
+            _memory_state=resolve_effective_memory_state(["--mlock"], {}),
+            _memory_mlock_applicable=False,
         )
-        _install_backend(monkeypatch, backend, keep = True, no_res = False)
+        _install_backend(monkeypatch, backend, keep=True, no_res=False)
         assert rs._model_memory_response().mlock_active is True
 
     def test_no_reserve_still_vetoes_it_outright(self, monkeypatch):
         import routes.settings as rs
 
-        backend = _fake_backend(is_active = True, is_loaded = True, _memory_state = (True, False))
-        _install_backend(monkeypatch, backend, keep = True, no_res = True)
+        backend = _fake_backend(is_active=True, is_loaded=True, _memory_state=(True, False))
+        _install_backend(monkeypatch, backend, keep=True, no_res=True)
         assert rs._model_memory_response().mlock_active is False
 
 
@@ -1488,7 +1492,7 @@ class TestFitOnRetryReArmsResidency:
     suppressed the lock turns out to be wrong, so the retry must re-apply it."""
 
     @staticmethod
-    def _retry_argv(original, *, supports_load_mode = True):
+    def _retry_argv(original, *, supports_load_mode=True):
         """What the fallback builds: flip --fit, then append the managed flag.
 
         Appending (rather than inserting before the extras) is measured against
@@ -1517,7 +1521,7 @@ class TestFitOnRetryReArmsResidency:
 
     def test_the_legacy_flag_path_re_arms_too(self):
         original = ["--fit", "off"]
-        retry = self._retry_argv(original, supports_load_mode = False)
+        retry = self._retry_argv(original, supports_load_mode=False)
         assert resolve_effective_memory_state(retry, {}) == (True, False)
 
     def test_the_re_armed_launch_satisfies_residency(self, monkeypatch):
@@ -1547,13 +1551,14 @@ class TestTheRetryCanReadTheGate:
         import ast
 
         src = Path(__file__).resolve().parent.parent / "core" / "inference" / "llama_cpp.py"
-        for node in ast.walk(ast.parse(src.read_text(encoding = "utf-8"))):
+        for node in ast.walk(ast.parse(src.read_text(encoding="utf-8"))):
             if isinstance(node, ast.FunctionDef) and node.name == "load_model":
                 return node
         raise AssertionError("load_model not found")
 
     def test_every_writer_of_the_gate_can_also_read_it(self):
         import ast
+
         outer = self._load_model_ast()
         for inner in ast.walk(outer):
             if not isinstance(inner, ast.FunctionDef) or inner is outer:
@@ -1597,6 +1602,7 @@ class TestInheritedCpuPlacement:
     )
     def test_the_predicate(self, env, expected):
         from core.inference.llama_cpp import _env_places_tensors_on_cpu
+
         assert _env_places_tensors_on_cpu(env) is expected
 
     def test_it_is_the_same_predicate_the_pipeline_check_uses(self):
@@ -1621,14 +1627,14 @@ class TestInheritedCpuPlacement:
     def test_an_inherited_placement_keeps_a_full_offload_host_resident(self, monkeypatch, env):
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = None, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=None, env=env
             )
             is True
         )
 
     def test_an_unset_environment_leaves_the_gate_alone(self, monkeypatch):
         assert (
-            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = None, env = {})
+            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=None, env={})
             is False
         )
 
@@ -1666,6 +1672,7 @@ class TestCpuMoeCountIsParsed:
     )
     def test_the_predicate(self, extras, expected):
         from core.inference.llama_cpp import _args_place_tensors_on_cpu
+
         assert _args_place_tensors_on_cpu(extras) is expected
 
     @pytest.mark.parametrize(
@@ -1679,6 +1686,7 @@ class TestCpuMoeCountIsParsed:
     )
     def test_the_env_predicate(self, env, expected):
         from core.inference.llama_cpp import _env_places_tensors_on_cpu
+
         assert _env_places_tensors_on_cpu(env) is expected
 
     def test_it_is_the_same_predicate_the_pipeline_check_uses(self):
@@ -1703,7 +1711,7 @@ class TestCpuMoeCountIsParsed:
     def test_a_zero_count_no_longer_forces_a_page_lock(self, monkeypatch):
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = ["--n-cpu-moe", "0"]
+                monkeypatch, fully_gpu_offloaded=True, extra_args=["--n-cpu-moe", "0"]
             )
             is False
         )
@@ -1711,7 +1719,7 @@ class TestCpuMoeCountIsParsed:
     def test_a_real_count_still_does(self, monkeypatch):
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = ["--n-cpu-moe", "4"]
+                monkeypatch, fully_gpu_offloaded=True, extra_args=["--n-cpu-moe", "4"]
             )
             is True
         )
@@ -1738,7 +1746,7 @@ class TestManualModeIgnoresClearedEnv:
         assert env == {}, "the launch clears these, so the gate must not see them"
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = None, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=None, env=env
             )
             is False
         )
@@ -1750,7 +1758,7 @@ class TestManualModeIgnoresClearedEnv:
         assert env == parent
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = None, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=None, env=env
             )
             is True
         )
@@ -1765,7 +1773,7 @@ class TestManualModeIgnoresClearedEnv:
         assert env == {"LLAMA_ARG_OVERRIDE_TENSOR": "blk.*=CPU"}
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = None, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=None, env=env
             )
             is True
         )
@@ -1826,16 +1834,16 @@ class TestADefaultLaunchRecordsItsApplicability:
     def test_the_bookkeeping_call_skips_the_vulkan_probe(self, monkeypatch):
         from core.inference.llama_cpp import LlamaCppBackend
 
-        def boom(binary = None):
+        def boom(binary=None):
             raise AssertionError("the probe must not run for a bookkeeping call")
 
         monkeypatch.setattr(LlamaCppBackend, "_run_vulkan_probe", staticmethod(boom))
         assert (
             TestHostMemoryGate._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                is_vulkan_backend = True,
-                probe_vulkan = False,
+                fully_gpu_offloaded=True,
+                is_vulkan_backend=True,
+                probe_vulkan=False,
             )
             is True
         )
@@ -1844,9 +1852,9 @@ class TestADefaultLaunchRecordsItsApplicability:
         assert (
             TestHostMemoryGate._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                is_vulkan_backend = False,
-                probe_vulkan = False,
+                fully_gpu_offloaded=True,
+                is_vulkan_backend=False,
+                probe_vulkan=False,
             )
             is False
         )
@@ -1865,7 +1873,7 @@ class TestPairedWritesAreInvalidatedTogether:
 
         store: dict = {}
         monkeypatch.setattr(
-            "storage.studio_db.get_app_setting", lambda key, default = None: store.get(key, default)
+            "storage.studio_db.get_app_setting", lambda key, default=None: store.get(key, default)
         )
         monkeypatch.setattr(
             "storage.studio_db.upsert_app_settings", lambda updates: store.update(updates)
@@ -1874,7 +1882,7 @@ class TestPairedWritesAreInvalidatedTogether:
         real = mm._invalidate
         monkeypatch.setattr(mm, "_invalidate", lambda *keys: (calls.append(keys), real(*keys))[1])
 
-        mm.set_model_memory_settings(keep_resident = True, no_ram_reserve = True)
+        mm.set_model_memory_settings(keep_resident=True, no_ram_reserve=True)
 
         assert len(calls) == 1, f"the pair must be dropped in one call, got {calls}"
         assert set(calls[0]) == {mm.KEEP_RESIDENT_SETTING_KEY, mm.NO_RAM_RESERVE_SETTING_KEY}
@@ -1891,7 +1899,7 @@ class TestPairedWritesAreInvalidatedTogether:
         import ast
 
         src = Path(__file__).resolve().parent.parent / "utils" / "model_memory_settings.py"
-        tree = ast.parse(src.read_text(encoding = "utf-8"))
+        tree = ast.parse(src.read_text(encoding="utf-8"))
         setter = next(
             n
             for n in ast.walk(tree)
@@ -1924,7 +1932,7 @@ class TestThePolicyReadsOneSnapshot:
             mm.NO_RAM_RESERVE_SETTING_KEY: False,
         }
         monkeypatch.setattr(
-            "storage.studio_db.get_app_setting", lambda key, default = None: store.get(key, default)
+            "storage.studio_db.get_app_setting", lambda key, default=None: store.get(key, default)
         )
         monkeypatch.setattr(
             "storage.studio_db.upsert_app_settings", lambda updates: store.update(updates)
@@ -1955,7 +1963,7 @@ class TestThePolicyReadsOneSnapshot:
         import ast
 
         src = Path(__file__).resolve().parent.parent / "core" / "inference" / "llama_server_args.py"
-        tree = ast.parse(src.read_text(encoding = "utf-8"))
+        tree = ast.parse(src.read_text(encoding="utf-8"))
         fn = next(
             n
             for n in ast.walk(tree)
@@ -1982,11 +1990,11 @@ class TestTheGateDoesNotOverFire:
     def test_a_zero_cpu_moe_count_places_nothing(self, monkeypatch, flag):
         """_args_place_tensors_on_cpu already treats 0 as a no-op; the offload
         proof used flag presence, so the count flipped an all-GPU launch."""
-        assert TestHostMemoryGate._gate(monkeypatch, extra_args = ["-ngl", "-1", flag, "0"]) is False
+        assert TestHostMemoryGate._gate(monkeypatch, extra_args=["-ngl", "-1", flag, "0"]) is False
 
     @pytest.mark.parametrize("extras", [["-cmoe"], ["--n-cpu-moe", "4"], ["-ot", "exps=CPU"]])
     def test_real_cpu_placement_still_counts(self, monkeypatch, extras):
-        assert TestHostMemoryGate._gate(monkeypatch, extra_args = ["-ngl", "-1", *extras]) is True
+        assert TestHostMemoryGate._gate(monkeypatch, extra_args=["-ngl", "-1", *extras]) is True
 
     def test_the_rocm_apu_probe_is_not_consulted_under_vulkan(self, monkeypatch):
         """gpu_indices are Vulkan ordinals there, which the ROCm helper would
@@ -1994,16 +2002,16 @@ class TestTheGateDoesNotOverFire:
         assert (
             TestHostMemoryGate._gate(
                 monkeypatch,
-                extra_args = ["-ngl", "-1"],
-                is_vulkan_backend = True,
-                amd = True,
-                vulkan_igpu = False,
+                extra_args=["-ngl", "-1"],
+                is_vulkan_backend=True,
+                amd=True,
+                vulkan_igpu=False,
             )
             is False
         )
 
     def test_the_rocm_apu_probe_still_decides_off_vulkan(self, monkeypatch):
-        assert TestHostMemoryGate._gate(monkeypatch, extra_args = ["-ngl", "-1"], amd = True) is True
+        assert TestHostMemoryGate._gate(monkeypatch, extra_args=["-ngl", "-1"], amd=True) is True
 
 
 class TestResidencyDoesNotBlockReload:
@@ -2035,6 +2043,7 @@ class TestResidencyDoesNotBlockReload:
 
     def test_but_idle_unload_is_still_configured(self, idle_env):
         import utils.openai_auto_switch_settings as aus
+
         idle_env(True)
         assert aus.idle_unload_is_configured() is True
 
@@ -2088,9 +2097,9 @@ class TestResidencyDoesNotBlockReload:
         for stored in (None, 0, 300):
             for env in (None, 0, 300):
                 for switch in (False, True):
-                    monkeypatch.setattr(aus, "_stored_idle_seconds", lambda s = stored: s)
-                    monkeypatch.setattr(aus, "_env_idle_seconds", lambda e = env: e)
-                    monkeypatch.setattr(aus, "get_openai_auto_switch_enabled", lambda v = switch: v)
+                    monkeypatch.setattr(aus, "_stored_idle_seconds", lambda s=stored: s)
+                    monkeypatch.setattr(aus, "_env_idle_seconds", lambda e=env: e)
+                    monkeypatch.setattr(aus, "get_openai_auto_switch_enabled", lambda v=switch: v)
                     assert aus.idle_unload_is_configured() == (
                         aus.get_auto_unload_idle_seconds() > 0
                     ), (stored, env, switch)
@@ -2123,21 +2132,21 @@ class TestACpuDevicePinIsHostResident:
     )
     def test_a_cpu_pin_beats_the_offload_prediction(self, monkeypatch, extras):
         assert (
-            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = extras)
+            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=extras)
             is True
         )
 
     @pytest.mark.parametrize("extras", [["--device", "CUDA0"], ["--device", "CUDA0,cpu"]])
     def test_a_pin_naming_a_gpu_still_skips_the_lock(self, monkeypatch, extras):
         assert (
-            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = extras)
+            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=extras)
             is False
         )
 
     def test_an_unreadable_pin_answers_conservatively(self, monkeypatch):
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = ["--device", ""]
+                monkeypatch, fully_gpu_offloaded=True, extra_args=["--device", ""]
             )
             is True
         )
@@ -2148,7 +2157,7 @@ class TestACpuDevicePinIsHostResident:
     def test_the_inherited_env_pin_counts_too(self, monkeypatch, value, expected):
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, env = {"LLAMA_ARG_DEVICE": value}
+                monkeypatch, fully_gpu_offloaded=True, env={"LLAMA_ARG_DEVICE": value}
             )
             is expected
         )
@@ -2159,9 +2168,9 @@ class TestACpuDevicePinIsHostResident:
         assert (
             TestHostMemoryGate._gate(
                 monkeypatch,
-                fully_gpu_offloaded = True,
-                extra_args = ["--device", "CUDA0"],
-                env = {"LLAMA_ARG_DEVICE": "none"},
+                fully_gpu_offloaded=True,
+                extra_args=["--device", "CUDA0"],
+                env={"LLAMA_ARG_DEVICE": "none"},
             )
             is False
         )
@@ -2187,31 +2196,31 @@ class TestAGpuIdsPinOverridesADeviceFlag:
         "extras", [["--device", "cpu"], ["--device", "none"], ["-dev", "cpu"], ["--device=none"]]
     )
     def test_a_pin_makes_the_gate_ignore_the_device_flag(self, monkeypatch, extras):
-        extra_args, env = self._child(extras, None, gpu_ids = [0])
+        extra_args, env = self._child(extras, None, gpu_ids=[0])
         assert extra_args == [], "the launch drops these, so the gate must not see them"
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = extra_args, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=extra_args, env=env
             )
             is False
         )
 
     def test_a_pin_drops_the_env_twin_too(self, monkeypatch):
-        extra_args, env = self._child(None, {"LLAMA_ARG_DEVICE": "none"}, gpu_ids = [0])
+        extra_args, env = self._child(None, {"LLAMA_ARG_DEVICE": "none"}, gpu_ids=[0])
         assert env == {}
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = extra_args, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=extra_args, env=env
             )
             is False
         )
 
     def test_without_a_pin_the_device_flag_still_counts(self, monkeypatch):
-        extra_args, env = self._child(["--device", "cpu"], None, gpu_ids = None)
+        extra_args, env = self._child(["--device", "cpu"], None, gpu_ids=None)
         assert extra_args == ["--device", "cpu"]
         assert (
             TestHostMemoryGate._gate(
-                monkeypatch, fully_gpu_offloaded = True, extra_args = extra_args, env = env
+                monkeypatch, fully_gpu_offloaded=True, extra_args=extra_args, env=env
             )
             is True
         )
@@ -2219,11 +2228,11 @@ class TestAGpuIdsPinOverridesADeviceFlag:
     def test_a_pin_leaves_the_other_placement_extras_alone(self, monkeypatch):
         """Only the device family is stripped, so -ot still forces host residency."""
         extra_args, _env = self._child(
-            ["--device", "cpu", "-ot", r"\.ffn_.*=CPU"], None, gpu_ids = [0]
+            ["--device", "cpu", "-ot", r"\.ffn_.*=CPU"], None, gpu_ids=[0]
         )
         assert extra_args == ["-ot", r"\.ffn_.*=CPU"]
         assert (
-            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded = True, extra_args = extra_args)
+            TestHostMemoryGate._gate(monkeypatch, fully_gpu_offloaded=True, extra_args=extra_args)
             is True
         )
 
@@ -2261,28 +2270,28 @@ class TestFitOffRetryDropsTheLock:
         managed = ["--load-mode", "mmap+mlock"]
         original = [*managed, "--fit", "on", "--temp", "0.7"]
         assert resolve_effective_memory_state(original, {}) == (True, False)
-        retry = self._retry_argv(original, managed, drops = True)
+        retry = self._retry_argv(original, managed, drops=True)
         assert resolve_effective_memory_state(retry, {}) == (False, False)
         assert retry == ["--fit", "on", "--temp", "0.7", "--fit", "off"]
 
     def test_the_legacy_flag_path_drops_too(self):
         managed = ["--mlock"]
         original = [*managed, "--fit", "on"]
-        retry = self._retry_argv(original, managed, drops = True)
+        retry = self._retry_argv(original, managed, drops=True)
         assert resolve_effective_memory_state(retry, {}) == (False, False)
 
     def test_a_user_mlock_in_the_extras_survives(self):
         """Managed flags go in before the user's, so only the first run is ours."""
         managed = ["--mlock"]
         original = [*managed, "--fit", "on", "--mlock"]
-        retry = self._retry_argv(original, managed, drops = True)
+        retry = self._retry_argv(original, managed, drops=True)
         assert retry == ["--fit", "on", "--mlock", "--fit", "off"]
         assert resolve_effective_memory_state(retry, {}) == (True, False)
 
     def test_staying_host_resident_keeps_the_lock(self):
         managed = ["--load-mode", "mmap+mlock"]
         original = [*managed, "--fit", "on"]
-        retry = self._retry_argv(original, managed, drops = False)
+        retry = self._retry_argv(original, managed, drops=False)
         assert resolve_effective_memory_state(retry, {}) == (True, False)
 
     def test_the_dropped_launch_does_not_demand_a_reload(self, monkeypatch):
@@ -2294,7 +2303,7 @@ class TestFitOffRetryDropsTheLock:
         monkeypatch.setattr(mm, "get_no_ram_reserve", lambda: False)
         managed = ["--load-mode", "mmap+mlock"]
         state = resolve_effective_memory_state(
-            self._retry_argv([*managed, "--fit", "on"], managed, drops = True), {}
+            self._retry_argv([*managed, "--fit", "on"], managed, drops=True), {}
         )
         assert memory_state_satisfies_settings(state, True, False) is True
 
@@ -2337,11 +2346,11 @@ class TestFitOffRetryClearsPolicyActivity:
         return memory_state_satisfies_settings((False, False), policy_active, False)
 
     def test_an_untouched_child_is_left_alone(self, monkeypatch):
-        assert self._satisfied(monkeypatch, policy_active = False) is True
+        assert self._satisfied(monkeypatch, policy_active=False) is True
 
     def test_a_still_touched_child_is_relaunched(self, monkeypatch):
         """A scrub or a strip survives the drop, so that one must still reload."""
-        assert self._satisfied(monkeypatch, policy_active = True) is False
+        assert self._satisfied(monkeypatch, policy_active=True) is False
 
     def test_the_launch_recomputes_activity_without_the_managed_flag(self):
         """Source check: the retry must reuse the non-managed half of the launch
@@ -2386,7 +2395,7 @@ class TestNoDeadMemoryBookkeeping:
 
         written = {
             a
-            for a in attrs(ast.parse(target.read_text(encoding = "utf-8")), ast.Store)
+            for a in attrs(ast.parse(target.read_text(encoding="utf-8")), ast.Store)
             if a.startswith("_memory_") or a.endswith("_mlock_enabled")
         }
         assert written, "no markers found; the scan is looking in the wrong place"
@@ -2394,7 +2403,7 @@ class TestNoDeadMemoryBookkeeping:
         read: set[str] = set()
         for path in backend.rglob("*.py"):
             try:
-                tree = ast.parse(path.read_text(encoding = "utf-8"))
+                tree = ast.parse(path.read_text(encoding="utf-8"))
             except (SyntaxError, UnicodeDecodeError, OSError):
                 continue
             read |= attrs(tree, ast.Load)
@@ -2424,28 +2433,28 @@ class TestAnActiveFitterVoidsTheAllLayersVerdict:
         from core.inference.llama_cpp import LlamaCppBackend
 
         backend = LlamaCppBackend.__new__(LlamaCppBackend)
-        monkeypatch.setattr(type(backend), "n_layers", property(lambda self: 32), raising = False)
+        monkeypatch.setattr(type(backend), "n_layers", property(lambda self: 32), raising=False)
         backend._n_cpu_moe = 0
         return backend._offloads_every_layer(
-            gpu_memory_mode = "auto",
-            gpu_layers = None,
-            extra_args = extras,
-            fit_active = fit_active,
+            gpu_memory_mode="auto",
+            gpu_layers=None,
+            extra_args=extras,
+            fit_active=fit_active,
         )
 
     def test_minus_one_under_an_active_fitter_is_not_full_offload(self, monkeypatch):
-        assert self._all_on_gpu(monkeypatch, ["-ngl", "-1"], fit_active = True) is False
+        assert self._all_on_gpu(monkeypatch, ["-ngl", "-1"], fit_active=True) is False
 
     def test_minus_one_with_the_fitter_off_still_is(self, monkeypatch):
-        assert self._all_on_gpu(monkeypatch, ["-ngl", "-1"], fit_active = False) is True
+        assert self._all_on_gpu(monkeypatch, ["-ngl", "-1"], fit_active=False) is True
 
     @pytest.mark.parametrize("count", ["33", "99"])
     def test_a_concrete_count_stands_under_the_fitter(self, monkeypatch, count):
         """fit.cpp aborts on a user-set n_gpu_layers, so it cannot be lowered."""
-        assert self._all_on_gpu(monkeypatch, ["-ngl", count], fit_active = True) is True
+        assert self._all_on_gpu(monkeypatch, ["-ngl", count], fit_active=True) is True
 
     def test_a_count_at_or_below_the_blocks_is_never_full(self, monkeypatch):
-        assert self._all_on_gpu(monkeypatch, ["-ngl", "32"], fit_active = True) is False
+        assert self._all_on_gpu(monkeypatch, ["-ngl", "32"], fit_active=True) is False
 
 
 class TestTheEffectiveFitterState:
@@ -2493,15 +2502,15 @@ class TestWindowsNoReserveStreaming:
             keep_resident,
             True,
             ["--no-mmap", "--temp", "0.7"],
-            supports_load_mode = True,
-            weights_in_host_memory = False,
-            gpu_offload_confirmed = True,
+            supports_load_mode=True,
+            weights_in_host_memory=False,
+            gpu_offload_confirmed=True,
         )
         selected, extras = _lsa.apply_load_mode_policy(
             extras,
-            supports_load_mode = True,
-            weights_in_host_memory = False,
-            requested_load_mode = "none",
+            supports_load_mode=True,
+            weights_in_host_memory=False,
+            requested_load_mode="none",
         )
         assert managed + selected + extras == ["--load-mode", "dio", "--temp", "0.7"]
 
@@ -2522,9 +2531,9 @@ class TestWindowsNoReserveStreaming:
             False,
             True,
             ["--mlock"],
-            supports_load_mode = supported,
-            weights_in_host_memory = host,
-            gpu_offload_confirmed = not host,
+            supports_load_mode=supported,
+            weights_in_host_memory=host,
+            gpu_offload_confirmed=not host,
         )
         assert managed == []
         assert extras == []
@@ -2535,39 +2544,39 @@ class TestWindowsNoReserveStreaming:
             False,
             True,
             [],
-            supports_load_mode = True,
-            weights_in_host_memory = False,
-            gpu_offload_confirmed = True,
+            supports_load_mode=True,
+            weights_in_host_memory=False,
+            gpu_offload_confirmed=True,
         )
         selected, extras = _lsa.apply_load_mode_policy(
             extras,
-            supports_load_mode = True,
-            weights_in_host_memory = False,
-            requested_load_mode = "mmap",
+            supports_load_mode=True,
+            weights_in_host_memory=False,
+            requested_load_mode="mmap",
         )
         assert managed + selected == ["--load-mode", "dio", "--load-mode", "mmap"]
 
 
 def _dio(
-    extras = None,
+    extras=None,
     *,
-    supports = True,
-    host = False,
-    confirmed = True,
-    requested = None,
-    env = None,
-    no_reserve = True,
-    keep = False,
+    supports=True,
+    host=False,
+    confirmed=True,
+    requested=None,
+    env=None,
+    no_reserve=True,
+    keep=False,
 ):
     """``(policy_emitted, effective)`` through the real policy chain."""
     return _lsa.resolve_launch_load_mode(
         extras or [],
-        supports_load_mode = supports,
-        weights_in_host_memory = host,
-        gpu_offload_confirmed = confirmed,
-        requested_load_mode = requested,
-        env = env,
-        settings = (keep, no_reserve),
+        supports_load_mode=supports,
+        weights_in_host_memory=host,
+        gpu_offload_confirmed=confirmed,
+        requested_load_mode=requested,
+        env=env,
+        settings=(keep, no_reserve),
     )
 
 
@@ -2577,7 +2586,7 @@ class TestTheDioPolicy:
     after offload (unmap_fragment is a no-op there, #9033). Everything else keeps
     llama.cpp's default."""
 
-    @pytest.fixture(autouse = True)
+    @pytest.fixture(autouse=True)
     def _win(self, monkeypatch):
         monkeypatch.setattr(_lsa.sys, "platform", "win32")
 
@@ -2591,7 +2600,7 @@ class TestTheDioPolicy:
             {"supports": False},  # a build with no --load-mode
             {"confirmed": False},  # placement not established, incl. host-resident
         ],
-        ids = ["toggle-off", "legacy-build", "unconfirmed"],
+        ids=["toggle-off", "legacy-build", "unconfirmed"],
     )
     def test_every_leg_is_required(self, kwargs):
         assert _dio(**kwargs) == (False, False)
@@ -2630,7 +2639,7 @@ class TestTheDioPolicy:
         """no-reserve owns the RESERVATION, not the loader, so these survive the
         scrub, and argv beats the environment in llama.cpp."""
         assert _lsa.scrub_memory_env(dict(env), (False, True)) == []
-        emitted, effective = _dio(env = env)
+        emitted, effective = _dio(env=env)
         # The pair stands aside for any of them; only an inherited dio still streams.
         assert emitted is False
         assert effective is (env.get("LLAMA_ARG_DIO") == "1")
@@ -2638,16 +2647,16 @@ class TestTheDioPolicy:
     def test_a_reserving_env_var_is_scrubbed_and_does_not_veto(self):
         scrubbed = {"LLAMA_ARG_NO_MMAP": "1"}
         assert _lsa.scrub_memory_env(scrubbed, (False, True)) == ["LLAMA_ARG_NO_MMAP"]
-        assert _dio(env = scrubbed) == (True, True)
+        assert _dio(env=scrubbed) == (True, True)
 
     def test_a_per_model_mmap_wins_by_last_arg(self):
         # The policy still emits; the user's selector wins the resolve.
-        assert _dio(requested = "mmap") == (True, False)
+        assert _dio(requested="mmap") == (True, False)
 
     def test_a_per_model_reserving_mode_is_dropped_and_dio_stands(self):
         """no-reserve vetoes none/mlock/mmap+mlock, so they cannot shadow it."""
         for mode in ("none", "mlock", "mmap+mlock"):
-            assert _dio(requested = mode) == (True, True)
+            assert _dio(requested=mode) == (True, True)
 
     def test_a_hand_typed_extra_wins_by_last_arg(self):
         assert _dio(["--load-mode", "mmap"]) == (True, False)
@@ -2678,8 +2687,9 @@ class TestTheReloadComparator:
     relaunch under no-reserve would run; the difference is the whole question."""
 
     @staticmethod
-    def _no_reserve(monkeypatch, on = True):
+    def _no_reserve(monkeypatch, on=True):
         import utils.model_memory_settings as mm
+
         monkeypatch.setattr(mm, "get_keep_resident", lambda: False)
         monkeypatch.setattr(mm, "get_no_ram_reserve", lambda: on)
 
@@ -2714,7 +2724,7 @@ class TestTheReloadComparator:
     def test_a_shadowed_pair_is_not_policy_activity(self, monkeypatch):
         """With the toggle off, a child whose only mark was an inert pair is equal
         to an unmanaged one and must not be torn down."""
-        self._no_reserve(monkeypatch, on = False)
+        self._no_reserve(monkeypatch, on=False)
         assert memory_state_satisfies_settings((False, False), False, False)
 
 
@@ -2753,6 +2763,7 @@ class TestTheLaunchWithdrawsTheDio:
     def _src():
         from core.inference.llama_cpp import LlamaCppBackend
         import inspect
+
         return inspect.getsource(LlamaCppBackend.load_model)
 
     def test_the_three_weight_moving_rungs_strip_it(self):
@@ -2801,7 +2812,7 @@ class TestTheLaunchWithdrawsTheDio:
         b._memory_policy_active = True
         b._memory_policy_extras_touched = False
         cmd = ["--model", "m.gguf", *_lsa.MANAGED_DIO_FLAGS]
-        assert b._drop_managed_dio(list(cmd), "copy", clear_record = False) == ["--model", "m.gguf"]
+        assert b._drop_managed_dio(list(cmd), "copy", clear_record=False) == ["--model", "m.gguf"]
         assert b._memory_dio_flags == list(_lsa.MANAGED_DIO_FLAGS)
         # ...and the pair was this policy's only mark, so the child is unmanaged now.
         assert b._memory_policy_active is False
@@ -2830,13 +2841,13 @@ class TestThePlacementProbes:
         VRAM is system RAM."""
         from core.inference.llama_cpp import LlamaCppBackend
 
-        def boom(binary = None):
+        def boom(binary=None):
             raise OSError("probe timed out")
 
         monkeypatch.setattr(LlamaCppBackend, "_run_vulkan_probe", staticmethod(boom))
         assert not LlamaCppBackend._vulkan_offload_is_discrete("llama-server")
         monkeypatch.setattr(
-            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary = None: [])
+            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary=None: [])
         )
         assert not LlamaCppBackend._vulkan_offload_is_discrete("llama-server")
 
@@ -2848,7 +2859,7 @@ class TestThePlacementProbes:
             {"index": 1, "is_igpu": False, "type_known": True},
         ]
         monkeypatch.setattr(
-            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary = None: rows)
+            LlamaCppBackend, "_run_vulkan_probe", staticmethod(lambda binary=None: rows)
         )
         assert not LlamaCppBackend._vulkan_offload_is_discrete("llama-server")
         assert not LlamaCppBackend._vulkan_offload_is_discrete("llama-server", [0])
@@ -2876,6 +2887,7 @@ class TestEveryDeviceSetChangeReAsks:
     def _src():
         from core.inference.llama_cpp import LlamaCppBackend
         import inspect
+
         return inspect.getsource(LlamaCppBackend.load_model)
 
     def test_the_partial_helpers_are_gone(self):
@@ -2951,7 +2963,7 @@ class TestTheVulkanProbeMemoIsScopedToThePlacement:
         monkeypatch,
         m,
         *,
-        raising = False,
+        raising=False,
     ):
         calls = []
         monkeypatch.setattr(m, "_llama_lib_dir", lambda b: Path("/nope"))
@@ -2986,10 +2998,11 @@ class TestTheBackendPathIsEvidenceOnlyWhenItHoldsAPlugin:
     @staticmethod
     def _no_verdict(monkeypatch):
         from core.inference.llama_cpp import LlamaCppBackend
+
         monkeypatch.setattr(
             LlamaCppBackend,
             "_binary_ships_no_gpu_backend",
-            staticmethod(lambda binary = None, env = None: False),
+            staticmethod(lambda binary=None, env=None: False),
         )
 
 
@@ -3155,6 +3168,7 @@ class TestARetryKeepsThePlacementWindowOpen:
     def test_the_lock_still_owns_the_release(self):
         from core.inference.llama_cpp import LlamaCppBackend
         import inspect
+
         assert "self._memory_pending_launch = None" in inspect.getsource(
             LlamaCppBackend._serial_load_scope
         )
@@ -3191,6 +3205,7 @@ class TestThePendingCompareIsByEffect:
 
     def test_the_effect_mirrors_should_mlock(self):
         import routes.settings as rs
+
         for keep in (True, False):
             for no_res in (True, False):
                 mlock_bit, _ = rs._launch_effect_of((keep, no_res))
@@ -3292,6 +3307,7 @@ class TestThePendingWindowHasNoGaps:
     def test_the_lock_is_still_the_backstop(self):
         import inspect
         from core.inference.llama_cpp import LlamaCppBackend
+
         assert "self._memory_pending_launch = None" in inspect.getsource(
             LlamaCppBackend._serial_load_scope
         )
@@ -3387,6 +3403,7 @@ class TestOnlyALoadablePluginCountsAsAGpuBackend:
 
     def test_the_gpu_backend_pattern_matches_only_loadable_names(self):
         from core.inference.llama_cpp import _GGML_GPU_BACKEND_RE
+
         for name in self.LOADABLE:
             assert _GGML_GPU_BACKEND_RE.match(name), name
         for name in self.NOT_LOADABLE:
@@ -3442,7 +3459,7 @@ class TestAnyInstalledGpuPluginMustBeLoadable:
     def _install(self, tmp_path, plugin, runtime_names):
         (tmp_path / plugin).write_text("")
         libs = tmp_path / "libs"
-        libs.mkdir(exist_ok = True)
+        libs.mkdir(exist_ok=True)
         for name in runtime_names:
             (libs / name).write_text("")
         return [str(libs)]
@@ -3474,11 +3491,13 @@ class TestTheBuildsOwnDeviceListIsTheEvidence:
 
     def test_it_parses_a_real_gpu_listing(self):
         from core.inference.llama_cpp import _parse_listed_devices
+
         assert _parse_listed_devices(_LIST_DEVICES_GPU) == ["CUDA0", "CUDA1"]
 
     def test_the_init_noise_above_the_header_is_not_a_device(self):
         """`  Device 0: ...` is indented and has a colon, so only the header keeps it out."""
         from core.inference.llama_cpp import _parse_listed_devices
+
         assert "Device" not in "".join(_parse_listed_devices(_LIST_DEVICES_GPU))
 
     @pytest.mark.parametrize("text", [_LIST_DEVICES_NONE, _LIST_DEVICES_BARE])
@@ -3486,6 +3505,7 @@ class TestTheBuildsOwnDeviceListIsTheEvidence:
         """Different builds print `(none)` or nothing at all. Both mean zero devices,
         which is a real answer and must not collapse into "could not tell"."""
         from core.inference.llama_cpp import _parse_listed_devices
+
         assert _parse_listed_devices(text) == []
 
     @pytest.mark.parametrize(
@@ -3494,6 +3514,7 @@ class TestTheBuildsOwnDeviceListIsTheEvidence:
     def test_no_header_is_no_answer(self, text):
         """An older build that rejects the flag is not evidence of having no devices."""
         from core.inference.llama_cpp import _parse_listed_devices
+
         assert _parse_listed_devices(text) is None
 
 
@@ -3502,22 +3523,22 @@ class TestOnlyEnumeratedDevicesConfirmAnOffload:
         self,
         monkeypatch,
         devices,
-        gpu_indices = None,
-        host_resident = False,
-        discrete = True,
-        dio_possible = True,
+        gpu_indices=None,
+        host_resident=False,
+        discrete=True,
+        dio_possible=True,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
 
         monkeypatch.setattr(
             LlamaCppBackend,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: devices),
+            classmethod(lambda cls, binary=None, env=None: devices),
         )
         monkeypatch.setattr(
             LlamaCppBackend,
             "_vulkan_offload_is_discrete",
-            staticmethod(lambda binary, idx = None: discrete),
+            staticmethod(lambda binary, idx=None: discrete),
         )
         return LlamaCppBackend._gpu_offload_confirmed(
             "llama-server", {}, gpu_indices, host_resident, dio_possible
@@ -3535,7 +3556,7 @@ class TestOnlyEnumeratedDevicesConfirmAnOffload:
         assert self._confirm(monkeypatch, None) is False
 
     def test_host_resident_weights_decline_without_probing(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["CUDA0"], host_resident = True) is False
+        assert self._confirm(monkeypatch, ["CUDA0"], host_resident=True) is False
 
     def test_a_platform_that_cannot_use_dio_never_probes(self, monkeypatch):
         """Off Windows no answer can reach a flag, now or after a later save, so the
@@ -3544,8 +3565,8 @@ class TestOnlyEnumeratedDevicesConfirmAnOffload:
 
         def _boom(
             cls,
-            binary = None,
-            env = None,
+            binary=None,
+            env=None,
         ):
             raise AssertionError("probed when the answer cannot matter")
 
@@ -3559,20 +3580,20 @@ class TestOnlyEnumeratedDevicesConfirmAnOffload:
 
     def test_a_pinned_device_the_build_never_listed_declines(self, monkeypatch):
         """The stale-pin case: the host reports a card the child cannot open."""
-        assert self._confirm(monkeypatch, ["CUDA0"], gpu_indices = [1]) is False
+        assert self._confirm(monkeypatch, ["CUDA0"], gpu_indices=[1]) is False
 
     def test_every_pinned_device_must_be_listed(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["CUDA0"], gpu_indices = [0, 1]) is False
-        assert self._confirm(monkeypatch, ["CUDA0", "CUDA1"], gpu_indices = [0, 1]) is True
+        assert self._confirm(monkeypatch, ["CUDA0"], gpu_indices=[0, 1]) is False
+        assert self._confirm(monkeypatch, ["CUDA0", "CUDA1"], gpu_indices=[0, 1]) is True
 
     def test_a_vulkan_target_still_needs_the_discreteness_probe(self, monkeypatch):
         """--list-devices does not say whether the VRAM is carved out of system RAM,
         and an iGPU full offload is still host-backed."""
-        assert self._confirm(monkeypatch, ["Vulkan0"], discrete = False) is False
-        assert self._confirm(monkeypatch, ["Vulkan0"], discrete = True) is True
+        assert self._confirm(monkeypatch, ["Vulkan0"], discrete=False) is False
+        assert self._confirm(monkeypatch, ["Vulkan0"], discrete=True) is True
 
     def test_a_non_vulkan_target_does_not_pay_for_that_probe(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["CUDA0"], discrete = False) is True
+        assert self._confirm(monkeypatch, ["CUDA0"], discrete=False) is True
 
     def test_an_external_vulkan_plugin_names_itself_like_any_other(self):
         """What the plugin-root scan was approximating: the build lists the device it
@@ -3591,7 +3612,7 @@ class TestTheDeviceListIsProbedOncePerLoad:
         monkeypatch.setattr(
             m.LlamaCppBackend,
             "_run_list_devices",
-            staticmethod(lambda binary, env = None: calls.append(binary) or ["CUDA0"]),
+            staticmethod(lambda binary, env=None: calls.append(binary) or ["CUDA0"]),
         )
         m._arm_load_probe_memo()
         try:
@@ -3610,7 +3631,7 @@ class TestTheDeviceListIsProbedOncePerLoad:
         monkeypatch.setattr(
             m.LlamaCppBackend,
             "_run_list_devices",
-            staticmethod(lambda binary, env = None: calls.append(binary) or None),
+            staticmethod(lambda binary, env=None: calls.append(binary) or None),
         )
         m._arm_load_probe_memo()
         try:
@@ -3642,7 +3663,7 @@ class TestTheDeviceListIsProbedOncePerLoad:
         monkeypatch.setattr(
             m.LlamaCppBackend,
             "_run_list_devices",
-            staticmethod(lambda binary, env = None: calls.append(binary) or ["CUDA0"]),
+            staticmethod(lambda binary, env=None: calls.append(binary) or ["CUDA0"]),
         )
         m._LOAD_PROBE_STATE.armed = False
         m._LOAD_PROBE_STATE.rows = None
@@ -3688,6 +3709,7 @@ class TestTheCaptureAndThePublicationAreOneAct:
 
     def _mod(self):
         import utils.model_memory_settings as mm
+
         return mm
 
     def test_it_publishes_the_pair_it_read(self, monkeypatch):
@@ -3803,20 +3825,20 @@ class TestOnlyAClassifiableDeviceConfirms:
         self,
         monkeypatch,
         devices,
-        discrete = True,
-        rocm_classified = True,
+        discrete=True,
+        rocm_classified=True,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
 
         monkeypatch.setattr(
             LlamaCppBackend,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: devices),
+            classmethod(lambda cls, binary=None, env=None: devices),
         )
         monkeypatch.setattr(
             LlamaCppBackend,
             "_vulkan_offload_is_discrete",
-            staticmethod(lambda binary, idx = None: discrete),
+            staticmethod(lambda binary, idx=None: discrete),
         )
         monkeypatch.setattr(
             LlamaCppBackend,
@@ -3834,11 +3856,11 @@ class TestOnlyAClassifiableDeviceConfirms:
         """The empty set means "no APU here" OR "no ROCm torch to ask", and only the
         first is a fact about the hardware. There is no Windows ROCm wheel, so on the
         one platform this runs on the second is the usual case."""
-        assert self._confirm(monkeypatch, [device], rocm_classified = False) is False
+        assert self._confirm(monkeypatch, [device], rocm_classified=False) is False
 
     def test_cuda_does_not_need_the_rocm_classifier(self, monkeypatch):
         """It has its own upstream answer, so the AMD gate must not narrow it."""
-        assert self._confirm(monkeypatch, ["CUDA0"], rocm_classified = False) is True
+        assert self._confirm(monkeypatch, ["CUDA0"], rocm_classified=False) is True
 
     @pytest.mark.parametrize("device", ["SYCL0", "OpenCL0", "MUSA0", "CANN0", "Metal0"])
     def test_a_backend_that_can_be_integrated_declines(self, monkeypatch, device):
@@ -3848,8 +3870,8 @@ class TestOnlyAClassifiableDeviceConfirms:
         assert self._confirm(monkeypatch, ["CUDA0", "SYCL1"]) is False
 
     def test_vulkan_still_goes_through_its_probe(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["Vulkan0"], discrete = False) is False
-        assert self._confirm(monkeypatch, ["Vulkan0"], discrete = True) is True
+        assert self._confirm(monkeypatch, ["Vulkan0"], discrete=False) is False
+        assert self._confirm(monkeypatch, ["Vulkan0"], discrete=True) is True
 
     def test_the_backend_is_read_off_the_id(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
@@ -3869,30 +3891,30 @@ class TestEverySelectedBackendMustBeClassifiable:
         self,
         monkeypatch,
         devices,
-        discrete = True,
+        discrete=True,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
 
         monkeypatch.setattr(
             LlamaCppBackend,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: devices),
+            classmethod(lambda cls, binary=None, env=None: devices),
         )
         monkeypatch.setattr(
             LlamaCppBackend,
             "_vulkan_offload_is_discrete",
-            staticmethod(lambda binary, idx = None: discrete),
+            staticmethod(lambda binary, idx=None: discrete),
         )
         return LlamaCppBackend._gpu_offload_confirmed("llama-server", {}, None, False, True)
 
     def test_a_discrete_vulkan_beside_an_unclassifiable_device_declines(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["Vulkan0", "SYCL1"], discrete = True) is False
+        assert self._confirm(monkeypatch, ["Vulkan0", "SYCL1"], discrete=True) is False
 
     def test_a_discrete_vulkan_beside_a_known_discrete_device_confirms(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["Vulkan0", "CUDA1"], discrete = True) is True
+        assert self._confirm(monkeypatch, ["Vulkan0", "CUDA1"], discrete=True) is True
 
     def test_that_pair_still_obeys_the_vulkan_probe(self, monkeypatch):
-        assert self._confirm(monkeypatch, ["Vulkan0", "CUDA1"], discrete = False) is False
+        assert self._confirm(monkeypatch, ["Vulkan0", "CUDA1"], discrete=False) is False
 
     def test_an_unclassifiable_device_alone_declines(self, monkeypatch):
         assert self._confirm(monkeypatch, ["OpenCL0"]) is False
@@ -3908,7 +3930,7 @@ class TestTheDeviceMemoFollowsVisibility:
 
         calls = []
 
-        def _run(binary, env = None):
+        def _run(binary, env=None):
             calls.append(dict(env or {}))
             return ["CUDA0"] if (env or {}).get("ROCR_VISIBLE_DEVICES") else None
 
@@ -3932,7 +3954,7 @@ class TestTheDeviceMemoFollowsVisibility:
         monkeypatch.setattr(
             m.LlamaCppBackend,
             "_run_list_devices",
-            staticmethod(lambda binary, env = None: calls.append(1) or ["CUDA0"]),
+            staticmethod(lambda binary, env=None: calls.append(1) or ["CUDA0"]),
         )
         m._arm_load_probe_memo()
         try:
@@ -3945,6 +3967,7 @@ class TestTheDeviceMemoFollowsVisibility:
 
     def test_the_key_covers_the_masks_that_matter(self):
         from core.inference.llama_cpp import _DEVICE_VISIBILITY_ENV
+
         assert {
             "CUDA_VISIBLE_DEVICES",
             "HIP_VISIBLE_DEVICES",
@@ -4042,7 +4065,7 @@ class TestTheProbeSeesTheNarrowedVisibility:
     def test_a_new_mask_reaches_the_probe(self, monkeypatch):
         import core.inference.llama_cpp as m
 
-        monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
+        monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
         monkeypatch.setattr(
             m.LlamaCppBackend,
             "_llama_server_env_for_binary",
@@ -4085,14 +4108,17 @@ class TestLivenessCountsOrdinalsNotIds:
 
     def test_one_ordinal_under_two_backends_is_still_covered(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._offload_devices_are_live(["CUDA0", "Vulkan0"], [0]) is True
 
     def test_a_missing_ordinal_still_declines(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._offload_devices_are_live(["CUDA0", "Vulkan0"], [0, 1]) is False
 
     def test_every_requested_ordinal_must_appear(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._offload_devices_are_live(["CUDA0", "CUDA1"], [0, 1]) is True
 
 
@@ -4106,21 +4132,21 @@ class TestAPassThroughDeviceOverrideDecidesPlacement:
         monkeypatch,
         devices,
         gpu_indices,
-        extra_args = None,
-        env = None,
-        discrete = True,
+        extra_args=None,
+        env=None,
+        discrete=True,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
 
         monkeypatch.setattr(
             LlamaCppBackend,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, e = None: devices),
+            classmethod(lambda cls, binary=None, e=None: devices),
         )
         monkeypatch.setattr(
             LlamaCppBackend,
             "_vulkan_offload_is_discrete",
-            staticmethod(lambda binary, idx = None: discrete),
+            staticmethod(lambda binary, idx=None: discrete),
         )
         return LlamaCppBackend._gpu_offload_confirmed(
             "llama-server", env or {}, gpu_indices, False, True, extra_args
@@ -4170,14 +4196,15 @@ class TestOneEffectiveDeviceSetFeedsEveryConsumer:
         monkeypatch,
         devices,
         gpu_indices,
-        extra_args = None,
-        env = None,
+        extra_args=None,
+        env=None,
     ):
         from core.inference.llama_cpp import LlamaCppBackend
+
         monkeypatch.setattr(
             LlamaCppBackend,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, e = None: devices),
+            classmethod(lambda cls, binary=None, e=None: devices),
         )
         return LlamaCppBackend._effective_gpu_selection(
             "llama-server", env or {}, gpu_indices, extra_args, True
@@ -4225,6 +4252,7 @@ class TestTheSnapshotIsRetakenAfterEveryCmdMutation:
     def _src(self):
         import inspect
         from core.inference.llama_cpp import LlamaCppBackend
+
         return inspect.getsource(LlamaCppBackend.load_model)
 
     def test_the_snapshot_comes_from_one_helper(self):
@@ -4264,20 +4292,24 @@ class TestMaskedDevicesCompareInCompactSpace:
 
     def test_a_survivor_is_translated_to_its_compact_ordinal(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {"CUDA_VISIBLE_DEVICES": "1"}) == [0]
 
     def test_the_position_in_the_mask_is_the_ordinal(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([3], {"ROCR_VISIBLE_DEVICES": "2,3"}) == [1]
         assert B._compact_ordinals([2, 3], {"ROCR_VISIBLE_DEVICES": "2,3"}) == [0, 1]
 
     def test_no_mask_leaves_the_ordinals_alone(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {}) == [1]
         assert B._compact_ordinals([1], {"CUDA_VISIBLE_DEVICES": ""}) == [1]
 
     def test_an_unmappable_mask_leaves_them_alone(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {"CUDA_VISIBLE_DEVICES": "GPU-abc"}) == [1]
 
     def test_a_masked_survivor_now_reads_as_live(self, monkeypatch):
@@ -4288,7 +4320,7 @@ class TestMaskedDevicesCompareInCompactSpace:
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: ["CUDA0"]),
+            classmethod(lambda cls, binary=None, env=None: ["CUDA0"]),
         )
         effective = B._effective_gpu_selection(
             "llama-server", {"CUDA_VISIBLE_DEVICES": "1"}, [1], None, True
@@ -4307,15 +4339,16 @@ class TestSplitModeNoneFollowsTheMainGpu:
         self,
         monkeypatch,
         gpu_indices,
-        extra_args = None,
-        env = None,
-        devices = ("CUDA0", "Vulkan1"),
+        extra_args=None,
+        env=None,
+        devices=("CUDA0", "Vulkan1"),
     ):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, e = None: list(devices)),
+            classmethod(lambda cls, binary=None, e=None: list(devices)),
         )
         return B._effective_gpu_selection("llama-server", env or {}, gpu_indices, extra_args, True)[
             0
@@ -4348,10 +4381,10 @@ class TestSplitModeNoneFollowsTheMainGpu:
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, e = None: ["CUDA0", "Vulkan1"]),
+            classmethod(lambda cls, binary=None, e=None: ["CUDA0", "Vulkan1"]),
         )
         monkeypatch.setattr(
-            B, "_vulkan_offload_is_discrete", staticmethod(lambda binary, idx = None: False)
+            B, "_vulkan_offload_is_discrete", staticmethod(lambda binary, idx=None: False)
         )
         effective = B._effective_gpu_selection(
             "llama-server", {}, [0], ["--split-mode", "none", "--main-gpu", "1"], True
@@ -4372,6 +4405,7 @@ class TestSplitModeNoneFollowsTheMainGpu:
     def test_a_main_gpu_override_is_also_gated(self, monkeypatch):
         """Off the DirectIO path nothing is resolved, so no behaviour changes."""
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._effective_gpu_selection(
             "llama-server", {}, [0], ["--split-mode", "none", "--main-gpu", "1"], False
         )[1] == [0]
@@ -4385,14 +4419,17 @@ class TestVulkanOrdinalsAreAlreadyCompact:
 
     def test_a_vulkan_launch_is_not_translated(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {"GGML_VK_VISIBLE_DEVICES": "1,2"}, True) == [1]
 
     def test_the_vulkan_mask_is_not_even_consulted(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {"GGML_VK_VISIBLE_DEVICES": "1,2"}) == [1]
 
     def test_a_cuda_launch_is_still_translated(self):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         assert B._compact_ordinals([1], {"CUDA_VISIBLE_DEVICES": "1,2"}) == [0]
 
     def test_the_resolver_passes_the_backend_through(self, monkeypatch):
@@ -4401,7 +4438,7 @@ class TestVulkanOrdinalsAreAlreadyCompact:
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: ["Vulkan0", "Vulkan1"]),
+            classmethod(lambda cls, binary=None, env=None: ["Vulkan0", "Vulkan1"]),
         )
         env = {"GGML_VK_VISIBLE_DEVICES": "1,2"}
         assert B._effective_gpu_selection("b", env, [1], None, True, True)[1] == [1]
@@ -4414,7 +4451,8 @@ class TestAnUnreadDeviceTypeIsNotDiscreteEvidence:
 
     def _rows(self, monkeypatch, rows):
         from core.inference.llama_cpp import LlamaCppBackend as B
-        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary = None: rows))
+
+        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary=None: rows))
         return B._vulkan_offload_is_discrete("llama-server", None)
 
     def test_a_known_discrete_device_confirms(self, monkeypatch):
@@ -4499,9 +4537,9 @@ class TestResidencyWithdrawsTheNoReserveDio:
         direct_io,
         dio_applicable,
         policy_active,
-        mlock_applicable = False,
-        state = (False, False),
-        dio_managed = None,
+        mlock_applicable=False,
+        state=(False, False),
+        dio_managed=None,
     ):
         import utils.model_memory_settings as mm
         from core.inference.llama_server_args import memory_state_satisfies_settings
@@ -4524,30 +4562,30 @@ class TestResidencyWithdrawsTheNoReserveDio:
         assert (
             self._satisfied(
                 monkeypatch,
-                direct_io = True,
-                dio_applicable = True,
-                policy_active = True,
-                dio_managed = False,
+                direct_io=True,
+                dio_applicable=True,
+                policy_active=True,
+                dio_managed=False,
             )
             is True
         )
 
     def test_an_active_managed_dio_demands_a_reload(self, monkeypatch):
         assert (
-            self._satisfied(monkeypatch, direct_io = True, dio_applicable = True, policy_active = True)
+            self._satisfied(monkeypatch, direct_io=True, dio_applicable=True, policy_active=True)
             is False
         )
 
     def test_a_user_authored_dio_does_not(self, monkeypatch):
         """Theirs to keep; the policy never touched this child."""
         assert (
-            self._satisfied(monkeypatch, direct_io = True, dio_applicable = True, policy_active = False)
+            self._satisfied(monkeypatch, direct_io=True, dio_applicable=True, policy_active=False)
             is True
         )
 
     def test_a_non_streaming_child_is_unaffected(self, monkeypatch):
         assert (
-            self._satisfied(monkeypatch, direct_io = False, dio_applicable = True, policy_active = True)
+            self._satisfied(monkeypatch, direct_io=False, dio_applicable=True, policy_active=True)
             is True
         )
 
@@ -4555,11 +4593,11 @@ class TestResidencyWithdrawsTheNoReserveDio:
         assert (
             self._satisfied(
                 monkeypatch,
-                direct_io = None,
-                dio_applicable = False,
-                policy_active = False,
-                mlock_applicable = True,
-                state = (True, False),
+                direct_io=None,
+                dio_applicable=False,
+                policy_active=False,
+                mlock_applicable=True,
+                state=(True, False),
             )
             is True
         )
@@ -4574,16 +4612,17 @@ class TestTheSelectionCarriesBothOrdinalSpaces:
         self,
         monkeypatch,
         gpu_indices,
-        env = None,
-        extra_args = None,
-        devices = ("CUDA0",),
-        is_vulkan = False,
+        env=None,
+        extra_args=None,
+        devices=("CUDA0",),
+        is_vulkan=False,
     ):
         from core.inference.llama_cpp import LlamaCppBackend as B
+
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, e = None: list(devices)),
+            classmethod(lambda cls, binary=None, e=None: list(devices)),
         )
         return B._effective_gpu_selection(
             "llama-server", env or {}, gpu_indices, extra_args, True, is_vulkan
@@ -4606,7 +4645,7 @@ class TestTheSelectionCarriesBothOrdinalSpaces:
             [0],
             {"CUDA_VISIBLE_DEVICES": "2,3"},
             ["--device", "CUDA1"],
-            devices = ("CUDA0", "CUDA1"),
+            devices=("CUDA0", "CUDA1"),
         )
         assert compact == [1]
         assert physical == [3]
@@ -4628,8 +4667,8 @@ class TestTheSelectionCarriesBothOrdinalSpaces:
             monkeypatch,
             [1],
             {"GGML_VK_VISIBLE_DEVICES": "1,2"},
-            devices = ("Vulkan0", "Vulkan1"),
-            is_vulkan = True,
+            devices=("Vulkan0", "Vulkan1"),
+            is_vulkan=True,
         )
         assert physical == compact == [1]
 
@@ -4666,9 +4705,9 @@ class TestTheVulkanProbeMustCoverItsOwnTargets:
         monkeypatch.setattr(
             B,
             "_enumerated_gpu_devices",
-            classmethod(lambda cls, binary = None, env = None: list(devices)),
+            classmethod(lambda cls, binary=None, env=None: list(devices)),
         )
-        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary = None: rows))
+        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary=None: rows))
         return B._gpu_offload_confirmed("llama-server", {}, None, False, True)
 
     def test_a_cuda_ordinal_cannot_satisfy_a_vulkan_row(self, monkeypatch):
@@ -4709,7 +4748,7 @@ class TestTheVulkanProbeMustCoverItsOwnTargets:
         monkeypatch.setattr(
             B,
             "_run_vulkan_probe",
-            staticmethod(lambda binary = None: [{"index": 0, "is_igpu": False, "type_known": True}]),
+            staticmethod(lambda binary=None: [{"index": 0, "is_igpu": False, "type_known": True}]),
         )
         assert B._vulkan_offload_is_discrete("llama-server", [0]) is True
         assert B._vulkan_offload_is_discrete("llama-server", [0, 1]) is False
@@ -4735,7 +4774,7 @@ class TestAForcedProbeKeepsMlockConservative:
     def test_the_answered_predicate_is_not_the_igpu_one(self, monkeypatch):
         from core.inference.llama_cpp import LlamaCppBackend as B
 
-        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary = None: []))
+        monkeypatch.setattr(B, "_run_vulkan_probe", staticmethod(lambda binary=None: []))
         assert B._vulkan_probe_answered("llama-server") is False
         # and the iGPU question still answers False for the same empty probe, which is
         # why it cannot be read as a measurement
@@ -4744,6 +4783,6 @@ class TestAForcedProbeKeepsMlockConservative:
         monkeypatch.setattr(
             B,
             "_run_vulkan_probe",
-            staticmethod(lambda binary = None: [{"index": 0, "is_igpu": False, "type_known": True}]),
+            staticmethod(lambda binary=None: [{"index": 0, "is_igpu": False, "type_known": True}]),
         )
         assert B._vulkan_probe_answered("llama-server") is True

@@ -163,7 +163,7 @@ def _normalized_commit(value: Any) -> Optional[str]:
 
 def _snapshot_declares_quantization(snapshot: Path) -> bool:
     try:
-        parsed = json.loads((snapshot / "config.json").read_text(encoding = "utf-8"))
+        parsed = json.loads((snapshot / "config.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     if not isinstance(parsed, dict):
@@ -198,12 +198,12 @@ def _resolved_model_snapshot_file(snapshot: Path, path: Path) -> Optional[Path]:
     from hub.utils.hf_cache_state import same_existing_path
 
     try:
-        snapshot = snapshot.resolve(strict = True)
-        repo_dir = snapshot.parent.parent.resolve(strict = True)
+        snapshot = snapshot.resolve(strict=True)
+        repo_dir = snapshot.parent.parent.resolve(strict=True)
         if not same_existing_path(snapshot.parent, repo_dir / "snapshots"):
             return None
         relative = path.relative_to(snapshot)
-        resolved = snapshot.joinpath(*relative.parts).resolve(strict = True)
+        resolved = snapshot.joinpath(*relative.parts).resolve(strict=True)
     except (OSError, RuntimeError, ValueError):
         return None
     if not resolved.is_file() or not (
@@ -229,8 +229,8 @@ def _snapshot_has_model_weights(snapshot: Path) -> bool:
     try:
         for root, dirnames, filenames in os.walk(
             snapshot,
-            followlinks = False,
-            onerror = _raise_walk_error,
+            followlinks=False,
+            onerror=_raise_walk_error,
         ):
             if any((Path(root) / name).is_symlink() for name in dirnames):
                 return False
@@ -252,8 +252,8 @@ def _snapshot_has_dataset_data(snapshot: Path) -> bool:
     try:
         for root, dirnames, filenames in os.walk(
             snapshot,
-            followlinks = False,
-            onerror = _raise_walk_error,
+            followlinks=False,
+            onerror=_raise_walk_error,
         ):
             if any((Path(root) / name).is_symlink() for name in dirnames):
                 return False
@@ -282,7 +282,7 @@ def exact_model_snapshot_path(
     if repo_id is None or not isinstance(path_value, str) or not path_value.strip():
         return None
     try:
-        requested = Path(path_value).expanduser().resolve(strict = True)
+        requested = Path(path_value).expanduser().resolve(strict=True)
     except (OSError, RuntimeError, ValueError):
         return None
 
@@ -301,7 +301,7 @@ def exact_model_snapshot_path(
     if validated is None:
         return None
     try:
-        resolved = Path(validated).resolve(strict = True)
+        resolved = Path(validated).resolve(strict=True)
     except (OSError, RuntimeError, ValueError):
         return None
     if not same_existing_path(resolved, requested) or not _snapshot_has_model_weights(resolved):
@@ -329,7 +329,7 @@ def exact_model_snapshot_for_commit(
         resolved = exact_model_snapshot_path(
             str(candidate),
             repo_id,
-            require_quantized = require_quantized,
+            require_quantized=require_quantized,
         )
         if resolved is not None:
             return resolved
@@ -341,7 +341,7 @@ def exact_dataset_snapshot_path(path_value: Any, repo_id: Any) -> Optional[str]:
     if repo_id is None or not isinstance(path_value, str) or not path_value.strip():
         return None
     try:
-        requested = Path(path_value).expanduser().resolve(strict = True)
+        requested = Path(path_value).expanduser().resolve(strict=True)
     except (OSError, RuntimeError, ValueError):
         return None
 
@@ -352,7 +352,7 @@ def exact_dataset_snapshot_path(path_value: Any, repo_id: Any) -> Optional[str]:
     if validated is None:
         return None
     try:
-        resolved = validated.resolve(strict = True)
+        resolved = validated.resolve(strict=True)
     except (OSError, RuntimeError, ValueError):
         return None
     if not same_existing_path(resolved, requested) or not _snapshot_has_dataset_data(resolved):
@@ -421,6 +421,7 @@ def _hf_dataset_source_ref(path_value: str) -> Optional[tuple[str, str, str]]:
         # The shared helper, not a third private parse: a blank or scheme-less
         # value yielded an empty netloc here and matched no URL at all.
         from utils.hf_endpoint import get_hf_endpoint
+
         endpoint = urlsplit(get_hf_endpoint())
     except ValueError:
         return None
@@ -449,11 +450,13 @@ def _hf_dataset_source_ref(path_value: str) -> Optional[tuple[str, str, str]]:
 
 def _dataset_snapshot_contains(snapshot: str, source_path: str) -> bool:
     from hub.utils.dataset_cache import dataset_snapshot_contains_file
+
     return dataset_snapshot_contains_file(snapshot, source_path)
 
 
 def _dataset_snapshot_file(snapshot: str, source_path: str) -> Optional[Path]:
     from hub.utils.dataset_cache import resolved_dataset_snapshot_file
+
     return resolved_dataset_snapshot_file(snapshot, source_path)
 
 
@@ -627,6 +630,7 @@ def attest_loaded_model(
     selected_repo = config.get("actual_model_repo_id")
     if selected_repo is None:
         from utils.utils import canonical_model_repo_id
+
         selected_repo = canonical_model_repo_id(str(config.get("model_name") or ""))
     direct = exact_model_snapshot_path(
         load_target,
@@ -674,13 +678,13 @@ def build_worker_provenance_event(
     *,
     model_load_target: Any,
     model_load_in_4bit: bool,
-    dataset_loaded_from_exact_snapshot: bool,
+    dataset_loaded_from_exact_snapshot: bool
 ) -> dict[str, Any]:
     model_repo_id, model_snapshot, model_load_mode, model_reason = attest_loaded_model(
         config,
         model,
-        load_target = model_load_target,
-        load_in_4bit = model_load_in_4bit,
+        load_target=model_load_target,
+        load_in_4bit=model_load_in_4bit,
     )
 
     dataset_snapshot = None
@@ -840,11 +844,12 @@ def validate_exact_model_pin(config: dict[str, Any]) -> str:
     model_repo_id = config.get("actual_model_repo_id")
     if model_repo_id is None:
         from utils.utils import canonical_model_repo_id
+
         model_repo_id = canonical_model_repo_id(str(config.get("model_name") or ""))
     model_snapshot = exact_model_snapshot_path(
         config.get("model_snapshot_path"),
         model_repo_id,
-        require_quantized = model_load_mode == _MODEL_LOAD_PREQUANTIZED_4BIT,
+        require_quantized=model_load_mode == _MODEL_LOAD_PREQUANTIZED_4BIT,
     )
     if (
         model_snapshot is not None

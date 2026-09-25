@@ -28,8 +28,8 @@ from utils.cache_inventory import (
 
 
 def _write(path: Path, text: str = "x") -> Path:
-    path.parent.mkdir(parents = True, exist_ok = True)
-    path.write_text(text, encoding = "utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
     return path
 
 
@@ -44,7 +44,7 @@ def isolated_caches(tmp_path, monkeypatch):
     from utils import cache_cleanup, hf_cache_settings
 
     hf_home = tmp_path / "hf"
-    (hf_home / "hub").mkdir(parents = True)
+    (hf_home / "hub").mkdir(parents=True)
     (hf_home / "xet").mkdir()
     paths = hf_cache_settings.HuggingFaceCachePaths(
         hf_home, hf_home / "hub", hf_home / "xet", "studio"
@@ -58,7 +58,7 @@ def isolated_caches(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
     for key in ("HF_HOME", "HF_HUB_CACHE", "HUGGINGFACE_HUB_CACHE"):
-        monkeypatch.delenv(key, raising = False)
+        monkeypatch.delenv(key, raising=False)
     for key, name in (
         ("HF_DATASETS_CACHE", "hf/datasets"),
         ("HF_ASSETS_CACHE", "hf/assets"),
@@ -75,7 +75,7 @@ def isolated_caches(tmp_path, monkeypatch):
         ("BUN_INSTALL_CACHE_DIR", "bun"),
     ):
         monkeypatch.setenv(key, str(tmp_path / name))
-    monkeypatch.delenv("MPLCONFIGDIR", raising = False)
+    monkeypatch.delenv("MPLCONFIGDIR", raising=False)
     # Sizes are memoized for a minute in production; a test must never read one
     # another test measured.
     monkeypatch.setattr(cache_inventory, "_size_cache", {})
@@ -103,7 +103,7 @@ def test_sizing_does_not_follow_a_symlink_out_of_the_cache(tmp_path, isolated_ca
     _write(outside / "big.bin", "z" * 4096)
     root = tmp_path / "uv"
     root.mkdir()
-    (root / "escape").symlink_to(outside, target_is_directory = True)
+    (root / "escape").symlink_to(outside, target_is_directory=True)
     _write(root / "real.bin", "r" * 10)
     entry = describe_cache(definition_for("uv"))
     assert entry["size_bytes"] == 10
@@ -128,7 +128,7 @@ def test_an_absent_cache_reports_no_paths(tmp_path, isolated_caches):
 def test_the_inventory_totals_exclude_the_opt_in_caches(tmp_path, isolated_caches):
     _write(tmp_path / "uv" / "a.bin", "a" * 100)
     _write(isolated_caches / "hub" / "models--x" / "w.bin", "m" * 900)
-    inventory = build_inventory(refresh = True)
+    inventory = build_inventory(refresh=True)
     by_key = {entry["key"]: entry for entry in inventory["caches"]}
     assert by_key["hf_hub"]["opt_in"] is True
     assert by_key["hf_hub"]["size_bytes"] == 900
@@ -161,7 +161,7 @@ def test_a_shallow_root_is_refused_even_when_nothing_protects_it(tmp_path):
     if not shallow.is_dir() or shallow.is_symlink() or len(shallow.parts) != 2:
         pytest.skip(f"no shallow non-symlink directory to test with ({shallow})")
     with pytest.raises(CachePurgeRefused) as excinfo:
-        assert_purgeable_root(shallow, protected = set(), trees = set())
+        assert_purgeable_root(shallow, protected=set(), trees=set())
     assert "too close to the filesystem root" in str(excinfo.value)
 
 
@@ -174,7 +174,7 @@ def test_a_root_holding_studio_data_is_refused(tmp_path, monkeypatch):
     from utils.paths.storage_roots import studio_root
 
     home = studio_root()
-    home.mkdir(parents = True, exist_ok = True)
+    home.mkdir(parents=True, exist_ok=True)
     _write(home / "studio.db", "sqlite")
     with pytest.raises(CachePurgeRefused) as excinfo:
         assert_purgeable_root(home)
@@ -183,7 +183,7 @@ def test_a_root_holding_studio_data_is_refused(tmp_path, monkeypatch):
 
 def test_a_root_inside_the_projects_folder_is_refused(tmp_path, monkeypatch):
     projects = tmp_path / "Projects"
-    (projects / "my-run" / "cache").mkdir(parents = True)
+    (projects / "my-run" / "cache").mkdir(parents=True)
     monkeypatch.setenv("UNSLOTH_STUDIO_PROJECTS_HOME", str(projects))
     with pytest.raises(CachePurgeRefused) as excinfo:
         assert_purgeable_root(projects / "my-run" / "cache")
@@ -192,9 +192,9 @@ def test_a_root_inside_the_projects_folder_is_refused(tmp_path, monkeypatch):
 
 def test_a_symlinked_cache_root_is_refused(tmp_path):
     target = tmp_path / "somewhere" / "deep"
-    target.mkdir(parents = True)
+    target.mkdir(parents=True)
     link = tmp_path / "link"
-    link.symlink_to(target, target_is_directory = True)
+    link.symlink_to(target, target_is_directory=True)
     with pytest.raises(CachePurgeRefused) as excinfo:
         assert_purgeable_root(link)
     assert "symlink" in str(excinfo.value)
@@ -239,7 +239,7 @@ def test_a_symlink_inside_the_cache_is_unlinked_and_never_followed(tmp_path, iso
     kept_file = _write(outside / "model.safetensors", "weights")
     root = tmp_path / "uv"
     root.mkdir()
-    (root / "escape").symlink_to(outside, target_is_directory = True)
+    (root / "escape").symlink_to(outside, target_is_directory=True)
     (root / "escape-file").symlink_to(kept_file)
     purge_caches(["uv"])
     assert kept_file.exists()
@@ -255,7 +255,7 @@ def test_a_purge_leaves_the_database_models_projects_and_token_alone(
     from utils.paths.storage_roots import studio_root
 
     home = studio_root()
-    home.mkdir(parents = True, exist_ok = True)
+    home.mkdir(parents=True, exist_ok=True)
     database = _write(home / "studio.db", "sqlite")
     chat_history = _write(home / "chat" / "thread.json", "hello")
     token = _write(isolated_caches / "token", "hf_secret")
@@ -361,7 +361,7 @@ def test_a_pattern_limited_root_keeps_the_files_that_are_not_cache(tmp_path, mon
     monkeypatch.setenv("MPLCONFIGDIR", str(config_dir))
     style = _write(config_dir / "matplotlibrc", "font.size: 12")
     fontlist = _write(config_dir / "fontlist-v390.json", "{}")
-    empty_cache_root(config_dir, patterns = cache_inventory.MATPLOTLIB_PATTERNS)
+    empty_cache_root(config_dir, patterns=cache_inventory.MATPLOTLIB_PATTERNS)
     assert style.exists()
     assert not fontlist.exists()
 
@@ -410,14 +410,14 @@ def test_a_junctioned_cache_root_is_refused_like_a_symlink(tmp_path, monkeypatch
     """Only IO_REPARSE_TAG_SYMLINK sets S_IFLNK, so is_symlink() is False for a
     junction while realpath() follows it and the TARGET would be emptied."""
     target = tmp_path / "somewhere" / "deep"
-    target.mkdir(parents = True)
+    target.mkdir(parents=True)
     kept = _write(target / "not-a-cache.txt", "mine")
     junction = tmp_path / "cache"
     junction.mkdir()
 
     # os.path.isjunction is the 3.12+ answer and is always False on POSIX, so
     # the platform test is what a Windows host would report here.
-    monkeypatch.setattr(os.path, "isjunction", lambda path: Path(path) == junction, raising = False)
+    monkeypatch.setattr(os.path, "isjunction", lambda path: Path(path) == junction, raising=False)
     assert not junction.is_symlink()
 
     with pytest.raises(CachePurgeRefused) as excinfo:
@@ -481,9 +481,9 @@ def test_the_inductor_cache_follows_the_account_name_torch_uses(
     """A container with no USER puts torch's cache at torchinductor_root, not _0."""
     import tempfile
 
-    monkeypatch.delenv("TORCHINDUCTOR_CACHE_DIR", raising = False)
-    monkeypatch.delenv("USER", raising = False)
-    monkeypatch.delenv("USERNAME", raising = False)
+    monkeypatch.delenv("TORCHINDUCTOR_CACHE_DIR", raising=False)
+    monkeypatch.delenv("USER", raising=False)
+    monkeypatch.delenv("USERNAME", raising=False)
     monkeypatch.setenv("LOGNAME", "root")
     monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
     root = tmp_path / "torchinductor_root"
@@ -502,14 +502,14 @@ def test_the_vllm_cache_is_vllms_own_default_on_every_platform(
     convention matches on Linux only."""
     import sys as _sys
 
-    monkeypatch.delenv("VLLM_CACHE_ROOT", raising = False)
-    monkeypatch.delenv("XDG_CACHE_HOME", raising = False)
+    monkeypatch.delenv("VLLM_CACHE_ROOT", raising=False)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setattr(_sys, "platform", platform)
     assert cache_inventory._vllm_dirs() == [tmp_path / ".cache" / "vllm"]
 
 
 def test_the_vllm_cache_honours_xdg_because_vllm_does(tmp_path, monkeypatch, isolated_caches):
-    monkeypatch.delenv("VLLM_CACHE_ROOT", raising = False)
+    monkeypatch.delenv("VLLM_CACHE_ROOT", raising=False)
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
     assert cache_inventory._vllm_dirs() == [tmp_path / "xdg" / "vllm"]
 
@@ -654,7 +654,7 @@ def test_a_cache_home_left_behind_is_protected_but_never_purged(
         "known_hf_hub_caches",
         lambda: [isolated_caches / "hub", previous / "hub"],
     )
-    monkeypatch.delenv("HF_ASSETS_CACHE", raising = False)
+    monkeypatch.delenv("HF_ASSETS_CACHE", raising=False)
     # What initialize_hf_cache_environment leaves behind at startup.
     monkeypatch.setenv("HF_HOME", str(isolated_caches))
 
@@ -680,7 +680,7 @@ def test_the_pip_cache_is_the_one_pip_reports(tmp_path, monkeypatch, isolated_ca
 
     configured = tmp_path / "corp-pip-cache"
     _write(configured / "wheels" / "cached.whl", "p" * 40)
-    monkeypatch.delenv("PIP_CACHE_DIR", raising = False)
+    monkeypatch.delenv("PIP_CACHE_DIR", raising=False)
     monkeypatch.setattr(module, "_probed_cache_dirs", {})
     monkeypatch.setattr(
         module.subprocess,
@@ -697,7 +697,7 @@ def test_the_pip_probe_runs_once_and_survives_a_failure(tmp_path, monkeypatch, i
     from utils import cache_inventory as module
 
     calls = []
-    monkeypatch.delenv("PIP_CACHE_DIR", raising = False)
+    monkeypatch.delenv("PIP_CACHE_DIR", raising=False)
     monkeypatch.setattr(module, "_probed_cache_dirs", {})
 
     def explode(*args, **kwargs):
@@ -722,7 +722,7 @@ def test_the_child_caches_follow_the_real_home_not_the_displayed_one(
 
     project = tmp_path / "project"
     hub = project / "hub"
-    hub.mkdir(parents = True)
+    hub.mkdir(parents=True)
     theirs = _write(project / "assets" / "not-a-cache.bin", "d" * 10)
     real_home = tmp_path / "xdg" / "huggingface"
     mine = _write(real_home / "assets" / "asset.bin", "a" * 10)
@@ -732,7 +732,7 @@ def test_the_child_caches_follow_the_real_home_not_the_displayed_one(
     )
     monkeypatch.setattr(hf_cache_settings, "get_hf_cache_paths", lambda: paths)
     monkeypatch.setattr(hf_cache_settings, "_EXPLICIT_CACHE_ENV", {"HF_HUB_CACHE": str(hub)})
-    monkeypatch.delenv("HF_ASSETS_CACHE", raising = False)
+    monkeypatch.delenv("HF_ASSETS_CACHE", raising=False)
     monkeypatch.setenv("HF_HOME", str(real_home))
 
     entry = describe_cache(definition_for("hf_assets"))
@@ -761,9 +761,9 @@ def test_a_measurement_that_began_before_a_purge_is_not_remembered(
         return before_the_purge
 
     monkeypatch.setattr(cache_inventory, "describe_cache", measure_then_purge)
-    assert cache_inventory._described(definition, refresh = True)["size_bytes"] == 100
+    assert cache_inventory._described(definition, refresh=True)["size_bytes"] == 100
     monkeypatch.setattr(cache_inventory, "describe_cache", real_describe)
-    assert cache_inventory._described(definition, refresh = False)["size_bytes"] == 0
+    assert cache_inventory._described(definition, refresh=False)["size_bytes"] == 0
 
 
 def test_the_pip_probe_asks_the_child_for_utf8(tmp_path, monkeypatch, isolated_caches):
@@ -776,7 +776,7 @@ def test_the_pip_probe_asks_the_child_for_utf8(tmp_path, monkeypatch, isolated_c
     seen = {}
     configured = tmp_path / "caché-pip"
     _write(configured / "wheels" / "cached.whl", "p" * 40)
-    monkeypatch.delenv("PIP_CACHE_DIR", raising = False)
+    monkeypatch.delenv("PIP_CACHE_DIR", raising=False)
     monkeypatch.setattr(module, "_probed_cache_dirs", {})
 
     def record(*args, **kwargs):
@@ -831,11 +831,11 @@ def test_the_matplotlib_cache_is_where_matplotlib_puts_it(
 
     from utils import cache_inventory as module
 
-    monkeypatch.delenv("MPLCONFIGDIR", raising = False)
-    monkeypatch.delenv("XDG_CACHE_HOME", raising = False)
+    monkeypatch.delenv("MPLCONFIGDIR", raising=False)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setattr(_sys, "platform", platform)
     monkeypatch.setattr(module, "_is_windows", lambda: name == "nt")
-    (tmp_path / ".matplotlib").mkdir(exist_ok = True)
+    (tmp_path / ".matplotlib").mkdir(exist_ok=True)
 
     assert module._matplotlib_dirs() == [tmp_path / expected]
     assert (module._matplotlib_patterns() is not None) is patterned
@@ -847,7 +847,7 @@ def test_the_cuda_cache_is_roaming_appdata_on_windows(tmp_path, monkeypatch, iso
 
     from utils import cache_inventory as module
 
-    monkeypatch.delenv("CUDA_CACHE_PATH", raising = False)
+    monkeypatch.delenv("CUDA_CACHE_PATH", raising=False)
     monkeypatch.setattr(module, "_is_windows", lambda: True)
     monkeypatch.setenv("APPDATA", str(tmp_path / "AppData" / "Roaming"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
@@ -863,7 +863,7 @@ def test_the_cuda_cache_is_roaming_appdata_on_windows(tmp_path, monkeypatch, iso
 def test_numbas_user_wide_fallback_cache_is_reported(tmp_path, monkeypatch, isolated_caches):
     """__pycache__ next to the source is not ours, but UserWideCacheLocator's
     AppDirs("numba", appauthor = False).user_cache_dir is."""
-    monkeypatch.delenv("NUMBA_CACHE_DIR", raising = False)
+    monkeypatch.delenv("NUMBA_CACHE_DIR", raising=False)
     root = tmp_path / "xdg" / "numba"
     _write(root / "somemodule.nbi", "n" * 30)
 
@@ -905,7 +905,7 @@ def test_the_npm_cache_follows_npmrc(tmp_path, monkeypatch, isolated_caches):
     configured = tmp_path / "corp-npm"
     _write(configured / "_cacache" / "index-v5" / "entry", "n" * 25)
     for key in ("npm_config_cache", "NPM_CONFIG_CACHE"):
-        monkeypatch.delenv(key, raising = False)
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(module, "_probed_cache_dirs", {})
     monkeypatch.setattr(real_shutil, "which", lambda name, **kw: "/usr/bin/npm")
     monkeypatch.setattr(
@@ -945,7 +945,7 @@ def test_the_recorded_install_uv_cache_is_reported(tmp_path, monkeypatch, isolat
     _write(seeded / "seeded.whl", "s" * 10)
     _write(warm / "archive-v0" / "big.whl", "w" * 900)
     monkeypatch.setattr(storage_roots, "cache_root", lambda: studio_cache)
-    (studio_cache / "uv-cache-dir").write_text(f"{warm}\n", encoding = "utf-8")
+    (studio_cache / "uv-cache-dir").write_text(f"{warm}\n", encoding="utf-8")
     monkeypatch.setenv("UV_CACHE_DIR", str(seeded))
 
     entry = describe_cache(definition_for("uv"))
@@ -964,7 +964,7 @@ def test_a_blank_or_missing_uv_marker_adds_nothing(tmp_path, monkeypatch, isolat
     studio_cache.mkdir()
     monkeypatch.setattr(storage_roots, "cache_root", lambda: studio_cache)
     assert module._recorded_uv_cache() is None
-    (studio_cache / "uv-cache-dir").write_text("   \n", encoding = "utf-8")
+    (studio_cache / "uv-cache-dir").write_text("   \n", encoding="utf-8")
     assert module._recorded_uv_cache() is None
 
 
@@ -995,7 +995,7 @@ def test_two_cold_probes_do_not_race_into_the_fallback(tmp_path, monkeypatch, is
 
     configured = tmp_path / "corp-pip"
     configured.mkdir()
-    monkeypatch.delenv("PIP_CACHE_DIR", raising = False)
+    monkeypatch.delenv("PIP_CACHE_DIR", raising=False)
     monkeypatch.setattr(module, "_probed_cache_dirs", {})
     started = threading.Event()
     release = threading.Event()
@@ -1007,10 +1007,10 @@ def test_two_cold_probes_do_not_race_into_the_fallback(tmp_path, monkeypatch, is
 
     monkeypatch.setattr(module.subprocess, "run", slow)
     answers: list = []
-    first = threading.Thread(target = lambda: answers.append(module._pip_dirs()))
+    first = threading.Thread(target=lambda: answers.append(module._pip_dirs()))
     first.start()
     assert started.wait(5)
-    second = threading.Thread(target = lambda: answers.append(module._pip_dirs()))
+    second = threading.Thread(target=lambda: answers.append(module._pip_dirs()))
     second.start()
     release.set()
     first.join(10)
@@ -1062,7 +1062,7 @@ def test_a_configured_token_path_is_protected(tmp_path, monkeypatch, isolated_ca
     entry = describe_cache(definition_for("hf_assets"))
     assert entry["purgeable"] is False
     purge_caches(["hf_assets"])
-    assert token.read_text(encoding = "utf-8") == "hf_secret"
+    assert token.read_text(encoding="utf-8") == "hf_secret"
 
 
 def test_a_purge_waits_for_the_downloads_writing_into_the_cache(
@@ -1091,7 +1091,7 @@ def test_the_hub_cache_is_reserved_in_both_registries(monkeypatch):
     from utils import cache_inventory as module
 
     class _Registry:
-        def __init__(self, free = True):
+        def __init__(self, free=True):
             self.free = free
             self.held = 0
 
@@ -1146,7 +1146,7 @@ def test_one_blocked_root_does_not_put_the_others_out_of_reach(
     theirs = _write(blocked / "taxes.pdf", "mine")
     monkeypatch.setattr(storage_roots, "cache_root", lambda: studio_cache)
     monkeypatch.setattr(storage_roots, "documents_root", lambda: documents)
-    (studio_cache / "uv-cache-dir").write_text(f"{blocked}\n", encoding = "utf-8")
+    (studio_cache / "uv-cache-dir").write_text(f"{blocked}\n", encoding="utf-8")
     monkeypatch.setenv("UV_CACHE_DIR", str(good))
 
     entry = describe_cache(definition_for("uv"))
@@ -1180,12 +1180,12 @@ def test_two_cold_reads_of_one_cache_walk_it_once(tmp_path, monkeypatch, isolate
     monkeypatch.setattr(cache_inventory, "describe_cache", slow)
     answers: list = []
     first = threading.Thread(
-        target = lambda: answers.append(module._described(definition, refresh = False))
+        target=lambda: answers.append(module._described(definition, refresh=False))
     )
     first.start()
     assert started.wait(5)
     second = threading.Thread(
-        target = lambda: answers.append(module._described(definition, refresh = False))
+        target=lambda: answers.append(module._described(definition, refresh=False))
     )
     second.start()
     release.set()
@@ -1223,7 +1223,7 @@ def test_a_forced_read_does_not_take_a_walk_that_began_before_it(
     monkeypatch.setattr(cache_inventory, "describe_cache", slow)
     sizes: list = []
     first = threading.Thread(
-        target = lambda: sizes.append(module._described(definition, refresh = False))
+        target=lambda: sizes.append(module._described(definition, refresh=False))
     )
     first.start()
     assert started.wait(5)
@@ -1231,7 +1231,7 @@ def test_a_forced_read_does_not_take_a_walk_that_began_before_it(
     for child in root.iterdir():
         child.unlink()
     forced = threading.Thread(
-        target = lambda: sizes.append(module._described(definition, refresh = True))
+        target=lambda: sizes.append(module._described(definition, refresh=True))
     )
     forced.start()
     release.set()
@@ -1250,7 +1250,7 @@ def test_the_child_caches_ignore_a_studio_selected_models_folder(
     from utils import hf_cache_settings
 
     chosen = tmp_path / "MyModels"
-    (chosen / "hub").mkdir(parents = True)
+    (chosen / "hub").mkdir(parents=True)
     theirs = _write(chosen / "assets" / "not-a-cache.bin", "d" * 10)
     real_home = tmp_path / "default-hf"
     mine = _write(real_home / "assets" / "asset.bin", "a" * 10)
@@ -1259,7 +1259,7 @@ def test_the_child_caches_ignore_a_studio_selected_models_folder(
         chosen, chosen / "hub", real_home / "xet", "studio"
     )
     monkeypatch.setattr(hf_cache_settings, "get_hf_cache_paths", lambda: paths)
-    monkeypatch.delenv("HF_ASSETS_CACHE", raising = False)
+    monkeypatch.delenv("HF_ASSETS_CACHE", raising=False)
     monkeypatch.setenv("HF_HOME", str(real_home))
 
     entry = describe_cache(definition_for("hf_assets"))
@@ -1375,7 +1375,7 @@ def test_a_running_training_job_holds_off_the_model_cache_clears(
             return self.active
 
     backend = _Backend()
-    monkeypatch.setattr(training_module, "get_training_backend", lambda: backend, raising = False)
+    monkeypatch.setattr(training_module, "get_training_backend", lambda: backend, raising=False)
 
     result = purge_caches(["hf_hub"])["results"][0]
     assert blob.exists()
@@ -1399,7 +1399,7 @@ def test_the_torch_extensions_cache_repeats_the_name_on_windows(
     with no appauthor, which torch/_appdirs defaults to the app name."""
     from utils import cache_inventory as module
 
-    monkeypatch.delenv("TORCH_EXTENSIONS_DIR", raising = False)
+    monkeypatch.delenv("TORCH_EXTENSIONS_DIR", raising=False)
     monkeypatch.setattr(module, "_is_windows", lambda: True)
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "Local"))
     assert module._torch_extensions_dirs() == [
@@ -1426,7 +1426,7 @@ def test_a_diffusion_run_holds_off_the_model_cache_clears(monkeypatch):
         def is_active(self):
             return True
 
-    monkeypatch.setattr(training_module, "get_training_backend", lambda: _Idle(), raising = False)
+    monkeypatch.setattr(training_module, "get_training_backend", lambda: _Idle(), raising=False)
     monkeypatch.setattr(
         diffusion_training_service, "get_diffusion_training_service", lambda: _Busy()
     )
@@ -1446,7 +1446,7 @@ def test_a_compiled_cache_the_clear_would_refuse_says_so_on_the_row(
 
     documents = tmp_path / "Documents"
     compiled = documents / "checkout" / "unsloth_compiled_cache"
-    compiled.mkdir(parents = True)
+    compiled.mkdir(parents=True)
     (compiled / cache_cleanup.CACHE_MARKER).touch()
     generated = _write(compiled / "unsloth_compiled_module_llama.py", "compiled" * 10)
     monkeypatch.setattr(storage_roots, "documents_root", lambda: documents)
@@ -1477,16 +1477,16 @@ def test_moving_the_models_folder_forgets_the_old_roots_sizes(
     monkeypatch.setattr(
         cache_inventory, "describe_cache", lambda target: {"key": target.key, "size_bytes": 40}
     )
-    assert module._described(definition, refresh = False)["size_bytes"] == 40
+    assert module._described(definition, refresh=False)["size_bytes"] == 40
 
     # The folder moves. Same key, different directory, and the walk would now answer 7.
     monkeypatch.setattr(
         cache_inventory, "describe_cache", lambda target: {"key": target.key, "size_bytes": 7}
     )
-    assert module._described(definition, refresh = False)["size_bytes"] == 40, "memo not warm"
+    assert module._described(definition, refresh=False)["size_bytes"] == 40, "memo not warm"
 
     module.invalidate_hf_rooted_sizes()
-    assert module._described(definition, refresh = False)["size_bytes"] == 7
+    assert module._described(definition, refresh=False)["size_bytes"] == 7
 
 
 def test_setting_the_cache_home_invalidates_the_inventory(monkeypatch):
@@ -1520,7 +1520,7 @@ def test_bytes_still_linked_from_outside_are_not_called_reclaimable(tmp_path, is
     root = tmp_path / "uv"
     shared = _write(root / "archive" / "wheel.so", "w" * 800)
     venv = tmp_path / "venv" / "lib"
-    venv.mkdir(parents = True)
+    venv.mkdir(parents=True)
     os.link(shared, venv / "wheel.so")  # the installed environment, outside the cache
     _write(root / "archive" / "own.bin", "o" * 20)
 
@@ -1533,7 +1533,7 @@ def test_a_purge_reports_only_the_bytes_it_actually_freed(tmp_path, isolated_cac
     root = tmp_path / "uv"
     shared = _write(root / "archive" / "wheel.so", "w" * 800)
     venv = tmp_path / "venv" / "lib"
-    venv.mkdir(parents = True)
+    venv.mkdir(parents=True)
     os.link(shared, venv / "wheel.so")
     _write(root / "archive" / "own.bin", "o" * 20)
 
@@ -1541,7 +1541,7 @@ def test_a_purge_reports_only_the_bytes_it_actually_freed(tmp_path, isolated_cac
 
     assert outcome.errors == []
     assert outcome.freed_bytes == 20
-    assert (venv / "wheel.so").read_text(encoding = "utf-8") == "w" * 800
+    assert (venv / "wheel.so").read_text(encoding="utf-8") == "w" * 800
 
 
 def test_a_whole_hub_clear_waits_for_a_loaded_model(monkeypatch, isolated_caches):
@@ -1577,7 +1577,7 @@ def test_a_whole_hub_clear_waits_for_a_loaded_dictation_model(monkeypatch):
     resident Whisper worker would have had its snapshot unlinked from under it."""
     from hub.services.models.deletion import any_model_load_blocks_cache_clear
 
-    _idle_dictation(monkeypatch, model = "openai/whisper-large-v3", engine = "transformers")
+    _idle_dictation(monkeypatch, model="openai/whisper-large-v3", engine="transformers")
 
     assert any_model_load_blocks_cache_clear() == (
         "Unload the dictation model before clearing the model cache"
@@ -1589,7 +1589,7 @@ def test_a_whole_hub_clear_waits_for_a_loading_dictation_model(monkeypatch):
     right now. Mirrors the Images / Video loading_repo_ids branch."""
     from hub.services.models.deletion import any_model_load_blocks_cache_clear
 
-    _idle_dictation(monkeypatch, loading = True)
+    _idle_dictation(monkeypatch, loading=True)
 
     assert any_model_load_blocks_cache_clear() == (
         "A dictation model load is using the cache; wait for it to finish"
@@ -1648,10 +1648,10 @@ def test_a_whole_hub_clear_waits_for_a_draining_image_load(monkeypatch):
 
     _idle_dictation(monkeypatch)
     draining = types.SimpleNamespace(
-        status = lambda: {"loaded": False},
-        loaded_repo_ids = tuple,
-        loading_repo_ids = tuple,
-        draining_repo_ids = lambda: ("black-forest-labs/FLUX.2-klein-4B",),
+        status=lambda: {"loaded": False},
+        loaded_repo_ids=tuple,
+        loading_repo_ids=tuple,
+        draining_repo_ids=lambda: ("black-forest-labs/FLUX.2-klein-4B",),
     )
     router = types.ModuleType("core.inference.diffusion_engine_router")
     router.get_active_diffusion_engine = lambda: draining
@@ -1684,7 +1684,7 @@ def test_a_cache_the_environment_is_symlinked_into_is_not_offered(
     _write(tmp_path / "uv" / "archive" / "pkg" / "__init__.py", "x")
     site = tmp_path / "site-packages"
     site.mkdir()
-    (site / "pkg").symlink_to(tmp_path / "uv" / "archive" / "pkg", target_is_directory = True)
+    (site / "pkg").symlink_to(tmp_path / "uv" / "archive" / "pkg", target_is_directory=True)
     import sysconfig
 
     monkeypatch.setattr(sysconfig, "get_paths", lambda *a, **k: {"purelib": str(site)})

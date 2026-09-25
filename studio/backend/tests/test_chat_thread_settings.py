@@ -68,7 +68,7 @@ def _thread(thread_id: str = "thread-1", **extra) -> dict:
 
 def test_thread_settings_round_trip():
     settings = ChatThreadSettings.model_validate(SETTINGS)
-    assert settings.model_dump(exclude_unset = True) == SETTINGS
+    assert settings.model_dump(exclude_unset=True) == SETTINGS
 
 
 @pytest.mark.parametrize(
@@ -91,10 +91,10 @@ def test_thread_settings_rejects_out_of_contract(field, value):
 
 def test_thread_settings_survive_a_record_rewrite(tmp_path, monkeypatch):
     _reset_studio_db(tmp_path, monkeypatch)
-    studio_db.upsert_chat_thread(_thread(settings = SETTINGS))
+    studio_db.upsert_chat_thread(_thread(settings=SETTINGS))
 
     # the title autosave and every other writer rebuild the record without the snapshot.
-    studio_db.upsert_chat_thread(_thread(title = "Renamed"))
+    studio_db.upsert_chat_thread(_thread(title="Renamed"))
 
     stored = studio_db.get_chat_thread("thread-1")
     assert stored["title"] == "Renamed"
@@ -103,7 +103,7 @@ def test_thread_settings_survive_a_record_rewrite(tmp_path, monkeypatch):
 
 def test_thread_settings_patch_replaces_the_snapshot(tmp_path, monkeypatch):
     _reset_studio_db(tmp_path, monkeypatch)
-    studio_db.upsert_chat_thread(_thread(settings = SETTINGS))
+    studio_db.upsert_chat_thread(_thread(settings=SETTINGS))
 
     # ragSource is a discriminated union, so the write replaces: no kb id survives the switch.
     replacement = {"toolsEnabled": False, "ragSource": {"type": "thread"}}
@@ -115,7 +115,7 @@ def test_thread_settings_patch_replaces_the_snapshot(tmp_path, monkeypatch):
 
 def test_thread_listing_leaves_out_the_snapshot(tmp_path, monkeypatch):
     _reset_studio_db(tmp_path, monkeypatch)
-    studio_db.upsert_chat_thread(_thread(settings = SETTINGS))
+    studio_db.upsert_chat_thread(_thread(settings=SETTINGS))
 
     listed = studio_db.list_chat_threads()
 
@@ -132,7 +132,7 @@ def test_thread_without_a_snapshot_reads_back_null(tmp_path, monkeypatch):
 
 def test_fork_inherits_the_snapshot(tmp_path, monkeypatch):
     _reset_studio_db(tmp_path, monkeypatch)
-    studio_db.upsert_chat_thread(_thread(settings = SETTINGS))
+    studio_db.upsert_chat_thread(_thread(settings=SETTINGS))
     studio_db.upsert_chat_message(
         {
             "id": "message-1",
@@ -145,11 +145,11 @@ def test_fork_inherits_the_snapshot(tmp_path, monkeypatch):
     )
 
     forked = studio_db.fork_chat_thread(
-        source_thread_id = "thread-1",
-        branch_message_id = "message-1",
-        new_thread_id = "thread-2",
-        created_at = 1_700_000_000_002,
-        id_factory = lambda: "message-2",
+        source_thread_id="thread-1",
+        branch_message_id="message-1",
+        new_thread_id="thread-2",
+        created_at=1_700_000_000_002,
+        id_factory=lambda: "message-2",
     )
 
     assert forked is not None
@@ -161,7 +161,7 @@ def test_settings_column_is_added_to_an_existing_database(tmp_path, monkeypatch)
     # a database created before this change has no settings_json, and the CREATE TABLE in
     # _ensure_schema never runs for it, so only the ALTER keeps thread writes working.
     db_path = Path(studio_db_path())
-    db_path.parent.mkdir(parents = True, exist_ok = True)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     try:
         conn.execute(
@@ -200,7 +200,7 @@ def test_settings_column_is_added_to_an_existing_database(tmp_path, monkeypatch)
         conn.close()
 
     assert studio_db.get_chat_thread("thread-1")["settings"] is None
-    studio_db.upsert_chat_thread(_thread(settings = SETTINGS))
+    studio_db.upsert_chat_thread(_thread(settings=SETTINGS))
     assert studio_db.get_chat_thread("thread-1")["settings"] == SETTINGS
 
 
@@ -235,31 +235,31 @@ def test_a_snapshot_from_a_newer_build_still_reads(stored, expected):
         assert thread.settings is None
     else:
         assert thread.settings is not None
-        assert thread.settings.model_dump(exclude_none = True) == expected
+        assert thread.settings.model_dump(exclude_none=True) == expected
 
 
 def test_the_wire_contract_stays_strict():
     # Only rows off disk are forgiven. A client may not invent a setting on either
     # the patch or the full-record POST, which shares the ChatThread model.
     with pytest.raises(ValidationError):
-        ChatThreadPatch(settings = {"toolsEnabled": True, "voiceModeEnabled": True})
+        ChatThreadPatch(settings={"toolsEnabled": True, "voiceModeEnabled": True})
     with pytest.raises(ValidationError):
-        ChatThreadPatch(settings = {"ragTopK": 999})
+        ChatThreadPatch(settings={"ragTopK": 999})
     with pytest.raises(ValidationError):
         ChatThread(
-            id = "t",
-            title = "T",
-            modelType = "base",
-            createdAt = 1,
-            settings = {"toolsEnabled": True, "voiceModeEnabled": True},
+            id="t",
+            title="T",
+            modelType="base",
+            createdAt=1,
+            settings={"toolsEnabled": True, "voiceModeEnabled": True},
         )
     with pytest.raises(ValidationError):
         ChatThread(
-            id = "t",
-            title = "T",
-            modelType = "base",
-            createdAt = 1,
-            settings = {"ragTopK": 999},
+            id="t",
+            title="T",
+            modelType="base",
+            createdAt=1,
+            settings={"ragTopK": 999},
         )
 
 
@@ -326,7 +326,7 @@ def test_a_downgraded_client_cannot_delete_what_it_could_not_read(tmp_path, monk
     # the client writes back everything it knows about
     patch = {"settings": {"toolsEnabled": False}}
     settings_write = _settings_write_from_patch(patch)
-    studio_db.update_chat_thread("thread-1", patch, settings_write = settings_write)
+    studio_db.update_chat_thread("thread-1", patch, settings_write=settings_write)
 
     raw = _raw_settings()
     assert "voiceModeEnabled" in raw
@@ -342,10 +342,10 @@ def test_a_merge_touches_only_the_fields_it_names(tmp_path, monkeypatch):
         "thread-1", {"settings": {"toolsEnabled": True, "permissionMode": "ask"}}
     )
 
-    payload = ChatThreadPatch(settingsPatch = {"codeToolsEnabled": True})
-    patch = payload.model_dump(exclude_unset = True)
+    payload = ChatThreadPatch(settingsPatch={"codeToolsEnabled": True})
+    patch = payload.model_dump(exclude_unset=True)
     settings_write = _settings_write_from_patch(patch)
-    studio_db.update_chat_thread("thread-1", patch, settings_write = settings_write)
+    studio_db.update_chat_thread("thread-1", patch, settings_write=settings_write)
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1")).settings
     assert got.codeToolsEnabled is True
@@ -358,10 +358,10 @@ def test_a_merge_also_spares_an_unreadable_key(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
     _store_raw('{"toolsEnabled": true, "voiceModeEnabled": true}')
 
-    payload = ChatThreadPatch(settingsPatch = {"toolsEnabled": False})
-    patch = payload.model_dump(exclude_unset = True)
+    payload = ChatThreadPatch(settingsPatch={"toolsEnabled": False})
+    patch = payload.model_dump(exclude_unset=True)
     settings_write = _settings_write_from_patch(patch)
-    studio_db.update_chat_thread("thread-1", patch, settings_write = settings_write)
+    studio_db.update_chat_thread("thread-1", patch, settings_write=settings_write)
 
     assert "voiceModeEnabled" in _raw_settings()
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings.toolsEnabled is False
@@ -375,7 +375,7 @@ def test_clearing_still_clears_the_whole_column(tmp_path, monkeypatch):
 
     patch = {"settings": None}
     settings_write = _settings_write_from_patch(patch)
-    studio_db.update_chat_thread("thread-1", patch, settings_write = settings_write)
+    studio_db.update_chat_thread("thread-1", patch, settings_write=settings_write)
 
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings is None
     assert _raw_settings() in (None, "", "null")
@@ -388,7 +388,7 @@ def test_a_merge_of_nothing_leaves_the_row_alone(tmp_path, monkeypatch):
 
     patch = {"title": "renamed", "settingsPatch": None}
     settings_write = _settings_write_from_patch(patch)
-    studio_db.update_chat_thread("thread-1", patch, settings_write = settings_write)
+    studio_db.update_chat_thread("thread-1", patch, settings_write=settings_write)
     assert "settings" not in patch
     studio_db.update_chat_thread("thread-1", patch)
 
@@ -399,9 +399,9 @@ def test_a_merge_of_nothing_leaves_the_row_alone(tmp_path, monkeypatch):
 
 def test_a_merge_is_still_held_to_the_contract():
     with pytest.raises(ValidationError):
-        ChatThreadPatch(settingsPatch = {"voiceModeEnabled": True})
+        ChatThreadPatch(settingsPatch={"voiceModeEnabled": True})
     with pytest.raises(ValidationError):
-        ChatThreadPatch(settingsPatch = {"ragTopK": 999})
+        ChatThreadPatch(settingsPatch={"ragTopK": 999})
 
 
 def test_an_older_write_cannot_overtake_a_newer_one(tmp_path, monkeypatch):
@@ -411,11 +411,11 @@ def test_an_older_write_cannot_overtake_a_newer_one(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": True}, seq = 200, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": True}, seq=200, writer="tab-a"
     )
     # the straggler, carrying what the user had moved away from
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": False}, seq = 100, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": False}, seq=100, writer="tab-a"
     )
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1")).settings
@@ -428,10 +428,10 @@ def test_the_same_seq_is_not_applied_twice(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": True}, seq = 500, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": True}, seq=500, writer="tab-a"
     )
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": False}, seq = 500, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": False}, seq=500, writer="tab-a"
     )
 
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings.toolsEnabled is True
@@ -443,9 +443,9 @@ def test_a_write_without_a_seq_still_applies(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": True}, seq = 900, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": True}, seq=900, writer="tab-a"
     )
-    studio_db.write_chat_thread_settings("thread-1", replace = {"toolsEnabled": False})
+    studio_db.write_chat_thread_settings("thread-1", replace={"toolsEnabled": False})
 
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings.toolsEnabled is False
 
@@ -456,8 +456,8 @@ def test_two_merges_of_different_fields_both_survive(tmp_path, monkeypatch):
     _reset_studio_db(tmp_path, monkeypatch)
     studio_db.upsert_chat_thread(_thread())
 
-    studio_db.write_chat_thread_settings("thread-1", merge = {"toolsEnabled": True})
-    studio_db.write_chat_thread_settings("thread-1", merge = {"codeToolsEnabled": True})
+    studio_db.write_chat_thread_settings("thread-1", merge={"toolsEnabled": True})
+    studio_db.write_chat_thread_settings("thread-1", merge={"codeToolsEnabled": True})
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1")).settings
     assert got.toolsEnabled is True
@@ -477,7 +477,7 @@ def test_the_watermark_column_is_added_to_an_existing_database(tmp_path, monkeyp
     monkeypatch.setattr(studio_db, "_schema_ready", set())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": True}, seq = 1, writer = "tab-a"
+        "thread-1", replace={"toolsEnabled": True}, seq=1, writer="tab-a"
     )
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings.toolsEnabled is True
 
@@ -490,11 +490,11 @@ def test_two_browsers_are_never_ordered_against_each_other(tmp_path, monkeypatch
     studio_db.upsert_chat_thread(_thread())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": True}, seq = 9_000, writer = "laptop"
+        "thread-1", replace={"toolsEnabled": True}, seq=9_000, writer="laptop"
     )
     # a second machine, far behind on the same counter, still gets its edit
     studio_db.write_chat_thread_settings(
-        "thread-1", replace = {"toolsEnabled": False}, seq = 12, writer = "desktop"
+        "thread-1", replace={"toolsEnabled": False}, seq=12, writer="desktop"
     )
 
     assert thread_from_row(studio_db.get_chat_thread("thread-1")).settings.toolsEnabled is False
@@ -510,8 +510,8 @@ def test_a_failed_precondition_does_not_commit_the_settings(tmp_path, monkeypatc
         studio_db.update_chat_thread(
             "thread-1",
             {"title": "renamed"},
-            expected_title = "Not The Current Title",
-            settings_write = {"replace": {"toolsEnabled": False}},
+            expected_title="Not The Current Title",
+            settings_write={"replace": {"toolsEnabled": False}},
         )
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1"))
@@ -526,8 +526,8 @@ def test_settings_and_a_passing_guard_both_land(tmp_path, monkeypatch):
     studio_db.update_chat_thread(
         "thread-1",
         {"title": "renamed"},
-        expected_title = "Test Chat",
-        settings_write = {"replace": {"toolsEnabled": True}},
+        expected_title="Test Chat",
+        settings_write={"replace": {"toolsEnabled": True}},
     )
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1"))
@@ -543,14 +543,14 @@ def test_another_tab_writing_does_not_clear_a_writer_watermark(tmp_path, monkeyp
     studio_db.upsert_chat_thread(_thread())
 
     studio_db.write_chat_thread_settings(
-        "thread-1", merge = {"toolsEnabled": True}, seq = 5, writer = "tab-a"
+        "thread-1", merge={"toolsEnabled": True}, seq=5, writer="tab-a"
     )
     studio_db.write_chat_thread_settings(
-        "thread-1", merge = {"codeToolsEnabled": True}, seq = 1, writer = "tab-b"
+        "thread-1", merge={"codeToolsEnabled": True}, seq=1, writer="tab-b"
     )
     # tab A's straggler, older than what A already had stored
     studio_db.write_chat_thread_settings(
-        "thread-1", merge = {"toolsEnabled": False}, seq = 2, writer = "tab-a"
+        "thread-1", merge={"toolsEnabled": False}, seq=2, writer="tab-a"
     )
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1")).settings
@@ -563,7 +563,7 @@ def test_watermarks_do_not_grow_without_bound(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
     for i in range(studio_db._MAX_SETTINGS_WRITERS + 10):
         studio_db.write_chat_thread_settings(
-            "thread-1", merge = {"toolsEnabled": True}, seq = i + 1, writer = f"tab-{i}"
+            "thread-1", merge={"toolsEnabled": True}, seq=i + 1, writer=f"tab-{i}"
         )
 
     conn = sqlite3.connect(studio_db_path())
@@ -586,15 +586,15 @@ def test_the_newest_writer_is_not_the_first_evicted(tmp_path, monkeypatch):
     studio_db.upsert_chat_thread(_thread())
     for i in range(studio_db._MAX_SETTINGS_WRITERS):
         studio_db.write_chat_thread_settings(
-            "thread-1", merge = {"toolsEnabled": True}, seq = 500 + i, writer = f"old-{i}"
+            "thread-1", merge={"toolsEnabled": True}, seq=500 + i, writer=f"old-{i}"
         )
     # a brand new tab, counter starting at 1
     studio_db.write_chat_thread_settings(
-        "thread-1", merge = {"toolsEnabled": False}, seq = 1, writer = "fresh"
+        "thread-1", merge={"toolsEnabled": False}, seq=1, writer="fresh"
     )
     # its own straggler must still be refused
     studio_db.write_chat_thread_settings(
-        "thread-1", merge = {"toolsEnabled": True}, seq = 1, writer = "fresh"
+        "thread-1", merge={"toolsEnabled": True}, seq=1, writer="fresh"
     )
 
     got = thread_from_row(studio_db.get_chat_thread("thread-1")).settings
@@ -724,7 +724,7 @@ def test_the_response_says_absent_for_a_key_the_snapshot_never_held(stored, expe
     a pre-seed snapshot would read as a chat that had cleared the pin."""
     app = FastAPI()
 
-    @app.get("/thread", response_model = ChatThread)
+    @app.get("/thread", response_model=ChatThread)
     def _read():
         return thread_from_row(_thread_row(stored))
 

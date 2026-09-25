@@ -139,12 +139,12 @@ def _wsl_networking_mode() -> Optional[str]:
         try:
             result = subprocess.run(
                 ["wslinfo", "--networking-mode"],
-                capture_output = True,
-                check = False,
-                text = True,
-                encoding = "utf-8",
-                errors = "replace",
-                timeout = 1,
+                capture_output=True,
+                check=False,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=1,
             )
         except (OSError, subprocess.SubprocessError):
             mode = "unknown"
@@ -229,17 +229,18 @@ def _bind_listener(address: str, port: int) -> socket.socket:
 
 def _listener_config(app, host: str, port: int):
     from utils.uvicorn_h11_shutdown import uvicorn_http_protocol
+
     return uvicorn.Config(
         app,
-        host = host,
-        port = port,
+        host=host,
+        port=port,
         # a second lifespan would re-fire the app's startup handlers
-        lifespan = "off",
+        lifespan="off",
         # uvicorn.Config applies log_config eagerly, resetting run.py's startup log rewrite
-        log_config = None,
-        access_log = False,
-        server_header = False,
-        http = uvicorn_http_protocol(),
+        log_config=None,
+        access_log=False,
+        server_header=False,
+        http=uvicorn_http_protocol(),
     )
 
 
@@ -310,7 +311,7 @@ def start_lan_listener(
         # published before the socket can accept: a request served in between would still read the loopback-
         # only trust defaults
         set_lan_connector_active(True)
-        serving = server.serve(sockets = sockets)
+        serving = server.serve(sockets=sockets)
         try:
             future = asyncio.run_coroutine_threadsafe(serving, loop)
         except RuntimeError as exc:
@@ -321,7 +322,7 @@ def start_lan_listener(
         started = _wait_until(lambda: server.started or future.done(), _START_TIMEOUT)
         if not started or not server.started:
             server.should_exit = True
-            cause = future.exception(timeout = 0) if future.done() else None
+            cause = future.exception(timeout=0) if future.done() else None
             future.cancel()
             _fail_start(sockets, port, cause if cause is not None else "timed out")
             raise RuntimeError(_error)
@@ -366,10 +367,10 @@ def _arm_drain_watcher(server) -> None:
 
     _pending_drains += 1
     threading.Thread(
-        target = _clear_trust_after_drain,
-        args = (server,),
-        name = "lan-access-drain",
-        daemon = True,
+        target=_clear_trust_after_drain,
+        args=(server,),
+        name="lan-access-drain",
+        daemon=True,
     ).start()
 
 
@@ -411,7 +412,7 @@ def stop_lan_listener() -> bool:
 
     # a start holds _lock while waiting for this loop to run serve(), so a stop arriving on the loop
     # itself must not block on it
-    if not _lock.acquire(blocking = not _running_on_event_loop()):
+    if not _lock.acquire(blocking=not _running_on_event_loop()):
         logger.info("LAN access stop deferred: a listener change is in flight")
         return False
     # held across the wait so a start cannot begin rebinding sockets still closing

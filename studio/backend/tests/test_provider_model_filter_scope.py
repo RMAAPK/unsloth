@@ -32,7 +32,7 @@ def _list_models(monkeypatch, base_url: str, ids: list[str]) -> list[str]:
     monkeypatch.setattr(
         providers_route, "resolve_provider_api_key_or_400", lambda *a, **k: "sk-test"
     )
-    payload = ProviderModelsRequest(provider_type = "openai", base_url = base_url)
+    payload = ProviderModelsRequest(provider_type="openai", base_url=base_url)
     result = asyncio.new_event_loop().run_until_complete(
         providers_route.list_provider_models(payload, "tester", False)
     )

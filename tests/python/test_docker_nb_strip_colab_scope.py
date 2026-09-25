@@ -27,7 +27,7 @@ INTRO = 'To run this, press "*Runtime*" and press "*Run all*" on a **free** Tesl
 BADGE = '<a href="https://colab.research.google.com/github/unslothai/notebooks/blob/main/nb/X.ipynb">badge</a>\n'
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def strip():
     assert STRIP_PATH.is_file(), f"missing {STRIP_PATH}"
     spec = importlib.util.spec_from_file_location("unsloth_nb_strip_under_test", STRIP_PATH)

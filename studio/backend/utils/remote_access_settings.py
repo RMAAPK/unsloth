@@ -122,6 +122,7 @@ def get_remote_access_auto_start() -> bool:
     """Read the preference, failing closed on missing, invalid, or unreadable data."""
     try:
         from storage.studio_db import get_app_setting
+
         stored = get_app_setting(REMOTE_ACCESS_AUTO_START_KEY, None)
     except Exception:
         return False
@@ -141,6 +142,7 @@ def set_remote_access_auto_start(enabled: bool) -> bool:
 def _admin_password_ready() -> bool:
     try:
         from auth.storage import DEFAULT_ADMIN_USERNAME, requires_password_change
+
         return not requires_password_change(DEFAULT_ADMIN_USERNAME)
     except Exception:
         return False
@@ -183,9 +185,9 @@ def remote_access_status(app_state) -> dict:
     if generation_advanced and status["state"] == "off" and not status.get("stop_pending"):
         stopping = False
     if stopping:
-        status.update(state = "stopping", managed_by = "settings", url = None, error = None)
+        status.update(state="stopping", managed_by="settings", url=None, error=None)
     elif starting and status["state"] in {"off", "error"}:
-        status.update(state = "starting", managed_by = "settings", url = None, error = None)
+        status.update(state="starting", managed_by="settings", url=None, error=None)
 
     intent = getattr(app_state, "remote_access_intent", "disabled")
     is_colab = bool(getattr(app_state, "remote_access_is_colab", False))
@@ -275,11 +277,12 @@ def start_remote_access(app_state) -> dict:
 
     def _start() -> None:
         from cloudflare_tunnel import start_studio_tunnel
+
         url = start_studio_tunnel(
             port,
-            managed_by = "settings",
-            admission = admission,
-            origin_host = origin_host,
+            managed_by="settings",
+            admission=admission,
+            origin_host=origin_host,
         )
         if url:
             logger.info("Secure link access via Cloudflare: %s", url)
@@ -287,7 +290,7 @@ def start_remote_access(app_state) -> dict:
     _open_remote_access_stop_response_admission()
     with _worker_lock:
         if not _worker_is_current(_start_worker, _start_worker_admission, admission):
-            _start_worker = threading.Thread(target = _start, daemon = True)
+            _start_worker = threading.Thread(target=_start, daemon=True)
             _start_worker_admission = admission
             _start_worker.start()
     return remote_access_status(app_state)
@@ -343,7 +346,7 @@ def stop_remote_access(app_state) -> dict:
                 if _stop_worker is threading.current_thread():
                     _stop_worker_admission = current
             try:
-                stop_studio_tunnel(admission = current)
+                stop_studio_tunnel(admission=current)
                 if get_studio_tunnel_status().get("stop_pending"):
                     _open_remote_access_stop_response_admission()
             except Exception:
@@ -352,7 +355,7 @@ def stop_remote_access(app_state) -> dict:
 
     with _worker_lock:
         if not _worker_is_current(_stop_worker, _stop_worker_admission, admission):
-            _stop_worker = threading.Thread(target = _stop, daemon = True)
+            _stop_worker = threading.Thread(target=_stop, daemon=True)
             _stop_worker_admission = admission
             _stop_worker.start()
     return remote_access_status(app_state)

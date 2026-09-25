@@ -18,44 +18,44 @@ class DownloadModelRequest(BaseModel):
 
     repo_id: str = Field(
         ...,
-        description = "HuggingFace repo ID, e.g. 'unsloth/Qwen3-4B-GGUF'",
+        description="HuggingFace repo ID, e.g. 'unsloth/Qwen3-4B-GGUF'",
     )
     gguf_variant: Optional[str] = Field(
         None,
-        description = "Quantization label (e.g. 'Q4_K_M'). Required for GGUF repos.",
+        description="Quantization label (e.g. 'Q4_K_M'). Required for GGUF repos.",
     )
     use_xet: bool = Field(
         True,
-        description = "Legacy transport flag, superseded by transport_mode. Kept so an older "
+        description="Legacy transport flag, superseded by transport_mode. Kept so an older "
         "frontend or a scripted caller keeps working.",
     )
     transport_mode: Optional[Literal["auto", "xet", "http"]] = Field(
         None,
-        description = "Transport preference. 'auto' (the default in the UI) lets the backend pick "
+        description="Transport preference. 'auto' (the default in the UI) lets the backend pick "
         "per machine: it knows this host's RAM, its hf_xet build, and whether Xet has "
         "been failing here. 'xet'/'http' force one. Omitted -> use_xet decides.",
     )
     scope_id: Optional[str] = Field(
         None,
-        description = "Marks a partial-by-design download of `files` only (e.g. 'diffusion', "
+        description="Marks a partial-by-design download of `files` only (e.g. 'diffusion', "
         "whose loader reads a scoped subset of a repo). Keyed separately from the full "
         "snapshot of the same repo, so neither one's manifest describes the other.",
     )
     files: List[str] = Field(
-        default_factory = list,
-        description = "Exact files to fetch. Required with scope_id, ignored without it.",
+        default_factory=list,
+        description="Exact files to fetch. Required with scope_id, ignored without it.",
     )
 
 
 class CancelDownloadRequest(BaseModel):
-    repo_id: str = Field(..., description = "HuggingFace repo ID")
+    repo_id: str = Field(..., description="HuggingFace repo ID")
     gguf_variant: Optional[str] = Field(
         None,
-        description = "GGUF variant label; omit for safetensors snapshots",
+        description="GGUF variant label; omit for safetensors snapshots",
     )
     generation: Optional[int] = Field(
         None,
-        description = "Download generation tag from a prior start; passing it scopes the cancel to that exact run.",
+        description="Download generation tag from a prior start; passing it scopes the cancel to that exact run.",
     )
 
 
@@ -64,12 +64,12 @@ class DownloadJobStatus(BaseModel):
 
     state: DownloadJobState = Field(
         ...,
-        description = "Current download job state.",
+        description="Current download job state.",
     )
-    error: Optional[str] = Field(None, description = "Error message if state == 'error'")
+    error: Optional[str] = Field(None, description="Error message if state == 'error'")
     generation: int = Field(
         0,
-        description = "Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
+        description="Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
     )
 
 
@@ -104,7 +104,7 @@ class ActiveDownload(BaseModel):
     state: str
     files: Optional[List[str]] = Field(
         None,
-        description = (
+        description=(
             "For a SCOPED job (variant '@name'), the exact file list it is fetching; null for a "
             "full-snapshot or variant download. Every file set of one repo shares the scope slot, "
             "so an adopting client needs this to tell whether a live job is its own transfer or a "
@@ -113,7 +113,7 @@ class ActiveDownload(BaseModel):
     )
     generation: int = Field(
         0,
-        description = "Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
+        description="Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
     )
 
 
@@ -149,7 +149,7 @@ class DownloadProgressResponse(BaseModel):
     completed_bytes: int = 0
     complete_on_disk: bool = Field(
         False,
-        description = (
+        description=(
             "True only when the backend verified a usable completed snapshot/variant on disk."
         ),
     )
@@ -161,7 +161,7 @@ class DownloadProgressResponse(BaseModel):
     cache_ref: Optional[str] = None
     cache_measured: bool = Field(
         True,
-        description = (
+        description=(
             "False when the cache could not be scanned at all (an unreadable root). The "
             "reading is then unknown, not empty: cache_path is null either way, and "
             "hydration must not retire a persisted job on a scan that never happened."
@@ -169,7 +169,7 @@ class DownloadProgressResponse(BaseModel):
     )
     target_present: Optional[bool] = Field(
         None,
-        description = (
+        description=(
             "Whether this TARGET (variant) has anything in the cache, as opposed to the "
             "shared repo directory existing. Null where it cannot be established."
         ),
@@ -182,23 +182,23 @@ class DownloadDatasetRequest(BaseModel):
     The HuggingFace token travels in the internal Hub token header.
     """
 
-    repo_id: str = Field(..., description = "HuggingFace dataset repo ID")
+    repo_id: str = Field(..., description="HuggingFace dataset repo ID")
     use_xet: bool = Field(
         True,
-        description = "Legacy transport flag, superseded by transport_mode. Kept so an older "
+        description="Legacy transport flag, superseded by transport_mode. Kept so an older "
         "frontend or a scripted caller keeps working.",
     )
     transport_mode: Optional[Literal["auto", "xet", "http"]] = Field(
         None,
-        description = "Transport preference. 'auto' (the default in the UI) lets the backend pick "
+        description="Transport preference. 'auto' (the default in the UI) lets the backend pick "
         "per machine: it knows this host's RAM, its hf_xet build, and whether Xet has "
         "been failing here. 'xet'/'http' force one. Omitted -> use_xet decides.",
     )
 
 
 class CancelDatasetDownloadRequest(BaseModel):
-    repo_id: str = Field(..., description = "HuggingFace dataset repo ID")
-    generation: Optional[int] = Field(None, description = "Download generation")
+    repo_id: str = Field(..., description="HuggingFace dataset repo ID")
+    generation: Optional[int] = Field(None, description="Download generation")
 
 
 class DatasetDownloadJobStatus(BaseModel):
@@ -206,12 +206,12 @@ class DatasetDownloadJobStatus(BaseModel):
 
     state: DownloadJobState = Field(
         ...,
-        description = "Current dataset download job state.",
+        description="Current dataset download job state.",
     )
-    error: Optional[str] = Field(None, description = "Error message if state == 'error'")
+    error: Optional[str] = Field(None, description="Error message if state == 'error'")
     generation: int = Field(
         0,
-        description = "Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
+        description="Current run generation; an adopting client stores it so a later cancel is scoped to this exact run.",
     )
 
 

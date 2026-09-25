@@ -30,7 +30,7 @@ async def wait_for_frame(
     waiter = asyncio.ensure_future(event.wait())
     try:
         done, _ = await asyncio.wait(
-            {waiter, task}, timeout = timeout, return_when = asyncio.FIRST_COMPLETED
+            {waiter, task}, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
         )
         # The task is checked FIRST, even when the frame did go out. A send() that sets the event
         # and then raises leaves both futures done, and returning on the frame there would drop the

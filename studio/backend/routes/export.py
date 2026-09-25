@@ -263,7 +263,7 @@ async def get_export_logs(
         None,
         description = "Return log entries with seq strictly greater than this cursor.",
     ),
-    current_subject: str = Depends(get_current_subject),
+    current_subject: str = Depends(get_current_subject)
 ):
     """Tunnel-safe JSON fallback for the live export log stream.
 

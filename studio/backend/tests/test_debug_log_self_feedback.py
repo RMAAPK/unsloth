@@ -41,15 +41,15 @@ def session_log(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     directory = tmp_path / "logs" / "server"
-    directory.mkdir(parents = True)
+    directory.mkdir(parents=True)
     path = directory / f"server-20260813-120000-pid{os.getpid()}.log"
-    handle = path.open("w", encoding = "utf-8", buffering = 1)
+    handle = path.open("w", encoding="utf-8", buffering=1)
 
     previous = structlog.get_config()
     structlog.configure(
-        processors = [structlog.processors.JSONRenderer()],
-        logger_factory = structlog.PrintLoggerFactory(file = handle),
-        cache_logger_on_first_use = False,
+        processors=[structlog.processors.JSONRenderer()],
+        logger_factory=structlog.PrintLoggerFactory(file=handle),
+        cache_logger_on_first_use=False,
     )
     monkeypatch.setattr("loggers.handlers.logger", structlog.get_logger("access"))
     try:
@@ -62,11 +62,11 @@ def session_log(tmp_path, monkeypatch):
 @pytest.fixture
 def client():
     app = FastAPI()
-    app.include_router(settings_route.router, prefix = "/api/settings")
+    app.include_router(settings_route.router, prefix="/api/settings")
     app.dependency_overrides[settings_route.get_current_subject] = lambda: "admin"
     app.dependency_overrides[settings_route._require_ui_session] = lambda: None
     app.add_middleware(LoggingMiddleware)
-    return TestClient(app, raise_server_exceptions = False)
+    return TestClient(app, raise_server_exceptions=False)
 
 
 def test_polling_the_viewer_does_not_grow_the_log_it_reads(session_log, client):
@@ -76,7 +76,7 @@ def test_polling_the_viewer_does_not_grow_the_log_it_reads(session_log, client):
     cursor = None
     for _ in range(25):
         params = {"cursor": cursor} if cursor else {}
-        cursor = client.get("/api/settings/debug/logs", params = params).json()["cursor"]
+        cursor = client.get("/api/settings/debug/logs", params=params).json()["cursor"]
         client.get("/api/settings/debug/logs/sources")
 
     assert session_log.stat().st_size == before
@@ -88,7 +88,7 @@ def test_the_viewer_only_ever_returns_content_it_did_not_write(session_log, clie
     first = client.get("/api/settings/debug/logs").json()
     assert first["lines"] == ["first"]
     for _ in range(10):
-        body = client.get("/api/settings/debug/logs", params = {"cursor": first["cursor"]}).json()
+        body = client.get("/api/settings/debug/logs", params={"cursor": first["cursor"]}).json()
         # A line here would be the viewer reading its own access record.
         assert body["lines"] == []
 

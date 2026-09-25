@@ -29,7 +29,7 @@ import sys
 
 class _SmtHost:
     @staticmethod
-    def cpu_count(logical = True):
+    def cpu_count(logical=True):
         return 16 if logical else 8
 
 
@@ -43,7 +43,7 @@ GIB = 1024**3
 MIB = 1024 * 1024
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _discrete_host(monkeypatch):
     """Pin the one host fact the seam reads live.
 
@@ -53,10 +53,11 @@ def _discrete_host(monkeypatch):
     asserted deliberately, below.
     """
     import utils.hardware
+
     monkeypatch.setattr(utils.hardware, "is_apple_silicon", lambda: False)
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def sparse_adapter(tmp_path_factory):
     """A 3 GiB adapter file that costs neither RAM nor (on ext4/APFS) disk.
 
@@ -93,18 +94,18 @@ class _Stub:
     # unified-memory answer on the CUDA side, exercised deliberately below.
     _integrated_cuda = False
 
-    def _amd_apu_wants_unified_memory(self, gpu_indices = None):
+    def _amd_apu_wants_unified_memory(self, gpu_indices=None):
         return self._unified
 
-    def _integrated_cuda_unified_memory(self, gpu_indices = None):
+    def _integrated_cuda_unified_memory(self, gpu_indices=None):
         return self._integrated_cuda
 
     def __init__(
         self,
-        avail_mib = 64 * 1024,
-        ffn = 10 * GIB,
-        lm_head = 1 * GIB,
-        moe = 0,
+        avail_mib=64 * 1024,
+        ffn=10 * GIB,
+        lm_head=1 * GIB,
+        moe=0,
     ):
         self._avail_mib = avail_mib
         self._ffn_weight_bytes = ffn
@@ -129,47 +130,47 @@ class _Stub:
             return None
         n = 64
         return ModelLayout(
-            arch = "qwen35moe" if self.n_moe_layers else "qwen35",
-            n_layers = n,
-            n_attention_layers = 16,
-            blocks = tuple(
+            arch="qwen35moe" if self.n_moe_layers else "qwen35",
+            n_layers=n,
+            n_attention_layers=16,
+            blocks=tuple(
                 BlockLayout(
-                    index = i,
-                    spillable_bytes = self._ffn_weight_bytes // n,
-                    resident_bytes = (2 * GIB) // n,
+                    index=i,
+                    spillable_bytes=self._ffn_weight_bytes // n,
+                    resident_bytes=(2 * GIB) // n,
                 )
                 for i in range(n)
             ),
-            lm_head_bytes = self._lm_head_bytes or 0,
-            token_embd_bytes = 512 * MIB,
-            kv_bytes_per_token_f16 = 65536,
-            n_ctx_train = 262144,
-            is_moe = bool(self.n_moe_layers),
-            n_expert = 256 if self.n_moe_layers else 0,
-            n_expert_used = 8 if self.n_moe_layers else 0,
-            has_excluded_blocks = bool(self._excluded_bytes),
-            excluded_block_bytes = self._excluded_bytes,
-            complete = True,
+            lm_head_bytes=self._lm_head_bytes or 0,
+            token_embd_bytes=512 * MIB,
+            kv_bytes_per_token_f16=65536,
+            n_ctx_train=262144,
+            is_moe=bool(self.n_moe_layers),
+            n_expert=256 if self.n_moe_layers else 0,
+            n_expert_used=8 if self.n_moe_layers else 0,
+            has_excluded_blocks=bool(self._excluded_bytes),
+            excluded_block_bytes=self._excluded_bytes,
+            complete=True,
         )
 
 
 def _inputs(
-    model_size = 30 * GIB,
-    kv = 2 * GIB,
-    free_mib = 24 * 1024,
-    indices = None,
-    usable_mib = None,
-    extra_gpu = 0,
-    mtp = None,
-    shared = None,
-    gpus = None,
-    n_parallel = 1,
-    n_threads = None,
-    compute_flat = 0,
-    ctx_compute = 0,
-    env_mmproj = 0,
-    env_mmproj_unsized = False,
-    separate_draft = False,
+    model_size=30 * GIB,
+    kv=2 * GIB,
+    free_mib=24 * 1024,
+    indices=None,
+    usable_mib=None,
+    extra_gpu=0,
+    mtp=None,
+    shared=None,
+    gpus=None,
+    n_parallel=1,
+    n_threads=None,
+    compute_flat=0,
+    ctx_compute=0,
+    env_mmproj=0,
+    env_mmproj_unsized=False,
+    separate_draft=False,
 ):
     return {
         "model_size": model_size,
@@ -195,14 +196,14 @@ def _inputs(
 
 def _plan(
     stub,
-    env = None,
-    extra_args = None,
+    env=None,
+    extra_args=None,
     **kw,
 ):
     return stub._planned_tensor_spill(
         _inputs(**kw),
-        extra_args = extra_args,
-        env = {"UNSLOTH_SMART_OFFLOAD": "1", **(env or {})},
+        extra_args=extra_args,
+        env={"UNSLOTH_SMART_OFFLOAD": "1", **(env or {})},
     )
 
 
@@ -234,13 +235,13 @@ def test_the_planner_is_off_by_default():
     since a fitting load plans nothing either way.
     """
     assert smart_offload_enabled({}) is False
-    assert _Stub()._planned_tensor_spill(_inputs(), env = {}) is None
-    assert _Stub()._planned_tensor_spill(_inputs(free_mib = 14 * 1024), env = {}) is None
+    assert _Stub()._planned_tensor_spill(_inputs(), env={}) is None
+    assert _Stub()._planned_tensor_spill(_inputs(free_mib=14 * 1024), env={}) is None
 
     # The same tight load still plans when asked explicitly, so the revert moved
     # the default and nothing else.
     tight = _Stub()._planned_tensor_spill(
-        _inputs(free_mib = 14 * 1024), env = {"UNSLOTH_SMART_OFFLOAD": "1"}
+        _inputs(free_mib=14 * 1024), env={"UNSLOTH_SMART_OFFLOAD": "1"}
     )
     assert tight is not None and tight.spills_anything
 
@@ -254,7 +255,7 @@ def test_the_gate_accepts_the_usual_spellings(value):
 def test_an_explicit_off_still_disables(value):
     """The escape hatch has to keep working."""
     assert smart_offload_enabled({"UNSLOTH_SMART_OFFLOAD": value}) is False
-    assert _Stub()._planned_tensor_spill(_inputs(), env = {"UNSLOTH_SMART_OFFLOAD": value}) is None
+    assert _Stub()._planned_tensor_spill(_inputs(), env={"UNSLOTH_SMART_OFFLOAD": value}) is None
 
 
 @pytest.mark.parametrize("value", ["nope", "flase", "onn", "2"])
@@ -270,7 +271,7 @@ def test_an_unrecognised_value_disables_rather_than_enables(value):
 def test_an_unpriced_placement_abstains():
     """The except arm restores use_fit without pricing anything, so the seam
     reads None here rather than an UnboundLocal kv_cache_bytes."""
-    assert _Stub()._planned_tensor_spill(None, env = {"UNSLOTH_SMART_OFFLOAD": "1"}) is None
+    assert _Stub()._planned_tensor_spill(None, env={"UNSLOTH_SMART_OFFLOAD": "1"}) is None
 
 
 @pytest.mark.parametrize(
@@ -295,7 +296,7 @@ def test_an_unpriced_placement_abstains():
 def test_a_pass_through_placement_override_declines(extra_args):
     """Pricing a placement the child will not get is the bug class behind most of
     the load-mode review traffic. Decline instead of modelling the override."""
-    assert _plan(_Stub(), extra_args = extra_args) is None
+    assert _plan(_Stub(), extra_args=extra_args) is None
 
 
 @pytest.mark.parametrize(
@@ -309,21 +310,21 @@ def test_a_pass_through_placement_override_declines(extra_args):
 )
 def test_an_inherited_placement_env_declines(env):
     """The child inherits these, so they outlive any flag stripping."""
-    assert _plan(_Stub(), env = env) is None
+    assert _plan(_Stub(), env=env) is None
 
 
 def test_an_unsized_model_abstains():
-    assert _plan(_Stub(), model_size = 0) is None
+    assert _plan(_Stub(), model_size=0) is None
 
 
 def test_an_unsized_cache_abstains():
-    assert _plan(_Stub(), kv = 0) is None
+    assert _plan(_Stub(), kv=0) is None
 
 
 def test_no_gpus_abstains():
     stub = _Stub()
     assert (
-        stub._planned_tensor_spill({**_inputs(), "gpus": []}, env = {"UNSLOTH_SMART_OFFLOAD": "1"})
+        stub._planned_tensor_spill({**_inputs(), "gpus": []}, env={"UNSLOTH_SMART_OFFLOAD": "1"})
         is None
     )
 
@@ -331,24 +332,24 @@ def test_no_gpus_abstains():
 def test_an_absent_layout_abstains():
     """_ffn_weight_bytes is the planner-core half and does not exist yet, so the
     feature is inert until it lands even with the gate on."""
-    assert _plan(_Stub(ffn = None)) is None
+    assert _plan(_Stub(ffn=None)) is None
 
 
 def test_unreadable_host_ram_abstains():
-    assert _plan(_Stub(avail_mib = None)) is None
+    assert _plan(_Stub(avail_mib=None)) is None
 
 
 # ------------------------------------------------------------ the plan itself
 
 
 def test_a_load_that_needs_ffn_spilled_gets_the_ffn_pattern():
-    got = _plan(_Stub(), model_size = 30 * GIB, kv = 2 * GIB, free_mib = 12 * 1024)
+    got = _plan(_Stub(), model_size=30 * GIB, kv=2 * GIB, free_mib=12 * 1024)
     assert got is not None
     assert got.ot_patterns and all("ffn" in p for p in got.ot_patterns)
 
 
 def test_a_moe_load_spills_expert_tensors_not_dense_ffn():
-    got = _plan(_Stub(moe = 40), model_size = 30 * GIB, kv = 2 * GIB, free_mib = 12 * 1024)
+    got = _plan(_Stub(moe=40), model_size=30 * GIB, kv=2 * GIB, free_mib=12 * 1024)
     assert got is not None
     assert got.ot_patterns and all("ffn" in p for p in got.ot_patterns)
 
@@ -359,7 +360,7 @@ def test_lm_head_is_only_spilled_after_ffn():
     # 4608, not 5632: the planner no longer withholds a pipeline GiB from a
     # SINGLE card, so the old figure left a deficit the FFN alone covered and
     # lm_head was never reached.
-    tight = _plan(_Stub(), model_size = 60 * GIB, kv = 2 * GIB, free_mib = 4608)
+    tight = _plan(_Stub(), model_size=60 * GIB, kv=2 * GIB, free_mib=4608)
     assert tight is not None
     assert tight.spilled_lm_head is True
     assert tight.spilled_blocks, "lm_head is never the first rung"
@@ -376,7 +377,7 @@ def test_the_lm_head_pattern_is_anchored():
 
 def test_a_spill_host_ram_cannot_hold_abstains():
     """--fit on at least demand-pages; a plan here would be an OOM kill."""
-    got = _plan(_Stub(avail_mib = 3 * 1024), model_size = 30 * GIB, kv = 2 * GIB, free_mib = 12 * 1024)
+    got = _plan(_Stub(avail_mib=3 * 1024), model_size=30 * GIB, kv=2 * GIB, free_mib=12 * 1024)
     assert got is None or got.load_mode_none is False
 
 
@@ -394,7 +395,7 @@ def test_a_floor_that_does_not_fit_emits_no_flags():
     """
     # A GiB tighter than before, for the single-card pipeline reserve this no
     # longer charges; the case is still "no rung fits".
-    got = _plan(_Stub(), model_size = 30 * GIB, kv = 2 * GIB, free_mib = 3 * 1024)
+    got = _plan(_Stub(), model_size=30 * GIB, kv=2 * GIB, free_mib=3 * 1024)
     assert got is not None
     assert got.insufficient
     assert LlamaCppBackend._spill_plan_flags_for(got) == []
@@ -407,7 +408,7 @@ def test_an_abstaining_plan_emits_no_flags():
     for plan in (
         plan_placement(ModelLayout(), [8 * GIB], 32 * GIB, 4096),
         plan_placement(
-            ModelLayout(complete = True, n_ctx_train = 4096),
+            ModelLayout(complete=True, n_ctx_train=4096),
             [0],
             32 * GIB,
             4096,
@@ -420,7 +421,7 @@ def test_an_abstaining_plan_emits_no_flags():
 def test_a_plan_that_already_fits_emits_no_flags():
     """The planner disagreeing with Unsloth ("it fits after all") is not licence
     to pin every layer and turn the fitter off."""
-    got = _plan(_Stub(), free_mib = 200 * 1024)
+    got = _plan(_Stub(), free_mib=200 * 1024)
     assert got is not None and not got.spills_anything
     assert LlamaCppBackend._spill_plan_flags_for(got) == []
 
@@ -433,15 +434,15 @@ def test_the_measured_cache_floors_the_planners_own_estimate():
     stub = _Stub()
     layout = stub._tensor_spill_layout("/models/stub.gguf")
     unfloored = plan_placement(layout, [20 * GIB], 64 * GIB, 32768)
-    floored = plan_placement(layout, [20 * GIB], 64 * GIB, 32768, kv_bytes_floor = 8 * GIB)
+    floored = plan_placement(layout, [20 * GIB], 64 * GIB, 32768, kv_bytes_floor=8 * GIB)
     assert len(floored.spilled_blocks) > len(unfloored.spilled_blocks)
 
 
 def test_the_seam_hands_the_planner_studios_cache_size():
     """The byte-accurate number is computed at the call site and was previously
     only tested for nonzero. A bigger measured cache has to buy more spill."""
-    small = _plan(_Stub(), kv = 2 * GIB, free_mib = 14 * 1024)
-    large = _plan(_Stub(), kv = 10 * GIB, free_mib = 14 * 1024)
+    small = _plan(_Stub(), kv=2 * GIB, free_mib=14 * 1024)
+    large = _plan(_Stub(), kv=10 * GIB, free_mib=14 * 1024)
     assert small is not None and large is not None
     assert len(large.spilled_blocks) > len(small.spilled_blocks)
 
@@ -489,7 +490,7 @@ def test_repeated_ot_flags_rather_than_a_joined_value():
     """llama-server accumulates repeated -ot and splits an -ot VALUE on ",".
     Joining with ";" is llama-bench's syntax and would be parsed as one pattern.
     """
-    plan = Plan(ot_patterns = (FFN_SPILL_PATTERN, LM_HEAD_SPILL_PATTERN))
+    plan = Plan(ot_patterns=(FFN_SPILL_PATTERN, LM_HEAD_SPILL_PATTERN))
     tokens = [tok for pat in plan.ot_patterns for tok in ("-ot", f"{pat}=CPU")]
     assert tokens.count("-ot") == 2
     assert ";" not in " ".join(tokens)
@@ -521,13 +522,13 @@ def test_the_abstain_branch_still_emits_exactly_fit_on():
         "no creditable VRAM after per-device overhead",
         "no usable context length",
     ):
-        plan = Plan(reason = reason)
+        plan = Plan(reason=reason)
         assert plan, "Plan is truthy, which is the trap this test exists for"
         assert LlamaCppBackend._spill_plan_flags_for(plan) == [], reason
 
     # Same for a plan that cannot place the load, and for one that needs nothing.
     assert (
-        LlamaCppBackend._spill_plan_flags_for(Plan(reason = "does not fit", insufficient = True)) == []
+        LlamaCppBackend._spill_plan_flags_for(Plan(reason="does not fit", insufficient=True)) == []
     )
     assert LlamaCppBackend._spill_plan_flags_for(None) == []
 
@@ -546,7 +547,7 @@ def test_the_plan_disables_the_fitter_and_pins_every_layer_to_a_gpu():
     Driven through the real emitter rather than matched against the source text:
     a formatter that rewraps the literal must not be able to fail this.
     """
-    got = _plan(_Stub(), free_mib = 12 * 1024)
+    got = _plan(_Stub(), free_mib=12 * 1024)
     assert got is not None and got.spills_anything
     flags = LlamaCppBackend._spill_plan_flags_for(got)
     assert flags[:4] == ["-ngl", "-1", "--fit", "off"]
@@ -599,8 +600,8 @@ def test_a_unified_memory_apu_is_declared_to_the_planner():
     apu._unified = True
 
     # Same numbers either way, so the difference is attributable to the flag.
-    got_discrete = _plan(discrete, free_mib = 12 * 1024)
-    got_apu = _plan(apu, free_mib = 12 * 1024)
+    got_discrete = _plan(discrete, free_mib=12 * 1024)
+    got_apu = _plan(apu, free_mib=12 * 1024)
 
     assert got_apu is not None
     assert not got_apu.spills_anything
@@ -623,7 +624,7 @@ def test_a_unified_memory_apu_is_declared_to_the_planner():
 def test_tensor_parallel_split_still_declines(extra_args):
     """-sm row is tensor parallelism: llama.cpp splits each TENSOR across cards
     instead of handing out rows, so the row model does not describe it."""
-    assert _plan(_Stub(), extra_args = extra_args) is None
+    assert _plan(_Stub(), extra_args=extra_args) is None
     assert _plan(_Stub()) is not None, "not vacuous: the same load plans without it"
 
 
@@ -636,12 +637,12 @@ def test_split_mode_none_plans_against_one_card(extra_args):
     only devices[main_gpu] (llama.cpp:288-299). Planning it as a two-card pool was
     the bug."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    got = _plan(_Stub(), gpus = two_cards, extra_args = extra_args)
+    got = _plan(_Stub(), gpus=two_cards, extra_args=extra_args)
     assert got is not None
 
     # Proof it used ONE card: the same plan as a genuine single card, where
     # crediting both would spill less.
-    one_card = _plan(_Stub(), gpus = [(0, 14 * 1024)])
+    one_card = _plan(_Stub(), gpus=[(0, 14 * 1024)])
     assert len(got.spilled_blocks) == len(one_card.spilled_blocks)
 
 
@@ -660,8 +661,8 @@ def test_tensor_parallel_split_mode_tensor_declines(extra_args, env):
     device (llama.cpp:157-215), so a per-device budget describes nothing, and
     llama.cpp's own fitter refuses the mode outright (common/fit.cpp:182-183)."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = extra_args, env = env) is None
-    assert _plan(_Stub(), gpus = two_cards) is not None, "not vacuous"
+    assert _plan(_Stub(), gpus=two_cards, extra_args=extra_args, env=env) is None
+    assert _plan(_Stub(), gpus=two_cards) is not None, "not vacuous"
 
 
 def test_split_mode_none_with_an_explicit_main_gpu_still_declines():
@@ -671,20 +672,20 @@ def test_split_mode_none_with_an_explicit_main_gpu_still_declines():
     devices[main_gpu] under -sm none all the same (llama.cpp:288-299), and
     budgeting the first retained card approves a GPU the child never loads onto."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-sm", "none", "-mg", "1"]) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-sm", "none", "-mg", "1"]) is None
     assert (
         _plan(
             _Stub(),
-            gpus = two_cards,
-            extra_args = ["-sm", "none"],
-            env = {"LLAMA_ARG_MAIN_GPU": "1"},
+            gpus=two_cards,
+            extra_args=["-sm", "none"],
+            env={"LLAMA_ARG_MAIN_GPU": "1"},
         )
         is None
     )
     # Not vacuous, and not a blanket refusal of the env var's absence.
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-sm", "none"]) is not None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-sm", "none"]) is not None
     assert (
-        _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_MAIN_GPU": "0"}) is None
+        _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_MAIN_GPU": "0"}) is None
     ), "0 is still a pin the guard cannot verify against its own device order"
 
 
@@ -702,7 +703,7 @@ def test_tensor_split_becomes_the_row_weights(extra_args, env):
     (llama-model.cpp:1436-1447), so they are the row-ownership weight the
     per-device check needs -- data to use, not a reason to stop."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = extra_args, env = env) is not None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=extra_args, env=env) is not None
 
 
 @pytest.mark.parametrize(
@@ -721,8 +722,8 @@ def test_a_slash_delimited_tensor_split_is_the_same_override(extra_args, env):
 
     # And it reaches the planner as the row weights: the 3:1 plan, not free-VRAM.
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    skewed = _plan(_Stub(), gpus = two_cards, extra_args = extra_args, env = env)
-    comma = _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "3,1"])
+    skewed = _plan(_Stub(), gpus=two_cards, extra_args=extra_args, env=env)
+    comma = _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "3,1"])
     assert skewed is not None and comma is not None
     assert skewed.spilled_blocks == comma.spilled_blocks
 
@@ -734,13 +735,13 @@ def test_a_malformed_or_short_tensor_split_declines():
     ``;`` is not one of llama.cpp's delimiters -- std::stof stops at it, so
     ``3;1`` is [3, 0] to the child, never [3, 1]."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "3"]) is None
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "abc"]) is None
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "3;1"]) is None
-    assert _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_TENSOR_SPLIT": "abc"}) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "3"]) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "abc"]) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "3;1"]) is None
+    assert _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_TENSOR_SPLIT": "abc"}) is None
     # Not vacuous: the same load plans with no -ts and with a readable one.
-    assert _plan(_Stub(), gpus = two_cards) is not None
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "3,1"]) is not None
+    assert _plan(_Stub(), gpus=two_cards) is not None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "3,1"]) is not None
 
 
 def test_the_planner_gets_the_budget_the_fit_tested_not_raw_free():
@@ -754,8 +755,8 @@ def test_the_planner_gets_the_budget_the_fit_tested_not_raw_free():
     -ot overrides, and then appends --fit off over the result.
     """
     stub = _Stub()
-    on_free = _plan(stub, free_mib = 14 * 1024)
-    on_budget = _plan(stub, free_mib = 14 * 1024, usable_mib = 13 * 1024)
+    on_free = _plan(stub, free_mib=14 * 1024)
+    on_budget = _plan(stub, free_mib=14 * 1024, usable_mib=13 * 1024)
 
     assert on_free is not None and on_budget is not None
     assert on_free.spills_anything and on_budget.spills_anything
@@ -770,8 +771,8 @@ def test_the_projector_and_mtp_reserve_reach_the_planner():
     already judged not to fit, and the launch then follows that with --fit off.
     """
     stub = _Stub()
-    without = _plan(stub, free_mib = 14 * 1024)
-    with_extra = _plan(stub, free_mib = 14 * 1024, extra_gpu = 2 * GIB)
+    without = _plan(stub, free_mib=14 * 1024)
+    with_extra = _plan(stub, free_mib=14 * 1024, extra_gpu=2 * GIB)
 
     assert without is not None and with_extra is not None
     assert without.spills_anything and with_extra.spills_anything
@@ -793,7 +794,7 @@ def test_the_layout_cache_notices_a_gguf_replaced_in_place(tmp_path, monkeypatch
 
     def _fake(path):
         reads.append(len(reads))
-        return ModelLayout(arch = "llama", n_layers = len(reads), complete = True)
+        return ModelLayout(arch="llama", n_layers=len(reads), complete=True)
 
     monkeypatch.setattr(offload_layout, "layout_from_gguf", _fake)
 
@@ -825,8 +826,8 @@ def test_a_forced_cpu_kv_cache_is_priced_not_declined(extra_args):
     charged a cache to VRAM the child never puts there and spilled FFN blocks to
     cover it. Now it is priced -- out of VRAM, into host RAM.
     """
-    baseline = _plan(_Stub(), free_mib = 14 * 1024)
-    forced = _plan(_Stub(), free_mib = 14 * 1024, extra_args = extra_args)
+    baseline = _plan(_Stub(), free_mib=14 * 1024)
+    forced = _plan(_Stub(), free_mib=14 * 1024, extra_args=extra_args)
     assert forced is not None, "a host-resident cache is not a reason to abstain"
 
     # Out of VRAM: the 2 GiB cache left the footprint, so the deficit it was
@@ -843,8 +844,8 @@ def test_a_forced_cpu_kv_cache_is_priced_not_declined(extra_args):
 def test_an_inherited_kv_offload_env_is_priced_too(env):
     """Same resolution as argv: LLAMA_ARG_ is rewritten to LLAMA_ARG_NO_ and
     presence alone forces the value (common/arg.cpp:127-141)."""
-    forced = _plan(_Stub(), free_mib = 14 * 1024, env = env)
-    baseline = _plan(_Stub(), free_mib = 14 * 1024)
+    forced = _plan(_Stub(), free_mib=14 * 1024, env=env)
+    baseline = _plan(_Stub(), free_mib=14 * 1024)
     assert forced is not None
     assert len(forced.spilled_blocks) < len(baseline.spilled_blocks)
     assert forced.host_bytes >= 512 * MIB + 2 * GIB
@@ -854,9 +855,9 @@ def test_the_positive_kv_offload_form_still_plans():
     """-kvo / --kv-offload is the enabling half of the same paired argument
     (common/arg.cpp:2402-2409) and argv is last-wins, so a re-enable must not be
     read as a decline."""
-    assert _plan(_Stub(), extra_args = ["-kvo"]) is not None
-    assert _plan(_Stub(), extra_args = ["-nkvo", "--kv-offload"]) is not None
-    assert _plan(_Stub(), env = {"LLAMA_ARG_KV_OFFLOAD": "1"}) is not None
+    assert _plan(_Stub(), extra_args=["-kvo"]) is not None
+    assert _plan(_Stub(), extra_args=["-nkvo", "--kv-offload"]) is not None
+    assert _plan(_Stub(), env={"LLAMA_ARG_KV_OFFLOAD": "1"}) is not None
 
 
 # --------------------------------------------- embedded MTP blocks when drafting
@@ -878,8 +879,8 @@ def test_an_engaged_draft_charges_the_excluded_mtp_blocks():
     stub = _Stub()
     stub._excluded_bytes = 3 * GIB
 
-    idle = _plan(stub, free_mib = 14 * 1024, mtp = False)
-    drafting = _plan(stub, free_mib = 14 * 1024, mtp = True)
+    idle = _plan(stub, free_mib=14 * 1024, mtp=False)
+    drafting = _plan(stub, free_mib=14 * 1024, mtp=True)
 
     assert idle is not None and drafting is not None
     assert idle.spills_anything and drafting.spills_anything
@@ -891,8 +892,8 @@ def test_an_ordinary_model_is_unaffected_by_the_draft_flag():
     model that has no MTP head."""
     stub = _Stub()
     assert stub._excluded_bytes == 0
-    idle = _plan(stub, free_mib = 14 * 1024, mtp = False)
-    drafting = _plan(stub, free_mib = 14 * 1024, mtp = True)
+    idle = _plan(stub, free_mib=14 * 1024, mtp=False)
+    drafting = _plan(stub, free_mib=14 * 1024, mtp=True)
     assert idle.spilled_blocks == drafting.spilled_blocks
 
 
@@ -909,14 +910,14 @@ def test_a_shared_device_the_child_keeps_declines_the_plan():
     """
     stub = _Stub()
     gpus = [(0, 12 * 1024), (1, 12 * 1024)]
-    assert _plan(stub, gpus = gpus, shared = {1}) is None
+    assert _plan(stub, gpus=gpus, shared={1}) is None
     # Named in the pin: still declined, since the child is told to use it.
-    assert _plan(stub, gpus = gpus, shared = {1}, indices = [0, 1]) is None
+    assert _plan(stub, gpus=gpus, shared={1}, indices=[0, 1]) is None
     # Pinned away from the shared device: the plan may proceed.
-    kept = _plan(stub, gpus = gpus, shared = {1}, indices = [0])
+    kept = _plan(stub, gpus=gpus, shared={1}, indices=[0])
     assert kept is not None
     # No shared device at all is the ordinary path.
-    assert _plan(stub, gpus = gpus) is not None
+    assert _plan(stub, gpus=gpus) is not None
 
 
 def test_the_compute_buffer_reaches_the_planner():
@@ -926,11 +927,11 @@ def test_the_compute_buffer_reaches_the_planner():
     and omitting them under-reserves on exactly the long-context loads this arm
     exists for. Both must move the deficit."""
     stub = _Stub()
-    base = _plan(stub, free_mib = 14 * 1024)
+    base = _plan(stub, free_mib=14 * 1024)
     assert base is not None and base.spills_anything
 
-    per_device = _plan(stub, free_mib = 14 * 1024, ctx_compute = 3 * GIB)
-    flat = _plan(stub, free_mib = 14 * 1024, compute_flat = 3 * GIB)
+    per_device = _plan(stub, free_mib=14 * 1024, ctx_compute=3 * GIB)
+    flat = _plan(stub, free_mib=14 * 1024, compute_flat=3 * GIB)
     for tighter in (per_device, flat):
         assert tighter is not None
         assert len(tighter.spilled_blocks) > len(
@@ -956,7 +957,7 @@ def test_the_seam_hands_the_planner_raw_free_vram_for_the_split():
 
     mod.plan_placement = spy
     try:
-        _plan(stub, gpus = [(0, 8 * 1024), (1, 16 * 1024)], usable_mib = 6 * 1024)
+        _plan(stub, gpus=[(0, 8 * 1024), (1, 16 * 1024)], usable_mib=6 * 1024)
     finally:
         mod.plan_placement = real
 
@@ -973,10 +974,10 @@ def test_a_pinned_draft_device_declines_the_plan():
     plan would approve the wrong device's footprint and emit --fit off. cpu and
     none are not pins and must not cost a plan."""
     stub = _Stub()
-    assert _plan(stub, extra_args = ["--spec-draft-device", "CUDA1"]) is None
-    assert _plan(stub, extra_args = ["--device-draft", "CUDA0,CUDA1"]) is None
-    assert _plan(stub, extra_args = ["--spec-draft-device", "cpu"]) is not None
-    assert _plan(stub, extra_args = ["--spec-draft-device", "none"]) is not None
+    assert _plan(stub, extra_args=["--spec-draft-device", "CUDA1"]) is None
+    assert _plan(stub, extra_args=["--device-draft", "CUDA0,CUDA1"]) is None
+    assert _plan(stub, extra_args=["--spec-draft-device", "cpu"]) is not None
+    assert _plan(stub, extra_args=["--spec-draft-device", "none"]) is not None
     assert _plan(stub) is not None
 
 
@@ -987,15 +988,15 @@ def test_a_pass_through_parallel_that_grows_the_cache_declines_the_plan():
     spilled, then pinned with --fit off. A SMALLER one only over-reserves, which
     is safe, so it must not cost a plan."""
     stub = _Stub()
-    assert _plan(stub, n_parallel = 1, extra_args = ["--parallel", "8"]) is None
-    assert _plan(stub, n_parallel = 1, extra_args = ["-np", "4"]) is None
-    assert _plan(stub, n_parallel = 1, extra_args = ["--parallel=8"]) is None
-    assert _plan(stub, n_parallel = 8, extra_args = ["--parallel", "8"]) is not None
-    assert _plan(stub, n_parallel = 8, extra_args = ["--parallel", "2"]) is not None
-    assert _plan(stub, n_parallel = 1, env = {"LLAMA_ARG_N_PARALLEL": "8"}) is None
+    assert _plan(stub, n_parallel=1, extra_args=["--parallel", "8"]) is None
+    assert _plan(stub, n_parallel=1, extra_args=["-np", "4"]) is None
+    assert _plan(stub, n_parallel=1, extra_args=["--parallel=8"]) is None
+    assert _plan(stub, n_parallel=8, extra_args=["--parallel", "8"]) is not None
+    assert _plan(stub, n_parallel=8, extra_args=["--parallel", "2"]) is not None
+    assert _plan(stub, n_parallel=1, env={"LLAMA_ARG_N_PARALLEL": "8"}) is None
     # Last wins, exactly as llama.cpp parses it.
-    assert _plan(stub, n_parallel = 4, extra_args = ["--parallel", "8", "-np", "2"]) is not None
-    assert _plan(stub, n_parallel = 1) is not None
+    assert _plan(stub, n_parallel=4, extra_args=["--parallel", "8", "-np", "2"]) is not None
+    assert _plan(stub, n_parallel=1) is not None
 
 
 # --------------------------------------- newly reachable now the gate is default-on
@@ -1015,7 +1016,7 @@ def test_an_rpc_device_declines_the_plan(extra_args, env):
     card this planner never saw: every number it has comes from Studio's LOCAL
     gpus snapshot. Crediting local VRAM for layers that went to another host and
     then pinning it with --fit off has nothing left to catch it."""
-    assert _plan(_Stub(), extra_args = extra_args, env = env) is None
+    assert _plan(_Stub(), extra_args=extra_args, env=env) is None
     assert _plan(_Stub()) is not None, "not vacuous: the same load plans without it"
 
 
@@ -1034,7 +1035,7 @@ def test_an_explicit_fit_target_declines_the_plan(extra_args, env):
     This planner credits that same VRAM and emits --fit off, so
     common_params_fit_impl never runs and the reservation is silently dropped
     while Studio's own load-mode fit still honours it."""
-    assert _plan(_Stub(), extra_args = extra_args, env = env) is None
+    assert _plan(_Stub(), extra_args=extra_args, env=env) is None
     assert _plan(_Stub()) is not None, "not vacuous"
 
 
@@ -1049,13 +1050,13 @@ def test_a_pass_through_adapter_is_charged_as_resident_vram(sparse_adapter, monk
     # tips it over: the term has to be load-bearing, not merely present.
     stub = _Stub()
     free = 17 * 1024
-    bare = _plan(stub, free_mib = free)
-    with_lora = _plan(stub, free_mib = free, extra_args = ["--lora", str(adapter)])
+    bare = _plan(stub, free_mib=free)
+    with_lora = _plan(stub, free_mib=free, extra_args=["--lora", str(adapter)])
     assert bare is not None and with_lora is not None
     assert not bare.spills_anything, "the base load fits on its own"
     assert with_lora.spills_anything, "3 GiB of resident adapter comes out of the same VRAM"
 
-    ctrl = _plan(stub, free_mib = free, extra_args = ["--control-vector", str(adapter)])
+    ctrl = _plan(stub, free_mib=free, extra_args=["--control-vector", str(adapter)])
     assert ctrl.spilled_blocks == with_lora.spilled_blocks
 
     # The colon-scaled form, from a directory the path can be spelled relative to.
@@ -1065,7 +1066,7 @@ def test_a_pass_through_adapter_is_charged_as_resident_vram(sparse_adapter, monk
     # Pricing a token that never starts a child would be the wrong answer, so the
     # test asks for the reading that exists on every platform.
     monkeypatch.chdir(adapter.parent)
-    scaled = _plan(stub, free_mib = free, extra_args = ["--lora-scaled", "adapter.gguf:0.5"])
+    scaled = _plan(stub, free_mib=free, extra_args=["--lora-scaled", "adapter.gguf:0.5"])
     assert scaled.spilled_blocks == with_lora.spilled_blocks
 
 
@@ -1081,7 +1082,7 @@ def test_a_drive_lettered_scaled_adapter_is_skipped_rather_than_priced():
 
     stub = _Stub()
     free = 17 * 1024
-    plan = _plan(stub, free_mib = free, extra_args = ["--lora-scaled", drive_lettered])
+    plan = _plan(stub, free_mib=free, extra_args=["--lora-scaled", drive_lettered])
     assert plan is not None, "a form the child rejects is not the unsized-abstain case"
     assert not plan.spills_anything, "nothing priced, so the base load still fits"
 
@@ -1089,7 +1090,7 @@ def test_a_drive_lettered_scaled_adapter_is_skipped_rather_than_priced():
 def test_an_unreadable_adapter_abstains():
     """Engaged but unsized: os.stat fails, so abstain rather than plan a footprint
     short by an unknown amount. Same answer _fits_without_paging gives."""
-    assert _plan(_Stub(), extra_args = ["--lora", "/no/such/adapter.gguf"]) is None
+    assert _plan(_Stub(), extra_args=["--lora", "/no/such/adapter.gguf"]) is None
     assert _plan(_Stub()) is not None, "not vacuous"
 
 
@@ -1101,8 +1102,8 @@ def test_an_inherited_projector_is_charged_rather_than_ignored():
     plan pinned with --fit off over a footprint that does not fit."""
     stub = _Stub()
     free = 17 * 1024
-    bare = _plan(stub, free_mib = free)
-    inherited = _plan(stub, free_mib = free, env_mmproj = 3 * GIB)
+    bare = _plan(stub, free_mib=free)
+    inherited = _plan(stub, free_mib=free, env_mmproj=3 * GIB)
     assert bare is not None and inherited is not None
     assert not bare.spills_anything, "the base load fits on its own"
     assert inherited.spills_anything, "3 GiB of inherited projector comes out of the same VRAM"
@@ -1113,8 +1114,8 @@ def test_an_unsized_inherited_projector_abstains():
     outranks even the --mmproj this launch emits: the fetch rewrites
     params.mmproj.path, common/arg.cpp:500-503, :632-634), and an unreadable path
     cannot be stat'd. Unknown bytes, so abstain rather than plan short."""
-    assert _plan(_Stub(), free_mib = 14 * 1024, env_mmproj_unsized = True) is None
-    assert _plan(_Stub(), free_mib = 14 * 1024) is not None, "not vacuous"
+    assert _plan(_Stub(), free_mib=14 * 1024, env_mmproj_unsized=True) is None
+    assert _plan(_Stub(), free_mib=14 * 1024) is not None, "not vacuous"
 
 
 def test_the_seam_hands_the_planner_the_inherited_projector():
@@ -1133,18 +1134,18 @@ class _FlatAttentionStub(_Stub):
     def _tensor_spill_layout(self, model_path):
         n = 8
         return ModelLayout(
-            arch = "qwen35",
-            n_layers = n,
-            n_attention_layers = n,
-            blocks = tuple(
-                BlockLayout(index = i, spillable_bytes = 2 * GIB, resident_bytes = GIB // 2)
+            arch="qwen35",
+            n_layers=n,
+            n_attention_layers=n,
+            blocks=tuple(
+                BlockLayout(index=i, spillable_bytes=2 * GIB, resident_bytes=GIB // 2)
                 for i in range(n)
             ),
-            lm_head_bytes = 1 * GIB,
-            token_embd_bytes = 512 * MIB,
-            kv_bytes_per_token_f16 = 16384,
-            n_ctx_train = 262144,
-            complete = True,
+            lm_head_bytes=1 * GIB,
+            token_embd_bytes=512 * MIB,
+            kv_bytes_per_token_f16=16384,
+            n_ctx_train=262144,
+            complete=True,
         )
 
 
@@ -1170,9 +1171,9 @@ def test_a_multi_gpu_adapter_declines_rather_than_booking_it_all_on_device_0(spa
     # inputs produced a real plan -- all 8 blocks spilled, -ngl -1 --fit off
     # emitted -- with the whole 3 GiB booked on device 0 and nothing on device 1,
     # which is where the adapter rows for that card's layers actually go.
-    two_cards = dict(model_size = 21 * GIB, kv = 2 * GIB, gpus = [(0, 10 * 1024), (1, 3 * 1024)])
+    two_cards = dict(model_size=21 * GIB, kv=2 * GIB, gpus=[(0, 10 * 1024), (1, 3 * 1024)])
     for flag in ("--lora", "--control-vector"):
-        assert _plan(stub, extra_args = [flag, str(adapter)], **two_cards) is None
+        assert _plan(stub, extra_args=[flag, str(adapter)], **two_cards) is None
 
     # Only the adapter is refused: the same two-card load still reaches the
     # planner, so the abstain above is not the whole configuration being dropped.
@@ -1180,7 +1181,7 @@ def test_a_multi_gpu_adapter_declines_rather_than_booking_it_all_on_device_0(spa
 
     # Single card is unchanged: there the flat charge IS the right one, and the
     # adapter is still priced rather than ignored.
-    one_card = _plan(_Stub(), free_mib = 17 * 1024, extra_args = ["--lora", str(adapter)])
+    one_card = _plan(_Stub(), free_mib=17 * 1024, extra_args=["--lora", str(adapter)])
     assert one_card is not None and one_card.spills_anything
 
 
@@ -1192,10 +1193,10 @@ def test_apple_silicon_declines_the_plan(monkeypatch):
     import utils.hardware
 
     monkeypatch.setattr(utils.hardware, "is_apple_silicon", lambda: True)
-    assert _plan(_Stub(), free_mib = 14 * 1024) is None
+    assert _plan(_Stub(), free_mib=14 * 1024) is None
 
     monkeypatch.setattr(utils.hardware, "is_apple_silicon", lambda: False)
-    assert _plan(_Stub(), free_mib = 14 * 1024) is not None, "not vacuous"
+    assert _plan(_Stub(), free_mib=14 * 1024) is not None, "not vacuous"
 
 
 def test_an_integrated_cuda_device_declines_the_plan():
@@ -1215,8 +1216,8 @@ def test_an_integrated_cuda_device_declines_the_plan():
     soc._integrated_cuda = True
 
     # Same numbers either way, so the difference is attributable to the flag.
-    assert _plan(soc, free_mib = 14 * 1024) is None
-    assert _plan(discrete, free_mib = 14 * 1024) is not None, "not vacuous"
+    assert _plan(soc, free_mib=14 * 1024) is None
+    assert _plan(discrete, free_mib=14 * 1024) is not None, "not vacuous"
 
 
 def test_a_multi_gpu_separate_drafter_declines_rather_than_booking_it_on_device_0():
@@ -1239,20 +1240,20 @@ def test_a_multi_gpu_separate_drafter_declines_rather_than_booking_it_on_device_
     # the drafter's own reserve, which is how the seam really carries it: the
     # snapshot folds _mtp_reserve_bytes into extra_gpu_bytes.
     two_cards = dict(
-        model_size = 21 * GIB,
-        kv = 2 * GIB,
-        extra_gpu = 3 * GIB,
+        model_size=21 * GIB,
+        kv=2 * GIB,
+        extra_gpu=3 * GIB,
         # 9 GiB, not 10: the split reserve is charged once for the SECOND card
         # now rather than to both, so the old pair left a deficit a PARTIAL spill
         # covered, and a partial multi-GPU spill abstains before it ever reaches
         # the per-device check this test is about.
-        gpus = [(0, 9 * 1024), (1, 3 * 1024)],
+        gpus=[(0, 9 * 1024), (1, 3 * 1024)],
     )
     # Before this abstain the same inputs produced a real plan -- every block
     # spilled, -ngl -1 --fit off emitted -- with the whole 3 GiB booked on
     # device 0 and nothing on device 1, which is where the drafter's rows for
     # that card's layers actually go.
-    assert _plan(stub, separate_draft = True, **two_cards) is None
+    assert _plan(stub, separate_draft=True, **two_cards) is None
 
     # Only the drafter is refused: the same two cards without one still plan, and
     # really spill, so the abstain is not the whole configuration being dropped.
@@ -1260,7 +1261,7 @@ def test_a_multi_gpu_separate_drafter_declines_rather_than_booking_it_on_device_
     assert without is not None and without.spills_anything
 
     # Single card is unchanged: there the flat charge IS the right one.
-    one_card = _plan(_Stub(), free_mib = 14 * 1024, separate_draft = True)
+    one_card = _plan(_Stub(), free_mib=14 * 1024, separate_draft=True)
     assert one_card is not None and one_card.spills_anything
 
 
@@ -1280,8 +1281,8 @@ def test_the_flat_mtp_reserve_reaches_the_spill_budget():
     # And the budget really is what the planner spends: the same load plans a
     # bigger spill on the smaller budget.
     stub = _Stub()
-    generous = _plan(stub, free_mib = 24 * 1024, usable_mib = 15 * 1024)
-    reserved = _plan(stub, free_mib = 24 * 1024, usable_mib = 14 * 1024)
+    generous = _plan(stub, free_mib=24 * 1024, usable_mib=15 * 1024)
+    reserved = _plan(stub, free_mib=24 * 1024, usable_mib=14 * 1024)
     assert generous is not None and reserved is not None
     assert len(reserved.spilled_blocks) > len(generous.spilled_blocks)
 
@@ -1322,7 +1323,7 @@ def test_the_seam_computes_a_per_layer_kv_vector():
     assert b._kv_layer_weights(131072) == []
 
 
-def _swa_backend(n_layers = 6, shared = None):
+def _swa_backend(n_layers=6, shared=None):
     b = LlamaCppBackend.__new__(LlamaCppBackend)
     b._n_layers = n_layers
     b._n_kv_heads = 8
@@ -1347,8 +1348,8 @@ def test_shared_kv_layers_carry_no_weight():
     n_layer_kv_from_start (llama-hparams.cpp:275-279), so they allocate nothing.
     Giving them weight spreads the same byte total over layers that hold no cache
     and under-books whichever card draws the real ones."""
-    plain = _swa_backend(shared = None)
-    gemma = _swa_backend(shared = 2)
+    plain = _swa_backend(shared=None)
+    gemma = _swa_backend(shared=2)
 
     w = gemma._kv_layer_weights(131072)
     assert len(w) == 6, "length must still match layout.n_layers or the vector is dropped"
@@ -1356,7 +1357,7 @@ def test_shared_kv_layers_carry_no_weight():
     assert w[:4] == plain._kv_layer_weights(131072)[:4], "the cached layers are unchanged"
 
     # A GGUF claiming every layer is shared must not zero the vector out.
-    assert any(_swa_backend(shared = 99)._kv_layer_weights(131072))
+    assert any(_swa_backend(shared=99)._kv_layer_weights(131072))
 
 
 def test_swa_weights_follow_the_effective_cache_geometry():
@@ -1367,17 +1368,17 @@ def test_swa_weights_follow_the_effective_cache_geometry():
     cache bytes onto the wrong card under the --fit off the plan pins."""
     b = _swa_backend()
 
-    full = b._kv_layer_weights(131072, swa_full = True)
+    full = b._kv_layer_weights(131072, swa_full=True)
     assert len(set(full)) == 1, "--swa-full: every layer holds the full context"
 
     # Slots multiply the compact window allowance in unified mode.
-    one = b._kv_layer_weights(131072, n_parallel = 1)
-    four = b._kv_layer_weights(131072, n_parallel = 4)
+    one = b._kv_layer_weights(131072, n_parallel=1)
+    four = b._kv_layer_weights(131072, n_parallel=4)
     assert four[1] > one[1], "4 slots hold 4 windows' worth of SWA cells"
     assert four[0] == one[0], "the full-attention layer is unaffected in unified mode"
 
     # A bigger micro-batch is real headroom on the SWA cache too.
-    assert b._kv_layer_weights(131072, n_ubatch = 4096)[1] > one[1]
+    assert b._kv_layer_weights(131072, n_ubatch=4096)[1] > one[1]
 
 
 def test_the_seam_passes_the_launch_geometry_to_the_kv_vector():
@@ -1400,22 +1401,22 @@ def test_an_inherited_split_mode_none_declines():
     the child never sees AND skips the per-device check, which short-circuits on
     one device. argv is the only spelling that provably survives."""
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_SPLIT_MODE": "none"}) is None
+    assert _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_SPLIT_MODE": "none"}) is None
     # argv still plans, and still against one card.
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-sm", "none"]) is not None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-sm", "none"]) is not None
     # An argv override of the env is argv, so it plans.
     assert (
         _plan(
             _Stub(),
-            gpus = two_cards,
-            extra_args = ["-sm", "none"],
-            env = {"LLAMA_ARG_SPLIT_MODE": "none"},
+            gpus=two_cards,
+            extra_args=["-sm", "none"],
+            env={"LLAMA_ARG_SPLIT_MODE": "none"},
         )
         is not None
     )
     # Not vacuous, and an inherited "layer" is the default and costs nothing.
-    assert _plan(_Stub(), gpus = two_cards) is not None
-    assert _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_SPLIT_MODE": "layer"}) is not None
+    assert _plan(_Stub(), gpus=two_cards) is not None
+    assert _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_SPLIT_MODE": "layer"}) is not None
 
 
 def test_a_reconciliation_still_strips_a_non_layer_split_mode_env():
@@ -1450,12 +1451,12 @@ def test_an_inherited_tensor_split_scrubbed_with_its_mode_is_not_planned_against
     try:
         _plan(
             _Stub(),
-            gpus = two_cards,
-            extra_args = ["-sm", "layer"],
-            env = {"LLAMA_ARG_SPLIT_MODE": "row", "LLAMA_ARG_TENSOR_SPLIT": "9,1"},
+            gpus=two_cards,
+            extra_args=["-sm", "layer"],
+            env={"LLAMA_ARG_SPLIT_MODE": "row", "LLAMA_ARG_TENSOR_SPLIT": "9,1"},
         )
         scrubbed = seen.pop("w", None)
-        _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_TENSOR_SPLIT": "9,1"})
+        _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_TENSOR_SPLIT": "9,1"})
         survives = seen.pop("w", None)
     finally:
         mod.plan_placement = real
@@ -1476,19 +1477,19 @@ def test_a_non_finite_tensor_split_declines_instead_of_raising(value):
     assert _extra_args_tensor_split(["-ts", value], {}) is None
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
     # Declines (unparseable -ts is not "no -ts"), and above all does not raise.
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", value]) is None
-    assert _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_TENSOR_SPLIT": value}) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", value]) is None
+    assert _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_TENSOR_SPLIT": value}) is None
     # Not vacuous: finite shares still parse and still plan.
     assert _extra_args_tensor_split(["-ts", "3,1"], {}) == [3.0, 1.0]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", "3,1"]) is not None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", "3,1"]) is not None
 
 
 def test_a_cumulative_float32_tensor_split_overflow_declines_instead_of_raising():
     value = "3e38,3e38"
     assert _extra_args_tensor_split(["-ts", value], {}) is None
     two_cards = [(0, 14 * 1024), (1, 14 * 1024)]
-    assert _plan(_Stub(), gpus = two_cards, extra_args = ["-ts", value]) is None
-    assert _plan(_Stub(), gpus = two_cards, env = {"LLAMA_ARG_TENSOR_SPLIT": value}) is None
+    assert _plan(_Stub(), gpus=two_cards, extra_args=["-ts", value]) is None
+    assert _plan(_Stub(), gpus=two_cards, env={"LLAMA_ARG_TENSOR_SPLIT": value}) is None
 
 
 def test_the_vector_refuses_a_cache_the_estimator_prices_on_another_path():
@@ -1528,16 +1529,16 @@ def test_a_recurrent_hybrid_stays_on_the_abstain_path():
     from core.inference.offload_planner import PlanOptions, _per_device_shortfall
 
     layout = ModelLayout(
-        arch = "qwen35moe",
-        n_layers = 4,
-        n_attention_layers = 1,
-        blocks = tuple(
-            BlockLayout(index = i, spillable_bytes = GIB, resident_bytes = GIB // 4) for i in range(4)
+        arch="qwen35moe",
+        n_layers=4,
+        n_attention_layers=1,
+        blocks=tuple(
+            BlockLayout(index=i, spillable_bytes=GIB, resident_bytes=GIB // 4) for i in range(4)
         ),
-        lm_head_bytes = GIB // 2,
-        kv_bytes_per_token_f16 = 65536,
-        recurrent_bytes = 2 * GIB,
-        complete = True,
+        lm_head_bytes=GIB // 2,
+        kv_bytes_per_token_f16=65536,
+        recurrent_bytes=2 * GIB,
+        complete=True,
     )
     why = _per_device_shortfall(
         layout,
@@ -1546,9 +1547,9 @@ def test_a_recurrent_hybrid_stays_on_the_abstain_path():
         set(),
         False,
         [8 * GIB, 8 * GIB],
-        quantised = False,
-        kv_bytes_floor = 0,
-        kv_layer_weights = (),
+        quantised=False,
+        kv_bytes_floor=0,
+        kv_layer_weights=(),
     )
     assert why is not None and "recurrent" in why
 
@@ -1568,8 +1569,8 @@ def test_flash_disabled_v_padding_reaches_the_layer_weights():
 
     assert b._max_kv_value_width(128, 256) == 8 * 256
 
-    on = b._kv_layer_weights(131072, flash_attn = True)
-    off = b._kv_layer_weights(131072, flash_attn = False)
+    on = b._kv_layer_weights(131072, flash_attn=True)
+    off = b._kv_layer_weights(131072, flash_attn=False)
     assert on and off
     assert off != on, "the padding has to reach the vector"
 
@@ -1585,7 +1586,7 @@ def test_flash_disabled_v_padding_reaches_the_layer_weights():
     from core.inference.llama_cpp import _kv_bytes_per_elem
 
     bpe_k = _kv_bytes_per_elem("q8_0")
-    q8 = b._kv_layer_weights(131072, flash_attn = False, cache_type_kv = "q8_0")
+    q8 = b._kv_layer_weights(131072, flash_attn=False, cache_type_kv="q8_0")
     assert q8 != off
     assert q8[0] == int((8 * 128 * bpe_k + pad * 2) * full_cells)
 
@@ -1638,15 +1639,15 @@ def test_a_single_card_pays_no_split_reserve():
 
     layout = _Stub()._tensor_spill_layout("/models/stub.gguf")
     opts = PlanOptions(
-        overhead_bytes_per_device = 0,
-        pipeline_overhead_bytes = 1 * GIB,
-        context_policy = ContextPolicy.NEVER_REDUCE,
+        overhead_bytes_per_device=0,
+        pipeline_overhead_bytes=1 * GIB,
+        context_policy=ContextPolicy.NEVER_REDUCE,
     )
     resident = sum(b.resident_bytes for b in layout.blocks) + layout.token_embd_bytes
     spillable = sum(b.spillable_bytes for b in layout.blocks)
     need = resident + spillable + layout.lm_head_bytes
 
-    one = plan_placement(layout, [need + 512 * MIB], 64 * GIB, 4096, opts = opts)
+    one = plan_placement(layout, [need + 512 * MIB], 64 * GIB, 4096, opts=opts)
     assert not one.spills_anything, (
         "a single card paid a split reserve it does not owe, so a load that fits "
         f"was spilled anyway: {one.reason}"
@@ -1678,13 +1679,13 @@ def test_the_cost_model_is_told_physical_cores_not_hyperthreads(monkeypatch):
 
     class _FakePsutil:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return 12 if logical else 6
 
     saved = sys.modules.get("psutil")
     sys.modules["psutil"] = _FakePsutil
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(12)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(12)), raising=False
     )
     try:
         assert llama_mod._spilled_decode_threads() == 6, "logical count reached the cost model"
@@ -1697,17 +1698,17 @@ def test_the_cost_model_is_told_physical_cores_not_hyperthreads(monkeypatch):
     # Match llama.cpp's own last resort when physical topology is unavailable.
     class _NoAnswer:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return None
 
     sys.modules["psutil"] = _NoAnswer
     try:
         for logical, expected in ((2, 2), (4, 4), (8, 4), (16, 8), (None, 4)):
-            monkeypatch.setattr(llama_mod.os, "cpu_count", lambda answer = logical: answer)
+            monkeypatch.setattr(llama_mod.os, "cpu_count", lambda answer=logical: answer)
             monkeypatch.setattr(
                 llama_mod.os,
                 "sched_getaffinity",
-                lambda _pid, answer = logical: set(range(answer or 1)),
+                lambda _pid, answer=logical: set(range(answer or 1)),
             )
             assert llama_mod._spilled_decode_threads() == expected
     finally:
@@ -1720,17 +1721,17 @@ def test_the_cost_model_is_told_physical_cores_not_hyperthreads(monkeypatch):
 def test_thread_overrides_reach_the_cost_model(monkeypatch):
     seen = []
 
-    def _threads(n_threads = None, extra_args = None):
+    def _threads(n_threads=None, extra_args=None):
         seen.append((n_threads, extra_args))
         return int(n_threads or 8)
 
     monkeypatch.setattr(llama_mod, "_spilled_decode_threads", _threads)
     plan = _plan(
         _Stub(),
-        free_mib = 14 * 1024,
-        n_threads = 3,
-        extra_args = ["--threads", "2"],
-        env = {"LLAMA_ARG_THREADS": "1"},
+        free_mib=14 * 1024,
+        n_threads=3,
+        extra_args=["--threads", "2"],
+        env={"LLAMA_ARG_THREADS": "1"},
     )
 
     assert plan is not None and plan.spills_anything
@@ -1743,12 +1744,12 @@ def test_thread_override_precedence_matches_the_launched_command(monkeypatch):
 
     class _FakePsutil:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return 12 if logical else 6
 
     monkeypatch.setitem(sys.modules, "psutil", _FakePsutil)
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(12)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(12)), raising=False
     )
     assert llama_mod._spilled_decode_threads() == 6
     assert llama_mod._spilled_decode_threads(3) == 3
@@ -1761,29 +1762,29 @@ def test_smt_workers_do_not_multiply_math_core_capacity(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "psutil", _SmtHost)
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(16)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(16)), raising=False
     )
     monkeypatch.setattr(llama_mod.os, "cpu_count", lambda: 16)
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "4"]) == 4
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "16"]) is None
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "-1"]) is None
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "0"]) is None
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "4"]) == 4
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "16"]) is None
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "-1"]) is None
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "0"]) is None
 
     class _NonSmtHost:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return 8
 
     monkeypatch.setitem(sys.modules, "psutil", _NonSmtHost)
     monkeypatch.setattr(llama_mod.os, "cpu_count", lambda: 8)
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "-1"]) == 8
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "-1"]) == 8
 
 
 def test_default_thread_override_uses_native_logical_count(monkeypatch):
     monkeypatch.setattr(llama_mod, "_linux_math_core_count", lambda: 8)
     monkeypatch.setattr(llama_mod.os, "cpu_count", lambda: 2)
     monkeypatch.setitem(sys.modules, "psutil", _SmtHost)
-    assert llama_mod._spilled_decode_threads(extra_args = ["--threads", "-1"]) is None
+    assert llama_mod._spilled_decode_threads(extra_args=["--threads", "-1"]) is None
 
 
 def test_inherited_linux_cpu_affinity_declines_spill_pricing(monkeypatch):
@@ -1792,10 +1793,10 @@ def test_inherited_linux_cpu_affinity_declines_spill_pricing(monkeypatch):
     monkeypatch.setattr(
         llama_mod.os,
         "uname",
-        lambda: SimpleNamespace(machine = "x86_64"),
-        raising = False,
+        lambda: SimpleNamespace(machine="x86_64"),
+        raising=False,
     )
-    monkeypatch.setattr(llama_mod.os, "sched_getaffinity", lambda _pid: {0, 1}, raising = False)
+    monkeypatch.setattr(llama_mod.os, "sched_getaffinity", lambda _pid: {0, 1}, raising=False)
     monkeypatch.setitem(sys.modules, "psutil", _SmtHost)
     assert llama_mod._spilled_decode_threads() is None
 
@@ -1806,18 +1807,18 @@ def test_inherited_linux_cpu_affinity_declines_spill_pricing(monkeypatch):
 def test_inherited_linux_arm_cpu_affinity_declines_spill_pricing(monkeypatch):
     class _ArmHost:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return 72 if logical else 36
 
     monkeypatch.setattr(llama_mod.sys, "platform", "linux")
     monkeypatch.setattr(
         llama_mod.os,
         "uname",
-        lambda: SimpleNamespace(machine = "aarch64"),
-        raising = False,
+        lambda: SimpleNamespace(machine="aarch64"),
+        raising=False,
     )
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(4)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(4)), raising=False
     )
     monkeypatch.setitem(sys.modules, "psutil", _ArmHost)
     assert llama_mod._spilled_decode_threads() is None
@@ -1829,11 +1830,11 @@ def test_oversubscribed_decode_threads_decline_spill_planning(monkeypatch):
     monkeypatch.setattr(
         llama_mod.os,
         "uname",
-        lambda: SimpleNamespace(machine = "x86_64"),
-        raising = False,
+        lambda: SimpleNamespace(machine="x86_64"),
+        raising=False,
     )
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(16)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(16)), raising=False
     )
     # The affinity above has to read as UNRESTRICTED, which means it must match the
     # host's logical count, and _spilled_decode_threads takes that from psutil. Left
@@ -1842,11 +1843,11 @@ def test_oversubscribed_decode_threads_decline_spill_planning(monkeypatch):
     # the oversubscription this test is about is never reached. _SmtHost is the 16/8
     # host the surrounding affinity tests already pin for the same reason.
     monkeypatch.setitem(sys.modules, "psutil", _SmtHost)
-    assert _plan(_Stub(), free_mib = 14 * 1024, extra_args = ["--threads", "16"]) is None
+    assert _plan(_Stub(), free_mib=14 * 1024, extra_args=["--threads", "16"]) is None
     plan = _plan(
         _Stub(),
-        free_mib = 14 * 1024,
-        extra_args = ["--threads", "4"],
+        free_mib=14 * 1024,
+        extra_args=["--threads", "4"],
     )
     assert plan is not None and plan.spills_anything
 
@@ -1861,7 +1862,7 @@ def test_oversubscribed_decode_threads_decline_spill_planning(monkeypatch):
 )
 def test_affinity_constrained_decode_declines_spill_planning(monkeypatch, extra_args):
     monkeypatch.setattr(llama_mod, "_linux_math_core_count", lambda: 8)
-    assert _plan(_Stub(), free_mib = 14 * 1024, extra_args = extra_args) is None
+    assert _plan(_Stub(), free_mib=14 * 1024, extra_args=extra_args) is None
 
 
 def test_linux_hybrid_math_cores_exclude_efficiency_cores(tmp_path):
@@ -1870,12 +1871,12 @@ def test_linux_hybrid_math_cores_exclude_efficiency_cores(tmp_path):
     sibling_sets.extend(str(cpu) for cpu in range(16, 32))
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = tmp_path / f"cpu{cpu}"
-        (cpu_path / "topology").mkdir(parents = True)
+        (cpu_path / "topology").mkdir(parents=True)
         (cpu_path / "topology" / "thread_siblings").write_text(sibling_set)
         capacity = 1024 if cpu < 16 else 512
         (cpu_path / "cpu_capacity").write_text(str(capacity))
 
-    assert _linux_math_core_count(tmp_path, logical_cpus = 32, vendor_id = "GenuineIntel") == 8
+    assert _linux_math_core_count(tmp_path, logical_cpus=32, vendor_id="GenuineIntel") == 8
 
 
 def test_linux_hybrid_pmu_excludes_efficiency_cores_without_capacity(tmp_path):
@@ -1886,9 +1887,9 @@ def test_linux_hybrid_pmu_excludes_efficiency_cores_without_capacity(tmp_path):
     sibling_sets.extend(str(cpu) for cpu in range(8, 16))
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(sibling_set)
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0-7")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("8-15")
@@ -1896,8 +1897,8 @@ def test_linux_hybrid_pmu_excludes_efficiency_cores_without_capacity(tmp_path):
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 4
     )
@@ -1909,12 +1910,12 @@ def test_linux_no_smt_hybrid_matches_llama_cpu_loop(tmp_path, source):
     event_root = tmp_path / "events"
     for cpu in range(8):
         cpu_path = cpu_root / f"cpu{cpu}"
-        (cpu_path / "topology").mkdir(parents = True)
+        (cpu_path / "topology").mkdir(parents=True)
         (cpu_path / "topology" / "thread_siblings").write_text(str(cpu))
         if source == "capacity":
             (cpu_path / "cpu_capacity").write_text("1024" if cpu < 4 else "512")
     if source == "pmu":
-        (event_root / "cpu_core").mkdir(parents = True)
+        (event_root / "cpu_core").mkdir(parents=True)
         (event_root / "cpu_core" / "cpus").write_text("0-3")
         (event_root / "cpu_atom").mkdir()
         (event_root / "cpu_atom" / "cpus").write_text("4-7")
@@ -1922,8 +1923,8 @@ def test_linux_no_smt_hybrid_matches_llama_cpu_loop(tmp_path, source):
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 2
     )
@@ -1937,10 +1938,10 @@ def test_linux_sparse_online_hybrid_matches_llama_physical_fallback(tmp_path):
     sibling_sets.extend(str(cpu) for cpu in range(16, 24))
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(sibling_set)
     (cpu_root / "online").write_text("0-7,16-23")
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0-7")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("16-23")
@@ -1948,8 +1949,8 @@ def test_linux_sparse_online_hybrid_matches_llama_physical_fallback(tmp_path):
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 16
     )
@@ -1962,10 +1963,10 @@ def test_linux_smt_disabled_hybrid_skips_offline_siblings(tmp_path):
     sibling_sets.extend(str(cpu) for cpu in range(16, 24))
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(sibling_set)
     (cpu_root / "online").write_text("0,2,4,6,8,10,12,14,16-23")
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0,2,4,6,8,10,12,14")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("16-23")
@@ -1973,8 +1974,8 @@ def test_linux_smt_disabled_hybrid_skips_offline_siblings(tmp_path):
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 8
     )
@@ -1987,10 +1988,10 @@ def test_linux_hybrid_unpinnable_cpu_matches_llama_physical_fallback(tmp_path):
     sibling_sets.extend(str(cpu) for cpu in range(16, 24))
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(sibling_set)
     (cpu_root / "online").write_text("0-23")
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0-15")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("16-23")
@@ -1998,9 +1999,9 @@ def test_linux_hybrid_unpinnable_cpu_matches_llama_physical_fallback(tmp_path):
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
-            pinnable_cpus = set(range(8)),
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
+            pinnable_cpus=set(range(8)),
         )
         == 16
     )
@@ -2011,9 +2012,9 @@ def test_linux_hybrid_affinity_probe_failure_matches_physical_fallback(tmp_path,
     event_root = tmp_path / "events"
     for cpu in range(8):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(str(cpu))
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0-3")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("4-7")
@@ -2021,14 +2022,14 @@ def test_linux_hybrid_affinity_probe_failure_matches_physical_fallback(tmp_path,
     def fail_affinity(_pid):
         raise OSError("unavailable")
 
-    monkeypatch.setattr(llama_mod.os, "sched_getaffinity", fail_affinity, raising = False)
-    monkeypatch.setattr(llama_mod.os, "sched_setaffinity", lambda _pid, _cpus: None, raising = False)
+    monkeypatch.setattr(llama_mod.os, "sched_getaffinity", fail_affinity, raising=False)
+    monkeypatch.setattr(llama_mod.os, "sched_setaffinity", lambda _pid, _cpus: None, raising=False)
     assert (
         llama_mod._linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
-            probe_affinity = True,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
+            probe_affinity=True,
         )
         == 8
     )
@@ -2039,14 +2040,14 @@ def test_linux_hybrid_affinity_restore_failure_stays_in_worker(tmp_path, monkeyp
     event_root = tmp_path / "events"
     for cpu in range(8):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(str(cpu))
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("0-3")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("4-7")
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(8)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(8)), raising=False
     )
     caller_thread = llama_mod.threading.get_ident()
     affinity_threads = []
@@ -2056,13 +2057,13 @@ def test_linux_hybrid_affinity_restore_failure_stays_in_worker(tmp_path, monkeyp
         if len(cpus) > 1:
             raise OSError("restore failed")
 
-    monkeypatch.setattr(llama_mod.os, "sched_setaffinity", restore_fails, raising = False)
+    monkeypatch.setattr(llama_mod.os, "sched_setaffinity", restore_fails, raising=False)
     assert (
         llama_mod._linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
-            probe_affinity = True,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
+            probe_affinity=True,
         )
         == 2
     )
@@ -2075,16 +2076,16 @@ def test_linux_hybrid_with_unreadable_core_mask_is_conservative(tmp_path):
     event_root = tmp_path / "events"
     for cpu in range(4):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(str(cpu))
-    (event_root / "cpu_atom").mkdir(parents = True)
+    (event_root / "cpu_atom").mkdir(parents=True)
     (event_root / "cpu_atom" / "cpus").write_text("2-3")
 
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 1
     )
@@ -2095,9 +2096,9 @@ def test_linux_hybrid_with_only_efficiency_cores_matches_llama_fallback(tmp_path
     event_root = tmp_path / "events"
     for cpu in range(4):
         cpu_path = cpu_root / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(str(cpu))
-    (event_root / "cpu_core").mkdir(parents = True)
+    (event_root / "cpu_core").mkdir(parents=True)
     (event_root / "cpu_core" / "cpus").write_text("")
     (event_root / "cpu_atom").mkdir()
     (event_root / "cpu_atom" / "cpus").write_text("0-3")
@@ -2105,8 +2106,8 @@ def test_linux_hybrid_with_only_efficiency_cores_matches_llama_fallback(tmp_path
     assert (
         _linux_math_core_count(
             cpu_root,
-            vendor_id = "GenuineIntel",
-            event_source_root = event_root,
+            vendor_id="GenuineIntel",
+            event_source_root=event_root,
         )
         == 4
     )
@@ -2115,32 +2116,32 @@ def test_linux_hybrid_with_only_efficiency_cores_matches_llama_fallback(tmp_path
 def test_linux_topology_ignores_python_cpu_count_override(tmp_path, monkeypatch):
     for cpu in range(4):
         cpu_path = tmp_path / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(str(cpu))
     monkeypatch.setattr(llama_mod.os, "cpu_count", lambda: 2)
 
-    assert llama_mod._linux_math_core_count(tmp_path, vendor_id = "AuthenticAMD") == 4
+    assert llama_mod._linux_math_core_count(tmp_path, vendor_id="AuthenticAMD") == 4
 
 
 def test_linux_non_hybrid_topology_excludes_offline_cores(tmp_path):
     sibling_sets = ["0,4", "1,5", "2,6", "3,7", "0,4", "1,5", "2,6", "3,7"]
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = tmp_path / f"cpu{cpu}" / "topology"
-        cpu_path.mkdir(parents = True)
+        cpu_path.mkdir(parents=True)
         (cpu_path / "thread_siblings").write_text(sibling_set)
     (tmp_path / "online").write_text("0-2,4-6")
 
-    assert _linux_math_core_count(tmp_path, vendor_id = "AuthenticAMD") == 3
+    assert _linux_math_core_count(tmp_path, vendor_id="AuthenticAMD") == 3
 
 
 def test_linux_amd_capacity_classes_keep_all_physical_cores(tmp_path):
     for cpu in range(24):
         cpu_path = tmp_path / f"cpu{cpu}"
-        (cpu_path / "topology").mkdir(parents = True)
+        (cpu_path / "topology").mkdir(parents=True)
         (cpu_path / "topology" / "thread_siblings").write_text(str(cpu))
         (cpu_path / "cpu_capacity").write_text("1024" if cpu < 8 else "512")
 
-    assert _linux_math_core_count(tmp_path, logical_cpus = 24, vendor_id = "AuthenticAMD") == 24
+    assert _linux_math_core_count(tmp_path, logical_cpus=24, vendor_id="AuthenticAMD") == 24
 
 
 @pytest.mark.parametrize(
@@ -2153,21 +2154,21 @@ def test_linux_amd_capacity_classes_keep_all_physical_cores(tmp_path):
 def test_linux_smt_and_non_smt_core_counts(tmp_path, sibling_sets, expected):
     for cpu, sibling_set in enumerate(sibling_sets):
         cpu_path = tmp_path / f"cpu{cpu}"
-        (cpu_path / "topology").mkdir(parents = True)
+        (cpu_path / "topology").mkdir(parents=True)
         (cpu_path / "topology" / "thread_siblings").write_text(sibling_set)
 
-    assert _linux_math_core_count(tmp_path, logical_cpus = len(sibling_sets)) == expected
+    assert _linux_math_core_count(tmp_path, logical_cpus=len(sibling_sets)) == expected
 
 
 def test_invalid_linux_topology_falls_back_to_psutil(monkeypatch):
     class _PhysicalHost:
         @staticmethod
-        def cpu_count(logical = True):
+        def cpu_count(logical=True):
             return 24 if logical else 12
 
     monkeypatch.setattr(llama_mod, "_linux_math_core_count", lambda: None)
     monkeypatch.setattr(
-        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(24)), raising = False
+        llama_mod.os, "sched_getaffinity", lambda _pid: set(range(24)), raising=False
     )
     monkeypatch.setitem(sys.modules, "psutil", _PhysicalHost)
     assert llama_mod._spilled_decode_threads() == 12

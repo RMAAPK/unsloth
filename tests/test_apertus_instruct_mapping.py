@@ -33,7 +33,7 @@ UNPUBLISHED_16BIT = "unsloth/Apertus-70B-Instruct-2509"
 
 
 def _load_mappers():
-    with open(MAPPER_PATH, encoding = "utf-8") as f:
+    with open(MAPPER_PATH, encoding="utf-8") as f:
         source = f.read()
     namespace = {}
     exec(compile(source, MAPPER_PATH, "exec"), namespace)

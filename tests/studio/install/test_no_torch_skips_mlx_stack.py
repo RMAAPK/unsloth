@@ -23,7 +23,7 @@ MLX_STEP_LABEL = "Installing MLX stack"
 
 
 def _source() -> str:
-    return STACK.read_text(encoding = "utf-8")
+    return STACK.read_text(encoding="utf-8")
 
 
 def _guard_chains_of_calls_mentioning(source: str, needle: str) -> list[list[str]]:
@@ -96,7 +96,7 @@ def test_the_progress_total_uses_the_same_gate_as_the_step():
 
 def test_the_updater_still_clears_skip_studio_base():
     """The premise: stop clearing this and the test above passes vacuously."""
-    assert 'os.environ.pop("SKIP_STUDIO_BASE", None)' in STUDIO_CLI.read_text(encoding = "utf-8")
+    assert 'os.environ.pop("SKIP_STUDIO_BASE", None)' in STUDIO_CLI.read_text(encoding="utf-8")
 
 
 def test_no_torch_is_resolved_from_the_manifest_not_only_from_the_environment():

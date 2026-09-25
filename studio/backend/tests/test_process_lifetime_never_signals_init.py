@@ -99,7 +99,7 @@ def test_adopt_pid_refuses_init(monkeypatch):
     assert pl._tracked_pgids == {}
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "process groups are POSIX only")
+@pytest.mark.skipif(not IS_POSIX, reason="process groups are POSIX only")
 def test_own_process_group_refuses_group_one(monkeypatch):
     monkeypatch.setattr(pl.os, "getpgid", lambda pid: 1)
     assert pl._own_process_group(1) is None
@@ -108,37 +108,37 @@ def test_own_process_group_refuses_group_one(monkeypatch):
 # --- the signal side: an existing bad record cannot fire -------------------
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_posix_terminate_sends_nothing_for_init(recorded_signals):
-    pl._posix_terminate(1, timeout = 0.01)
+    pl._posix_terminate(1, timeout=0.01)
     assert recorded_signals == [], "killpg(1, sig) is kill(-1, sig): every process the user owns"
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pid", [0, 1])
 def test_posix_terminate_one_sends_nothing(recorded_signals, pid):
-    pl._posix_terminate_one(pid, group_leader = True, timeout = 0.01)
-    pl._posix_terminate_one(pid, group_leader = False, timeout = 0.01)
+    pl._posix_terminate_one(pid, group_leader=True, timeout=0.01)
+    pl._posix_terminate_one(pid, group_leader=False, timeout=0.01)
     assert recorded_signals == []
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_reap_orphaned_group_refuses_group_one(recorded_signals):
-    assert pl._reap_orphaned_group(1, 1, timeout = 0.01) is False
+    assert pl._reap_orphaned_group(1, 1, timeout=0.01) is False
     assert recorded_signals == []
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_terminate_descendants_skips_init(recorded_signals, monkeypatch):
     monkeypatch.setattr(pl, "_still_the_same", lambda pid, identity: True)
-    pl.terminate_descendants([(1, "irrelevant")], timeout = 0.01)
+    pl.terminate_descendants([(1, "irrelevant")], timeout=0.01)
     assert recorded_signals == []
 
 
 # --- the end to end case that actually happened ----------------------------
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_poisoned_record_is_dropped_not_retried(tmp_path, monkeypatch, recorded_signals):
     """A record written by a build without the guard must fire nothing, and must
     not survive to be retried on every subsequent launch."""
@@ -159,14 +159,14 @@ def test_poisoned_record_is_dropped_not_retried(tmp_path, monkeypatch, recorded_
                 "children": [{"pid": 1, "identity": "963", "pgid": 1}],
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     monkeypatch.setattr(pl, "_breadcrumb_dir", lambda: tmp_path)
     # The owner is long gone, which is what makes the sweep consider the record.
     monkeypatch.setattr(pl, "_pid_alive", lambda pid: pid == 1)
     monkeypatch.setattr(pl, "_pid_is_zombie", lambda pid: False)
 
-    reaped = pl.reap_recorded_children(timeout = 0.01)
+    reaped = pl.reap_recorded_children(timeout=0.01)
 
     assert recorded_signals == [], "the sweep must not signal init"
     assert reaped == [], "nothing was reaped, so nothing may be reported as reaped"
@@ -175,7 +175,7 @@ def test_poisoned_record_is_dropped_not_retried(tmp_path, monkeypatch, recorded_
     ), "a poisoned record must be unlinked, or every launch retries it forever"
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pgid", [0, 1])
 def test_poisoned_pgid_does_not_make_a_record_immortal(
     tmp_path, monkeypatch, recorded_signals, pgid
@@ -199,26 +199,26 @@ def test_poisoned_pgid_does_not_make_a_record_immortal(
                 "children": [{"pid": 424242, "identity": "222", "pgid": pgid}],
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     monkeypatch.setattr(pl, "_breadcrumb_dir", lambda: tmp_path)
     monkeypatch.setattr(pl, "_pid_alive", lambda pid: False)  # the child is long gone
     monkeypatch.setattr(pl, "_pid_is_zombie", lambda pid: False)
 
-    pl.reap_recorded_children(timeout = 0.01)
+    pl.reap_recorded_children(timeout=0.01)
 
     assert [s for s in recorded_signals if s[1] < 2] == [], "not even a probe below pid 2"
     assert not record.exists(), "a record with a poisoned pgid must not be immortal"
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pgid", [None, 0, 1, -1, True, "1"])
 def test_group_has_members_refuses_unsignalable_groups(recorded_signals, pgid):
     assert pl._group_has_members(pgid) is False
     assert recorded_signals == []
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pid", [0, 1, True])
 def test_terminate_pid_sends_nothing(recorded_signals, monkeypatch, pid):
     """`terminate_pid` is the public single-child stop. Its old `if not pid:`
@@ -228,7 +228,7 @@ def test_terminate_pid_sends_nothing(recorded_signals, monkeypatch, pid):
     monkeypatch.setattr(pl, "_tracked_pgids", {pid: pid})
     monkeypatch.setattr(pl, "_write_breadcrumb", lambda: None)
 
-    pl.terminate_pid(pid, timeout = 0.01)
+    pl.terminate_pid(pid, timeout=0.01)
 
     assert recorded_signals == []
 
@@ -241,7 +241,7 @@ def test_terminate_all_never_signals_a_poisoned_tracked_pid(monkeypatch, recorde
     monkeypatch.setattr(pl, "_tracked_pgids", {1: 1, 0: 0})
     monkeypatch.setattr(pl, "_write_breadcrumb", lambda: None)
 
-    pl.terminate_all(timeout = 0.01)
+    pl.terminate_all(timeout=0.01)
 
     assert recorded_signals == []
 
@@ -249,7 +249,7 @@ def test_terminate_all_never_signals_a_poisoned_tracked_pid(monkeypatch, recorde
 # --- the same shape elsewhere: the llama-server group killer ---------------
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pid", [None, 0, 1, -1, True])
 def test_leading_process_group_never_returns_init(monkeypatch, pid):
     """`getpgid(1) == 1`, so without a floor init reads as a group leader and the
@@ -260,7 +260,7 @@ def test_leading_process_group_never_returns_init(monkeypatch, pid):
     assert LlamaCppBackend._leading_process_group(pid) is None
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 @pytest.mark.parametrize("pgid", [None, 0, 1, -1, True])
 def test_kill_process_group_sends_nothing_for_init(monkeypatch, pgid):
     from core.inference import llama_cpp as lc
@@ -271,7 +271,7 @@ def test_kill_process_group_sends_nothing_for_init(monkeypatch, pgid):
     assert sent == []
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_kill_process_group_still_kills_a_real_group(monkeypatch):
     """The floor must not disarm the cleanup it guards."""
     from core.inference import llama_cpp as lc
@@ -282,7 +282,7 @@ def test_kill_process_group_still_kills_a_real_group(monkeypatch):
     assert [g for g, _s in sent] == [424242]
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_valid_record_still_reaps(tmp_path, monkeypatch, recorded_signals):
     """The guard must not disarm the feature it protects: a real child is still
     signalled."""
@@ -297,7 +297,7 @@ def test_valid_record_still_reaps(tmp_path, monkeypatch, recorded_signals):
                 "children": [{"pid": 424242, "identity": "222", "pgid": 424242}],
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     monkeypatch.setattr(pl, "_breadcrumb_dir", lambda: tmp_path)
     monkeypatch.setattr(pl, "_pid_alive", lambda pid: pid == 424242)
@@ -305,7 +305,7 @@ def test_valid_record_still_reaps(tmp_path, monkeypatch, recorded_signals):
     monkeypatch.setattr(pl, "_identity_or_none", lambda pid: "222")
     monkeypatch.setattr(pl.os, "getpgid", lambda pid: pid)
 
-    reaped = pl.reap_recorded_children(timeout = 0.01)
+    reaped = pl.reap_recorded_children(timeout=0.01)
 
     assert 424242 in reaped
     # The signal number is asserted, not just the pid. Without it a fully
@@ -320,7 +320,7 @@ def test_valid_record_still_reaps(tmp_path, monkeypatch, recorded_signals):
 # --- the sibling reapers that read a pid off disk ---------------------------
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_llama_pidfile_reaper_refuses_init(tmp_path, monkeypatch, recorded_signals):
     """The llama-server pidfile is the other place a pid arrives from disk rather
     than from a live handle, which is the precondition the incident needed.
@@ -335,7 +335,7 @@ def test_llama_pidfile_reaper_refuses_init(tmp_path, monkeypatch, recorded_signa
     from core.inference import llama_cpp as lc
 
     pidfile = tmp_path / "llama-server.pid"
-    pidfile.write_text("1:963", encoding = "utf-8")
+    pidfile.write_text("1:963", encoding="utf-8")
     monkeypatch.setattr(
         lc.LlamaCppBackend, "_server_pidfile_path", classmethod(lambda cls: pidfile)
     )
@@ -349,7 +349,7 @@ def test_llama_pidfile_reaper_refuses_init(tmp_path, monkeypatch, recorded_signa
     assert not pidfile.exists(), "a pidfile naming init is garbage, not something to retry"
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason = "the procfs scan only runs on Linux")
+@pytest.mark.skipif(sys.platform != "linux", reason="the procfs scan only runs on Linux")
 def test_llama_orphan_sweep_skips_init(tmp_path, monkeypatch):
     """The orphan sweep must not kill pid 1 even when pid 1 looks exactly like an
     owned, parentless llama-server.
@@ -393,7 +393,7 @@ def test_llama_orphan_sweep_skips_init(tmp_path, monkeypatch):
     assert killed == [mypid + 1], "the genuine owned orphan must still be reaped"
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_download_registry_never_signals_init(tmp_path, monkeypatch):
     """`reap_orphan_workers` had no test at all, so its floor had no test either:
     reverting it to the old `pid <= 0` passed the whole suite."""
@@ -410,7 +410,7 @@ def test_download_registry_never_signals_init(tmp_path, monkeypatch):
 
     entry = tmp_path / "poisoned.json"
     entry.write_text(
-        json.dumps({"pid": 1, "repo_type": "model", "repo_id": "Org/Model"}), encoding = "utf-8"
+        json.dumps({"pid": 1, "repo_type": "model", "repo_id": "Org/Model"}), encoding="utf-8"
     )
 
     dr.reap_orphan_workers()
@@ -420,7 +420,7 @@ def test_download_registry_never_signals_init(tmp_path, monkeypatch):
     assert settled, "the partial must still be settled, or the user re-downloads from scratch"
 
 
-@pytest.mark.skipif(not IS_POSIX, reason = "POSIX signalling path")
+@pytest.mark.skipif(not IS_POSIX, reason="POSIX signalling path")
 def test_kill_orphan_refuses_init_on_its_own(monkeypatch):
     """The helper that sends the signal carries the floor itself, so it does not
     depend on every future caller having checked first."""

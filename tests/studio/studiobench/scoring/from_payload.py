@@ -201,7 +201,7 @@ def _action_measure(metric_key: str, actions: Mapping[str, Mapping[str, Any]]) -
     value = (row.get("timings") or {}).get(timing_key)
     if value is None:
         return Measure.failed(unit, f"{action_name} ran but recorded no {timing_key}")
-    return Measure.read(float(value), unit, note = note)
+    return Measure.read(float(value), unit, note=note)
 
 
 def _frame_measures(windows: Sequence[Mapping[str, Any]]) -> dict[str, Measure]:
@@ -260,7 +260,7 @@ def _frame_measures(windows: Sequence[Mapping[str, Any]]) -> dict[str, Measure]:
 
     out: dict[str, Measure] = {}
     out["max_frame_ms"] = (
-        Measure.read(max_frame, "ms", note = "worst frame across the cell's active windows")
+        Measure.read(max_frame, "ms", note="worst frame across the cell's active windows")
         if max_frame is not None
         else Measure.failed("ms", "the recorder ran but observed no frames")
     )
@@ -512,7 +512,7 @@ def _stream_measures(windows: Sequence[Mapping[str, Any]]) -> dict[str, Measure]
     )
 
     out["stream_delta_cost_ms_per_kchar"] = (
-        Measure.read(1000.0 * delta_task_ms / chars, "ms/kchar", note = note)
+        Measure.read(1000.0 * delta_task_ms / chars, "ms/kchar", note=note)
         if chars > 0
         else Measure.failed("ms/kchar", "the streaming windows recorded no streamed characters")
     )
@@ -526,14 +526,14 @@ def _stream_measures(windows: Sequence[Mapping[str, Any]]) -> dict[str, Measure]
         )
     else:
         out["stream_cost_ms_per_kchar"] = Measure.read(
-            1000.0 * blocked_ms / unaided_chars, "ms/kchar", note = unaided_note
+            1000.0 * blocked_ms / unaided_chars, "ms/kchar", note=unaided_note
         )
 
     out["stream_busy_pct"] = (
         Measure.failed("%", blocked_reason)
         if blocked_reason
         else (
-            Measure.read(100.0 * blocked_ms / streaming_ms, "%", note = unaided_note)
+            Measure.read(100.0 * blocked_ms / streaming_ms, "%", note=unaided_note)
             if streaming_ms > 0
             else Measure.failed(
                 "%", "the instrument observed no unaided streaming time in this cell"
@@ -560,7 +560,7 @@ def _stream_measures(windows: Sequence[Mapping[str, Any]]) -> dict[str, Measure]
         return out
 
     out["stream_max_frame_ms"] = (
-        Measure.read(max_frame, "ms", note = "worst frame inside the UNAIDED streaming windows")
+        Measure.read(max_frame, "ms", note="worst frame inside the UNAIDED streaming windows")
         if max_frame is not None
         else Measure.failed("ms", "the frame recorder observed no frames streaming unaided")
     )

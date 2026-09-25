@@ -93,7 +93,7 @@ def fake_settings(monkeypatch):
 
     store: dict = {}
 
-    def _get(key, fallback = None):
+    def _get(key, fallback=None):
         return store.get(key, fallback)
 
     def _upsert(settings, **_kwargs):
@@ -105,19 +105,19 @@ def fake_settings(monkeypatch):
     return store
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _clean_process_state(monkeypatch):
     """raising = False so these still report what they measured on a tree without the note."""
     from core.inference import sd_cpp_backend
 
-    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising=False)
     monkeypatch.setattr(
         sd_cpp_backend,
         "_HOST_FINGERPRINT_MEMO",
         {"runtime": "6.4.0", "gpus": ["AMD Radeon RX 7900 XTX"]},
-        raising = False,
+        raising=False,
     )
-    monkeypatch.delenv("UNSLOTH_DIFFUSION_SD_CPP_VULKAN_FALLBACK", raising = False)
+    monkeypatch.delenv("UNSLOTH_DIFFUSION_SD_CPP_VULKAN_FALLBACK", raising=False)
 
 
 @pytest.fixture
@@ -133,7 +133,7 @@ def h3_amd_host(monkeypatch, tmp_path):
         monkeypatch.setattr(
             video_mod,
             "resolve_diffusion_device_target",
-            lambda: types.SimpleNamespace(backend = backend, device = device, dtype = None),
+            lambda: types.SimpleNamespace(backend=backend, device=device, dtype=None),
         )
         monkeypatch.setattr(sd_cpp_backend, "_install_allowed", lambda: True)
         monkeypatch.setattr(sd_cpp_backend, "is_managed_binary", lambda _b: True)
@@ -144,13 +144,13 @@ def h3_amd_host(monkeypatch, tmp_path):
             sd_cpp_backend,
             "rocm_runtime_resolvable",
             lambda: None if platform == "win32" else False,
-            raising = False,
+            raising=False,
         )
 
         ensured: list[str] = []
         by_binary = {f"/opt/sd/{accel}/sd-cli": accel for accel in devices}
 
-        def _ensure(*, allow_install = True, accelerator = "cpu"):
+        def _ensure(*, allow_install=True, accelerator="cpu"):
             klass = "cpu" if accelerator in ("auto", "cpu", "", None) else accelerator
             ensured.append(klass)
             if devices.get(klass, MISSING) is MISSING:
@@ -194,15 +194,15 @@ def h3_amd_host(monkeypatch, tmp_path):
             assert fam is not None
             obj = VideoBackend()
             obj._run_load_h3_native(
-                fam = fam,
-                token = None,
-                cancel_event = threading.Event(),
-                repo_id = H3_REPO,
-                gguf_filename = H3_FILE,
+                fam=fam,
+                token=None,
+                cancel_event=threading.Event(),
+                repo_id=H3_REPO,
+                gguf_filename=H3_FILE,
             )
             return obj
 
-        return types.SimpleNamespace(run = run, ensured = ensured, downloads = downloads)
+        return types.SimpleNamespace(run=run, ensured=ensured, downloads=downloads)
 
     return _setup
 
@@ -217,7 +217,7 @@ _CPU_ONLY = {"rocm": MISSING, "vulkan": MISSING, "cpu": _DEVICES_CPU_ONLY}
 
 @pytest.mark.parametrize("platform", PLATFORMS)
 def test_a_working_rocm_build_is_left_alone(h3_amd_host, fake_settings, platform):
-    host = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _ROCM_WORKS)
+    host = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_ROCM_WORKS)
     backend_obj = host.run()
     assert host.ensured == ["rocm"]
     assert backend_obj._state.device == "cuda"
@@ -238,7 +238,7 @@ def test_a_rocm_build_that_cannot_run_falls_back_to_vulkan(
     h3_amd_host, fake_settings, platform, state, devices, diverts
 ):
     """On main every one of these commits ``native_device = "cpu"`` or refuses; both reporters' cards run Vulkan."""
-    host = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = devices)
+    host = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=devices)
     backend_obj = host.run()
     assert host.ensured == ["rocm", "vulkan"], host.ensured
     assert backend_obj._state.device == "cuda"
@@ -254,7 +254,7 @@ def test_a_rocm_build_that_cannot_run_falls_back_to_vulkan(
 def test_the_cpu_rung_is_still_reached_when_vulkan_cannot_run_either(
     h3_amd_host, fake_settings, platform
 ):
-    host = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _CPU_ONLY)
+    host = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_CPU_ONLY)
     backend_obj = host.run()
     assert host.ensured == ["rocm", "vulkan", "cpu"], host.ensured
     assert backend_obj._state.device == "cpu"
@@ -264,10 +264,10 @@ def test_the_cpu_rung_is_still_reached_when_vulkan_cannot_run_either(
 @pytest.mark.parametrize("platform", PLATFORMS)
 def test_a_cuda_host_never_takes_the_vulkan_rung(h3_amd_host, fake_settings, platform):
     host = h3_amd_host(
-        platform = platform,
-        backend = "cuda",
-        device = "cuda",
-        devices = {"cuda": _DEVICES_CPU_ONLY, "vulkan": _DEVICES_VULKAN, "cpu": _DEVICES_CPU_ONLY},
+        platform=platform,
+        backend="cuda",
+        device="cuda",
+        devices={"cuda": _DEVICES_CPU_ONLY, "vulkan": _DEVICES_VULKAN, "cpu": _DEVICES_CPU_ONLY},
     )
     backend_obj = host.run()
     assert host.ensured == ["cuda", "cpu"], host.ensured
@@ -278,7 +278,7 @@ def test_a_cuda_host_never_takes_the_vulkan_rung(h3_amd_host, fake_settings, pla
 @pytest.mark.parametrize("platform", PLATFORMS)
 def test_the_fallback_can_be_switched_off(h3_amd_host, fake_settings, monkeypatch, platform):
     monkeypatch.setenv("UNSLOTH_DIFFUSION_SD_CPP_VULKAN_FALLBACK", "0")
-    host = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _ROCM_BROKEN)
+    host = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_ROCM_BROKEN)
     backend_obj = host.run()
     assert "vulkan" not in host.ensured
     assert backend_obj._state.device == "cuda"
@@ -290,7 +290,7 @@ def test_a_recorded_failure_skips_the_rocm_build_on_the_next_load(
     h3_amd_host, fake_settings, platform
 ):
     fake_settings["sd_cpp_accelerator_runtime_failures"] = ["rocm"]
-    host = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _ROCM_WORKS)
+    host = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_ROCM_WORKS)
     backend_obj = host.run()
     assert host.ensured == ["vulkan"], host.ensured
     assert backend_obj._state.device == "cuda"
@@ -313,6 +313,7 @@ def test_clearing_the_note_restores_the_host_accelerator(fake_settings):
 )
 def test_only_rocm_has_a_rung_below_it(accelerator, expected):
     from core.inference.sd_cpp_backend import fallback_accelerator_for
+
     assert fallback_accelerator_for(accelerator) == expected
 
 
@@ -331,6 +332,7 @@ def test_only_rocm_has_a_rung_below_it(accelerator, expected):
 )
 def test_only_a_gpu_backend_failure_moves_the_preference(output, expected):
     from core.inference.sd_cpp_backend import output_shows_accelerator_failure
+
     assert output_shows_accelerator_failure(output) is expected
 
 
@@ -379,10 +381,10 @@ def test_the_engine_router_installs_the_preferred_accelerator(fake_settings, mon
     monkeypatch.setattr(
         router,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = "rocm", device = "cuda", dtype = None),
+        lambda: types.SimpleNamespace(backend="rocm", device="cuda", dtype=None),
     )
     monkeypatch.setattr(router, "family_sd_cpp_supported", lambda _fam: True)
-    monkeypatch.setattr(router, "_activate", lambda name, reason = None: name)
+    monkeypatch.setattr(router, "_activate", lambda name, reason=None: name)
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ENGINE", "sd_cpp")
     router.select_and_activate_engine(_detect_load_family(H3_REPO, None, "minimax-h3"))
     assert asked == ["vulkan", "vulkan"], asked
@@ -395,10 +397,10 @@ def test_every_healthy_corner_installs_exactly_what_it_did_before(
 ):
     backend, device = _corner(platform, vendor)
     host = h3_amd_host(
-        platform = platform,
-        backend = backend,
-        device = device,
-        devices = _devices_for(backend, rocm_runs = True),
+        platform=platform,
+        backend=backend,
+        device=device,
+        devices=_devices_for(backend, rocm_runs=True),
     )
     backend_obj = host.run()
     assert host.ensured == [_FIRST_ENSURE[backend]], host.ensured
@@ -413,10 +415,10 @@ def test_only_the_amd_corners_with_a_rocm_asset_take_the_new_rung(
 ):
     backend, device = _corner(platform, vendor)
     host = h3_amd_host(
-        platform = platform,
-        backend = backend,
-        device = device,
-        devices = _devices_for(backend, rocm_runs = False),
+        platform=platform,
+        backend=backend,
+        device=device,
+        devices=_devices_for(backend, rocm_runs=False),
     )
     backend_obj = host.run()
     takes_the_rung = backend == "rocm"
@@ -459,7 +461,7 @@ def test_the_release_assets_each_platform_resolves_are_unchanged(platform):
 
     def resolved(accel):
         return module.resolve_release_asset(
-            assets, system = system, machine = machine, accelerator = accel
+            assets, system=system, machine=machine, accelerator=accel
         )
 
     if platform == "darwin":
@@ -501,7 +503,7 @@ def test_the_image_path_resolves_the_preferred_accelerator(
     monkeypatch.setattr(
         sd_cpp_backend,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = backend, device = "cuda", dtype = None),
+        lambda: types.SimpleNamespace(backend=backend, device="cuda", dtype=None),
     )
     assert sd_cpp_backend.SdCppDiffusionBackend._resolved_accelerator() == expected
 
@@ -557,6 +559,7 @@ def test_the_marker_tiers_split_evidence_from_suspicion(output, decisive):
         output_shows_accelerator_failure,
         output_shows_decisive_accelerator_failure,
     )
+
     assert output_shows_accelerator_failure(output) is True
     assert output_shows_decisive_accelerator_failure(output) is decisive
 
@@ -677,7 +680,7 @@ def test_a_driver_upgrade_makes_the_host_try_rocm_again(fake_settings, monkeypat
         sd_cpp_backend,
         "_HOST_FINGERPRINT_MEMO",
         {"runtime": "7.0.0", "gpus": ["AMD Radeon RX 7900 XTX"]},
-        raising = False,
+        raising=False,
     )
     # The in-process mirror is keyed on the old fingerprint too, so both halves have to retire.
     assert sd_cpp_backend.accelerator_runtime_failed("rocm") is False
@@ -687,14 +690,14 @@ def test_a_driver_upgrade_makes_the_host_try_rocm_again(fake_settings, monkeypat
 def test_strikes_do_not_accumulate_across_a_fingerprint_change(fake_settings, monkeypatch):
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False)
     monkeypatch.setattr(
         sd_cpp_backend,
         "_HOST_FINGERPRINT_MEMO",
         {"runtime": "7.0.0", "gpus": ["AMD Radeon RX 7900 XTX"]},
-        raising = False,
+        raising=False,
     )
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm") is False
 
 
@@ -710,7 +713,7 @@ def test_the_settings_route_reports_and_clears_the_record(fake_settings, monkeyp
     assert state.records[0].fallback == "vulkan"
     assert state.records[0].proven is True
 
-    cleared = settings_routes.clear_diffusion_accelerator_fallback(current_subject = "owner")
+    cleared = settings_routes.clear_diffusion_accelerator_fallback(current_subject="owner")
     assert cleared.diverting is False
     assert cleared.records == []
     assert sd_cpp_backend.accelerator_runtime_failed("rocm") is False
@@ -738,7 +741,7 @@ def test_the_report_does_not_claim_a_diversion_the_switch_turned_off(fake_settin
     assert state.records[0].stale is False
     assert sd_cpp_backend.accelerator_runtime_failed("rocm") is True
 
-    monkeypatch.delenv("UNSLOTH_DIFFUSION_SD_CPP_VULKAN_FALLBACK", raising = False)
+    monkeypatch.delenv("UNSLOTH_DIFFUSION_SD_CPP_VULKAN_FALLBACK", raising=False)
     back = settings_routes._diffusion_accelerator_fallback_response()
     assert back.enabled is True
     assert back.diverting is True
@@ -754,7 +757,7 @@ def test_a_stale_record_is_reported_as_stale_rather_than_hidden(fake_settings, m
         sd_cpp_backend,
         "_HOST_FINGERPRINT_MEMO",
         {"runtime": "7.0.0", "gpus": ["AMD Radeon RX 7900 XTX"]},
-        raising = False,
+        raising=False,
     )
     state = settings_routes._diffusion_accelerator_fallback_response()
     assert state.records[0].stale is True
@@ -796,7 +799,7 @@ def test_an_unreadable_record_never_breaks_a_load(fake_settings, stored):
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "A") in (True, False)
     assert sd_cpp_backend.preferred_accelerator("rocm") in ("rocm", "vulkan")
     assert isinstance(sd_cpp_backend.accelerator_runtime_failure_state()["records"], list)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = "A")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card="A")
 
 
 # Before the fix the CPU-only Vulkan binary inherited listed_accelerator=True from the unreadable ROCm probe.
@@ -812,10 +815,10 @@ def test_a_cpu_only_fallback_build_does_not_inherit_the_gpu_reading(
     h3_amd_host, fake_settings, platform
 ):
     host = h3_amd_host(
-        platform = platform,
-        backend = "rocm",
-        device = "cuda",
-        devices = _ROCM_UNKNOWN_VULKAN_CPU_ONLY,
+        platform=platform,
+        backend="rocm",
+        device="cuda",
+        devices=_ROCM_UNKNOWN_VULKAN_CPU_ONLY,
     )
     backend_obj = host.run()
     assert host.ensured == ["rocm", "vulkan", "cpu"], host.ensured
@@ -826,10 +829,10 @@ def test_a_cpu_only_fallback_build_does_not_inherit_the_gpu_reading(
 @pytest.mark.parametrize("platform", PLATFORMS)
 def test_an_unreadable_fallback_never_raises_the_reading(h3_amd_host, fake_settings, platform):
     host = h3_amd_host(
-        platform = platform,
-        backend = "rocm",
-        device = "cuda",
-        devices = {"rocm": _DEVICES_CPU_ONLY, "vulkan": None, "cpu": _DEVICES_CPU_ONLY},
+        platform=platform,
+        backend="rocm",
+        device="cuda",
+        devices={"rocm": _DEVICES_CPU_ONLY, "vulkan": None, "cpu": _DEVICES_CPU_ONLY},
     )
     backend_obj = host.run()
     assert host.ensured == ["rocm", "vulkan", "cpu"], host.ensured
@@ -863,16 +866,16 @@ _ROUTING = {
 }
 
 
-@pytest.mark.parametrize("corner", sorted(_ROUTING), ids = lambda c: f"rocm_{c[0]}-vulkan_{c[1]}")
+@pytest.mark.parametrize("corner", sorted(_ROUTING), ids=lambda c: f"rocm_{c[0]}-vulkan_{c[1]}")
 def test_the_whole_load_routing_space_is_enumerated(h3_amd_host, fake_settings, corner):
     """No input that committed a device on main commits a DIFFERENT device now, except where main's commit was already a failed load."""
     rocm_answer, vulkan_answer = corner
     expected_ensured, expected_device, _main, _why = _ROUTING[corner]
     host = h3_amd_host(
-        platform = "linux",
-        backend = "rocm",
-        device = "cuda",
-        devices = {
+        platform="linux",
+        backend="rocm",
+        device="cuda",
+        devices={
             "rocm": _ANSWER[rocm_answer],
             "vulkan": _ANSWER[vulkan_answer],
             "cpu": _DEVICES_CPU_ONLY,
@@ -918,9 +921,9 @@ def test_every_upgrade_required_positive_fallback_evidence():
 def unpinned_fingerprint(monkeypatch):
     from core.inference import sd_cpp_backend
 
-    monkeypatch.setattr(sd_cpp_backend, "_HOST_FINGERPRINT_MEMO", None, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "_HOST_FINGERPRINT_MEMO", None, raising=False)
     monkeypatch.setattr(
-        sd_cpp_backend, "_RUNTIME_FINGERPRINT_MEMO", {"runtime": "6.4.0"}, raising = False
+        sd_cpp_backend, "_RUNTIME_FINGERPRINT_MEMO", {"runtime": "6.4.0"}, raising=False
     )
     return sd_cpp_backend
 
@@ -945,7 +948,7 @@ def test_a_cold_inventory_read_is_not_frozen_for_the_process(unpinned_fingerprin
     monkeypatch.setattr(
         hardware,
         "get_physical_gpu_inventory",
-        lambda *, block = True: answers.pop(0) if answers else _inventory("AMD Radeon RX 7900 XTX"),
+        lambda *, block=True: answers.pop(0) if answers else _inventory("AMD Radeon RX 7900 XTX"),
     )
 
     cold = unpinned_fingerprint._host_fingerprint()
@@ -961,7 +964,7 @@ def test_a_card_added_while_studio_runs_retires_the_record(
     from utils.hardware import hardware
 
     cards = [_inventory("AMD Radeon RX 7900 XTX")]
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: cards[0])
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: cards[0])
 
     unpinned_fingerprint.note_accelerator_runtime_failure("rocm")
     assert unpinned_fingerprint.preferred_accelerator("rocm") == "vulkan"
@@ -979,13 +982,13 @@ def test_the_runtime_half_is_still_read_once(unpinned_fingerprint, monkeypatch):
     from utils.hardware import hardware
 
     cards = [_inventory("first")]
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: cards[0])
-    monkeypatch.setattr(unpinned_fingerprint, "_RUNTIME_FINGERPRINT_MEMO", None, raising = False)
-    monkeypatch.setattr(torch.version, "hip", "6.4.0", raising = False)
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: cards[0])
+    monkeypatch.setattr(unpinned_fingerprint, "_RUNTIME_FINGERPRINT_MEMO", None, raising=False)
+    monkeypatch.setattr(torch.version, "hip", "6.4.0", raising=False)
 
     first = unpinned_fingerprint._host_fingerprint()
     assert first == {"runtime": "6.4.0", "gpus": ["first"]}
-    monkeypatch.setattr(torch.version, "hip", "7.0.0", raising = False)
+    monkeypatch.setattr(torch.version, "hip", "7.0.0", raising=False)
     cards[0] = _inventory("second")
     assert unpinned_fingerprint._host_fingerprint() == {"runtime": "6.4.0", "gpus": ["second"]}
 
@@ -1017,7 +1020,7 @@ def test_a_card_the_os_cannot_name_still_reaches_the_fingerprint(unpinned_finger
     monkeypatch.setattr(
         hardware,
         "get_physical_gpu_inventory",
-        lambda *, block = True: _raw_inventory(dict(_UNNAMED_GFX1151)),
+        lambda *, block=True: _raw_inventory(dict(_UNNAMED_GFX1151)),
     )
     assert unpinned_fingerprint._host_fingerprint() == {
         "runtime": "6.4.0",
@@ -1028,9 +1031,9 @@ def test_a_card_the_os_cannot_name_still_reaches_the_fingerprint(unpinned_finger
 def test_a_named_card_carries_its_target_as_well(unpinned_fingerprint, monkeypatch):
     from utils.hardware import hardware
 
-    named = dict(_UNNAMED_GFX1151, name = "AMD Radeon(TM) 8060S Graphics")
+    named = dict(_UNNAMED_GFX1151, name="AMD Radeon(TM) 8060S Graphics")
     monkeypatch.setattr(
-        hardware, "get_physical_gpu_inventory", lambda *, block = True: _raw_inventory(named)
+        hardware, "get_physical_gpu_inventory", lambda *, block=True: _raw_inventory(named)
     )
     assert unpinned_fingerprint._host_fingerprint() == {
         "runtime": "6.4.0",
@@ -1044,16 +1047,16 @@ def test_two_cards_sharing_a_generic_name_are_not_one_card(unpinned_fingerprint,
 
     first = dict(
         _UNNAMED_GFX1151,
-        name = "AMD Radeon(TM) Graphics",
-        gfx_candidates = ["gfx11", "gfx1103"],
+        name="AMD Radeon(TM) Graphics",
+        gfx_candidates=["gfx11", "gfx1103"],
     )
     second = dict(
         _UNNAMED_GFX1151,
-        name = "AMD Radeon(TM) Graphics",
-        gfx_candidates = ["gfx11", "gfx1151"],
+        name="AMD Radeon(TM) Graphics",
+        gfx_candidates=["gfx11", "gfx1151"],
     )
     cards = [_raw_inventory(first)]
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: cards[0])
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: cards[0])
 
     unpinned_fingerprint.note_accelerator_runtime_failure("rocm")
     assert unpinned_fingerprint.preferred_accelerator("rocm") == "vulkan"
@@ -1064,10 +1067,10 @@ def test_two_cards_sharing_a_generic_name_are_not_one_card(unpinned_fingerprint,
 def test_two_unnamed_cards_of_different_targets_are_not_one_card(unpinned_fingerprint, monkeypatch):
     from utils.hardware import hardware
 
-    first = dict(_UNNAMED_GFX1151, gfx_candidates = ["gfx11", "gfx1100"])
-    second = dict(_UNNAMED_GFX1151, gfx_candidates = ["gfx12", "gfx1201"])
+    first = dict(_UNNAMED_GFX1151, gfx_candidates=["gfx11", "gfx1100"])
+    second = dict(_UNNAMED_GFX1151, gfx_candidates=["gfx12", "gfx1201"])
     cards = [_raw_inventory(first)]
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: cards[0])
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: cards[0])
 
     unpinned_fingerprint.note_accelerator_runtime_failure("rocm")
     assert unpinned_fingerprint.preferred_accelerator("rocm") == "vulkan"
@@ -1079,17 +1082,19 @@ def test_a_device_reporting_nothing_but_a_vendor_still_contributes(
     unpinned_fingerprint, monkeypatch
 ):
     from utils.hardware import hardware
+
     monkeypatch.setattr(
         hardware,
         "get_physical_gpu_inventory",
-        lambda *, block = True: _raw_inventory({"vendor": "amd", "index": 1}),
+        lambda *, block=True: _raw_inventory({"vendor": "amd", "index": 1}),
     )
     assert unpinned_fingerprint._host_fingerprint()["gpus"] == ["amd:1"]
 
 
 def test_an_empty_device_list_is_still_no_cards(unpinned_fingerprint, monkeypatch):
     from utils.hardware import hardware
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: {})
+
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: {})
     assert unpinned_fingerprint._host_fingerprint()["gpus"] is None
 
 
@@ -1102,6 +1107,7 @@ def test_a_build_that_never_started_is_a_decisive_build_failure():
         output_shows_accelerator_failure,
         output_shows_decisive_accelerator_failure,
     )
+
     assert output_shows_accelerator_failure(_WINDOWS_DLL_FAILURE) is True
     assert output_shows_decisive_accelerator_failure(_WINDOWS_DLL_FAILURE) is True
 
@@ -1112,6 +1118,7 @@ def test_a_build_that_never_started_is_a_decisive_build_failure():
 )
 def test_every_image_load_status_is_recognised_signed_or_unsigned(status):
     from core.inference.sd_cpp_backend import output_shows_image_load_failure
+
     assert output_shows_image_load_failure(f"sd-cli exited {status}. Last output:\n") is True
 
 
@@ -1140,6 +1147,7 @@ def test_an_out_of_memory_alongside_an_image_load_status_is_still_capacity():
 
 def test_the_number_alone_is_not_enough():
     from core.inference.sd_cpp_backend import output_shows_image_load_failure
+
     assert output_shows_image_load_failure("seed 3221225781 produced a nice image") is False
 
 
@@ -1193,19 +1201,19 @@ def test_two_identical_cards_are_not_pinned_on_a_guess(monkeypatch):
     # Both namespaces walk one vendor's GPUs in the order the driver reports them.
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position = 1
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position=1
         )
         == "Vulkan1"
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position = 0
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position=0
         )
         == "Vulkan0"
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position = 5
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position=5
         )
         is None
     )
@@ -1236,7 +1244,7 @@ _VISIBILITY_VARS = (
 
 def _no_visibility_mask(monkeypatch):
     for variable in _VISIBILITY_VARS:
-        monkeypatch.delenv(variable, raising = False)
+        monkeypatch.delenv(variable, raising=False)
 
 
 def test_the_position_among_identical_cards_is_what_is_carried(monkeypatch):
@@ -1285,7 +1293,7 @@ def _pinned_torch(monkeypatch, names):
 def _pinned_inventory(
     monkeypatch,
     devices,
-    hip_by_row = None,
+    hip_by_row=None,
 ):
     """Two index spaces: masks and torch speak HIP ids, the inventory's ``index`` is amd-smi's discovery row. Default here is the identity mapping."""
     from utils.hardware import amd, hardware
@@ -1293,7 +1301,7 @@ def _pinned_inventory(
     monkeypatch.setattr(
         hardware,
         "get_physical_gpu_inventory",
-        lambda *, block = True: {
+        lambda *, block=True: {
             "available": True,
             "devices": list(devices),
             "sources": ["test"],
@@ -1358,7 +1366,7 @@ def test_a_hip_id_is_translated_into_the_inventorys_own_row(monkeypatch):
             {"vendor": "amd", "index": 2, "name": "AMD Radeon RX 7900 XTX"},
         ],
         # ... which is probe row 2 on this host, not row 0.
-        hip_by_row = {0: 2, 1: 1, 2: 0},
+        hip_by_row={0: 2, 1: 1, 2: 0},
     )
 
     assert video_mod._physical_card_name(0) == ("AMD Radeon RX 7900 XTX", 1)
@@ -1377,7 +1385,7 @@ def test_an_unreadable_hip_mapping_declines_the_tie_break(monkeypatch):
             {"vendor": "amd", "index": 0, "name": "AMD Radeon RX 7900 XTX"},
             {"vendor": "amd", "index": 1, "name": "AMD Radeon RX 7900 XTX"},
         ],
-        hip_by_row = None,
+        hip_by_row=None,
     )
     from utils.hardware import amd
 
@@ -1522,13 +1530,13 @@ def test_a_related_model_name_is_not_tie_broken_by_position(monkeypatch):
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position = 0
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position=0
         )
         == "Vulkan1"
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600 XT", position = 0
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600 XT", position=0
         )
         == "Vulkan0"
     )
@@ -1544,13 +1552,13 @@ def test_a_related_model_name_is_not_tie_broken_by_position(monkeypatch):
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position = 0
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position=0
         )
         is None
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position = 1
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7600", position=1
         )
         is None
     )
@@ -1561,13 +1569,13 @@ def test_a_build_recorded_as_unrunnable_is_not_accepted_back_from_the_ensure(mon
     from core.inference import sd_cpp_backend
 
     monkeypatch.setattr(
-        sd_cpp_backend, "_installed_accelerator_of", lambda binary: "rocm", raising = False
+        sd_cpp_backend, "_installed_accelerator_of", lambda binary: "rocm", raising=False
     )
     monkeypatch.setattr(
         sd_cpp_backend,
         "accelerator_runtime_failed",
-        lambda accelerator, card = None: accelerator == "rocm",
-        raising = False,
+        lambda accelerator, card=None: accelerator == "rocm",
+        raising=False,
     )
     assert sd_cpp_backend.usable_or_recorded_failure("/opt/sd/rocm/sd-cli", "vulkan") is None
     assert sd_cpp_backend.usable_or_recorded_failure("/opt/sd/rocm/sd-cli", "cpu") is None
@@ -1580,14 +1588,14 @@ def test_a_build_recorded_as_unrunnable_is_not_accepted_back_from_the_ensure(mon
     )
 
     monkeypatch.setattr(
-        sd_cpp_backend, "_installed_accelerator_of", lambda binary: "vulkan", raising = False
+        sd_cpp_backend, "_installed_accelerator_of", lambda binary: "vulkan", raising=False
     )
     assert (
         sd_cpp_backend.usable_or_recorded_failure("/opt/sd/vulkan/sd-cli", "rocm")
         == "/opt/sd/vulkan/sd-cli"
     )
     monkeypatch.setattr(
-        sd_cpp_backend, "_installed_accelerator_of", lambda binary: None, raising = False
+        sd_cpp_backend, "_installed_accelerator_of", lambda binary: None, raising=False
     )
     assert (
         sd_cpp_backend.usable_or_recorded_failure("/usr/local/bin/sd", "rocm")
@@ -1627,30 +1635,30 @@ def test_the_note_can_be_pinned_to_the_build_that_failed(monkeypatch):
 
     stored: dict = {}
     monkeypatch.setattr(
-        sd_cpp_backend, "_stored_accelerator_runtime_failures", lambda: stored, raising = False
+        sd_cpp_backend, "_stored_accelerator_runtime_failures", lambda: stored, raising=False
     )
     monkeypatch.setattr(
         sd_cpp_backend,
         "_write_accelerator_runtime_failures",
         lambda records: stored.update(records),
-        raising = False,
+        raising=False,
     )
     monkeypatch.setattr(
         sd_cpp_backend,
         "_accelerator_fingerprint",
         lambda: {"bundle": "after-the-install"},
-        raising = False,
+        raising=False,
     )
-    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising=False)
 
     sd_cpp_backend.note_accelerator_runtime_failure(
-        "rocm", fingerprint = {"bundle": "the-build-that-failed"}
+        "rocm", fingerprint={"bundle": "the-build-that-failed"}
     )
     record = (stored or sd_cpp_backend._accelerator_runtime_failures).get("rocm")
     assert record, stored
     assert record["fingerprint"]["bundle"] == "the-build-that-failed", record
 
-    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "_accelerator_runtime_failures", {}, raising=False)
     stored.clear()
     sd_cpp_backend.note_accelerator_runtime_failure("rocm")
     record = (stored or sd_cpp_backend._accelerator_runtime_failures).get("rocm")
@@ -1687,13 +1695,13 @@ def test_a_singleton_match_does_not_answer_for_a_position_it_cannot_hold(monkeyp
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position = 1
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position=1
         )
         is None
     )
     assert (
         sd_cpp_backend.sd_cpp_device_named(
-            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position = 0
+            "/opt/sd/vulkan/sd-cli", "AMD Radeon RX 7900 XTX", position=0
         )
         == "Vulkan0"
     )
@@ -1717,19 +1725,19 @@ def test_the_fingerprint_reads_the_root_that_owns_the_binary(monkeypatch):
             asked.append(str(root))
             return {"tag": f"tag-for-{Path(root).name}"}
 
-    monkeypatch.setattr(sd_cpp_backend, "_installer_module", lambda: _Installer, raising = False)
-    monkeypatch.setattr(sd_cpp_backend, "_host_fingerprint", lambda: {}, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "_installer_module", lambda: _Installer, raising=False)
+    monkeypatch.setattr(sd_cpp_backend, "_host_fingerprint", lambda: {}, raising=False)
     monkeypatch.setattr(
-        sd_cpp_backend, "managed_install_root", lambda: Path("/roots/current"), raising = False
+        sd_cpp_backend, "managed_install_root", lambda: Path("/roots/current"), raising=False
     )
     monkeypatch.setattr(
         sd_cpp_backend,
         "owning_managed_root",
         lambda binary: Path("/roots/legacy") if binary else None,
-        raising = False,
+        raising=False,
     )
 
-    monkeypatch.setattr(sd_cpp_backend, "find_sd_cpp_binary", lambda: None, raising = False)
+    monkeypatch.setattr(sd_cpp_backend, "find_sd_cpp_binary", lambda: None, raising=False)
     assert sd_cpp_backend._accelerator_fingerprint("/roots/legacy/bin/sd")["bundle"] == (
         "tag-for-legacy"
     )
@@ -1739,7 +1747,7 @@ def test_the_fingerprint_reads_the_root_that_owns_the_binary(monkeypatch):
     # Named nothing while the finder serves the legacy tree (every CONSULTATION, since `accelerator_runtime_failed` passes no binary), it is that root too.
     asked.clear()
     monkeypatch.setattr(
-        sd_cpp_backend, "find_sd_cpp_binary", lambda: "/roots/legacy/bin/sd", raising = False
+        sd_cpp_backend, "find_sd_cpp_binary", lambda: "/roots/legacy/bin/sd", raising=False
     )
     assert sd_cpp_backend._accelerator_fingerprint()["bundle"] == "tag-for-legacy"
     assert asked == [str(Path("/roots/legacy"))], asked
@@ -1766,10 +1774,10 @@ def test_a_second_unreadable_rocm_probe_does_divert(h3_amd_host, fake_settings):
     from core.inference import sd_cpp_backend
 
     for _ in range(sd_cpp_backend._AMBIGUOUS_FAILURE_STRIKES - 1):
-        host = h3_amd_host(platform = "linux", backend = "rocm", device = "cuda", devices = _ROCM_BROKEN)
+        host = h3_amd_host(platform="linux", backend="rocm", device="cuda", devices=_ROCM_BROKEN)
         host.run()
         assert _noted_accelerators(fake_settings) == []
-    host = h3_amd_host(platform = "linux", backend = "rocm", device = "cuda", devices = _ROCM_BROKEN)
+    host = h3_amd_host(platform="linux", backend="rocm", device="cuda", devices=_ROCM_BROKEN)
     host.run()
     assert _noted_accelerators(fake_settings) == ["rocm"]
 
@@ -1780,7 +1788,7 @@ def test_an_image_generation_that_dies_in_hipblas_records_it_too(fake_settings, 
 
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
     backend = sd_cpp_backend.SdCppDiffusionBackend.__new__(sd_cpp_backend.SdCppDiffusionBackend)
-    backend._engine = types.SimpleNamespace(binary = "/opt/sd/rocm/sd-cli")
+    backend._engine = types.SimpleNamespace(binary="/opt/sd/rocm/sd-cli")
     cancel = threading.Event()
     source = inspect.getsource(sd_cpp_backend.SdCppDiffusionBackend.generate)
     assert "note_accelerator_failure_from_output(" in source, source[-2000:]
@@ -1788,7 +1796,7 @@ def test_an_image_generation_that_dies_in_hipblas_records_it_too(fake_settings, 
     sd_cpp_backend.note_accelerator_failure_from_output(
         getattr(getattr(backend, "_engine", None), "binary", None),
         "sd-cli exited 1. Last output:\nROCm error: CUBLAS_STATUS_INVALID_VALUE at hipblasSetStream",
-        source = "diffusion",
+        source="diffusion",
     )
     assert _noted_accelerators(fake_settings) == ["rocm"]
     assert sd_cpp_backend.preferred_accelerator("rocm") == "vulkan"
@@ -1811,13 +1819,13 @@ def test_the_availability_probe_reads_the_same_record_selection_does(fake_settin
     from core.inference import sd_cpp_backend
 
     monkeypatch.setattr(
-        router, "resolve_diffusion_device_target", lambda: types.SimpleNamespace(backend = "cuda")
+        router, "resolve_diffusion_device_target", lambda: types.SimpleNamespace(backend="cuda")
     )
     monkeypatch.setattr(router, "_install_accelerator_for", lambda _backend: "rocm")
     monkeypatch.setattr(router, "ensure_sd_server_binary", lambda **_k: None)
     monkeypatch.setattr(router, "ensure_sd_cpp_binary", lambda **_k: "/opt/sd/rocm/sd-cli")
     monkeypatch.setattr(
-        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version = lambda: "1.0")
+        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version=lambda: "1.0")
     )
     assert router.native_binary_installed() is True
 
@@ -1844,7 +1852,7 @@ def test_a_server_that_dies_mid_render_is_recorded_against_its_own_binary(
     sd_cpp_backend.note_accelerator_failure_from_output(
         "/opt/sd/rocm/sd-server",
         "sd-server exited 1. Last output:\nROCm error: CUBLAS_STATUS_INVALID_VALUE at hipblasSetStream",
-        source = "diffusion",
+        source="diffusion",
     )
     assert _noted_accelerators(fake_settings) == ["rocm"]
 
@@ -1886,7 +1894,7 @@ def test_the_image_pin_tells_two_identical_cards_apart(monkeypatch):
         monkeypatch.setattr(
             sd_cpp_backend,
             "physical_card_name",
-            lambda _ordinal, _p = position: ("AMD Radeon RX 7900 XTX", _p),
+            lambda _ordinal, _p=position: ("AMD Radeon RX 7900 XTX", _p),
         )
         flags = sd_cpp_backend._offload_with_device_pin_impl([], "/sd/sd-cli", position)
         assert flags == [
@@ -1909,7 +1917,7 @@ def test_a_failed_fetch_does_not_divert_a_host_whose_rocm_build_works(
     from core.inference import sd_cpp_backend
 
     failed_fetch = h3_amd_host(
-        platform = platform, backend = "rocm", device = "cuda", devices = _VULKAN_ONLY
+        platform=platform, backend="rocm", device="cuda", devices=_VULKAN_ONLY
     )
     assert failed_fetch.run()._state.device == "cuda"
     assert failed_fetch.ensured == ["rocm", "vulkan"], failed_fetch.ensured
@@ -1917,11 +1925,11 @@ def test_a_failed_fetch_does_not_divert_a_host_whose_rocm_build_works(
     assert _noted_accelerators(fake_settings) == []
     assert sd_cpp_backend.preferred_accelerator("rocm") == "rocm"
 
-    recovered = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _ROCM_WORKS)
+    recovered = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_ROCM_WORKS)
     assert recovered.run()._state.device == "cuda"
     assert recovered.ensured == ["rocm"], recovered.ensured
 
-    again = h3_amd_host(platform = platform, backend = "rocm", device = "cuda", devices = _VULKAN_ONLY)
+    again = h3_amd_host(platform=platform, backend="rocm", device="cuda", devices=_VULKAN_ONLY)
     again.run()
     assert _recorded_strikes(fake_settings) == 2
     assert _noted_accelerators(fake_settings) == ["rocm"]
@@ -1935,10 +1943,10 @@ def test_a_substituted_cpu_build_is_not_evidence_about_rocm(
     from core.inference import sd_cpp_backend
 
     host = h3_amd_host(
-        platform = platform,
-        backend = "rocm",
-        device = "cuda",
-        devices = {
+        platform=platform,
+        backend="rocm",
+        device="cuda",
+        devices={
             "rocm": MISSING,
             "vulkan": _DEVICES_VULKAN,
             "cpu": _DEVICES_CPU_ONLY,
@@ -1946,10 +1954,10 @@ def test_a_substituted_cpu_build_is_not_evidence_about_rocm(
     )
     ensure = sd_cpp_backend.ensure_sd_cpp_binary
 
-    def _substituting_ensure(*, allow_install = True, accelerator = "cpu"):
+    def _substituting_ensure(*, allow_install=True, accelerator="cpu"):
         if accelerator == "rocm":
             return "/opt/sd/cpu/sd-cli"
-        return ensure(allow_install = allow_install, accelerator = accelerator)
+        return ensure(allow_install=allow_install, accelerator=accelerator)
 
     monkeypatch.setattr(sd_cpp_backend, "ensure_sd_cpp_binary", _substituting_ensure)
 
@@ -2023,18 +2031,18 @@ def test_a_resident_server_does_not_cost_the_reload_its_native_engine(fake_setti
     monkeypatch.setattr(router, "ensure_sd_cpp_binary", lambda **_k: "/opt/sd/rocm/sd-cli")
     monkeypatch.setattr(router, "_server_binary_runnable", lambda _b: True)
     monkeypatch.setattr(
-        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version = lambda: "1")
+        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version=lambda: "1")
     )
     monkeypatch.setattr(
         router,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = "rocm", device = "cuda", dtype = None),
+        lambda: types.SimpleNamespace(backend="rocm", device="cuda", dtype=None),
     )
     monkeypatch.setattr(router, "family_sd_cpp_supported", lambda _fam: True)
-    monkeypatch.setattr(router, "_activate", lambda name, reason = None: name)
+    monkeypatch.setattr(router, "_activate", lambda name, reason=None: name)
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ENGINE", "sd_cpp")
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True)
     assert sd_cpp_backend.preferred_accelerator("rocm") == "vulkan"
 
     family = _detect_load_family(H3_REPO, None, "minimax-h3")
@@ -2070,15 +2078,15 @@ def test_the_router_counts_a_binary_it_rejects_for_not_launching(fake_settings, 
     monkeypatch.setattr(router, "ensure_sd_cpp_binary", lambda **_k: "/opt/sd/rocm/sd-cli")
     monkeypatch.setattr(router, "_server_binary_runnable", lambda _b: False)
     monkeypatch.setattr(
-        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version = lambda: None)
+        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version=lambda: None)
     )
     monkeypatch.setattr(
         router,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = "rocm", device = "cuda", dtype = None),
+        lambda: types.SimpleNamespace(backend="rocm", device="cuda", dtype=None),
     )
     monkeypatch.setattr(router, "family_sd_cpp_supported", lambda _fam: True)
-    monkeypatch.setattr(router, "_activate", lambda name, reason = None: name)
+    monkeypatch.setattr(router, "_activate", lambda name, reason=None: name)
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ENGINE", "sd_cpp")
 
@@ -2094,7 +2102,7 @@ def _backend_with_a_deferred_upgrade(
     monkeypatch,
     *,
     delivered,
-    requested = "vulkan",
+    requested="vulkan",
 ):
     from core.inference import sd_cpp_backend
 
@@ -2103,13 +2111,13 @@ def _backend_with_a_deferred_upgrade(
         sd_cpp_backend.SdCppDiffusionBackend,
         "_upgrade_server_after_teardown",
         lambda _self, _binary: delivered,
-        raising = False,
+        raising=False,
     )
     monkeypatch.setattr(
         sd_cpp_backend.SdCppDiffusionBackend,
         "_resolved_accelerator",
-        lambda _self, _card = None: requested,
-        raising = False,
+        lambda _self, _card=None: requested,
+        raising=False,
     )
     # Built with __new__, so give it the per-load field the resolutions read.
     backend._loading_card = None
@@ -2118,7 +2126,7 @@ def _backend_with_a_deferred_upgrade(
         "_installed_accelerator_of",
         lambda binary: "rocm" if binary and "rocm" in binary else "vulkan",
     )
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True)
     return backend
 
 
@@ -2126,15 +2134,15 @@ def test_a_deferred_upgrade_that_did_not_deliver_does_not_start_the_condemned_bu
     fake_settings, monkeypatch
 ):
     """``_upgrade_server_after_teardown`` is never fatal: offline or on a failed download it hands back the path it was given."""
-    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered = "/opt/sd/rocm/sd-server")
-    with pytest.raises(RuntimeError, match = "recorded as failing"):
-        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode = "server", engine = None)
+    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered="/opt/sd/rocm/sd-server")
+    with pytest.raises(RuntimeError, match="recorded as failing"):
+        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode="server", engine=None)
 
 
 def test_a_deferred_upgrade_that_delivered_is_started(fake_settings, monkeypatch):
-    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered = "/opt/sd/vulkan/sd-server")
+    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered="/opt/sd/vulkan/sd-server")
     assert (
-        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode = "server", engine = None)
+        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode="server", engine=None)
         == "/opt/sd/vulkan/sd-server"
     )
 
@@ -2142,23 +2150,23 @@ def test_a_deferred_upgrade_that_delivered_is_started(fake_settings, monkeypatch
 def test_the_build_that_was_asked_for_is_still_run_after_the_teardown(fake_settings, monkeypatch):
     """With the fallback switched off the request is ROCm on purpose, and that opt-out means run it anyway."""
     backend = _backend_with_a_deferred_upgrade(
-        monkeypatch, delivered = "/opt/sd/rocm/sd-server", requested = "rocm"
+        monkeypatch, delivered="/opt/sd/rocm/sd-server", requested="rocm"
     )
     assert (
-        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode = "server", engine = None)
+        backend._upgraded_or_refused("/opt/sd/rocm/sd-server", mode="server", engine=None)
         == "/opt/sd/rocm/sd-server"
     )
 
 
 def test_a_serverless_upgrade_is_judged_by_the_cli_this_load_will_run(fake_settings, monkeypatch):
     """A one-shot load resolves to sd-cli precisely BECAUSE the deferral suppressed the install."""
-    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered = None)
-    engine = types.SimpleNamespace(binary = "/opt/sd/rocm/sd-cli")
-    with pytest.raises(RuntimeError, match = "recorded as failing"):
-        backend._upgraded_or_refused(None, mode = "oneshot", engine = engine)
+    backend = _backend_with_a_deferred_upgrade(monkeypatch, delivered=None)
+    engine = types.SimpleNamespace(binary="/opt/sd/rocm/sd-cli")
+    with pytest.raises(RuntimeError, match="recorded as failing"):
+        backend._upgraded_or_refused(None, mode="oneshot", engine=engine)
 
-    engine = types.SimpleNamespace(binary = "/opt/sd/vulkan/sd-cli")
-    assert backend._upgraded_or_refused(None, mode = "oneshot", engine = engine) is None
+    engine = types.SimpleNamespace(binary="/opt/sd/vulkan/sd-cli")
+    assert backend._upgraded_or_refused(None, mode="oneshot", engine=engine) is None
 
 
 def test_the_load_path_takes_the_deferred_upgrade_through_the_record_check(fake_settings):
@@ -2176,7 +2184,7 @@ def test_the_load_path_takes_the_deferred_upgrade_through_the_record_check(fake_
 def _inventory_of(
     monkeypatch,
     devices,
-    hip_by_row = None,
+    hip_by_row=None,
 ):
     import types as _types
 
@@ -2187,13 +2195,13 @@ def _inventory_of(
         hardware_module,
         "get_physical_gpu_inventory",
         lambda **_k: {"unknown": False, "devices": devices},
-        raising = False,
+        raising=False,
     )
     monkeypatch.setattr(
         amd_module,
         "get_hip_id_by_gpu_index",
         lambda: hip_by_row if hip_by_row is not None else {d["index"]: d["index"] for d in devices},
-        raising = False,
+        raising=False,
     )
     return _types.SimpleNamespace()
 
@@ -2202,7 +2210,7 @@ def test_one_card_that_cannot_run_the_build_does_not_divert_the_other(fake_setti
     """One ROCm bundle, two gfx targets: the build can carry code for one card on this host and none for the other."""
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = "Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card="Card A@gfx1201")
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card A@gfx1201") is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card B@gfx1100") is False
     assert sd_cpp_backend.accelerator_runtime_failed("rocm") is True
@@ -2213,8 +2221,8 @@ def test_one_card_that_cannot_run_the_build_does_not_divert_the_other(fake_setti
 def test_a_second_card_failing_the_same_build_is_added_not_substituted(fake_settings, monkeypatch):
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = "Card A@gfx1201")
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = "Card B@gfx1100")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card="Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card="Card B@gfx1100")
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card A@gfx1201") is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card B@gfx1100") is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card C@gfx1030") is False
@@ -2222,7 +2230,8 @@ def test_a_second_card_failing_the_same_build_is_added_not_substituted(fake_sett
 
 def test_a_record_written_before_the_cards_were_named_still_diverts(fake_settings, monkeypatch):
     from core.inference import sd_cpp_backend
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True)
+
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card B@gfx1100") is True
 
 
@@ -2232,16 +2241,16 @@ def test_evidence_no_card_was_named_for_survives_a_later_card_tally(fake_setting
     list excluded every other card from it, a proven host-wide record included."""
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = "Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card="Card A@gfx1201")
     for _ in range(2):  # in process, then read back from the store
         assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card A@gfx1201") is True
         assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card B@gfx1100") is False
         sd_cpp_backend._accelerator_runtime_failures.clear()
 
     fake_settings.clear()
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = "Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card="Card A@gfx1201")
     for _ in range(2):
         assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card A@gfx1201") is True
         assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card B@gfx1100") is True
@@ -2252,7 +2261,7 @@ def test_the_condemned_build_is_still_refused_on_the_card_that_failed(fake_setti
     from core.inference import sd_cpp_backend
 
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = "Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card="Card A@gfx1201")
     assert (
         sd_cpp_backend.usable_or_recorded_failure("/opt/sd/rocm/sd-cli", "vulkan", "Card A@gfx1201")
         is None
@@ -2272,8 +2281,8 @@ def test_the_selected_card_is_read_through_the_visibility_mask(fake_settings, mo
     ]
     _inventory_of(monkeypatch, devices)
     monkeypatch.setenv("HIP_VISIBLE_DEVICES", "1")
-    monkeypatch.delenv("ROCR_VISIBLE_DEVICES", raising = False)
-    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
+    monkeypatch.delenv("ROCR_VISIBLE_DEVICES", raising=False)
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
 
     identity = sd_cpp_backend.selected_card_identity(0)
     assert identity == sd_cpp_backend._card_identity(devices[1]), identity
@@ -2287,7 +2296,7 @@ def test_an_unreadable_enumeration_names_no_card(fake_settings, monkeypatch):
         hardware_module,
         "get_physical_gpu_inventory",
         lambda **_k: {"unknown": True},
-        raising = False,
+        raising=False,
     )
     assert sd_cpp_backend.selected_card_identity(0) is None
     assert sd_cpp_backend.selected_card_identity(None) is None
@@ -2325,7 +2334,7 @@ def test_the_selection_never_re_ranks_a_multi_card_pick_for_itself(monkeypatch):
         diffusion_device,
         "resolve_selected_cuda_ordinal",
         lambda *_a, **_k: pytest.fail("selection re-resolved the ordinal for itself"),
-        raising = False,
+        raising=False,
     )
     monkeypatch.setattr(sd_cpp_backend, "selected_card_identity", lambda ordinal: f"Card {ordinal}")
     assert router._selected_card(1) == "Card 1"
@@ -2338,10 +2347,10 @@ def test_the_backend_resolution_asks_about_the_card_this_load_selected(fake_sett
     monkeypatch.setattr(
         sd_cpp_backend,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = "rocm", device = "cuda", dtype = None),
-        raising = False,
+        lambda: types.SimpleNamespace(backend="rocm", device="cuda", dtype=None),
+        raising=False,
     )
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = "Card A@gfx1201")
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card="Card A@gfx1201")
 
     backend = sd_cpp_backend.SdCppDiffusionBackend.__new__(sd_cpp_backend.SdCppDiffusionBackend)
     assert backend._resolved_accelerator("Card B@gfx1100") == "rocm"
@@ -2374,12 +2383,12 @@ def test_a_video_render_failure_names_the_card_it_was_rendering_on(fake_settings
         video_mod,
         "_note_sd_cpp_accelerator_failure",
         video_mod._note_sd_cpp_accelerator_failure,
-        raising = False,
+        raising=False,
     )
     video_mod._note_sd_cpp_accelerator_failure(
         "/opt/sd/rocm/sd-cli",
         "ROCm error: CUBLAS_STATUS_INVALID_VALUE at hipblasSetStream",
-        card = "Card 1@gfx1201",
+        card="Card 1@gfx1201",
     )
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card 1@gfx1201") is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", "Card 0@gfx1201") is False
@@ -2394,12 +2403,12 @@ def test_one_cards_decisive_failure_is_not_proof_about_another(fake_settings):
     otherwise-working card inherited the other card's proof and diverted it on the spot."""
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = _CARD_A)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = _CARD_B)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card=_CARD_A)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card=_CARD_B)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_A) is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_B) is False
     # B's own second strike is B's own evidence, and that does convict it.
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = _CARD_B)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card=_CARD_B)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_B) is True
 
 
@@ -2408,8 +2417,8 @@ def test_one_ambiguous_failure_on_each_of_two_cards_convicts_neither(fake_settin
     from core.inference import sd_cpp_backend
 
     assert sd_cpp_backend._AMBIGUOUS_FAILURE_STRIKES == 2
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = _CARD_A)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = _CARD_B)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card=_CARD_A)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card=_CARD_B)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_A) is False
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_B) is False
     # A caller that cannot name its card is still answered with the host-wide tally, as before.
@@ -2420,8 +2429,8 @@ def test_the_per_card_tallies_survive_the_store(fake_settings):
     """Dropped on the way out, the next process reads the union back and diverts the working card."""
     from core.inference import sd_cpp_backend
 
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = True, card = _CARD_A)
-    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven = False, card = _CARD_B)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=True, card=_CARD_A)
+    sd_cpp_backend.note_accelerator_runtime_failure("rocm", proven=False, card=_CARD_B)
     # The next process has only the store.
     sd_cpp_backend._accelerator_runtime_failures.clear()
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_A) is True
@@ -2445,7 +2454,7 @@ def test_two_launch_failures_on_one_card_do_not_divert_another(fake_settings, mo
 
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
     for _ in range(sd_cpp_backend._AMBIGUOUS_FAILURE_STRIKES):
-        sd_cpp_backend.note_unlaunchable_accelerator_build("/opt/sd/rocm/sd-server", card = _CARD_A)
+        sd_cpp_backend.note_unlaunchable_accelerator_build("/opt/sd/rocm/sd-server", card=_CARD_A)
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_A) is True
     assert sd_cpp_backend.accelerator_runtime_failed("rocm", _CARD_B) is False
 
@@ -2500,10 +2509,10 @@ def test_a_cancelled_workers_card_does_not_leak_into_the_replacement_load(fake_s
         go.wait(10)
         seen[card] = backend._loading_card
 
-    first = threading.Thread(target = worker, args = (_CARD_A,))
+    first = threading.Thread(target=worker, args=(_CARD_A,))
     first.start()
     assert ready[_CARD_A].wait(10)
-    second = threading.Thread(target = worker, args = (_CARD_B,))
+    second = threading.Thread(target=worker, args=(_CARD_B,))
     second.start()
     assert ready[_CARD_B].wait(10)
     go.set()
@@ -2616,9 +2625,9 @@ class TestSelectedCardIndexSpaces:
             {"index": 1, "name": "Card B", "gfx_candidates": ["gfx1100"], "vendor": "amd"},
         ]
         # HIP id 0 is probe row 1 on this host: the spaces disagree, which is the whole point.
-        _inventory_of(monkeypatch, devices, hip_by_row = {0: 1, 1: 0})
+        _inventory_of(monkeypatch, devices, hip_by_row={0: 1, 1: 0})
         for variable in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-            monkeypatch.delenv(variable, raising = False)
+            monkeypatch.delenv(variable, raising=False)
 
         # Torch ordinal 0 -> HIP id 0 -> probe row 1 -> Card B. Before the fix this read row 0, Card A.
         assert sd_cpp_backend.selected_card_identity(0) == sd_cpp_backend._card_identity(devices[1])
@@ -2632,12 +2641,12 @@ class TestSelectedCardIndexSpaces:
             {"index": 0, "name": "Card A", "gfx_candidates": ["gfx1201"], "vendor": "amd"},
             {"index": 1, "name": "Card B", "gfx_candidates": ["gfx1100"], "vendor": "amd"},
         ]
-        _inventory_of(monkeypatch, devices, hip_by_row = None)
+        _inventory_of(monkeypatch, devices, hip_by_row=None)
         from utils.hardware import amd as amd_module
 
-        monkeypatch.setattr(amd_module, "get_hip_id_by_gpu_index", lambda: None, raising = False)
+        monkeypatch.setattr(amd_module, "get_hip_id_by_gpu_index", lambda: None, raising=False)
         for variable in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-            monkeypatch.delenv(variable, raising = False)
+            monkeypatch.delenv(variable, raising=False)
 
         assert sd_cpp_backend.selected_card_identity(0) is None
 
@@ -2652,9 +2661,9 @@ class TestSelectedCardIndexSpaces:
 
         devices = [{"index": 0, "name": "Card A", "gfx_candidates": ["gfx1151"], "vendor": "amd"}]
         _inventory_of(monkeypatch, devices)
-        monkeypatch.setattr(amd_module, "get_hip_id_by_gpu_index", lambda: None, raising = False)
+        monkeypatch.setattr(amd_module, "get_hip_id_by_gpu_index", lambda: None, raising=False)
         for variable in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-            monkeypatch.delenv(variable, raising = False)
+            monkeypatch.delenv(variable, raising=False)
 
         assert sd_cpp_backend.selected_card_identity(0) == sd_cpp_backend._card_identity(devices[0])
 
@@ -2674,7 +2683,7 @@ class TestSelectedCardIndexSpaces:
         ]
         calls: list[bool] = []
 
-        def _inventory(*, block = True):
+        def _inventory(*, block=True):
             calls.append(block)
             if block:
                 return {"unknown": False, "devices": devices}
@@ -2683,7 +2692,7 @@ class TestSelectedCardIndexSpaces:
         monkeypatch.setattr(hardware_module, "get_physical_gpu_inventory", _inventory)
         monkeypatch.setattr(amd_module, "get_hip_id_by_gpu_index", lambda: {0: 0, 1: 1})
         for variable in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-            monkeypatch.delenv(variable, raising = False)
+            monkeypatch.delenv(variable, raising=False)
 
         assert sd_cpp_backend.selected_card_identity(1) == sd_cpp_backend._card_identity(devices[1])
         assert calls == [False, True]
@@ -2710,9 +2719,9 @@ class TestSelectedCardIndexSpaces:
                 "vendor": "amd",
             },
         ]
-        _inventory_of(monkeypatch, devices, hip_by_row = {0: 0})
+        _inventory_of(monkeypatch, devices, hip_by_row={0: 0})
         for variable in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-            monkeypatch.delenv(variable, raising = False)
+            monkeypatch.delenv(variable, raising=False)
 
         assert sd_cpp_backend.selected_card_identity(0) == sd_cpp_backend._card_identity(devices[1])
         assert sd_cpp_backend._physical_position_of(0) == ("AMD Radeon RX 7900 XTX", 0)
@@ -2726,7 +2735,7 @@ class TestSelectedCardIndexSpaces:
         env = {"ROCR_VISIBLE_DEVICES": "1"}
 
         # No mask in force on Windows, so the ordinal passes through and nothing is masked.
-        assert sd_cpp_backend._physical_index_of(0, env = env) == (0, False)
+        assert sd_cpp_backend._physical_index_of(0, env=env) == (0, False)
 
     def test_linux_still_reads_the_rocr_mask(self, monkeypatch):
         """The same variable on Linux is a real mask, and the fix must not disarm it there."""
@@ -2735,7 +2744,7 @@ class TestSelectedCardIndexSpaces:
         monkeypatch.setattr(sd_cpp_backend.sys, "platform", "linux")
         env = {"ROCR_VISIBLE_DEVICES": "1"}
 
-        assert sd_cpp_backend._physical_index_of(0, env = env) == (1, True)
+        assert sd_cpp_backend._physical_index_of(0, env=env) == (1, True)
 
     def test_windows_still_reads_the_hip_mask(self, monkeypatch):
         """HIP_VISIBLE_DEVICES IS honoured by Windows HIP; only the ROCr variable is absent there."""
@@ -2745,7 +2754,7 @@ class TestSelectedCardIndexSpaces:
         env = {"HIP_VISIBLE_DEVICES": "2,3", "ROCR_VISIBLE_DEVICES": "1"}
 
         # Composing the stale ROCR mask in would have made this 3 rather than 2.
-        assert sd_cpp_backend._physical_index_of(0, env = env) == (2, True)
+        assert sd_cpp_backend._physical_index_of(0, env=env) == (2, True)
 
 
 def _recorded_proven(store: dict, klass: str = "rocm") -> bool:
@@ -2761,22 +2770,22 @@ class TestACpuOnlyAnswerIsOnlyProofWhenItIsExplained:
     def _run(self, h3_amd_host, monkeypatch, *, resolvable):
         from core.inference import sd_cpp_backend
 
-        host = h3_amd_host(platform = "linux", backend = "rocm", device = "cuda", devices = _ROCM_CPU_ONLY)
+        host = h3_amd_host(platform="linux", backend="rocm", device="cuda", devices=_ROCM_CPU_ONLY)
         # After the fixture, which pins its own default.
         monkeypatch.setattr(
-            sd_cpp_backend, "rocm_runtime_resolvable", lambda: resolvable, raising = False
+            sd_cpp_backend, "rocm_runtime_resolvable", lambda: resolvable, raising=False
         )
         host.run()
 
     def test_a_loadable_runtime_makes_it_ambiguous(self, h3_amd_host, fake_settings, monkeypatch):
         """The runtime IS there, so CPU-only says nothing conclusive: one strike, two needed to divert."""
-        self._run(h3_amd_host, monkeypatch, resolvable = True)
+        self._run(h3_amd_host, monkeypatch, resolvable=True)
         assert _recorded_proven(fake_settings) is False
         assert _recorded_strikes(fake_settings) == 1
 
     def test_an_unloadable_runtime_makes_it_decisive(self, h3_amd_host, fake_settings, monkeypatch):
         """No hipblas / rocblas / amdhip64 on this host explains the CPU-only answer, so one is enough."""
-        self._run(h3_amd_host, monkeypatch, resolvable = False)
+        self._run(h3_amd_host, monkeypatch, resolvable=False)
         assert _recorded_proven(fake_settings) is True
 
 
@@ -2825,14 +2834,14 @@ def test_an_ensure_that_hands_back_the_failed_build_is_not_a_working_fallback(
 
     # No vulkan build to install; the ensure falls back to handing out the rocm one it already has.
     devices = {"rocm": _DEVICES_ROCM, "cpu": _DEVICES_CPU_ONLY}
-    host = h3_amd_host(platform = "linux", backend = "rocm", device = "cuda", devices = devices)
+    host = h3_amd_host(platform="linux", backend="rocm", device="cuda", devices=devices)
 
     real_ensure = sd_cpp_backend.ensure_sd_cpp_binary
 
-    def _ensure(*, allow_install = True, accelerator = "cpu"):
+    def _ensure(*, allow_install=True, accelerator="cpu"):
         if accelerator == "vulkan":
             return "/opt/sd/rocm/sd-cli"  # the failed build, handed back as "the best we have"
-        return real_ensure(allow_install = allow_install, accelerator = accelerator)
+        return real_ensure(allow_install=allow_install, accelerator=accelerator)
 
     monkeypatch.setattr(sd_cpp_backend, "ensure_sd_cpp_binary", _ensure)
     # First probe negative, every later one positive: the transient case this guards.
@@ -2849,7 +2858,7 @@ def test_an_ensure_that_hands_back_the_failed_build_is_not_a_working_fallback(
     # The tree now holds a build that is not the accelerator this load decided on, which the existing
     # identity check refuses rather than running. That is the right end for a transient cause: the
     # message asks for a retry, and the retry probes positive and loads ROCm normally.
-    with pytest.raises(RuntimeError, match = "different accelerator"):
+    with pytest.raises(RuntimeError, match="different accelerator"):
         host.run()
 
     # The point of the test: NOTHING is persisted. Before the class check, this same run recorded
@@ -2870,6 +2879,7 @@ class TestTheRouterRecordsTheBundleNotTheServer:
     @staticmethod
     def _selection_source():
         from core.inference import diffusion_engine_router as router
+
         return inspect.getsource(router.select_and_activate_engine)
 
     def test_both_verdicts_are_held_until_the_other_has_answered(self):
@@ -2944,7 +2954,7 @@ def test_an_unmasked_ordinal_is_still_a_hip_id_not_an_inventory_row(monkeypatch)
             {"vendor": "amd", "index": 1, "name": "AMD Radeon RX 7900 XTX"},
         ],
         # The two spaces disagree: HIP id 0 is inventory row 1 and vice versa.
-        hip_by_row = {0: 1, 1: 0},
+        hip_by_row={0: 1, 1: 0},
     )
 
     assert video_mod._physical_card_name(0) == ("AMD Radeon RX 7900 XTX", 1)
@@ -2959,7 +2969,7 @@ def test_an_unmasked_ordinal_still_counts_when_no_mapping_exists(monkeypatch):
 
     _no_visibility_mask(monkeypatch)
     _pinned_torch(monkeypatch, ["AMD Radeon RX 7900 XTX", "AMD Radeon RX 7900 XTX"])
-    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block = True: None)
+    monkeypatch.setattr(hardware, "get_physical_gpu_inventory", lambda *, block=True: None)
     monkeypatch.setattr(amd, "get_hip_id_by_gpu_index", lambda: {})
 
     assert video_mod._physical_card_name(1) == ("AMD Radeon RX 7900 XTX", 1)
@@ -3036,7 +3046,7 @@ def test_the_server_probe_refuses_a_windows_loader_death(monkeypatch, returncode
     from core.inference import sd_cpp_backend
 
     monkeypatch.setattr(
-        subprocess, "run", lambda *_a, **_k: types.SimpleNamespace(returncode = returncode)
+        subprocess, "run", lambda *_a, **_k: types.SimpleNamespace(returncode=returncode)
     )
     assert sd_cpp_backend._server_binary_runnable("/opt/sd/rocm/sd-server") is runnable
 
@@ -3054,15 +3064,15 @@ def test_a_damaged_cli_beside_a_healthy_server_is_not_a_strike(fake_settings, mo
     monkeypatch.setattr(router, "ensure_sd_cpp_binary", lambda **_k: "/opt/sd/rocm/sd-cli")
     monkeypatch.setattr(router, "_server_binary_runnable", lambda _b: True)  # server is fine
     monkeypatch.setattr(
-        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version = lambda: None)
+        router, "SdCppEngine", lambda binary: types.SimpleNamespace(version=lambda: None)
     )  # cli is not
     monkeypatch.setattr(
         router,
         "resolve_diffusion_device_target",
-        lambda: types.SimpleNamespace(backend = "rocm", device = "cuda", dtype = None),
+        lambda: types.SimpleNamespace(backend="rocm", device="cuda", dtype=None),
     )
     monkeypatch.setattr(router, "family_sd_cpp_supported", lambda _fam: True)
-    monkeypatch.setattr(router, "_activate", lambda name, reason = None: name)
+    monkeypatch.setattr(router, "_activate", lambda name, reason=None: name)
     monkeypatch.setattr(sd_cpp_backend, "_installed_accelerator_of", lambda _b: "rocm")
     monkeypatch.setenv("UNSLOTH_DIFFUSION_ENGINE", "sd_cpp")
 

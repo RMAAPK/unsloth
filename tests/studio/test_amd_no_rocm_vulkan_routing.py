@@ -46,22 +46,22 @@ from studio import install_llama_prebuilt as ilp  # noqa: E402
 def _host(**overrides):
     """A Linux x86_64 host with no NVIDIA and no ROCm, tweaked per test."""
     base = dict(
-        system = "Linux",
-        machine = "x86_64",
-        is_windows = False,
-        is_linux = True,
-        is_macos = False,
-        is_x86_64 = True,
-        is_arm64 = False,
-        nvidia_smi = None,
-        driver_cuda_version = None,
-        compute_caps = [],
-        visible_cuda_devices = None,
-        has_physical_nvidia = False,
-        has_usable_nvidia = False,
-        has_rocm = False,
-        has_intel_gpu = False,
-        has_amd_gpu_without_rocm = False,
+        system="Linux",
+        machine="x86_64",
+        is_windows=False,
+        is_linux=True,
+        is_macos=False,
+        is_x86_64=True,
+        is_arm64=False,
+        nvidia_smi=None,
+        driver_cuda_version=None,
+        compute_caps=[],
+        visible_cuda_devices=None,
+        has_physical_nvidia=False,
+        has_usable_nvidia=False,
+        has_rocm=False,
+        has_intel_gpu=False,
+        has_amd_gpu_without_rocm=False,
     )
     base.update(overrides)
     fields = {f.name for f in dataclasses.fields(ilp.HostInfo)}
@@ -73,7 +73,7 @@ def _patch_drm(monkeypatch, tmp_path, vendor_ids):
     files = []
     for index, vendor in enumerate(vendor_ids):
         card = tmp_path / f"card{index}" / "device"
-        card.mkdir(parents = True)
+        card.mkdir(parents=True)
         (card / "vendor").write_text(vendor + "\n")
         files.append(str(card / "vendor"))
     monkeypatch.setattr(ilp.glob, "glob", lambda _pat: files)
@@ -171,7 +171,7 @@ def test_amd_visibility_mask_suppresses_auto_vulkan(monkeypatch, tmp_path, env, 
     _patch_no_nvidia_no_rocm(monkeypatch)
     monkeypatch.setattr(ilp.platform, "system", lambda: "Linux")
     for _var in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-        monkeypatch.delenv(_var, raising = False)
+        monkeypatch.delenv(_var, raising=False)
     for _var, _val in env.items():
         monkeypatch.setenv(_var, _val)
     assert ilp.detect_host().has_amd_gpu_without_rocm is expect_amd
@@ -188,7 +188,7 @@ def test_the_host_stub_also_hides_an_unexported_opt_rocm(monkeypatch, tmp_path):
     _patch_drm(monkeypatch, tmp_path, ["0x1002"])
     monkeypatch.setattr(ilp.platform, "system", lambda: "Linux")
     for _var in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
-        monkeypatch.delenv(_var, raising = False)
+        monkeypatch.delenv(_var, raising=False)
     _access = ilp.os.access
     monkeypatch.setattr(
         ilp.os,
@@ -216,7 +216,7 @@ def test_intel_detection_survives_an_amd_mask(monkeypatch, tmp_path):
 
 def test_force_cpu_clears_the_flag():
     """--force-cpu must not leak out through the new Vulkan arm."""
-    forced = ilp._apply_host_overrides(_host(has_amd_gpu_without_rocm = True), force_cpu = True)
+    forced = ilp._apply_host_overrides(_host(has_amd_gpu_without_rocm=True), force_cpu=True)
     assert (
         forced.has_amd_gpu_without_rocm is False
     ), "force_cpu left the flag set; CPU would be bypassed"
@@ -227,9 +227,9 @@ def test_force_cpu_clears_the_flag():
 @pytest.mark.parametrize(
     "host_kwargs, expect_vulkan_eligible",
     [
-        (dict(has_amd_gpu_without_rocm = True), True),  # the widening
-        (dict(has_intel_gpu = True), True),  # unchanged
-        (dict(has_amd_gpu_without_rocm = True, has_physical_nvidia = True), False),  # hidden CUDA card
+        (dict(has_amd_gpu_without_rocm=True), True),  # the widening
+        (dict(has_intel_gpu=True), True),  # unchanged
+        (dict(has_amd_gpu_without_rocm=True, has_physical_nvidia=True), False),  # hidden CUDA card
         (dict(), False),  # headless / CPU-only
     ],
 )
@@ -245,14 +245,14 @@ def test_vulkan_eligibility_gate(host_kwargs, expect_vulkan_eligible):
 def test_rocm_host_keeps_the_rocm_branch():
     """detect_host() only probes DRM vendor ids when ROCm is absent, so a working-ROCm
     host keeps the flag False and stays on the ROCm branches."""
-    assert _host(has_rocm = True, rocm_gfx_target = "gfx1100").has_amd_gpu_without_rocm is False
+    assert _host(has_rocm=True, rocm_gfx_target="gfx1100").has_amd_gpu_without_rocm is False
 
 
 def test_vendor_probe_is_gated_off_rocm_in_source():
     """Belt and braces on the above, in the source rather than a monkeypatch that could pass
     vacuously: the DRM vendor scan must sit inside the `not has_usable_nvidia and not has_rocm`
     guard, or a working-ROCm host starts setting the flag and can leave the ROCm branches."""
-    src = Path(ilp.__file__).read_text(encoding = "utf-8")
+    src = Path(ilp.__file__).read_text(encoding="utf-8")
     guard = "if not has_usable_nvidia and not has_rocm:"
     assert guard in src
     after_guard = src.index(guard)

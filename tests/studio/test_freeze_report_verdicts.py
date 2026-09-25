@@ -50,22 +50,22 @@ def verdict(samples, **kwargs):
     n_mon = samples[-1][1] if samples else 0
     n_live = samples[-1][2] if samples else 0
     args = dict(
-        samples = samples,
-        n_mon = n_mon,
-        n_live = n_live,
-        exited = None,
-        ran_for = samples[-1][0] if samples else 0,
-        interrupted = False,
-        preflight = "desktop_preflight completed disposition=OwnedReady port=8888 in 40ms",
-        shell_started = True,
-        has_display = True,
-        warmup = 90,
+        samples=samples,
+        n_mon=n_mon,
+        n_live=n_live,
+        exited=None,
+        ran_for=samples[-1][0] if samples else 0,
+        interrupted=False,
+        preflight="desktop_preflight completed disposition=OwnedReady port=8888 in 40ms",
+        shell_started=True,
+        has_display=True,
+        warmup=90,
     )
     args.update(kwargs)
     return freeze.classify(**args)
 
 
-def healthy_samples(end = 240, warmup_lag = 60):
+def healthy_samples(end=240, warmup_lag=60):
     """A run that is fine: the watchdog answers from the start, the webview joins once it
     has loaded, and from then on both keep going to the end of the window."""
     samples, mon, live = [], 0, 0
@@ -112,13 +112,13 @@ def test_no_watchdog_is_a_measurement_failure_not_a_pass():
     """The oracle is "watchdog ticking, interface silent". With no watchdog the script
     cannot tell a frozen interface from a healthy one, so it must not claim either."""
     samples = [(t, t // 15, 0) for t in range(15, 241, 15)]
-    assert verdict(samples, n_live = 0).startswith("NO SIGNAL")
+    assert verdict(samples, n_live=0).startswith("NO SIGNAL")
 
 
 def test_interrupted_candidate_is_skipped_not_scored():
     """Ctrl-C is documented as skipping the candidate. Scoring the truncated window puts
     an OK (or a FROZE) into the summary for a run nobody measured."""
-    result = verdict(healthy_samples(end = 120), interrupted = True, ran_for = 120)
+    result = verdict(healthy_samples(end=120), interrupted=True, ran_for=120)
     assert result.startswith("SKIPPED")
     assert "120s" in result
 
@@ -127,8 +127,8 @@ def test_clean_exit_late_in_the_window_is_not_a_single_instance_handoff():
     """Immediate clean exit means another copy took over; a clean exit at 200s means the
     window was closed, and saying "another copy is already running" sends the reporter
     hunting a copy that is not there."""
-    assert verdict(healthy_samples(), exited = 0, ran_for = 200).startswith("ENDED EARLY")
-    assert verdict([], exited = 0, ran_for = 15).startswith("SKIPPED")
+    assert verdict(healthy_samples(), exited=0, ran_for=200).startswith("ENDED EARLY")
+    assert verdict([], exited=0, ran_for=15).startswith("SKIPPED")
 
 
 def test_candidate_env_drops_an_inherited_workaround():
@@ -185,7 +185,7 @@ def test_a_silent_interface_is_not_a_freeze_when_silence_proves_nothing():
     is that there was nothing to measure.
     """
     healthy_watchdog = [(t, 0, t // 15) for t in range(15, 241, 15)]
-    result = verdict(healthy_watchdog, n_mon = 0)
+    result = verdict(healthy_watchdog, n_mon=0)
     assert not result.startswith("FROZE")
     assert result.startswith("NO SIGNAL")
 
@@ -264,6 +264,7 @@ def test_the_app_marker_is_recorded_so_a_stale_claim_is_visible():
     variable as its own output or as an instruction, so a report that omits it cannot
     explain a launch that preserved the environment."""
     import inspect
+
     assert "UNSLOTH_WEBKIT_RENDERER_WORKAROUND" in inspect.getsource(freeze.exec_env)
 
 
@@ -275,7 +276,7 @@ def test_every_setting_the_app_reads_is_one_the_reporter_clears():
     import re
 
     source = (REPO_ROOT / "studio" / "src-tauri" / "src" / "linux_webkit.rs").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     settings = set(re.findall(r'"(UNSLOTH_WEBKIT_[A-Z_]+)"', source))
     assert settings, "no settings found; the pattern above stopped matching the Rust"
@@ -311,10 +312,10 @@ def test_shell_started_marker_separates_a_dead_shell_from_a_dead_backend():
     ran the wrong program, so it must not be reached by a shell that did start."""
     started = "12:00:00 [INFO] Unsloth desktop app starting"
     assert freeze.SHELL_STARTED.search(started)
-    silent = verdict([(15, 0, 0), (30, 0, 0)], n_mon = 0, n_live = 0, preflight = "", shell_started = False)
+    silent = verdict([(15, 0, 0), (30, 0, 0)], n_mon=0, n_live=0, preflight="", shell_started=False)
     assert "the desktop shell never started" in silent
     live_shell = verdict(
-        [(15, 0, 0), (30, 0, 0)], n_mon = 0, n_live = 0, preflight = "", shell_started = True
+        [(15, 0, 0), (30, 0, 0)], n_mon=0, n_live=0, preflight="", shell_started=True
     )
     assert "the desktop shell never started" not in live_shell
 
@@ -347,7 +348,7 @@ def test_candidate_rationale_survives_a_no_signal_result():
 def test_busy_port_is_not_taken_as_permission_to_stop_a_live_studio(monkeypatch):
     """stop_leftover_backend() cannot tell an orphan from the backend serving the Unsloth
     the reporter has open, so an unattended run must refuse rather than SIGTERM it."""
-    monkeypatch.delenv("UNSLOTH_FREEZE_STOP_RUNNING", raising = False)
+    monkeypatch.delenv("UNSLOTH_FREEZE_STOP_RUNNING", raising=False)
     monkeypatch.setattr(freeze.sys, "stdin", None)
     assert freeze.confirm_stop_running_studio() is False
     monkeypatch.setenv("UNSLOTH_FREEZE_STOP_RUNNING", "1")
@@ -511,7 +512,7 @@ def test_one_flat_interval_that_recovers_is_not_a_freeze():
         (105, 18, 21),
         (120, 21, 24),
     ]
-    got = verdict(samples, warmup = 0)
+    got = verdict(samples, warmup=0)
     assert not got.startswith("FROZE"), got
 
 
@@ -528,7 +529,7 @@ def test_an_interface_that_stops_and_stays_stopped_is_still_a_freeze():
         (105, 9, 21),
         (120, 9, 24),
     ]
-    got = verdict(samples, warmup = 0)
+    got = verdict(samples, warmup=0)
     assert got.startswith("FROZE"), got
 
 
@@ -549,7 +550,7 @@ def test_a_stall_that_only_starts_as_the_window_closes_is_not_called_a_freeze():
         (75, 15, 15),
         (90, 15, 18),  # flat for the first time, and the window ends here
     ]
-    got = verdict(samples, warmup = 0)
+    got = verdict(samples, warmup=0)
     assert not got.startswith("FROZE"), got
     # And it must not be waved through as healthy either: something was seen, it just was not watched for long enough to
     # name.
@@ -578,7 +579,7 @@ def test_a_stall_watched_for_exactly_stale_after_is_a_freeze():
         (135, 15, 27),
     ]
     assert samples[-1][0] - 90 == freeze.STALE_AFTER
-    got = verdict(samples, warmup = 0)
+    got = verdict(samples, warmup=0)
     assert got.startswith("FROZE"), got
     assert "90s" in got
 
@@ -605,7 +606,7 @@ class _FakeApp:
     def __init__(
         self,
         dies_after,
-        code = 9,
+        code=9,
     ):
         self.polls, self.dies_after, self.code = 0, dies_after, code
         self.returncode = None
@@ -617,7 +618,7 @@ class _FakeApp:
             return self.code
         return None
 
-    def wait(self, timeout = None):
+    def wait(self, timeout=None):
         return self.returncode
 
 
@@ -625,7 +626,7 @@ def _drive_candidate(
     monkeypatch,
     tmp_path,
     log_at_sample,
-    dies_after = 10_000,
+    dies_after=10_000,
 ):
     """One real run_candidate() over a scripted access log, one entry per 15s sample.
 
@@ -662,7 +663,7 @@ def _drive_candidate(
 def _log(
     heartbeats,
     watchdogs,
-    session = 0,
+    session=0,
 ):
     """A cumulative access log with that many of each request in it."""
     return (
@@ -684,7 +685,7 @@ def test_an_exit_seen_only_by_the_cleanup_poll_is_still_recorded(monkeypatch, tm
     # A log growing at a healthy rate throughout, so nothing in the samples hints at the crash and the verdict has to
     # come from the exit itself.
     healthy = [_log(3 * n, 3 * n) for n in range(1, 5)]
-    result = _drive_candidate(monkeypatch, tmp_path, healthy, dies_after = 4)
+    result = _drive_candidate(monkeypatch, tmp_path, healthy, dies_after=4)
     assert result["samples"], "the loop must have run, or this proves nothing"
     assert result["exit_code"] == 9, "the cleanup poll saw it dead; that must be recorded"
     assert not result["verdict"].startswith("OK"), result["verdict"]
@@ -716,9 +717,9 @@ def test_signing_out_midway_is_not_reported_as_a_freeze():
         (120, 15, 24),
         (135, 15, 27),
     ]
-    frozen = verdict(samples, warmup = 0)
+    frozen = verdict(samples, warmup=0)
     assert frozen.startswith("FROZE"), "the stall itself is real and still reads as a freeze"
-    got = verdict(samples, warmup = 0, session_at = 90)
+    got = verdict(samples, warmup=0, session_at=90)
     assert not got.startswith("FROZE"), got
     assert got.startswith("SIGNED OUT"), got
     assert "90s" in got
@@ -739,11 +740,11 @@ def test_sign_in_traffic_from_before_the_stall_does_not_clear_a_freeze():
         (120, 15, 24),
         (135, 15, 27),
     ]
-    got = verdict(samples, warmup = 0, session_at = 30)
+    got = verdict(samples, warmup=0, session_at=30)
     assert got.startswith("FROZE"), got
     # And a session cleared without any request reaching the backend is still indistinguishable from a freeze, which is
     # what the absence of evidence is allowed to mean.
-    assert verdict(samples, warmup = 0, session_at = None).startswith("FROZE")
+    assert verdict(samples, warmup=0, session_at=None).startswith("FROZE")
 
 
 def test_the_session_signal_is_the_webview_talking_not_the_shell():
@@ -770,10 +771,10 @@ def test_the_run_records_when_the_session_was_last_asked_about(monkeypatch, tmp_
         _log(6, 6),
         _log(9, 9),
         _log(12, 12),
-        _log(12, 15, session = 1),
-        _log(12, 18, session = 1),
-        _log(12, 21, session = 1),
-        _log(12, 24, session = 1),
+        _log(12, 15, session=1),
+        _log(12, 18, session=1),
+        _log(12, 21, session=1),
+        _log(12, 24, session=1),
     ]
     result = _drive_candidate(monkeypatch, tmp_path, scripted)
     assert result["session_seen_at"] == 75, result["samples"]
@@ -797,7 +798,7 @@ def test_an_interface_first_heard_as_the_window_closes_is_not_a_measured_run():
             mon += 3
         samples.append((t, mon, live))
     assert samples[-1][1] * 3 >= samples[-1][2], "must clear the ratio test, as the real run did"
-    got = verdict(samples, warmup = 0)
+    got = verdict(samples, warmup=0)
     assert not got.startswith("OK"), got
     assert got.startswith("SUSPECT"), got
     assert "210s" in got and "30s" in got
@@ -819,7 +820,7 @@ def test_an_interface_heard_early_enough_is_still_allowed_to_be_healthy():
         late.append((t, mon, live))
     assert freeze._first_heard(late, 1) == 195
     assert late[-1][0] - 195 == freeze.STALE_AFTER
-    assert verdict(late, warmup = 0).startswith("OK"), verdict(late, warmup = 0)
+    assert verdict(late, warmup=0).startswith("OK"), verdict(late, warmup=0)
 
 
 def test_a_launch_that_fails_at_execve_does_not_end_the_whole_run(monkeypatch, tmp_path):
@@ -855,7 +856,7 @@ def test_a_launch_that_fails_at_execve_does_not_end_the_whole_run(monkeypatch, t
     assert len(written) == 1, "the report is the only output of the run; it must be written"
     import json as _json
 
-    results = _json.loads(written[0].read_text(encoding = "utf-8"))["results"]
+    results = _json.loads(written[0].read_text(encoding="utf-8"))["results"]
     # Every candidate is still attempted and still accounted for.
     assert len(results) == len(freeze.CANDIDATES)
     for r in results:

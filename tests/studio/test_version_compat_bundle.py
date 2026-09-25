@@ -54,7 +54,7 @@ CRON_ONLY = {
 
 
 def _doc() -> dict:
-    return yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8")) or {}
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8")) or {}
 
 
 def _jobs() -> dict:

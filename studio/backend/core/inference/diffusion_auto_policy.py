@@ -145,6 +145,7 @@ def resident_bytes_from_declared(
 def _base_key(base_repo: Optional[str]) -> str:
     """Return the canonical, case-insensitive key used by per-base tables."""
     from .diffusion_families import canonical_base
+
     return canonical_base(base_repo).strip().lower()
 
 
@@ -191,7 +192,7 @@ def family_bf16_components_gb(
     return _FAMILY_BF16_GB.get(name) if name else None
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class DenseQuantEstimate:
     """Footprint estimate for one dense transformer-quant candidate.
 
@@ -241,15 +242,15 @@ def estimate_dense_quant(
     companions = int((text_encoders_gb + vae_gb) * _MIB_PER_GB)
     hub_factor = hub_download_factor(fam, base_repo)
     return DenseQuantEstimate(
-        scheme = scheme,
-        steady_transformer_mib = steady,
-        transient_transformer_mib = transient,
-        companions_mib = companions,
-        prequant = prequant_available,
-        download_transformer_mib = int(transformer_gb * hub_factor * _MIB_PER_GB),
+        scheme=scheme,
+        steady_transformer_mib=steady,
+        transient_transformer_mib=transient,
+        companions_mib=companions,
+        prequant=prequant_available,
+        download_transformer_mib=int(transformer_gb * hub_factor * _MIB_PER_GB),
         # Same conversion as `companions`, of which this is the text-encoder half, so the planner's `companions -
         # text_encoders` is the VAE and nothing else.
-        text_encoders_mib = int(text_encoders_gb * _MIB_PER_GB),
+        text_encoders_mib=int(text_encoders_gb * _MIB_PER_GB),
     )
 
 
@@ -297,7 +298,7 @@ def resolve_dense_quant_candidate(
         return None
     if not dense_transformer_supported(target):
         return None
-    scheme = select_transformer_quant_scheme(target, requested, family = getattr(fam, "name", None))
+    scheme = select_transformer_quant_scheme(target, requested, family=getattr(fam, "name", None))
     if scheme is None:
         return None
     prequant_available = False
@@ -311,7 +312,7 @@ def resolve_dense_quant_candidate(
             # usable_ (not resolve_): a local path override counts only when the loader will accept it (allowlisted AND
             # present), else it rebuilds dense after eviction.
             src = usable_prequant_source(
-                fam, scheme, path_override = prequant_path, base_repo = base_repo
+                fam, scheme, path_override=prequant_path, base_repo=base_repo
             )
             prequant_available = src is not None
             if src is not None and getattr(src, "kind", None) == "path":
@@ -326,12 +327,13 @@ def resolve_dense_quant_candidate(
                 # checkpoint cached in the live root and this would still call it uncached and re-apply the gate.
                 # Imported from utils rather than diffusion.hub_cache_dir, which would be a circular import.
                 from utils.hf_cache_settings import active_hf_hub_cache
-                prequant_cached = prequant_checkpoint_cached(src, cache_dir = active_hf_hub_cache())
+
+                prequant_cached = prequant_checkpoint_cached(src, cache_dir=active_hf_hub_cache())
         except Exception:  # noqa: BLE001 -- prequant probing must never sink the candidate
             prequant_available = False
             prequant_cached = False
     estimate = estimate_dense_quant(
-        fam, scheme, base_repo = base_repo, prequant_available = prequant_available
+        fam, scheme, base_repo=base_repo, prequant_available=prequant_available
     )
     if estimate is not None and logger is not None:
         logger.info(

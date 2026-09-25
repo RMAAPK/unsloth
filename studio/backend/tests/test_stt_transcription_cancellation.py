@@ -125,7 +125,7 @@ def test_disconnected_load_cancels_only_its_request_event(monkeypatch):
         _model,
         _engine,
         request_cancel_event,
-        device = None,
+        device=None,
     ):
         nonlocal cancelled_request
         cancelled_request = request_cancel_event
@@ -144,7 +144,7 @@ def test_disconnected_load_cancels_only_its_request_event(monkeypatch):
     with pytest.raises(HTTPException) as raised:
         asyncio.run(
             inference_route.stt_load(
-                inference_route.SttLoadRequest(model = "small", engine = "transformers"),
+                inference_route.SttLoadRequest(model="small", engine="transformers"),
                 _DisconnectedRequest(),
                 "test-subject",
             )
@@ -178,7 +178,7 @@ def test_disconnected_raw_transcription_cancels_its_sidecar(monkeypatch):
         model,
         _engine,
         _request_cancel_event,
-        device = None,
+        device=None,
     ):
         # Stubbed for the same reason the sibling test above stubs it: the real
         # implicit load goes through the registry, which refuses with

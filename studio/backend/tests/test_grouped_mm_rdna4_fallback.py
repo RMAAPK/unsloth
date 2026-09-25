@@ -34,7 +34,7 @@ import torch
 
 
 _WORKER_PATH = Path(__file__).resolve().parents[1] / "core" / "training" / "worker.py"
-_WORKER_SOURCE = _WORKER_PATH.read_text(encoding = "utf-8")
+_WORKER_SOURCE = _WORKER_PATH.read_text(encoding="utf-8")
 
 
 def _load_installer():
@@ -47,7 +47,7 @@ def _load_installer():
     ]
     assert fn, "_install_grouped_mm_cpu_fallback not found in core/training/worker.py"
     ns: dict = {}
-    exec(compile(ast.Module(body = fn, type_ignores = []), str(_WORKER_PATH), "exec"), ns)
+    exec(compile(ast.Module(body=fn, type_ignores=[]), str(_WORKER_PATH), "exec"), ns)
     return ns["_install_grouped_mm_cpu_fallback"]
 
 
@@ -85,12 +85,12 @@ def _fake_torch():
     Anything else the fallback reaches for raises AttributeError here, which is
     the point: a new dependency has to be a deliberate edit, not a silent one."""
     return SimpleNamespace(
-        library = SimpleNamespace(Library = _RecordingLibrary),
-        mm = torch.mm,
-        bmm = torch.bmm,
-        matmul = torch.matmul,
-        cat = torch.cat,
-        zeros = torch.zeros,
+        library=SimpleNamespace(Library=_RecordingLibrary),
+        mm=torch.mm,
+        bmm=torch.bmm,
+        matmul=torch.matmul,
+        cat=torch.cat,
+        zeros=torch.zeros,
     )
 
 
@@ -102,7 +102,7 @@ def fallback():
     lib = _install_grouped_mm_cpu_fallback(torch_mod, logger, "test")
     assert lib.registrations, "the fallback registered nothing"
     name, fn, key = lib.registrations[0]
-    return SimpleNamespace(fn = fn, lib = lib, logger = logger, name = name, key = key)
+    return SimpleNamespace(fn=fn, lib=lib, logger=logger, name=name, key=key)
 
 
 class TestRegistration:
@@ -169,7 +169,7 @@ class TestGroupedNumerics:
         a = torch.randn(7, 4)
         b = torch.randn(3, 4, 5)
         offs = torch.tensor([2, 5, 7])
-        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[1], a[5:7] @ b[2]], dim = 0)
+        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[1], a[5:7] @ b[2]], dim=0)
         torch.testing.assert_close(fallback.fn(a, b, offs), expected)
 
     def test_shared_2d_weight_is_reused_for_every_group(self, fallback):
@@ -184,7 +184,7 @@ class TestGroupedNumerics:
         a = torch.randn(5, 4)
         b = torch.randn(3, 4, 5)
         offs = torch.tensor([2, 2, 5])
-        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[2]], dim = 0)
+        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[2]], dim=0)
         got = fallback.fn(a, b, offs)
         assert got.shape == (5, 5)
         torch.testing.assert_close(got, expected)
@@ -195,7 +195,7 @@ class TestGroupedNumerics:
         a = torch.randn(7, 4)
         b = torch.randn(3, 4, 5)
         offs = torch.tensor([2, 5])
-        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[1], a[5:7] @ b[-1]], dim = 0)
+        expected = torch.cat([a[0:2] @ b[0], a[2:5] @ b[1], a[5:7] @ b[-1]], dim=0)
         got = fallback.fn(a, b, offs)
         assert got.shape[0] == a.shape[0]
         torch.testing.assert_close(got, expected)
@@ -203,7 +203,7 @@ class TestGroupedNumerics:
     def test_zero_rows_returns_an_empty_result_not_an_error(self, fallback):
         a = torch.randn(0, 4)
         b = torch.randn(3, 4, 5)
-        offs = torch.tensor([], dtype = torch.int64)
+        offs = torch.tensor([], dtype=torch.int64)
         got = fallback.fn(a, b, offs)
         assert got.shape == (0, 5)
         assert got.dtype == a.dtype
@@ -211,10 +211,10 @@ class TestGroupedNumerics:
     def test_offsets_may_arrive_as_a_device_tensor_of_any_int_dtype(self, fallback):
         a = torch.randn(4, 4)
         b = torch.randn(2, 4, 5)
-        expected = torch.cat([a[0:2] @ b[0], a[2:4] @ b[1]], dim = 0)
+        expected = torch.cat([a[0:2] @ b[0], a[2:4] @ b[1]], dim=0)
         for dtype in (torch.int32, torch.int64):
             torch.testing.assert_close(
-                fallback.fn(a, b, torch.tensor([2, 4], dtype = dtype)), expected
+                fallback.fn(a, b, torch.tensor([2, 4], dtype=dtype)), expected
             )
 
 
@@ -230,7 +230,7 @@ class TestBiasAndDtype:
         b = torch.randn(2, 4, 5)
         bias = torch.randn(5)
         offs = torch.tensor([2, 4])
-        expected = torch.cat([a[0:2] @ b[0], a[2:4] @ b[1]], dim = 0) + bias
+        expected = torch.cat([a[0:2] @ b[0], a[2:4] @ b[1]], dim=0) + bias
         torch.testing.assert_close(fallback.fn(a, b, offs, bias), expected)
 
     def test_out_dtype_is_honoured(self, fallback):
@@ -243,16 +243,16 @@ class TestBiasAndDtype:
     def test_promotion_from_bias_is_cast_back_to_the_input_dtype(self, fallback):
         """Without the restore, a promoted result changes the autograd dtype
         downstream of every MoE layer."""
-        a = torch.randn(6, 4, dtype = torch.float32)
-        b = torch.randn(4, 5, dtype = torch.float32)
-        bias = torch.randn(5, dtype = torch.float64)
+        a = torch.randn(6, 4, dtype=torch.float32)
+        b = torch.randn(4, 5, dtype=torch.float32)
+        bias = torch.randn(5, dtype=torch.float64)
         got = fallback.fn(a, b, None, bias)
         assert got.dtype == torch.float32
 
     def test_out_dtype_wins_over_the_input_dtype_restore(self, fallback):
-        a = torch.randn(6, 4, dtype = torch.float32)
-        b = torch.randn(4, 5, dtype = torch.float32)
-        bias = torch.randn(5, dtype = torch.float64)
+        a = torch.randn(6, 4, dtype=torch.float32)
+        b = torch.randn(4, 5, dtype=torch.float32)
+        bias = torch.randn(5, dtype=torch.float64)
         got = fallback.fn(a, b, None, bias, torch.float64)
         assert got.dtype == torch.float64
 
@@ -262,7 +262,7 @@ class TestBiasAndDtype:
         b = torch.randn(4, 5).to(torch.bfloat16)
         got = fallback.fn(a, b)
         assert got.dtype == torch.bfloat16
-        torch.testing.assert_close(got.float(), (a.float() @ b.float()), rtol = 2e-2, atol = 2e-2)
+        torch.testing.assert_close(got.float(), (a.float() @ b.float()), rtol=2e-2, atol=2e-2)
 
 
 def _exec_source_snippet(anchor: str, last_line: str, **variables):
@@ -287,7 +287,7 @@ class TestLinuxHipVersionGate:
     _LAST = '_hip_lt_713 = "rocmsdk" not in _ver'
 
     def _decide(self, hip_str, version):
-        ns = _exec_source_snippet(self._ANCHOR, self._LAST, _hip_str = hip_str, _ver = version.lower())
+        ns = _exec_source_snippet(self._ANCHOR, self._LAST, _hip_str=hip_str, _ver=version.lower())
         return ns["_hip_lt_713"]
 
     @pytest.mark.parametrize(

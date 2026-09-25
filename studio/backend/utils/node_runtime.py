@@ -105,9 +105,9 @@ def _path_has_usable_node(
 ) -> bool:
     """Whether ``path`` provides what a stdio command actually uses. The installers gate on node plus npm and never look at npx, so each launcher is checked against what it needs: node alone, node plus npm, or node plus the npx that launches it."""
     try:
-        node = shutil.which("node", path = path)
-        npm = shutil.which("npm", path = path) if require_npm else None
-        npx = shutil.which("npx", path = path) if require_npx else None
+        node = shutil.which("node", path=path)
+        npm = shutil.which("npm", path=path) if require_npm else None
+        npx = shutil.which("npx", path=path) if require_npx else None
     except OSError:
         return False
     if not node:
@@ -178,7 +178,7 @@ def path_with_managed_node(
     if bin_dir is None:
         return current
     # Never shadow a runtime the PATH already reaches (resolve_node_executable order).
-    if _path_has_usable_node(current, require_npm = require_npm, require_npx = require_npx):
+    if _path_has_usable_node(current, require_npm=require_npm, require_npx=require_npx):
         return current
     if not managed_node_usable():
         return current
@@ -214,12 +214,12 @@ def _probe_version(
     try:
         result = subprocess.run(
             [executable, "-v"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = _NODE_VERSION_PROBE_TIMEOUT_SECONDS,
-            env = {**os.environ, "PATH": path} if path is not None else None,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=_NODE_VERSION_PROBE_TIMEOUT_SECONDS,
+            env={**os.environ, "PATH": path} if path is not None else None,
             **windows_hidden_subprocess_kwargs(),
         )
     except (OSError, ValueError, subprocess.SubprocessError):

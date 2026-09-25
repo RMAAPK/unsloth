@@ -80,9 +80,9 @@ def test_importing_the_cpu_modules_leaves_torch_globals_alone():
 
     proc = subprocess.run(
         [sys.executable, "-B", "-c", _PROBE, *[str(_HERE / name) for name in _GUARDED]],
-        capture_output = True,
-        text = True,
-        timeout = 600,
+        capture_output=True,
+        text=True,
+        timeout=600,
     )
     assert proc.returncode == 0, proc.stdout[-4000:] + proc.stderr[-4000:]
 
@@ -113,7 +113,7 @@ def test_no_version_compat_module_patches_torch_at_import_time():
     for path in sorted(_HERE.glob("test_*.py")):
         if path.name == Path(__file__).name:
             continue
-        for node in _module_level_nodes(ast.parse(path.read_text(encoding = "utf-8"))):
+        for node in _module_level_nodes(ast.parse(path.read_text(encoding="utf-8"))):
             targets = []
             if isinstance(node, ast.Assign):
                 targets = node.targets

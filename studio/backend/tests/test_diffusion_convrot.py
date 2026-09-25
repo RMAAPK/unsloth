@@ -45,7 +45,7 @@ from core.inference.diffusion_convrot import (  # noqa: E402
 )
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _pin_prequant_safe_globals(real_prequant_safe_globals):
     """Apply the shared stand-in allowlist (see conftest) to every test in this module."""
     return real_prequant_safe_globals
@@ -66,8 +66,8 @@ class _Model(nn.Module):
 
 def _meta(
     fqns,
-    group = GROUP,
-    kind = CONVROT_KIND,
+    group=GROUP,
+    kind=CONVROT_KIND,
 ):
     return {
         ROTATION_KEY: kind,
@@ -97,10 +97,10 @@ def test_hadamard_is_symmetric_and_orthogonal():
     # Both properties are what make the offline/online pair an identity: symmetric so H.T is H,
     # orthogonal so the two applications cancel.
     for size in (4, 16, 64, 256):
-        h = build_convrot_hadamard(size, device = "cpu", dtype = torch.float32)
+        h = build_convrot_hadamard(size, device="cpu", dtype=torch.float32)
         assert h.shape == (size, size)
         assert torch.equal(h, h.T)
-        assert torch.allclose(h @ h, torch.eye(size), atol = 1e-5)
+        assert torch.allclose(h @ h, torch.eye(size), atol=1e-5)
 
 
 def test_hadamard_rejects_a_non_power_of_four():
@@ -127,7 +127,7 @@ def test_rotate_then_unrotate_is_the_identity():
     # The core invariant: rotating the weight offline and the activation online leaves the float
     # result unchanged. Everything the rotation buys happens inside the quantizer, not here.
     torch.manual_seed(0)
-    linear = nn.Linear(1024, 512, dtype = torch.float32)
+    linear = nn.Linear(1024, 512, dtype=torch.float32)
     x = torch.randn(37, 1024)
     reference = linear(x)
 
@@ -148,7 +148,7 @@ def test_rotation_survives_extra_leading_dims():
     x = torch.randn(2, 5, 4 * GROUP)
     reference = model.a(x)
     rotate_linears_(model, ["a"], GROUP)
-    assert torch.allclose(model.a(x), reference, atol = 1e-5)
+    assert torch.allclose(model.a(x), reference, atol=1e-5)
 
 
 def test_rotate_weight_refuses_an_indivisible_input_axis():
@@ -220,10 +220,10 @@ def test_rotated_linear_keeps_the_state_dict_unchanged():
 @pytest.mark.parametrize(
     "metadata",
     [
-        _meta(["a"], kind = "convrot_hadamard_v2"),  # a kind this build does not implement
-        _meta(["a"], kind = True),
-        _meta(["a"], group = 32),  # not a power of 4
-        _meta(["a"], group = "256"),
+        _meta(["a"], kind="convrot_hadamard_v2"),  # a kind this build does not implement
+        _meta(["a"], kind=True),
+        _meta(["a"], group=32),  # not a power of 4
+        _meta(["a"], group="256"),
         _meta([]),  # declared but records nothing
         {ROTATION_KEY: CONVROT_KIND, ROTATION_GROUP_KEY: GROUP},  # no fqn key at all
         _meta(["a", "a"]),  # duplicates
@@ -241,27 +241,27 @@ def test_apply_refuses_an_unusable_contract(metadata):
 
 def test_apply_refuses_an_fqn_this_model_does_not_have():
     model = _Model()
-    with pytest.raises(ValueError, match = "does not have"):
+    with pytest.raises(ValueError, match="does not have"):
         apply_activation_rotation(model, _meta(["a", "missing.linear"]))
 
 
 def test_apply_refuses_a_target_that_is_not_a_linear():
     model = _Model()
     model.not_a_linear = nn.LayerNorm(GROUP)
-    with pytest.raises(ValueError, match = "not an nn.Linear"):
+    with pytest.raises(ValueError, match="not an nn.Linear"):
         apply_activation_rotation(model, _meta(["not_a_linear"]))
 
 
 def test_apply_refuses_an_indivisible_target():
     model = _Model()
-    with pytest.raises(ValueError, match = "does not divide"):
+    with pytest.raises(ValueError, match="does not divide"):
         apply_activation_rotation(model, _meta(["odd"]))
 
 
 def test_apply_refuses_to_rotate_twice():
     model = _Model()
     apply_activation_rotation(model, _meta(["a"]))
-    with pytest.raises(ValueError, match = "already rotated"):
+    with pytest.raises(ValueError, match="already rotated"):
         apply_activation_rotation(model, _meta(["a"]))
 
 
@@ -295,8 +295,8 @@ def test_format_tag_follows_the_rotation():
         (pq.PREQUANT_FORMAT, _meta(["a"]), False),
         # A v2 tag with nothing to rotate: something was meant to happen and did not.
         (pq.PREQUANT_FORMAT_ROTATED, {}, False),
-        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], kind = "something_else"), False),
-        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], group = 32), False),
+        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], kind="something_else"), False),
+        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], group=32), False),
         (pq.PREQUANT_FORMAT_ROTATED, _meta([]), False),
     ],
 )
@@ -344,8 +344,8 @@ class _FakeTransformer(nn.Module):
     def load_state_dict(
         self,
         sd,
-        strict = True,
-        assign = False,
+        strict=True,
+        assign=False,
     ):
         _FakeTransformer.calls["load_state_dict"] = {"strict": strict, "assign": assign}
 
@@ -363,12 +363,12 @@ def _load_rotated(monkeypatch, tmp_path, ckpt):
     return pq.load_prequantized_transformer(
         _FakeTransformer,
         "Tongyi-MAI/Z-Image-Turbo",
-        pq.PrequantSource(kind = "path", location = str(path), filename = None),
-        device = "cpu",
-        dtype = "bfloat16",
-        hf_token = None,
-        scheme = "int8",
-        logger = None,
+        pq.PrequantSource(kind="path", location=str(path), filename=None),
+        device="cpu",
+        dtype="bfloat16",
+        hf_token=None,
+        scheme="int8",
+        logger=None,
     )
 
 
@@ -394,8 +394,8 @@ def test_loader_leaves_a_plain_checkpoint_alone(monkeypatch, tmp_path):
     ("fmt", "metadata"),
     [
         # Declared but unusable, in each of the ways the loader can tell.
-        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], kind = "convrot_hadamard_v99")),
-        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], group = 32)),
+        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], kind="convrot_hadamard_v99")),
+        (pq.PREQUANT_FORMAT_ROTATED, _meta(["a"], group=32)),
         (pq.PREQUANT_FORMAT_ROTATED, _meta(["not_on_this_model"])),
         (pq.PREQUANT_FORMAT_ROTATED, _meta([])),
         (pq.PREQUANT_FORMAT, _meta(["a"])),
@@ -421,7 +421,7 @@ def test_every_rotated_projection_shares_one_class():
 
     from core.inference.diffusion_convrot import _install_rotation, convrot_linear_class
 
-    first, second = nn.Linear(256, 8, bias = False), nn.Linear(256, 8, bias = False)
+    first, second = nn.Linear(256, 8, bias=False), nn.Linear(256, 8, bias=False)
     _install_rotation(first, 256)
     _install_rotation(second, 256)
     assert type(first) is type(second)
@@ -430,7 +430,7 @@ def test_every_rotated_projection_shares_one_class():
     assert isinstance(first, nn.Linear)
     assert is_rotated_linear(first) and is_rotated_linear(second)
     # And the swap is per instance, so a shared class must not leak one module's group to another.
-    third = nn.Linear(512, 8, bias = False)
+    third = nn.Linear(512, 8, bias=False)
     _install_rotation(third, 128)
     assert (first.convrot_groupsize, third.convrot_groupsize) == (256, 128)
     assert torch.is_tensor(first.weight)

@@ -55,7 +55,7 @@ def _legs() -> dict[str, str]:
     mapping the tests below ask about, so that is what is asserted -- counting entries
     would now be counting shards, which is a different question and not this file's.
     """
-    document = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
+    document = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     matrix = document["jobs"]["pytest"]["strategy"]["matrix"]
     entries = matrix.get("include")
     assert entries, f"the matrix no longer lists its legs by scope: {matrix!r}"
@@ -71,7 +71,7 @@ def _legs() -> dict[str, str]:
 
 def _declared_floor() -> tuple[int, ...]:
     """The floor the workflow declares, which is what the lint aims at."""
-    document = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
+    document = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     floor = (document.get("env") or {}).get("PYTHON_FLOOR")
     assert floor, (
         "the workflow declares no PYTHON_FLOOR. With one leg in the matrix there is "
@@ -149,7 +149,7 @@ def test_the_floor_is_linted_on_every_pull_request():
         f"oldest interpreter before a merge, now that a pull request runs only the newest."
     )
     trigger_lint = REPO / ".github" / "workflows" / "workflow-trigger-lint.yml"
-    text = trigger_lint.read_text(encoding = "utf-8")
+    text = trigger_lint.read_text(encoding="utf-8")
     assert lint.name in text, (
         f"{trigger_lint.name} no longer runs {lint.name}, so nothing checks the floor "
         f"before a merge"
@@ -171,7 +171,7 @@ def test_the_floor_lint_reads_stdlib_availability_not_just_syntax():
     yet: core/research_runs.py already uses `anext`, which is 3.10, and that parses on
     every version and fails only when the line runs.
     """
-    text = _floor_lint().read_text(encoding = "utf-8")
+    text = _floor_lint().read_text(encoding="utf-8")
     assert "vermin" in text, (
         "the floor lint no longer uses vermin. Whatever replaces it has to read stdlib "
         "API availability and not only syntax, or it stops covering the case it exists for"
@@ -197,7 +197,7 @@ def _boundaries() -> dict[str, Path]:
     for path in sorted(BACKEND.rglob("*.py")):
         if "vendor" in path.parts:  # third-party, pinned to its own support range
             continue
-        text = path.read_text(encoding = "utf-8", errors = "replace")
+        text = path.read_text(encoding="utf-8", errors="replace")
         for match in re.finditer(r"version_info\s*[<>]=?\s*\((\d+),\s*(\d+)\)", text):
             found[f"{path.name}:{match.start()}"] = path
     return found
@@ -251,7 +251,7 @@ def test_the_declared_floor_is_still_checked_statically():
         f"{FLOOR_CHECK.name} is gone. It is what covers the declared floor, which is below "
         f"every leg this matrix runs, so removing it leaves that floor untested."
     )
-    text = FLOOR_CHECK.read_text(encoding = "utf-8")
+    text = FLOOR_CHECK.read_text(encoding="utf-8")
     assert "requires-python" in text, "the floor is no longer read from pyproject.toml"
     assert "feature_version" in text, (
         "the check no longer parses at the declared floor, so it would pass on syntax that "
@@ -274,7 +274,7 @@ def test_the_parsed_floor_is_at_or_below_the_declared_floor():
     code has to give; this test only insists the two numbers stay in the order that
     leaves no gap.
     """
-    text = (REPO / "pyproject.toml").read_text(encoding = "utf-8")
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
     declared = re.search(r"^requires-python\s*=\s*[\"'][^\"']*>=\s*(\d+)\.(\d+)", text, re.M)
     assert declared, "no >= lower bound in requires-python"
     parsed = (int(declared.group(1)), int(declared.group(2)))
@@ -292,7 +292,7 @@ def test_backend_ci_still_runs_on_push_to_main():
     semantic conflict between two green pull requests shows up. That was true with four
     legs and it is more load-bearing with one.
     """
-    document = yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))
+    document = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     triggers = document.get(True) or document.get("on") or {}
     push = triggers.get("push") or {}
     assert "main" in (push.get("branches") or []), (
@@ -359,7 +359,7 @@ def test_the_floor_lint_covers_every_tree_the_matrix_legs_run():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    workflow = WORKFLOW.read_text(encoding = "utf-8")
+    workflow = WORKFLOW.read_text(encoding="utf-8")
     # What it would hand to vermin, not what its source says it aims at.
     scanned = [str(Path(name).relative_to(REPO).as_posix()) for name in module.targets()]
     for tree in ("studio/backend", "unsloth_cli"):

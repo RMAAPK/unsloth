@@ -15,7 +15,7 @@ from routes import mcp_servers as routes
 from storage import mcp_servers_db as db
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def managed_policy(monkeypatch):
     monkeypatch.setattr(routes, "stdio_mcp_enabled", lambda: True)
     monkeypatch.setattr(service, "stdio_mcp_enabled", lambda: True)
@@ -45,13 +45,13 @@ def test_catalog_is_opt_in_and_settings_are_typed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_managed_enable_failure_retry_disable_and_portability(monkeypatch):
-    probe = AsyncMock(return_value = McpServerProbeResult(ok = False, error = "Blender unavailable"))
+    probe = AsyncMock(return_value=McpServerProbeResult(ok=False, error="Blender unavailable"))
     monkeypatch.setattr(service, "probe", probe)
     with pytest.raises(HTTPException):
-        await routes.setup_blender(BlenderSetup(is_enabled = True))
+        await routes.setup_blender(BlenderSetup(is_enabled=True))
     assert db.list_servers() == []
     with pytest.raises(HTTPException):
-        await routes.setup_blender(BlenderSetup(is_enabled = True, consent = True, port = 9877))
+        await routes.setup_blender(BlenderSetup(is_enabled=True, consent=True, port=9877))
     row = db.list_servers()[0]
     assert not row["is_enabled"]
     assert json.loads(row["headers_json"])["BLENDER_MCP_HOST"] == "127.0.0.1"
@@ -60,21 +60,21 @@ async def test_managed_enable_failure_retry_disable_and_portability(monkeypatch)
     assert raw["url"] == "" and raw["headers_json"] is None
     assert json.loads(raw["builtin_config_json"])["port"] == 9877
     with pytest.raises(sqlite3.IntegrityError):
-        db.create_server("other", "Blender", "", builtin_id = "blender")
-    probe.return_value = McpServerProbeResult(ok = True, tool_count = 3)
-    enabled = await routes.setup_blender(BlenderSetup(is_enabled = True, port = 9877))
+        db.create_server("other", "Blender", "", builtin_id="blender")
+    probe.return_value = McpServerProbeResult(ok=True, tool_count=3)
+    enabled = await routes.setup_blender(BlenderSetup(is_enabled=True, port=9877))
     assert enabled.server_id == row["id"] and enabled.is_enabled
     for update in (
-        McpServerUpdate(is_enabled = True),
-        McpServerUpdate(url = "python"),
-        McpServerUpdate(headers = {"X": "y"}),
+        McpServerUpdate(is_enabled=True),
+        McpServerUpdate(url="python"),
+        McpServerUpdate(headers={"X": "y"}),
     ):
         with pytest.raises(HTTPException):
             await routes.update_mcp_server(row["id"], update)
     with pytest.raises(HTTPException):
         await routes.delete_mcp_server(row["id"])
     monkeypatch.setattr(routes, "stdio_mcp_enabled", lambda: False)
-    await routes.update_mcp_server(row["id"], McpServerUpdate(is_enabled = False))
+    await routes.update_mcp_server(row["id"], McpServerUpdate(is_enabled=False))
     assert not db.get_server(row["id"])["is_enabled"]
 
 
@@ -84,7 +84,7 @@ async def test_managed_authorization_precedes_side_effects(monkeypatch):
     monkeypatch.setattr(service, "probe", probe)
     for auth in ({"via_api_key": True}, {"no_credential": True}):
         with pytest.raises(HTTPException):
-            await routes.setup_blender(BlenderSetup(is_enabled = False), **auth)
+            await routes.setup_blender(BlenderSetup(is_enabled=False), **auth)
         with pytest.raises(HTTPException):
             await routes.test_blender(BlenderSettings(), **auth)
     monkeypatch.setattr(routes, "stdio_mcp_enabled", lambda: False)
@@ -92,7 +92,7 @@ async def test_managed_authorization_precedes_side_effects(monkeypatch):
         await routes.test_blender(BlenderSettings())
     assert db.list_servers() == []
     probe.assert_not_called()
-    saved = await routes.setup_blender(BlenderSetup(is_enabled = False, port = 9878))
+    saved = await routes.setup_blender(BlenderSetup(is_enabled=False, port=9878))
     assert not saved.is_enabled and saved.port == 9878
     for auth in ({"via_api_key": True}, {"no_credential": True}):
         item = routes.list_builtins(**auth)[0]
@@ -102,20 +102,20 @@ async def test_managed_authorization_precedes_side_effects(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_first_probe_requires_consent_before_setup(monkeypatch):
-    probe = AsyncMock(return_value = McpServerProbeResult(ok = True))
+    probe = AsyncMock(return_value=McpServerProbeResult(ok=True))
     monkeypatch.setattr(service, "probe", probe)
-    with pytest.raises(HTTPException, match = "consent"):
+    with pytest.raises(HTTPException, match="consent"):
         await routes.test_blender(BlenderTest())
     probe.assert_not_called()
-    await routes.test_blender(BlenderTest(consent = True))
+    await routes.test_blender(BlenderTest(consent=True))
     probe.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_probe_separates_mcp_and_blender_readiness(monkeypatch):
     monkeypatch.setattr(service, "ensure_runtime", lambda: None)
-    bridge = AsyncMock(side_effect = ConnectionError())
-    tools = AsyncMock(return_value = [{"name": "execute_blender_code"}])
+    bridge = AsyncMock(side_effect=ConnectionError())
+    tools = AsyncMock(return_value=[{"name": "execute_blender_code"}])
     monkeypatch.setattr(service, "_bridge_version", bridge)
     monkeypatch.setattr(service, "list_tools_async", tools)
     from core.inference import mcp_client
@@ -125,14 +125,14 @@ async def test_probe_separates_mcp_and_blender_readiness(monkeypatch):
     assert result.blender_error
     bridge.assert_awaited_with(9876)
     bridge.reset_mock()
-    assert (await service.probe(BlenderSettings(), check_bridge = False)).ok
+    assert (await service.probe(BlenderSettings(), check_bridge=False)).ok
     bridge.assert_not_called()
     bridge.side_effect = None
     assert (await service.probe(BlenderSettings())).blender_ready is True
-    enabled = await routes.setup_blender(BlenderSetup(is_enabled = True, consent = True))
+    enabled = await routes.setup_blender(BlenderSetup(is_enabled=True, consent=True))
     assert mcp_client.get_cached_tools(enabled.server_id) == tools.return_value
     mcp_client.invalidate_tool_cache(enabled.server_id)
-    await routes.test_blender(BlenderSettings(port = 9877))
+    await routes.test_blender(BlenderSettings(port=9877))
     assert mcp_client.get_cached_tools(enabled.server_id) is None
     await routes.test_blender(BlenderSettings())
     assert mcp_client.get_cached_tools(enabled.server_id) == tools.return_value
@@ -142,9 +142,9 @@ def test_long_blender_names_dispatch_with_approval(monkeypatch):
     from core.inference import tools
     from unittest.mock import Mock
 
-    db.create_server("0123456789abcdef", "Blender", "", builtin_id = "blender")
+    db.create_server("0123456789abcdef", "Blender", "", builtin_id="blender")
     monkeypatch.setattr(tools, "stdio_mcp_enabled", lambda: True)
-    call = Mock(return_value = "ok")
+    call = Mock(return_value="ok")
     monkeypatch.setattr(tools, "call_tool_sync", call)
     names = sorted(tools._BLENDER_CLI_SUMMARY_TOOLS)
     specs = tools._mcp_specs_for_server(db.list_servers()[0], [{"name": n} for n in names])

@@ -34,10 +34,10 @@ def _shared_setup_2():
     return source
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _isolate(monkeypatch):
     """No stored value and no environment, so each test states its own inputs."""
-    monkeypatch.delenv(vb.VRAM_FRACTION_ENV_VAR, raising = False)
+    monkeypatch.delenv(vb.VRAM_FRACTION_ENV_VAR, raising=False)
     monkeypatch.setattr(vb, "_cached_setting", lambda _key: None)
 
 
@@ -90,6 +90,7 @@ class TestPrecedence:
         # A no-op when nobody sets a budget, so this must track
         # _CTX_FIT_VRAM_FRACTION. Imported lazily: the inference package is heavy.
         from core.inference.llama_cpp import _CTX_FIT_VRAM_FRACTION
+
         assert vb.VRAM_FRACTION_DEFAULT == _CTX_FIT_VRAM_FRACTION
 
     def test_env_beats_default(self, monkeypatch):
@@ -195,11 +196,13 @@ class TestWrite:
 class TestActiveFractionWiring:
     def test_llama_cpp_uses_the_setting(self, monkeypatch):
         import core.inference.llama_cpp as lc
+
         monkeypatch.setenv(vb.VRAM_FRACTION_ENV_VAR, "0.88")
         assert lc._active_vram_fraction() == pytest.approx(0.88)
 
     def test_llama_cpp_defaults_to_the_old_constant(self):
         import core.inference.llama_cpp as lc
+
         assert lc._active_vram_fraction() == lc._CTX_FIT_VRAM_FRACTION
 
 
@@ -229,10 +232,10 @@ class TestLaunchedMarker:
         return backend, lc
 
     def test_duplicate_load_leaves_the_running_child_marker(self, monkeypatch):
-        backend, lc = self._resident_backend(monkeypatch, launched = 0.97, active = 0.85)
+        backend, lc = self._resident_backend(monkeypatch, launched=0.97, active=0.85)
         backend._audio_probed = True
 
-        assert backend.load_model(lc.GgufLoadIntent(model_identifier = "owner/repo"))
+        assert backend.load_model(lc.GgufLoadIntent(model_identifier="owner/repo"))
         # Nothing relaunched, so the child is still on 0.97 and needs a reload.
         assert backend._vram_fraction_launched == pytest.approx(0.97)
 
@@ -253,29 +256,29 @@ class TestLaunchedMarker:
     def test_adopt_is_refused_when_the_budget_changed(self, monkeypatch):
         # The budget is server-wide and on no request field, so the intent is
         # identical; without this check the slider silently does nothing.
-        backend, lc = self._adoptable(monkeypatch, launched = 0.97)
+        backend, lc = self._adoptable(monkeypatch, launched=0.97)
         monkeypatch.setattr(lc, "_active_vram_fraction", lambda: 0.85)
 
         assert not backend.adopt_load_intent_if_matched(
-            lc.GgufLoadIntent(model_identifier = "owner/repo")
+            lc.GgufLoadIntent(model_identifier="owner/repo")
         )
 
     def test_adopt_is_allowed_when_the_budget_is_unchanged(self, monkeypatch):
-        backend, lc = self._adoptable(monkeypatch, launched = 0.97)
+        backend, lc = self._adoptable(monkeypatch, launched=0.97)
         monkeypatch.setattr(lc, "_active_vram_fraction", lambda: 0.97)
 
         assert backend.adopt_load_intent_if_matched(
-            lc.GgufLoadIntent(model_identifier = "owner/repo")
+            lc.GgufLoadIntent(model_identifier="owner/repo")
         )
 
     def test_adopt_is_allowed_when_placement_never_used_the_budget(self, monkeypatch):
         # Manual mode and GPU-less hosts plan with no devices, so a reload changes
         # nothing.
-        backend, lc = self._adoptable(monkeypatch, launched = None)
+        backend, lc = self._adoptable(monkeypatch, launched=None)
         monkeypatch.setattr(lc, "_active_vram_fraction", lambda: 0.85)
 
         assert backend.adopt_load_intent_if_matched(
-            lc.GgufLoadIntent(model_identifier = "owner/repo")
+            lc.GgufLoadIntent(model_identifier="owner/repo")
         )
 
     def test_marker_is_committed_with_the_rest_of_the_launch_state(self):
@@ -302,6 +305,7 @@ class TestRouteContract:
     @staticmethod
     def _settings_module():
         import routes.settings as rs
+
         return rs
 
     def test_payload_rejects_a_boolean_fraction(self):
@@ -328,10 +332,10 @@ class TestRouteContract:
             _vram_fraction_pending = 0.97
             _vram_fraction_launched = None
 
-        monkeypatch.setattr(rs, "get_llama_cpp_backend", lambda: _Backend(), raising = False)
+        monkeypatch.setattr(rs, "get_llama_cpp_backend", lambda: _Backend(), raising=False)
         import routes.inference as ri
 
-        monkeypatch.setattr(ri, "get_llama_cpp_backend", lambda: _Backend(), raising = False)
+        monkeypatch.setattr(ri, "get_llama_cpp_backend", lambda: _Backend(), raising=False)
 
         assert rs._vram_budget_reload_required(0.85)
         assert not rs._vram_budget_reload_required(0.97)
@@ -346,7 +350,7 @@ class TestRouteContract:
 
         import routes.inference as ri
 
-        monkeypatch.setattr(ri, "get_llama_cpp_backend", lambda: _Backend(), raising = False)
+        monkeypatch.setattr(ri, "get_llama_cpp_backend", lambda: _Backend(), raising=False)
 
         assert not rs._vram_budget_reload_required(0.85)
 
@@ -371,6 +375,7 @@ class TestLaunchFinalization:
         import inspect
 
         import core.inference.llama_cpp as lc
+
         return "".join(inspect.getsource(lc.LlamaCppBackend.load_model).split())
 
     def test_the_fraction_is_resolved_under_the_load_lock(self):
@@ -418,6 +423,7 @@ class TestPreLaunchWindow:
         import inspect
 
         import core.inference.llama_cpp as lc
+
         return "".join(inspect.getsource(lc.LlamaCppBackend.load_model).split())
 
     def test_the_pending_value_is_armed_before_the_duplicate_check(self):
@@ -507,7 +513,7 @@ class TestPendingOwnership:
             lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("no binary")),
         )
         with pytest.raises(Exception):
-            backend.load_model(lc.GgufLoadIntent(model_identifier = "owner/repo"))
+            backend.load_model(lc.GgufLoadIntent(model_identifier="owner/repo"))
         assert backend._vram_fraction_pending is None
 
 
@@ -517,6 +523,7 @@ class TestFloorReserve:
     @staticmethod
     def _usable(free, total, frac):
         import core.inference.llama_cpp as lc
+
         return lc._vram_usable_mib(free, total, frac)
 
     @pytest.mark.parametrize("total", [4_096, 8_192, 16_384, 24_576, 81_920])
@@ -529,6 +536,7 @@ class TestFloorReserve:
 
     def test_the_floor_never_exceeds_the_default_reserve(self):
         import core.inference.llama_cpp as lc
+
         for total in (4_096, 8_192, 16_384, 24_576, 81_920):
             floor = lc._vram_reserve_floor_mib(total)
             assert floor <= (1.0 - lc._CTX_FIT_VRAM_FRACTION) * total
@@ -538,6 +546,7 @@ class TestFloorReserve:
         # MIG/vGPU and the two-column probe report free with no total, so the free
         # reading is the only scale; it agrees with the known-total form at 0.97.
         import core.inference.llama_cpp as lc
+
         assert self._usable(24_576, 0, 1.0) == pytest.approx(24_576 - lc._VRAM_FLOOR_RESERVE_MIB)
         assert self._usable(24_576, 0, lc._CTX_FIT_VRAM_FRACTION) == pytest.approx(
             24_576 * lc._CTX_FIT_VRAM_FRACTION
@@ -560,6 +569,7 @@ class TestFloorReserve:
         # hard-coded 0.97 did. The floor must not reach below the default, which
         # it otherwise would on any card under about 17 GB.
         import core.inference.llama_cpp as lc
+
         assert self._usable(total, total, lc._CTX_FIT_VRAM_FRACTION) == pytest.approx(
             total - (1.0 - lc._CTX_FIT_VRAM_FRACTION) * total
         )
@@ -581,8 +591,9 @@ class TestFloorReserve:
         # Said explicitly rather than inferred from the sentinel, or a real card
         # with no reported total would lose its margin at 100% too.
         import core.inference.llama_cpp as lc
-        assert lc._vram_usable_mib(12_000, 0, 1.0, pooled = True) == pytest.approx(12_000)
-        assert lc._vram_usable_mib(12_000, None, 1.0, pooled = True) == pytest.approx(12_000)
+
+        assert lc._vram_usable_mib(12_000, 0, 1.0, pooled=True) == pytest.approx(12_000)
+        assert lc._vram_usable_mib(12_000, None, 1.0, pooled=True) == pytest.approx(12_000)
 
     def test_every_pooled_caller_says_so(self):
         # Five call sites hand _fit_context_to_vram an absolute pool budget; each
@@ -618,7 +629,7 @@ class TestRetriesAndDedup:
         monkeypatch.setattr(backend, "_runtime_matches_intent", lambda _i, _e: True)
         monkeypatch.setattr(backend, "_record_matching_gpu_request", lambda *_a, **_k: None)
         monkeypatch.setattr(lc, "_active_vram_fraction", lambda: 0.85)
-        intent = lc.GgufLoadIntent(model_identifier = "owner/repo")
+        intent = lc.GgufLoadIntent(model_identifier="owner/repo")
 
         assert not backend.adopt_load_intent_if_matched(intent)
         # ...and a load in flight hands its captured fraction over, ahead of that read.
@@ -639,6 +650,7 @@ class TestFitTarget:
 
     def _flags(self, *, auto_fit, delta):
         import core.inference.llama_cpp as lc
+
         return lc.LlamaCppBackend._ctx_integrity_flags(
             1,
             True,
@@ -646,25 +658,25 @@ class TestFitTarget:
             0,
             0,
             self._CAPS,
-            fit_target_delta_mib = delta,
+            fit_target_delta_mib=delta,
         )
 
     def test_the_default_budget_emits_exactly_what_it_did_before(self):
         # The acceptance bar for the whole feature: an untouched slider must not
         # move a single flag.
-        assert self._flags(auto_fit = True, delta = 0.0)[-2:] == ["--fit-target", "512"]
-        assert "--fit-target" not in self._flags(auto_fit = False, delta = 0.0)
+        assert self._flags(auto_fit=True, delta=0.0)[-2:] == ["--fit-target", "512"]
+        assert "--fit-target" not in self._flags(auto_fit=False, delta=0.0)
 
     def test_a_lowered_budget_reaches_the_fitter_on_both_paths(self):
         # Raised from each path's own starting margin, not from zero: measuring
         # from zero would hand the legacy path 512 where it used to keep 1024, so
         # lowering the slider would have made llama.cpp pack MORE onto the card.
-        assert self._flags(auto_fit = True, delta = 4096.0)[-2:] == ["--fit-target", "4608"]
-        assert self._flags(auto_fit = False, delta = 4096.0)[-2:] == ["--fit-target", "5120"]
+        assert self._flags(auto_fit=True, delta=4096.0)[-2:] == ["--fit-target", "4608"]
+        assert self._flags(auto_fit=False, delta=4096.0)[-2:] == ["--fit-target", "5120"]
 
     def test_the_margin_grows_as_the_budget_falls(self):
         seen = [
-            int(self._flags(auto_fit = auto, delta = delta)[-1])
+            int(self._flags(auto_fit=auto, delta=delta)[-1])
             for auto in (True, False)
             for delta in (512.0, 1024.0, 2048.0)
         ]
@@ -674,14 +686,14 @@ class TestFitTarget:
         # 100% is meant to reclaim VRAM on exactly the tight models that fall back
         # to --fit, and there llama.cpp was still keeping its own 1024 MiB, so the
         # slider said one thing and the fitter did another.
-        assert self._flags(auto_fit = False, delta = -369.0)[-2:] == ["--fit-target", "655"]
+        assert self._flags(auto_fit=False, delta=-369.0)[-2:] == ["--fit-target", "655"]
 
     def test_a_raised_budget_stops_at_the_floor(self):
         # The same 512 MiB floor every other reserve here respects: at 100% a card
         # keeps that much and no less, on this path as on the planner's.
-        assert self._flags(auto_fit = False, delta = -4096.0)[-2:] == ["--fit-target", "512"]
+        assert self._flags(auto_fit=False, delta=-4096.0)[-2:] == ["--fit-target", "512"]
         # Manual + Auto already sits on the floor, so raising cannot move it.
-        assert self._flags(auto_fit = True, delta = -4096.0)[-2:] == ["--fit-target", "512"]
+        assert self._flags(auto_fit=True, delta=-4096.0)[-2:] == ["--fit-target", "512"]
 
     def test_nothing_is_emitted_without_the_capability(self):
         # An older llama-server rejects unknown flags outright.
@@ -695,7 +707,7 @@ class TestFitTarget:
             0,
             0,
             caps,
-            fit_target_delta_mib = 4096.0,
+            fit_target_delta_mib=4096.0,
         )
         assert "--fit-target" not in flags
 

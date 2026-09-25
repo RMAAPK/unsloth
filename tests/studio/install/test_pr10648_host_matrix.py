@@ -90,11 +90,11 @@ def make_host(**overrides) -> HostInfo:
 # test_keep_install_backcompat_9979.test_wsl_is_treated_exactly_like_linux_by_the_keep_path).
 # A row anyway, so "WSL is judged by the Linux tables" is stated rather than assumed.
 ROWS = {
-    "linux": dict(system = "Linux", machine = "x86_64"),
-    "windows": dict(system = "Windows", machine = "AMD64"),
-    "wsl": dict(system = "Linux", machine = "x86_64"),
-    "macos-arm64": dict(system = "Darwin", machine = "arm64", macos_version = (15, 5)),
-    "macos-x86_64": dict(system = "Darwin", machine = "x86_64", macos_version = (14, 6)),
+    "linux": dict(system="Linux", machine="x86_64"),
+    "windows": dict(system="Windows", machine="AMD64"),
+    "wsl": dict(system="Linux", machine="x86_64"),
+    "macos-arm64": dict(system="Darwin", machine="arm64", macos_version=(15, 5)),
+    "macos-x86_64": dict(system="Darwin", machine="x86_64", macos_version=(14, 6)),
 }
 
 # The rows that can carry a discrete accelerator, i.e. everything the hardware transitions
@@ -102,24 +102,24 @@ ROWS = {
 GPU_ROWS = ("linux", "windows", "wsl")
 
 NVIDIA_CUDA12 = dict(
-    nvidia_smi = "nvidia-smi",
-    has_physical_nvidia = True,
-    has_usable_nvidia = True,
-    driver_cuda_version = (12, 8),
-    compute_caps = ["8.9"],
+    nvidia_smi="nvidia-smi",
+    has_physical_nvidia=True,
+    has_usable_nvidia=True,
+    driver_cuda_version=(12, 8),
+    compute_caps=["8.9"],
 )
 NVIDIA_CUDA13 = dict(
-    nvidia_smi = "nvidia-smi",
-    has_physical_nvidia = True,
-    has_usable_nvidia = True,
-    driver_cuda_version = (13, 0),
-    compute_caps = ["8.9"],
+    nvidia_smi="nvidia-smi",
+    has_physical_nvidia=True,
+    has_usable_nvidia=True,
+    driver_cuda_version=(13, 0),
+    compute_caps=["8.9"],
 )
 # gfx1100 (Navi 31, discrete): _should_prefer_vulkan_for_amd_igpu routes the integrated archs
 # to Vulkan, which would make the cell test the router instead of the profile.
-AMD_ROCM = dict(has_rocm = True, rocm_gfx_target = "gfx1100", rocm_gfx_targets = ["gfx1100"])
-AMD_NO_ROCM = dict(has_amd_gpu_without_rocm = True)
-INTEL = dict(has_intel_gpu = True)
+AMD_ROCM = dict(has_rocm=True, rocm_gfx_target="gfx1100", rocm_gfx_targets=["gfx1100"])
+AMD_NO_ROCM = dict(has_amd_gpu_without_rocm=True)
+INTEL = dict(has_intel_gpu=True)
 
 ACCELERATORS = {
     "nvidia-cuda12": NVIDIA_CUDA12,
@@ -162,7 +162,7 @@ _CUDA_LINES = {"nvidia-cuda12": ("cuda12",), "nvidia-cuda13": ("cuda13",)}
 _ROCM_RUNTIME = (6, 2)
 
 
-@dataclasses.dataclass(frozen = True)
+@dataclasses.dataclass(frozen=True)
 class Cell:
     """One (OS, accelerator) box: the host, the bundle it would be given, and the probe
     answers ``host_profile`` reads that ``HostInfo`` does not carry."""
@@ -199,15 +199,15 @@ def _cell(row: str, column: str) -> Cell:
         install_kind, payload_backend = _KINDS["windows" if row == "windows" else "linux"][column]
     cuda_lines = _CUDA_LINES.get(column, ())
     return Cell(
-        cell_id = f"{row}-{column}",
-        row = row,
-        column = column,
-        host = host,
-        install_kind = install_kind,
-        payload_backend = payload_backend,
-        runtime_line = cuda_lines[0] if cuda_lines else None,
-        cuda_lines = cuda_lines,
-        rocm_runtime = _ROCM_RUNTIME if column == "amd-rocm" else None,
+        cell_id=f"{row}-{column}",
+        row=row,
+        column=column,
+        host=host,
+        install_kind=install_kind,
+        payload_backend=payload_backend,
+        runtime_line=cuda_lines[0] if cuda_lines else None,
+        cuda_lines=cuda_lines,
+        rocm_runtime=_ROCM_RUNTIME if column == "amd-rocm" else None,
     )
 
 
@@ -245,7 +245,7 @@ class Probe:
         monkeypatch.setattr(
             ILP,
             "detect_torch_cuda_runtime_preference",
-            lambda _host: SimpleNamespace(runtime_line = self.torch_line, selection_log = []),
+            lambda _host: SimpleNamespace(runtime_line=self.torch_line, selection_log=[]),
         )
         monkeypatch.setattr(
             ILP, "_download_host_latest_release_tag", lambda _repo: self.latest_release
@@ -273,9 +273,9 @@ class Probe:
     ) -> HostInfo:
         """Point the probes at ``cell``'s answers, optionally for a different host."""
         answers = dict(
-            cuda_lines = cell.cuda_lines,
-            rocm_runtime = cell.rocm_runtime,
-            torch_line = cell.runtime_line,
+            cuda_lines=cell.cuda_lines,
+            rocm_runtime=cell.rocm_runtime,
+            torch_line=cell.runtime_line,
         )
         answers.update(overrides)
         return self.set(cell.host if host is None else host, **answers)
@@ -284,7 +284,7 @@ class Probe:
 @pytest.fixture
 def probe(monkeypatch):
     for key in _ENV_KEYS:
-        monkeypatch.delenv(key, raising = False)
+        monkeypatch.delenv(key, raising=False)
     return Probe(monkeypatch)
 
 
@@ -294,10 +294,10 @@ def route_for(host: HostInfo, repo: str = PUBLISHED_REPO):
     ``host`` is passed explicitly rather than left to the patched ``detect_host`` so a
     fixture can never route one box while the probes answer for another."""
     return ILP.route_backend_request(
-        backend = "auto",
-        published_repo = repo,
-        published_release_tag = "",
-        host = host,
+        backend="auto",
+        published_repo=repo,
+        published_release_tag="",
+        host=host,
     )
 
 
@@ -319,9 +319,9 @@ def install_cell(
     route = route_for(cell.host)
     install_dir = build_install(
         tmp_path / name,
-        host = route.host,
-        marker = None,
-        payload_backend = cell.payload_backend,
+        host=route.host,
+        marker=None,
+        payload_backend=cell.payload_backend,
     )
     runtime_dir = ILP.install_runtime_dir(install_dir, route.host)
     # The fork bundles ship the DiffusionGemma visual server and the marker-only backfill
@@ -330,33 +330,33 @@ def install_cell(
         "llama-diffusion-gemma-visual-server" + (".exe" if route.host.is_windows else "")
     )
     if not visual_server.exists():
-        visual_server.write_text("#!/bin/sh\nexit 0\n", encoding = "utf-8")
+        visual_server.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     choice = ILP.AssetChoice(
-        repo = route.published_repo or PUBLISHED_REPO,
-        tag = RELEASE_TAG,
-        name = f"llama-{UPSTREAM_TAG}-{cell.install_kind}.tar.gz",
-        url = f"https://example.com/llama-{UPSTREAM_TAG}-{cell.install_kind}.tar.gz",
-        source_label = "published",
-        install_kind = cell.install_kind,
-        expected_sha256 = "a" * 64,
-        runtime_line = cell.runtime_line,
-        coverage_class = "targeted" if cell.runtime_line else None,
-        supported_sms = ["89"] if cell.runtime_line else None,
-        bundle_profile = f"{cell.runtime_line}-newer" if cell.runtime_line else None,
-        gfx_target = cell.host.rocm_gfx_target,
-        mapped_targets = list(cell.host.rocm_gfx_targets or []),
+        repo=route.published_repo or PUBLISHED_REPO,
+        tag=RELEASE_TAG,
+        name=f"llama-{UPSTREAM_TAG}-{cell.install_kind}.tar.gz",
+        url=f"https://example.com/llama-{UPSTREAM_TAG}-{cell.install_kind}.tar.gz",
+        source_label="published",
+        install_kind=cell.install_kind,
+        expected_sha256="a" * 64,
+        runtime_line=cell.runtime_line,
+        coverage_class="targeted" if cell.runtime_line else None,
+        supported_sms=["89"] if cell.runtime_line else None,
+        bundle_profile=f"{cell.runtime_line}-newer" if cell.runtime_line else None,
+        gfx_target=cell.host.rocm_gfx_target,
+        mapped_targets=list(cell.host.rocm_gfx_targets or []),
     )
-    checksums = _checksums(choice, repo = route.published_repo or PUBLISHED_REPO)
+    checksums = _checksums(choice, repo=route.published_repo or PUBLISHED_REPO)
     ILP.write_prebuilt_metadata(
         install_dir,
-        host = route.host,
-        requested_tag = "latest",
-        llama_tag = UPSTREAM_TAG,
-        release_tag = RELEASE_TAG,
-        choice = choice,
-        approved_checksums = checksums,
-        prebuilt_fallback_used = False,
-        backend_request = "auto",
+        host=route.host,
+        requested_tag="latest",
+        llama_tag=UPSTREAM_TAG,
+        release_tag=RELEASE_TAG,
+        choice=choice,
+        approved_checksums=checksums,
+        prebuilt_fallback_used=False,
+        backend_request="auto",
     )
     return install_dir
 
@@ -365,41 +365,41 @@ def _checksums(choice, *, repo: str):
     logical = ILP.source_archive_logical_name(UPSTREAM_TAG)
     artifacts = {
         logical: ILP.ApprovedArtifactHash(
-            asset_name = logical,
-            sha256 = "b" * 64,
-            repo = "ggml-org/llama.cpp",
-            kind = "upstream-source",
+            asset_name=logical,
+            sha256="b" * 64,
+            repo="ggml-org/llama.cpp",
+            kind="upstream-source",
         ),
         choice.name: ILP.ApprovedArtifactHash(
-            asset_name = choice.name,
-            sha256 = choice.expected_sha256,
-            repo = repo,
-            kind = "prebuilt",
+            asset_name=choice.name,
+            sha256=choice.expected_sha256,
+            repo=repo,
+            kind="prebuilt",
         ),
     }
     return ILP.ApprovedReleaseChecksums(
-        repo = repo,
-        release_tag = RELEASE_TAG,
-        upstream_tag = UPSTREAM_TAG,
-        source_commit = "deadbeef",
-        artifacts = artifacts,
+        repo=repo,
+        release_tag=RELEASE_TAG,
+        upstream_tag=UPSTREAM_TAG,
+        source_commit="deadbeef",
+        artifacts=artifacts,
     )
 
 
 def check(install_dir: Path, **overrides) -> bool:
     kwargs = dict(
-        llama_tag = "latest",
-        published_repo = PUBLISHED_REPO,
-        published_release_tag = "",
-        backend_request = "auto",
-        force_cpu = False,
+        llama_tag="latest",
+        published_repo=PUBLISHED_REPO,
+        published_release_tag="",
+        backend_request="auto",
+        force_cpu=False,
     )
     kwargs.update(overrides)
     return existing_install_current_without_plan(install_dir, **kwargs)
 
 
 def marker_of(install_dir: Path) -> dict:
-    return json.loads((install_dir / "UNSLOTH_PREBUILT_INFO.json").read_text(encoding = "utf-8"))
+    return json.loads((install_dir / "UNSLOTH_PREBUILT_INFO.json").read_text(encoding="utf-8"))
 
 
 def moved(tmp_path: Path, probe: Probe, cell: Cell, after: HostInfo, **answers) -> Path:
@@ -434,7 +434,7 @@ def assert_reinstall_forced(monkeypatch, install_dir: Path) -> None:
 # (A) the matrix itself: which cells exist.
 
 
-@pytest.mark.parametrize(("row", "column"), MATRIX, ids = MATRIX_IDS)
+@pytest.mark.parametrize(("row", "column"), MATRIX, ids=MATRIX_IDS)
 def test_every_cell_of_the_matrix_is_reachable_or_explicitly_impossible(row, column):
     """The user population this fast path runs for: every OS crossed with every
     accelerator. A cell that does not exist is skipped with the reason, so a column
@@ -451,7 +451,7 @@ def test_every_cell_of_the_matrix_is_reachable_or_explicitly_impossible(row, col
 # (B) the acceptance half: an unchanged box keeps its install, in every reachable cell.
 
 
-@pytest.mark.parametrize(("row", "column"), REACHABLE, ids = REACHABLE_IDS)
+@pytest.mark.parametrize(("row", "column"), REACHABLE, ids=REACHABLE_IDS)
 def test_an_unchanged_box_keeps_its_install_in_every_cell(tmp_path, probe, row, column):
     """Nothing happened to the user's machine since the install: no download, no listing,
     no re-validation. This is the half the fast path exists for, and every rejection test
@@ -463,7 +463,7 @@ def test_an_unchanged_box_keeps_its_install_in_every_cell(tmp_path, probe, row, 
     assert marker_of(install_dir)["host_profile"] == host_profile(route_for(cell.host).host)
 
 
-@pytest.mark.parametrize(("row", "column"), REACHABLE, ids = REACHABLE_IDS)
+@pytest.mark.parametrize(("row", "column"), REACHABLE, ids=REACHABLE_IDS)
 def test_a_second_update_on_the_same_box_is_still_current(tmp_path, probe, row, column):
     """Updates are not one-shot: the user runs setup again next week with nothing changed.
     A profile that failed to compare equal to itself would be a silent permanent
@@ -489,7 +489,7 @@ def test_a_gpu_added_to_a_cpu_only_box_is_not_current(tmp_path, probe, monkeypat
     profile can notice; without it the box keeps its CPU bundle and stays slow."""
     cell = _cpu_cell(row)
     after = make_host(**ROWS[row], **NVIDIA_CUDA12)
-    install_dir = moved(tmp_path, probe, cell, after, cuda_lines = ("cuda12",), torch_line = None)
+    install_dir = moved(tmp_path, probe, cell, after, cuda_lines=("cuda12",), torch_line=None)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -499,7 +499,7 @@ def test_a_gpu_removed_since_the_install_is_not_current(tmp_path, probe, monkeyp
     CUDA does not load at all, so keeping it is worse than a reinstall."""
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row])
-    install_dir = moved(tmp_path, probe, cell, after, cuda_lines = (), torch_line = None)
+    install_dir = moved(tmp_path, probe, cell, after, cuda_lines=(), torch_line=None)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -511,7 +511,7 @@ def test_a_cuda_12_to_cuda_13_move_is_not_current(tmp_path, probe, monkeypatch, 
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row], **NVIDIA_CUDA13)
     install_dir = moved(
-        tmp_path, probe, cell, after, cuda_lines = ("cuda13",), torch_line = cell.runtime_line
+        tmp_path, probe, cell, after, cuda_lines=("cuda13",), torch_line=cell.runtime_line
     )
     assert_reinstall_forced(monkeypatch, install_dir)
 
@@ -526,8 +526,8 @@ def test_only_the_cuda_runtimes_on_disk_moving_is_not_current(tmp_path, probe, m
         probe,
         cell,
         cell.host,
-        cuda_lines = ("cuda12", "cuda13"),
-        torch_line = cell.runtime_line,
+        cuda_lines=("cuda12", "cuda13"),
+        torch_line=cell.runtime_line,
     )
     assert_reinstall_forced(monkeypatch, install_dir)
 
@@ -538,7 +538,7 @@ def test_swapping_an_nvidia_card_for_an_amd_one_is_not_current(tmp_path, probe, 
     on an AMD box is an unusable backend, not a slow one."""
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row], **AMD_ROCM)
-    install_dir = moved(tmp_path, probe, cell, after, cuda_lines = (), rocm_runtime = _ROCM_RUNTIME)
+    install_dir = moved(tmp_path, probe, cell, after, cuda_lines=(), rocm_runtime=_ROCM_RUNTIME)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -547,7 +547,7 @@ def test_swapping_an_amd_card_for_an_nvidia_one_is_not_current(tmp_path, probe, 
     """The mirror image: a ROCm/HIP bundle left on a box that now has an NVIDIA card."""
     cell = _cell(row, "amd-rocm")
     after = make_host(**ROWS[row], **NVIDIA_CUDA12)
-    install_dir = moved(tmp_path, probe, cell, after, cuda_lines = ("cuda12",), rocm_runtime = None)
+    install_dir = moved(tmp_path, probe, cell, after, cuda_lines=("cuda12",), rocm_runtime=None)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -557,7 +557,7 @@ def test_a_rocm_runtime_version_bump_is_not_current(tmp_path, probe, monkeypatch
     chosen by the runtime's major.minor, which no GPU field carries -- so the bundle this
     run would pick has moved even though every other hardware fact is identical."""
     cell = _cell(row, "amd-rocm")
-    install_dir = moved(tmp_path, probe, cell, cell.host, rocm_runtime = (6, 4))
+    install_dir = moved(tmp_path, probe, cell, cell.host, rocm_runtime=(6, 4))
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -569,11 +569,11 @@ def test_a_rocm_gfx_target_change_is_not_current(tmp_path, probe, monkeypatch, r
     cell = _cell(row, "amd-rocm")
     after = make_host(
         **ROWS[row],
-        has_rocm = True,
-        rocm_gfx_target = "gfx1030",
-        rocm_gfx_targets = ["gfx1030"],
+        has_rocm=True,
+        rocm_gfx_target="gfx1030",
+        rocm_gfx_targets=["gfx1030"],
     )
-    install_dir = moved(tmp_path, probe, cell, after, rocm_runtime = _ROCM_RUNTIME)
+    install_dir = moved(tmp_path, probe, cell, after, rocm_runtime=_ROCM_RUNTIME)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -586,11 +586,11 @@ def test_a_second_amd_card_the_bundle_has_no_kernels_for_is_not_current(
     cell = _cell(row, "amd-rocm")
     after = make_host(
         **ROWS[row],
-        has_rocm = True,
-        rocm_gfx_target = "gfx1100",
-        rocm_gfx_targets = ["gfx1100", "gfx1030"],
+        has_rocm=True,
+        rocm_gfx_target="gfx1100",
+        rocm_gfx_targets=["gfx1100", "gfx1030"],
     )
-    install_dir = moved(tmp_path, probe, cell, after, rocm_runtime = _ROCM_RUNTIME)
+    install_dir = moved(tmp_path, probe, cell, after, rocm_runtime=_ROCM_RUNTIME)
     assert_reinstall_forced(monkeypatch, install_dir)
 
 
@@ -625,13 +625,13 @@ def test_a_physical_nvidia_disappearing_behind_an_intel_gpu_is_not_current(
     -- a transition invisible to every other field in the profile."""
     cell = dataclasses.replace(
         _cpu_cell(row),
-        host = make_host(
+        host=make_host(
             **ROWS[row],
             **INTEL,
-            has_physical_nvidia = True,
-            has_usable_nvidia = False,
-            nvidia_smi = "nvidia-smi",
-            visible_cuda_devices = "",
+            has_physical_nvidia=True,
+            has_usable_nvidia=False,
+            nvidia_smi="nvidia-smi",
+            visible_cuda_devices="",
         ),
     )
     probe.set_from(cell)
@@ -666,7 +666,7 @@ def test_a_new_card_with_a_different_sm_is_not_current(tmp_path, probe, monkeypa
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row], **{**NVIDIA_CUDA12, "compute_caps": ["12.0"]})
     install_dir = moved(
-        tmp_path, probe, cell, after, cuda_lines = cell.cuda_lines, torch_line = cell.runtime_line
+        tmp_path, probe, cell, after, cuda_lines=cell.cuda_lines, torch_line=cell.runtime_line
     )
     assert_reinstall_forced(monkeypatch, install_dir)
 
@@ -679,7 +679,7 @@ def test_the_same_cards_reported_in_another_order_is_not_a_hardware_change(tmp_p
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row], **{**NVIDIA_CUDA12, "compute_caps": [" 8.9 ", "8.9"]})
     install_dir = moved(
-        tmp_path, probe, cell, after, cuda_lines = cell.cuda_lines, torch_line = cell.runtime_line
+        tmp_path, probe, cell, after, cuda_lines=cell.cuda_lines, torch_line=cell.runtime_line
     )
     assert check(install_dir) is True
 
@@ -743,7 +743,7 @@ def _assert_everything_but_the_host_still_matches(install_dir: Path, after: Host
     # The release this run would ask for is the release that is installed.
     assert (
         ILP._expected_release_tag_without_plan(
-            marker, "latest", PUBLISHED_REPO, "", host = route.host
+            marker, "latest", PUBLISHED_REPO, "", host=route.host
         )
         == RELEASE_TAG
     )
@@ -769,7 +769,7 @@ def test_adding_a_gpu_is_rejected_by_the_host_profile_and_nothing_else(
     path keeps the CPU bundle, which is the bug the guard exists to prevent."""
     cell = _cpu_cell(row)
     after = make_host(**ROWS[row], **NVIDIA_CUDA12)
-    install_dir = moved(tmp_path, probe, cell, after, cuda_lines = ("cuda12",), torch_line = None)
+    install_dir = moved(tmp_path, probe, cell, after, cuda_lines=("cuda12",), torch_line=None)
     assert check(install_dir) is False
     marker = _assert_everything_but_the_host_still_matches(install_dir, after)
     # Neutralise only the profile comparison: everything else is untouched.
@@ -789,7 +789,7 @@ def test_a_cuda_line_move_is_rejected_by_the_host_profile_and_nothing_else(
     cell = _cell(row, "nvidia-cuda12")
     after = make_host(**ROWS[row], **NVIDIA_CUDA13)
     install_dir = moved(
-        tmp_path, probe, cell, after, cuda_lines = ("cuda13",), torch_line = cell.runtime_line
+        tmp_path, probe, cell, after, cuda_lines=("cuda13",), torch_line=cell.runtime_line
     )
     assert check(install_dir) is False
     marker = _assert_everything_but_the_host_still_matches(install_dir, after)
@@ -812,7 +812,7 @@ def _tuples_in(value) -> bool:
     return False
 
 
-@pytest.mark.parametrize(("row", "column"), REACHABLE, ids = REACHABLE_IDS)
+@pytest.mark.parametrize(("row", "column"), REACHABLE, ids=REACHABLE_IDS)
 def test_a_profile_written_to_a_marker_reads_back_equal_to_a_fresh_one(
     tmp_path, probe, row, column
 ):
@@ -830,7 +830,7 @@ def test_a_profile_written_to_a_marker_reads_back_equal_to_a_fresh_one(
     assert json.loads(json.dumps(fresh)) == fresh, cell.cell_id
 
 
-@pytest.mark.parametrize(("row", "column"), REACHABLE, ids = REACHABLE_IDS)
+@pytest.mark.parametrize(("row", "column"), REACHABLE, ids=REACHABLE_IDS)
 def test_every_profile_field_is_present_in_every_cell(tmp_path, probe, row, column):
     """Absent and null are different answers to the comparison. Every field the routing
     branches on must be written in every cell, or two different boxes could record the
@@ -860,19 +860,19 @@ def test_the_tuple_valued_fields_survive_the_marker_round_trip(tmp_path, probe):
     cuda_runtime_lines are the fields built from tuples or sets. Each is checked on a cell
     that actually populates it, against the value read back out of the marker file."""
     cuda = _cell("linux", "nvidia-cuda12")
-    cuda_marker = marker_of(install_cell(tmp_path, probe, cuda, name = "cuda"))["host_profile"]
+    cuda_marker = marker_of(install_cell(tmp_path, probe, cuda, name="cuda"))["host_profile"]
     assert cuda_marker["driver_cuda_version"] == [12, 8]
     assert cuda_marker["compute_caps"] == ["8.9"]
     assert cuda_marker["cuda_runtime_lines"] == ["cuda12"]
 
     rocm = _cell("linux", "amd-rocm")
-    rocm_marker = marker_of(install_cell(tmp_path, probe, rocm, name = "rocm"))["host_profile"]
+    rocm_marker = marker_of(install_cell(tmp_path, probe, rocm, name="rocm"))["host_profile"]
     assert rocm_marker["rocm_runtime"] == [6, 2]
     assert rocm_marker["rocm_gfx_target"] == "gfx1100"
     assert rocm_marker["rocm_gfx_targets"] == ["gfx1100"]
 
     mac = _cell("macos-arm64", "metal")
-    mac_marker = marker_of(install_cell(tmp_path, probe, mac, name = "mac"))["host_profile"]
+    mac_marker = marker_of(install_cell(tmp_path, probe, mac, name="mac"))["host_profile"]
     assert mac_marker["macos_version"] == [15, 5]
     assert mac_marker["machine"] == "arm64"
 
@@ -892,7 +892,7 @@ def test_a_marker_with_no_host_profile_cannot_answer_and_takes_the_full_path(tmp
     marker = marker_of(install_dir)
     marker.pop("host_profile")
     (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text(
-        json.dumps(marker, indent = 2) + "\n", encoding = "utf-8"
+        json.dumps(marker, indent=2) + "\n", encoding="utf-8"
     )
     assert check(install_dir) is False
 
@@ -906,7 +906,7 @@ def test_two_different_boxes_never_record_the_same_profile(probe):
     for row, column in REACHABLE:
         cell = _cell(row, column)
         probe.set_from(cell)
-        key = json.dumps(host_profile(route_for(cell.host).host), sort_keys = True)
+        key = json.dumps(host_profile(route_for(cell.host).host), sort_keys=True)
         profile_of_cell[cell.cell_id] = key
         # Rows that are the same box by construction: WSL reports itself as Linux, and
         # HostInfo has no WSL flag, so linux-<column> and wsl-<column> are one profile.

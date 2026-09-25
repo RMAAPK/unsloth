@@ -19,27 +19,27 @@ PROVIDERS_MODELS = REPO / "studio/backend/models/providers.py"
 
 
 def test_providers_db_stores_model_json_columns():
-    source = PROVIDERS_DB.read_text(encoding = "utf-8")
+    source = PROVIDERS_DB.read_text(encoding="utf-8")
     assert "models_json" in source
     assert "available_models_json" in source
     assert "ALTER TABLE llm_providers ADD COLUMN models_json" in source
 
 
 def test_provider_api_schemas_expose_models():
-    source = PROVIDERS_MODELS.read_text(encoding = "utf-8")
+    source = PROVIDERS_MODELS.read_text(encoding="utf-8")
     assert "models: list[str]" in source
     assert "available_models: list[str]" in source
 
 
 def test_frontend_sync_prefers_server_models_on_remote_clients():
-    source = SYNC_PROVIDERS.read_text(encoding = "utf-8")
+    source = SYNC_PROVIDERS.read_text(encoding="utf-8")
     assert "config.models" in source
     assert "config.available_models" in source
     assert "serverModels.length > 0" in source
 
 
 def test_frontend_sync_backfills_local_models_to_backend():
-    source = SYNC_PROVIDERS.read_text(encoding = "utf-8")
+    source = SYNC_PROVIDERS.read_text(encoding="utf-8")
     assert "updateProviderConfig" in source
     assert "needsModelBackfill" in source
     # The backfill tasks are awaited as a batch, and one failing must not sink
@@ -56,7 +56,7 @@ def test_frontend_sync_backfills_local_models_to_backend():
     # either.
     flat = " ".join(source.split()).replace("( ", "(")
     assert "settleTasksIfCurrent(backfillTasks" in flat
-    helper = RECONCILIATION.read_text(encoding = "utf-8")
+    helper = RECONCILIATION.read_text(encoding="utf-8")
     assert "export async function settleTasksIfCurrent" in helper
     # Scoped to the helper's own body. The module also allSettles in
     # runCredentialBootstrap, so a module-wide search stays green when
@@ -70,7 +70,7 @@ def test_frontend_sync_backfills_local_models_to_backend():
 
 
 def test_frontend_sync_preserves_local_provider_options():
-    source = SYNC_PROVIDERS.read_text(encoding = "utf-8")
+    source = SYNC_PROVIDERS.read_text(encoding="utf-8")
     assert "mergeLocalProviderOptions" in source
     assert "promptCacheTtl" in source
     assert "openaiContainerTtlMinutes" in source
@@ -91,9 +91,9 @@ def test_connections_are_hydrated_on_startup():
     Both halves match CALL sites, not bare names: an import survives deleting
     the call it feeds, so a name-only assertion passes on a startup that
     hydrates nothing."""
-    bootstrap = CREDENTIAL_BOOTSTRAP.read_text(encoding = "utf-8")
+    bootstrap = CREDENTIAL_BOOTSTRAP.read_text(encoding="utf-8")
     assert "syncExternalProvidersFromBackend(providers" in bootstrap
-    root = ROOT_ROUTE.read_text(encoding = "utf-8")
+    root = ROOT_ROUTE.read_text(encoding="utf-8")
     assert (
         "bootstrapPersistedCredentials()" in root
     ), "nothing calls the credential bootstrap, so no page hydrates connections"
@@ -101,10 +101,10 @@ def test_connections_are_hydrated_on_startup():
     # it stops hydration while the call still exists.
     assert "<CredentialBootstrapGate active={!isAuthFlowRoute}>" in root
     # The chat page still hydrates its own persisted settings.
-    assert "hydratePersistedSettings()" in CHAT_PAGE.read_text(encoding = "utf-8")
+    assert "hydratePersistedSettings()" in CHAT_PAGE.read_text(encoding="utf-8")
 
 
 def test_providers_api_sends_models_to_backend():
-    source = PROVIDERS_API.read_text(encoding = "utf-8")
+    source = PROVIDERS_API.read_text(encoding="utf-8")
     assert "available_models: payload.availableModels" in source
     assert "models: payload.models" in source

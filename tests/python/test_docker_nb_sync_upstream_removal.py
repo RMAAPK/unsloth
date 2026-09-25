@@ -28,7 +28,7 @@ SYNC = REPO_ROOT / "docker" / "unsloth_sync_notebooks.sh"
 
 behavioural = pytest.mark.skipif(
     any(shutil.which(tool) is None for tool in ("bash", "git", "sha256sum")),
-    reason = "needs bash, git and sha256sum",
+    reason="needs bash, git and sha256sum",
 )
 
 
@@ -39,15 +39,15 @@ def _sha256(path: Path) -> str:
 def _git(cwd: Path, *args: str) -> None:
     subprocess.run(
         ["git", *args],
-        cwd = cwd,
-        check = True,
-        capture_output = True,
-        env = dict(
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        env=dict(
             os.environ,
-            GIT_AUTHOR_NAME = "t",
-            GIT_AUTHOR_EMAIL = "t@e",
-            GIT_COMMITTER_NAME = "t",
-            GIT_COMMITTER_EMAIL = "t@e",
+            GIT_AUTHOR_NAME="t",
+            GIT_AUTHOR_EMAIL="t@e",
+            GIT_COMMITTER_NAME="t",
+            GIT_COMMITTER_EMAIL="t@e",
         ),
     )
 
@@ -61,23 +61,23 @@ FILES = {
 
 def _setup(tmp_path: Path):
     remote = tmp_path / "remote"
-    (remote / "nb").mkdir(parents = True)
+    (remote / "nb").mkdir(parents=True)
     for rel, body in FILES.items():
-        (remote / rel).write_text(body, encoding = "utf-8")
+        (remote / rel).write_text(body, encoding="utf-8")
     _git(remote, "init", "-q", "-b", "main")
     _git(remote, "add", "-A")
     _git(remote, "commit", "-qm", "one")
 
     template = tmp_path / "template"
-    (template / "nb").mkdir(parents = True)
+    (template / "nb").mkdir(parents=True)
     dest = tmp_path / "dest"
-    (dest / "nb").mkdir(parents = True)
+    (dest / "nb").mkdir(parents=True)
     lines = []
     for rel, body in FILES.items():
-        (template / rel).write_text(body, encoding = "utf-8")
-        (dest / rel).write_text(body, encoding = "utf-8")
+        (template / rel).write_text(body, encoding="utf-8")
+        (dest / rel).write_text(body, encoding="utf-8")
         lines.append(f"{_sha256(dest / rel)}  {rel}")
-    (dest / ".unsloth_sync_state").write_text("\n".join(lines) + "\n", encoding = "utf-8")
+    (dest / ".unsloth_sync_state").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return remote, template, dest
 
 
@@ -85,7 +85,7 @@ def _advance(remote: Path):
     """Upstream drops two notebooks and changes the third."""
     (remote / "nb" / "doomed.ipynb").unlink()
     (remote / "nb" / "edited.ipynb").unlink()
-    (remote / "nb" / "keep.ipynb").write_text("keep-v2", encoding = "utf-8")
+    (remote / "nb" / "keep.ipynb").write_text("keep-v2", encoding="utf-8")
     _git(remote, "add", "-A")
     _git(remote, "commit", "-qm", "two")
 
@@ -93,17 +93,17 @@ def _advance(remote: Path):
 def _refresh(tmp_path: Path, remote: Path, template: Path, dest: Path, **extra):
     return subprocess.run(
         ["bash", str(SYNC)],
-        capture_output = True,
-        text = True,
-        timeout = 300,
-        env = dict(
+        capture_output=True,
+        text=True,
+        timeout=300,
+        env=dict(
             os.environ,
-            UNSLOTH_NB_REFRESH_CHILD = "1",
-            UNSLOTH_NOTEBOOKS_TEMPLATE = str(template),
-            UNSLOTH_NOTEBOOKS_DIR = str(dest),
-            UNSLOTH_NOTEBOOKS_REPO = str(remote),
-            UNSLOTH_SKIP_NOTEBOOK_VIEW = "1",
-            UNSLOTH_KEEP_COLAB_INTRO = "1",
+            UNSLOTH_NB_REFRESH_CHILD="1",
+            UNSLOTH_NOTEBOOKS_TEMPLATE=str(template),
+            UNSLOTH_NOTEBOOKS_DIR=str(dest),
+            UNSLOTH_NOTEBOOKS_REPO=str(remote),
+            UNSLOTH_SKIP_NOTEBOOK_VIEW="1",
+            UNSLOTH_KEEP_COLAB_INTRO="1",
             **extra,
         ),
     )
@@ -113,7 +113,7 @@ def _state(dest: Path) -> dict:
     path = dest / ".unsloth_sync_state"
     out = {}
     if path.is_file():
-        for line in path.read_text(encoding = "utf-8").splitlines():
+        for line in path.read_text(encoding="utf-8").splitlines():
             parts = line.split("  ", 1)
             if len(parts) == 2:
                 out[parts[1]] = parts[0]
@@ -125,7 +125,7 @@ def test_a_pristine_notebook_deleted_upstream_is_removed(tmp_path: Path):
     remote, template, dest = _setup(tmp_path)
     _advance(remote)
     # the user edited one of the two that upstream dropped
-    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding = "utf-8")
+    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding="utf-8")
 
     run = _refresh(tmp_path, remote, template, dest)
     assert run.returncode == 0, run.stdout + run.stderr
@@ -134,9 +134,9 @@ def test_a_pristine_notebook_deleted_upstream_is_removed(tmp_path: Path):
         dest / "nb" / "doomed.ipynb"
     ).exists(), "the notebook upstream deleted is still on disk, so the view keeps listing it"
     assert (dest / "nb" / "edited.ipynb").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     ) == "MY OWN WORK", "a file that no longer hashes to what we wrote is the user's, edited or not"
-    assert (dest / "nb" / "keep.ipynb").read_text(encoding = "utf-8") == "keep-v2"
+    assert (dest / "nb" / "keep.ipynb").read_text(encoding="utf-8") == "keep-v2"
 
     state = _state(dest)
     assert "nb/doomed.ipynb" not in state
@@ -150,7 +150,7 @@ def test_the_removal_can_be_turned_off(tmp_path: Path):
     remote, template, dest = _setup(tmp_path)
     _advance(remote)
 
-    run = _refresh(tmp_path, remote, template, dest, UNSLOTH_KEEP_REMOVED_NOTEBOOKS = "1")
+    run = _refresh(tmp_path, remote, template, dest, UNSLOTH_KEEP_REMOVED_NOTEBOOKS="1")
     assert run.returncode == 0, run.stdout + run.stderr
 
     assert (dest / "nb" / "doomed.ipynb").exists()
@@ -175,7 +175,7 @@ def test_a_case_only_rename_does_not_delete_the_file_just_published(tmp_path: Pa
 @behavioural
 def test_nothing_is_removed_when_upstream_removed_nothing(tmp_path: Path):
     remote, template, dest = _setup(tmp_path)
-    (remote / "nb" / "keep.ipynb").write_text("keep-v2", encoding = "utf-8")
+    (remote / "nb" / "keep.ipynb").write_text("keep-v2", encoding="utf-8")
     _git(remote, "add", "-A")
     _git(remote, "commit", "-qm", "two")
 
@@ -192,7 +192,7 @@ def _refuse_rm(tmp_path: Path, target: Path) -> Path:
     bind mount fails with EBUSY. The publish above already works around that case for
     rename, so it is not hypothetical here."""
     bindir = tmp_path / "bin"
-    bindir.mkdir(exist_ok = True)
+    bindir.mkdir(exist_ok=True)
     stub = bindir / "rm"
     stub.write_text(
         "#!/bin/sh\n"
@@ -200,7 +200,7 @@ def _refuse_rm(tmp_path: Path, target: Path) -> Path:
         f'  [ "$a" = "{target}" ] && exit 1\n'
         "done\n"
         'exec /bin/rm "$@"\n',
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     stub.chmod(0o755)
     return bindir
@@ -216,12 +216,12 @@ def test_a_removal_that_cannot_be_unlinked_keeps_its_record_and_retries(tmp_path
     _advance(remote)
     # upstream dropped this one too, but the user owns it now, so doomed is the only
     # removal candidate and the counters below are about it alone
-    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding = "utf-8")
+    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding="utf-8")
     doomed = dest / "nb" / "doomed.ipynb"
     bindir = _refuse_rm(tmp_path, doomed)
 
     run = _refresh(
-        tmp_path, remote, template, dest, PATH = f"{bindir}{os.pathsep}{os.environ['PATH']}"
+        tmp_path, remote, template, dest, PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}"
     )
     assert run.returncode == 0, run.stdout + run.stderr
 
@@ -247,7 +247,7 @@ def test_the_successful_removal_still_stamps_the_commit(tmp_path: Path):
     so the marker check is testing the failure and not the environment."""
     remote, template, dest = _setup(tmp_path)
     _advance(remote)
-    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding = "utf-8")
+    (dest / "nb" / "edited.ipynb").write_text("MY OWN WORK", encoding="utf-8")
 
     run = _refresh(tmp_path, remote, template, dest)
     assert run.returncode == 0, run.stdout + run.stderr
@@ -261,7 +261,7 @@ def _refuse_mv_to(tmp_path: Path, target: Path) -> Path:
     read-only /workspace fails when the state file is published. Every other move,
     including the same-dir rename each notebook is published with, passes through."""
     bindir = tmp_path / "bin"
-    bindir.mkdir(exist_ok = True)
+    bindir.mkdir(exist_ok=True)
     stub = bindir / "mv"
     stub.write_text(
         "#!/bin/sh\n"
@@ -269,7 +269,7 @@ def _refuse_mv_to(tmp_path: Path, target: Path) -> Path:
         f'  [ "$a" = "{target}" ] && exit 1\n'
         "done\n"
         'exec /bin/mv "$@"\n',
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     stub.chmod(0o755)
     return bindir
@@ -288,7 +288,7 @@ def test_a_state_that_cannot_be_published_holds_the_sync_marker(tmp_path: Path):
     bindir = _refuse_mv_to(tmp_path, dest / ".unsloth_sync_state")
 
     run = _refresh(
-        tmp_path, remote, template, dest, PATH = f"{bindir}{os.pathsep}{os.environ['PATH']}"
+        tmp_path, remote, template, dest, PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}"
     )
     assert run.returncode == 0, run.stdout + run.stderr
 
@@ -308,7 +308,7 @@ def test_the_state_temp_file_is_published_by_a_same_directory_rename(tmp_path: P
     publish an atomic rename and makes it fail WITH the notebook writes, which already
     hold the marker. Asserted on the script text because the failure it removes cannot
     be provoked once the rename is atomic."""
-    source = SYNC.read_text(encoding = "utf-8")
+    source = SYNC.read_text(encoding="utf-8")
     assert 'TMPSTATE="$STATE.tmp"' in source, (
         "the refresh state temp file left $DEST, so publishing it is a cross-device "
         "copy that can fail after the notebooks have already landed"
@@ -346,7 +346,7 @@ def test_an_unwritable_dest_publishes_nothing_and_recovers(tmp_path: Path):
     remote, template, dest = _setup(tmp_path)
     _advance(remote)
     before_state = _state(dest)
-    before_bytes = (dest / "nb" / "keep.ipynb").read_text(encoding = "utf-8")
+    before_bytes = (dest / "nb" / "keep.ipynb").read_text(encoding="utf-8")
 
     (dest / "nb").chmod(0o755)
     dest.chmod(0o555)  # root writable by nobody; the subdir still is
@@ -355,7 +355,7 @@ def test_an_unwritable_dest_publishes_nothing_and_recovers(tmp_path: Path):
         assert run.returncode == 0, run.stdout + run.stderr
 
         assert (dest / "nb" / "keep.ipynb").read_text(
-            encoding = "utf-8"
+            encoding="utf-8"
         ) == before_bytes, "notebooks were published with no way to record them"
         assert _state(dest) == before_state
         assert not (
@@ -367,7 +367,7 @@ def test_an_unwritable_dest_publishes_nothing_and_recovers(tmp_path: Path):
     # the whole point of bailing: the next start recovers instead of being stranded
     run2 = _refresh(tmp_path, remote, template, dest)
     assert run2.returncode == 0, run2.stdout + run2.stderr
-    assert (dest / "nb" / "keep.ipynb").read_text(encoding = "utf-8") == "keep-v2"
+    assert (dest / "nb" / "keep.ipynb").read_text(encoding="utf-8") == "keep-v2"
     assert _state(dest).get("nb/keep.ipynb") == _sha256(dest / "nb" / "keep.ipynb")
     assert (dest / ".unsloth_sync_commit").is_file()
 
@@ -384,7 +384,7 @@ def test_a_stale_state_temp_file_does_not_block_the_refresh_forever(tmp_path: Pa
     _advance(remote)
 
     stale = dest / ".unsloth_sync_state.tmp"
-    stale.write_text("LEFTOVER FROM A KILLED RUN\n", encoding = "utf-8")
+    stale.write_text("LEFTOVER FROM A KILLED RUN\n", encoding="utf-8")
     stale.chmod(0o444)  # cannot be truncated by this uid; can still be unlinked
     assert not os.access(stale, os.W_OK), "precondition: the leftover is not truncatable"
 
@@ -392,7 +392,7 @@ def test_a_stale_state_temp_file_does_not_block_the_refresh_forever(tmp_path: Pa
     assert run.returncode == 0, run.stdout + run.stderr
 
     assert (dest / "nb" / "keep.ipynb").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     ) == "keep-v2", "a stale temp file the uid cannot truncate blocked the refresh"
     assert _state(dest).get("nb/keep.ipynb") == _sha256(dest / "nb" / "keep.ipynb")
     assert (dest / ".unsloth_sync_commit").is_file()

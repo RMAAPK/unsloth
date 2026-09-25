@@ -46,9 +46,10 @@ def _find_binary() -> Optional[str]:
     """Locate the active whisper-server binary via the STT sidecar's own resolver so update targets exactly what Unsloth runs. Lazy import keeps the heavy inference module off this module's import path."""
     try:
         from core.inference.stt_ggml_sidecar import find_whisper_server_binary
+
         return find_whisper_server_binary()
     except Exception as exc:  # pragma: no cover - defensive
-        logger.debug("whisper update: binary discovery failed", error = str(exc))
+        logger.debug("whisper update: binary discovery failed", error=str(exc))
         return None
 
 
@@ -57,13 +58,13 @@ def _install_dir_for(binary_path: Optional[str]) -> Optional[Path]:
     root = canonical_install_root(binary_path)
     if root is not None and (root / _INSTALL_MARKER_NAME).is_file():
         return root
-    return _flow.install_dir_for(binary_path, marker_name = _INSTALL_MARKER_NAME)
+    return _flow.install_dir_for(binary_path, marker_name=_INSTALL_MARKER_NAME)
 
 
 def _installer_script() -> Optional[Path]:
     """Locate install_whisper_prebuilt.py (UNSLOTH_WHISPER_INSTALLER wins)."""
     return _flow.find_installer_script(
-        env_var = "UNSLOTH_WHISPER_INSTALLER", script_name = "install_whisper_prebuilt.py"
+        env_var="UNSLOTH_WHISPER_INSTALLER", script_name="install_whisper_prebuilt.py"
     )
 
 
@@ -85,11 +86,11 @@ def _resolve_prebuilt_for_host(
     if published_release_tag:
         extra_args += ("--published-release-tag", published_release_tag)
     return _flow.resolve_prebuilt_for_host(
-        force_refresh = force_refresh,
-        memo = _resolve_memo,
-        installer_script = lambda: _installer_script(),
-        log_message = "whisper update: resolve-prebuilt failed",
-        extra_args = extra_args,
+        force_refresh=force_refresh,
+        memo=_resolve_memo,
+        installer_script=lambda: _installer_script(),
+        log_message="whisper update: resolve-prebuilt failed",
+        extra_args=extra_args,
     )
 
 
@@ -100,11 +101,11 @@ def _installed_whisper_version(binary: Optional[str]) -> Optional[str]:
     try:
         proc = subprocess.run(
             [binary, "--version"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 20,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
         )
     except Exception:  # pragma: no cover - defensive
         return None
@@ -118,16 +119,16 @@ def _whisper_install_root(binary: Optional[str]) -> Optional[Path]:
     """The Unsloth-managed whisper.cpp root the active binary lives under, or None when the binary is unmanaged (see update_flow.managed_install_root)."""
     return _flow.managed_install_root(
         binary,
-        marker_root = _install_dir_for(binary),
-        server_path_var = "WHISPER_SERVER_PATH",
-        cpp_path_var = "UNSLOTH_WHISPER_CPP_PATH",
-        dir_name = "whisper.cpp",
+        marker_root=_install_dir_for(binary),
+        server_path_var="WHISPER_SERVER_PATH",
+        cpp_path_var="UNSLOTH_WHISPER_CPP_PATH",
+        dir_name="whisper.cpp",
     )
 
 
 def _source_build_status(binary: str, *, force_refresh: bool) -> Optional[dict]:
     """Update status for a markerless (source-build) install: offer the official prebuilt when one exists for this host and is newer than the installed binary. None -> caller falls through to the no-marker default (unsupported)."""
-    res = _resolve_prebuilt_for_host(force_refresh = force_refresh)
+    res = _resolve_prebuilt_for_host(force_refresh=force_refresh)
     if not res or not res.get("prebuilt_available"):
         return None
     release_tag = res.get("release_tag")
@@ -152,11 +153,11 @@ def _source_build_status(binary: str, *, force_refresh: bool) -> Optional[dict]:
         asset_name = res.get("asset")
         if isinstance(asset_name, str) and asset_name:
             try:
-                assets = latest_release_assets(res.get("repo"), force_refresh = force_refresh)
+                assets = latest_release_assets(res.get("repo"), force_refresh=force_refresh)
                 if assets:
                     update_size_bytes = assets.get(asset_name)
             except Exception as exc:  # pragma: no cover - network defensive
-                logger.debug("whisper update: source-build size lookup failed", error = str(exc))
+                logger.debug("whisper update: source-build size lookup failed", error=str(exc))
     with _job_lock:
         job = dict(_job)
     return {
@@ -176,7 +177,7 @@ def _source_build_status(binary: str, *, force_refresh: bool) -> Optional[dict]:
 
 def _active_install_is_local_link(binary: Optional[str]) -> bool:
     """True when the active whisper-server resolves through a locally-linked whisper.cpp directory (see update_flow.active_install_is_local_link)."""
-    return _flow.active_install_is_local_link(binary, dir_name = "whisper.cpp")
+    return _flow.active_install_is_local_link(binary, dir_name="whisper.cpp")
 
 
 def _local_link_status() -> dict:
@@ -195,7 +196,7 @@ def get_update_status(*, force_refresh: bool = False) -> dict:
 
     # No marker = source build / custom path. Offer the official prebuilt if one exists for this host.
     if marker is None and binary is not None and not checks_disabled:
-        src = _source_build_status(binary, force_refresh = force_refresh)
+        src = _source_build_status(binary, force_refresh=force_refresh)
         if src is not None:
             return src
 
@@ -203,9 +204,9 @@ def get_update_status(*, force_refresh: bool = False) -> dict:
 
     if force_refresh and repo and not checks_disabled:
         try:
-            latest_published_release(repo, force_refresh = True)
+            latest_published_release(repo, force_refresh=True)
         except Exception as exc:  # pragma: no cover - network defensive
-            logger.debug("whisper update: force refresh failed", error = str(exc))
+            logger.debug("whisper update: force refresh failed", error=str(exc))
 
     freshness = check_prebuilt_freshness(binary)
     installed = freshness.get("installed_tag")
@@ -213,8 +214,8 @@ def get_update_status(*, force_refresh: bool = False) -> dict:
     compatible_override = False
     if sys.platform == "darwin" and marker is not None and not checks_disabled:
         resolved = _resolve_prebuilt_for_host(
-            force_refresh = force_refresh,
-            backend = marker.get("backend") if isinstance(marker.get("backend"), str) else None,
+            force_refresh=force_refresh,
+            backend=marker.get("backend") if isinstance(marker.get("backend"), str) else None,
         )
         compatible_latest = (resolved or {}).get("release_tag")
         if (resolved or {}).get("prebuilt_available") and isinstance(compatible_latest, str):
@@ -238,10 +239,10 @@ def get_update_status(*, force_refresh: bool = False) -> dict:
                 marker,
                 latest,
                 freshness.get("published_repo") or repo,
-                force_refresh = force_refresh,
+                force_refresh=force_refresh,
             )
         except Exception as exc:  # pragma: no cover - network defensive
-            logger.debug("whisper update: size lookup failed", error = str(exc))
+            logger.debug("whisper update: size lookup failed", error=str(exc))
 
     with _job_lock:
         job = dict(_job)
@@ -273,6 +274,7 @@ def _install_latest(
     """Replace whisper.cpp while the sidecar blocks every new load."""
     try:
         from core.inference.stt_ggml_sidecar import get_ggml_stt_sidecar
+
         sidecar = get_ggml_stt_sidecar()
     except Exception as exc:
         # Replacing the tree without the singleton's maintenance barrier would reopen the Windows executable-lock and stale-process races. Fail closed.
@@ -287,8 +289,8 @@ def _install_latest(
             backend,
             script,
             set_progress,
-            pin_release_tag = pin_release_tag,
-            model_was_active = model_was_active,
+            pin_release_tag=pin_release_tag,
+            model_was_active=model_was_active,
         )
 
 
@@ -301,7 +303,7 @@ def _install_latest_while_blocked(
     set_progress,
     *,
     pin_release_tag: Optional[str],
-    model_was_active: bool,
+    model_was_active: bool
 ) -> dict:
     """Run the installer with the sidecar already in update maintenance."""
 
@@ -320,24 +322,24 @@ def _install_latest_while_blocked(
     if pin_release_tag:
         cmd.extend(["--published-release-tag", pin_release_tag])
     cmd.extend(_rocm_install_args(asset))
-    logger.info("whisper update: installing", cmd = " ".join(cmd))
-    env = dict(os.environ, UNSLOTH_PROGRESS_PERCENT_STEP = "5")
+    logger.info("whisper update: installing", cmd=" ".join(cmd))
+    env = dict(os.environ, UNSLOTH_PROGRESS_PERCENT_STEP="5")
     _flow.stream_installer(
         cmd,
         env,
-        set_progress = set_progress,
-        timeout_seconds = _INSTALL_TIMEOUT_SECONDS,
+        set_progress=set_progress,
+        timeout_seconds=_INSTALL_TIMEOUT_SECONDS,
     )
 
     # Drop stale caches so the banner re-checks the swapped marker. If GitHub is offline, latest stays unknown and the banner fails open.
-    reset_caches(drop_disk = True)
+    reset_caches(drop_disk=True)
     try:
-        latest_published_release(repo, force_refresh = True)
+        latest_published_release(repo, force_refresh=True)
     except Exception as exc:  # pragma: no cover - network defensive
-        logger.debug("whisper update: post-install freshness refresh failed", error = str(exc))
+        logger.debug("whisper update: post-install freshness refresh failed", error=str(exc))
     new_marker = read_install_marker(_find_binary())
     new_tag = (new_marker or {}).get("release_tag")
-    logger.info("whisper update: success", to_tag = new_tag)
+    logger.info("whisper update: success", to_tag=new_tag)
     return {
         "to_tag": new_tag,
         "reload_required": model_was_active,
@@ -358,7 +360,7 @@ def _installed_llama_bundle() -> tuple[Optional[str], Optional[str]]:
         marker = read_llama_marker(find_llama_binary()) or {}
         return marker_backend(marker), marker.get("asset")
     except Exception as exc:  # pragma: no cover - defensive
-        logger.debug("whisper repair: llama pairing lookup failed", error = str(exc))
+        logger.debug("whisper repair: llama pairing lookup failed", error=str(exc))
         return None, None
 
 
@@ -426,13 +428,13 @@ def run_repair_phase(phase: dict, set_progress) -> dict:
             backend,
             phase["script"],
             set_progress,
-            pin_release_tag = phase.get("pin_release_tag"),
+            pin_release_tag=phase.get("pin_release_tag"),
         )
     except _flow.InstallerExit as exc:
         if exc.returncode != 2:
             raise
         # 2 is "no compatible release": this llama.cpp release publishes no whisper bundle for the new backend. The old hardlinked runtime still works, so dictation degrades rather than failing the switch.
-        logger.info("whisper repair: skipped", backend = backend, detail = str(exc)[-500:])
+        logger.info("whisper repair: skipped", backend=backend, detail=str(exc)[-500:])
         return {
             "message": (
                 "Dictation still uses the previous backend; no whisper.cpp build is "
@@ -464,7 +466,7 @@ def chained_phase_plan(
             "skip_reason": "source_build" if binary else "not_installed",
             "phase": None,
         }
-    status = get_update_status(force_refresh = force_refresh)
+    status = get_update_status(force_refresh=force_refresh)
     plan: dict = {"status": status, "update_available": False, "skip_reason": None, "phase": None}
     if not status.get("update_available"):
         # Skew note: a slim install keeps hardlinks to the OLD llama ggml inodes, still the exact build whisper was installed against, so skipping is correct and needs no re-wiring. A whisper phase that does run re-wires via the installer (prepare_runtime_payload).
@@ -473,8 +475,8 @@ def chained_phase_plan(
     if marker.get("install_kind") == "slim" and not paired_llama_will_update:
         # A slim install can only be refreshed from a COMPLETED managed llama prebuilt, so ask the installer's read-only resolver: local links, markerless source builds and incomplete managed trees must not produce an Update button that can only fail.
         resolved = _resolve_prebuilt_for_host(
-            force_refresh = force_refresh,
-            backend = marker.get("backend") if isinstance(marker.get("backend"), str) else None,
+            force_refresh=force_refresh,
+            backend=marker.get("backend") if isinstance(marker.get("backend"), str) else None,
         )
         if not (resolved or {}).get("prebuilt_available"):
             plan["skip_reason"] = "paired_llama_unavailable"
@@ -510,8 +512,8 @@ def _phase_repaired_to_installed_llama(phase: dict) -> dict:
         return phase
     logger.info(
         "whisper update: re-pairing the chained phase with the installed llama backend",
-        was = phase.get("backend"),
-        now = backend,
+        was=phase.get("backend"),
+        now=backend,
     )
     return {**phase, "backend": backend, "asset": asset}
 
@@ -524,13 +526,13 @@ def run_chained_phase_after_llama(phase: dict, set_progress) -> dict:
         repo = phase.get("repo")
         pin = phase.get("pin_release_tag")
         resolved = _resolve_prebuilt_for_host(
-            force_refresh = True,
-            backend = backend if isinstance(backend, str) else None,
-            published_repo = repo if isinstance(repo, str) else None,
-            published_release_tag = pin if isinstance(pin, str) else None,
+            force_refresh=True,
+            backend=backend if isinstance(backend, str) else None,
+            published_repo=repo if isinstance(repo, str) else None,
+            published_release_tag=pin if isinstance(pin, str) else None,
         )
     except Exception as exc:
-        logger.debug("whisper pairing pre-flight failed", error = str(exc))
+        logger.debug("whisper pairing pre-flight failed", error=str(exc))
         resolved = None
     # A POSITIVE incompatibility only: an unreachable API also reports prebuilt_available false, and a pre-flight that cannot answer must fail towards the install. Deliberately no test on the INSTALLED kind: a fat marker carries no install_kind, so gating on it skips the likeliest host.
     if (resolved or {}).get("unavailable_reason") == "incompatible":
@@ -547,5 +549,5 @@ def run_chained_phase(phase: dict, set_progress) -> dict:
         phase["backend"],
         phase["script"],
         set_progress,
-        pin_release_tag = phase.get("pin_release_tag"),
+        pin_release_tag=phase.get("pin_release_tag"),
     )

@@ -71,7 +71,7 @@ def test_audio_training_args(trainer, tmp_path, save_steps, strategy, steps):
     assert config["save_strategy"] == strategy
     assert config.get("save_steps") == steps
 
-    config.update(bf16 = False, fp16 = False, use_cpu = True, report_to = [])
+    config.update(bf16=False, fp16=False, use_cpu=True, report_to=[])
     args = transformers.TrainingArguments(**config)
     assert args.save_strategy == strategy
     if steps:
@@ -96,16 +96,16 @@ def test_generic_sft_config_args(trainer, tmp_path, monkeypatch, save_steps, str
         def train(self, **kwargs):
             pass
 
-    monkeypatch.setattr(tmod, "SFTConfig", _FakeSFTConfig, raising = False)
-    monkeypatch.setattr(tmod, "SFTTrainer", _FakeSFTTrainer, raising = False)
-    monkeypatch.setattr(tmod, "resolve_output_dir", lambda p: tmp_path, raising = True)
-    monkeypatch.setattr(tmod, "ensure_dir", lambda p: p, raising = True)
-    monkeypatch.setattr(tmod, "_drop_hf_stdout_callbacks", lambda trainer: None, raising = True)
+    monkeypatch.setattr(tmod, "SFTConfig", _FakeSFTConfig, raising=False)
+    monkeypatch.setattr(tmod, "SFTTrainer", _FakeSFTTrainer, raising=False)
+    monkeypatch.setattr(tmod, "resolve_output_dir", lambda p: tmp_path, raising=True)
+    monkeypatch.setattr(tmod, "ensure_dir", lambda p: p, raising=True)
+    monkeypatch.setattr(tmod, "_drop_hf_stdout_callbacks", lambda trainer: None, raising=True)
     monkeypatch.setattr(
-        tmod.UnslothTrainer, "_finalize_training", lambda self, *a, **k: None, raising = True
+        tmod.UnslothTrainer, "_finalize_training", lambda self, *a, **k: None, raising=True
     )
     monkeypatch.setattr(
-        tmod.UnslothTrainer, "_preflight_first_batch", lambda self: None, raising = True
+        tmod.UnslothTrainer, "_preflight_first_batch", lambda self: None, raising=True
     )
 
     trainer._audio_type = "bicodec"
@@ -119,12 +119,12 @@ def test_generic_sft_config_args(trainer, tmp_path, monkeypatch, save_steps, str
     with contextlib.suppress(AttributeError, TypeError, ValueError, KeyError):
         trainer._train_worker(
             {"dataset": rows, "final_format": "audio_bicodec"},
-            save_steps = save_steps,
-            batch_size = 2,
-            gradient_accumulation_steps = 1,
-            max_steps = 8,
-            warmup_steps = 0,
-            output_dir = str(tmp_path),
+            save_steps=save_steps,
+            batch_size=2,
+            gradient_accumulation_steps=1,
+            max_steps=8,
+            warmup_steps=0,
+            output_dir=str(tmp_path),
         )
 
     assert captured, "the config was never built, so this asserts nothing"
@@ -143,7 +143,7 @@ def test_apply_save_strategy(save_steps, strategy, steps):
 
 
 def test_embedding_training_uses_shared_save_strategy():
-    text = (_BACKEND / "core/training/worker.py").read_text(encoding = "utf-8")
+    text = (_BACKEND / "core/training/worker.py").read_text(encoding="utf-8")
     body = text[text.index("def _run_embedding_training") :]
     body = body[: body.index("SentenceTransformerTrainingArguments(")]
     assert "apply_save_strategy(training_args_kwargs, save_steps_val)" in body

@@ -48,7 +48,7 @@ def _fused_ce_not_return_dict_return(source: str) -> str:
 @pytest.mark.parametrize("rel", ["unsloth/models/llama.py", "unsloth/models/mistral.py"])
 def test_fused_ce_not_return_dict_uses_empty_logits(rel):
     path = _REPO / rel
-    source = path.read_text(encoding = "utf-8")
+    source = path.read_text(encoding="utf-8")
     assert "unsloth_fused_ce_loss(" in source, f"{rel}: fused-CE call vanished"
 
     ret = _fused_ce_not_return_dict_return(source)

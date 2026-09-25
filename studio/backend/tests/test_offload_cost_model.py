@@ -52,7 +52,7 @@ DENSE_KV_BYTES = 16 * 4 * 512 * 2 * 131072
 
 # 256 experts, 8 used per token: the sparsity that makes MoE cheap to spill.
 MOE_EXPERT_G = TensorGroup(
-    "experts", int(18.320 * GIB), Access.SCATTERED, activation_fraction = 8 / 256
+    "experts", int(18.320 * GIB), Access.SCATTERED, activation_fraction=8 / 256
 )
 # 10 attention layers x 2 kv heads x (256+256) x 2 bytes x 131072 tokens.
 MOE_KV_BYTES = 10 * 2 * 512 * 2 * 131072
@@ -78,13 +78,13 @@ ANCHOR_TOL = 0.10
         ("ffn + lm_head", Placement([DENSE_FFN_G, DENSE_LM_G]), DENSE_BOTH - DENSE_BASE),
         (
             "kv to host",
-            Placement([], kv_host_bytes = DENSE_KV_BYTES),
+            Placement([], kv_host_bytes=DENSE_KV_BYTES),
             DENSE_KV_HOST - DENSE_BASE,
         ),
         ("moe experts", Placement([MOE_EXPERT_G]), MOE_EXPERTS - MOE_BASE),
         (
             "moe kv to host",
-            Placement([], kv_host_bytes = MOE_KV_BYTES),
+            Placement([], kv_host_bytes=MOE_KV_BYTES),
             MOE_KV_HOST - MOE_BASE,
         ),
     ],
@@ -113,7 +113,7 @@ def test_the_cache_is_the_worst_byte_to_move_by_an_order_of_magnitude():
     """20x per byte against contiguous weights. This is the whole reason the
     planner uses -ot (which leaves the cache resident) instead of -ngl."""
     one_gib_weights = Placement([TensorGroup("w", int(GIB), Access.CONTIGUOUS)])
-    one_gib_cache = Placement([], kv_host_bytes = int(GIB))
+    one_gib_cache = Placement([], kv_host_bytes=int(GIB))
     assert generation_penalty_ms(one_gib_cache) > 15 * generation_penalty_ms(one_gib_weights)
 
 
@@ -226,8 +226,8 @@ def test_a_smaller_host_makes_every_spill_worse():
     could have had. Held to within 10% so "conservative" cannot drift into
     "useless".
     """
-    big = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads = 192))
-    small = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads = 16))
+    big = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads=192))
+    small = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads=16))
     assert small > 2 * big
     measured_ratio = (ms(5.83) - ms(87.30)) / (ms(14.94) - ms(87.30))
     assert small / big >= measured_ratio  # no longer under-warns
@@ -236,8 +236,8 @@ def test_a_smaller_host_makes_every_spill_worse():
 
 def test_thread_scaling_matches_the_measured_sweep():
     """Predicted ratio between 16 and 64 threads against the measured 11.82/5.83."""
-    at16 = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads = 16))
-    at64 = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads = 64))
+    at16 = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads=16))
+    at64 = generation_penalty_ms(Placement([DENSE_FFN_G]), HostProfile(threads=64))
     measured_ratio = 11.82 / 5.83
     assert rel_err(at16 / at64, measured_ratio) < 0.20
 
@@ -252,8 +252,8 @@ def test_prefill_ignores_host_threads_while_generation_does_not():
     backend: core-bound.
     """
     p = Placement([DENSE_FFN_G])
-    big, small = HostProfile(threads = 192), HostProfile(threads = 8)
-    assert prefill_penalty_ms_per_token(p, host = small) == prefill_penalty_ms_per_token(p, host = big)
+    big, small = HostProfile(threads=192), HostProfile(threads=8)
+    assert prefill_penalty_ms_per_token(p, host=small) == prefill_penalty_ms_per_token(p, host=big)
     assert generation_penalty_ms(p, small) > 2 * generation_penalty_ms(p, big)
 
 
@@ -261,8 +261,8 @@ def test_prefill_amortises_over_the_ubatch():
     """Weights are copied once per ubatch and reused by every token in it, which
     is why prefill is so much cheaper per byte moved than generation."""
     p = Placement([DENSE_FFN_G])
-    assert prefill_penalty_ms_per_token(p, n_ubatch = 512) == pytest.approx(
-        prefill_penalty_ms_per_token(p, n_ubatch = 256) / 2.0
+    assert prefill_penalty_ms_per_token(p, n_ubatch=512) == pytest.approx(
+        prefill_penalty_ms_per_token(p, n_ubatch=256) / 2.0
     )
     # And the measured per-token prefill penalty is far below the generation one.
     assert prefill_penalty_ms_per_token(p) < generation_penalty_ms(p) / 100.0
@@ -272,9 +272,9 @@ def test_unified_memory_hosts_gain_nothing_from_spilling():
     """Apple Silicon, AMD APUs and Vulkan iGPUs report host RAM as VRAM. Moving
     a tensor between the two does not change which chips hold it, so the planner
     must not pay a penalty for it -- nor claim it freed anything."""
-    unified = HostProfile(unified_memory = True)
+    unified = HostProfile(unified_memory=True)
     assert generation_penalty_ms(Placement([DENSE_FFN_G, DENSE_LM_G]), unified) == 0.0
-    assert generation_penalty_ms(Placement([], kv_host_bytes = DENSE_KV_BYTES), unified) == 0.0
+    assert generation_penalty_ms(Placement([], kv_host_bytes=DENSE_KV_BYTES), unified) == 0.0
 
 
 # ------------------------------------------------------------------ ranking
@@ -286,7 +286,7 @@ def test_ranking_puts_the_measured_best_placement_first():
     resident = Placement([])
     ffn = Placement([DENSE_FFN_G])
     ffn_lm = Placement([DENSE_FFN_G, DENSE_LM_G])
-    kv = Placement([], kv_host_bytes = DENSE_KV_BYTES)
+    kv = Placement([], kv_host_bytes=DENSE_KV_BYTES)
     order = [p for p, _ in rank([kv, ffn_lm, ffn, resident])]
     assert order == [resident, ffn, ffn_lm, kv]
 
@@ -295,8 +295,8 @@ def test_a_prefill_heavy_mix_can_reorder_dense_against_moe():
     """A caller that weights prefill is answering a different question, and the
     model must let it, rather than baking in the generation answer."""
     moe, dense = Placement([MOE_EXPERT_G]), Placement([DENSE_FFN_G])
-    gen_first = [p for p, _ in rank([dense, moe], n_generated = 1, n_prompt = 0)]
-    pp_first = [p for p, _ in rank([dense, moe], n_generated = 0, n_prompt = 4096)]
+    gen_first = [p for p, _ in rank([dense, moe], n_generated=1, n_prompt=0)]
+    pp_first = [p for p, _ in rank([dense, moe], n_generated=0, n_prompt=4096)]
     assert gen_first[0] is moe
     assert pp_first[0] is dense
 
@@ -310,7 +310,7 @@ def test_the_cross_host_floor_matches_the_measured_cloud_hosts():
     17.1, i.e. 0.59 of the truth.
     """
     rate = lambda t: (  # noqa: E731 - one expression, reads better inline
-        HostProfile(threads = t).generation_slowdown * REFERENCE_CONTIGUOUS_MS_PER_GIB
+        HostProfile(threads=t).generation_slowdown * REFERENCE_CONTIGUOUS_MS_PER_GIB
     )
     for threads, measured in ((12, 24.21), (48, 6.82), (192, 5.498)):
         ratio = rate(threads) / measured
@@ -326,14 +326,14 @@ def test_a_host_cache_is_not_free_during_prefill():
     one at n_generated = 0. The asymmetry was the bug: the cache crosses the same
     link as the weights."""
     resident = Placement()
-    kv_host = Placement(kv_host_bytes = int(4 * GIB))
+    kv_host = Placement(kv_host_bytes=int(4 * GIB))
 
     assert prefill_penalty_ms_per_token(resident) == 0.0
     assert prefill_penalty_ms_per_token(kv_host) > 0.0
 
-    ordered = rank([kv_host, resident], n_generated = 0, n_prompt = 4096)
+    ordered = rank([kv_host, resident], n_generated=0, n_prompt=4096)
     assert ordered[0][0] is resident, "resident must win a pure-prefill ranking"
     assert ordered[0][1] < ordered[1][1], "and it must not be a tie"
 
     # Still zero where moving bytes between two names for one pool is free.
-    assert prefill_penalty_ms_per_token(kv_host, host = HostProfile(unified_memory = True)) == 0.0
+    assert prefill_penalty_ms_per_token(kv_host, host=HostProfile(unified_memory=True)) == 0.0

@@ -44,7 +44,7 @@ def logs(monkeypatch):
     return capture
 
 
-def _http_scope(path, method = "GET"):
+def _http_scope(path, method="GET"):
     return {"type": "http", "path": path, "method": method}
 
 
@@ -56,20 +56,20 @@ async def _drop(message):
     pass
 
 
-def _uvicorn_record(exc, msg = _UVICORN_MSG):
+def _uvicorn_record(exc, msg=_UVICORN_MSG):
     """The record uvicorn builds: logger.error(msg, exc_info=exc) on uvicorn.error."""
     return logging.LogRecord(
-        name = "uvicorn.error",
-        level = logging.ERROR,
-        pathname = __file__,
-        lineno = 1,
-        msg = msg,
-        args = (),
-        exc_info = (type(exc), exc, exc.__traceback__),
+        name="uvicorn.error",
+        level=logging.ERROR,
+        pathname=__file__,
+        lineno=1,
+        msg=msg,
+        args=(),
+        exc_info=(type(exc), exc, exc.__traceback__),
     )
 
 
-def _raise_through_middleware(exc, path = "/api/rag/knowledge-bases"):
+def _raise_through_middleware(exc, path="/api/rag/knowledge-bases"):
     """Run a failing app under the middleware and hand back the exception uvicorn
     would see (the same object, re-raised)."""
 
@@ -106,19 +106,19 @@ def test_other_uvicorn_error_records_pass_through(logs):
     # Only the ASGI-application traceback is a duplicate; every other uvicorn error
     # line is uvicorn's alone.
     raised = _raise_through_middleware(RuntimeError("boom"))
-    record = _uvicorn_record(raised, msg = "ASGI callable returned without starting response.")
+    record = _uvicorn_record(raised, msg="ASGI callable returned without starting response.")
     assert _DropDuplicateAsgiException().filter(record) is True
 
 
 def test_record_without_exc_info_passes_through():
     record = logging.LogRecord(
-        name = "uvicorn.error",
-        level = logging.ERROR,
-        pathname = __file__,
-        lineno = 1,
-        msg = _UVICORN_MSG,
-        args = (),
-        exc_info = None,
+        name="uvicorn.error",
+        level=logging.ERROR,
+        pathname=__file__,
+        lineno=1,
+        msg=_UVICORN_MSG,
+        args=(),
+        exc_info=None,
     )
     assert _DropDuplicateAsgiException().filter(record) is True
 
@@ -145,13 +145,13 @@ def test_installed_filter_suppresses_the_record_on_uvicorn_error(logs):
     install_uvicorn_duplicate_exception_filter()
     try:
         raised = _raise_through_middleware(RuntimeError("RAG unavailable"))
-        uvicorn_logger.error(_UVICORN_MSG, exc_info = raised)
+        uvicorn_logger.error(_UVICORN_MSG, exc_info=raised)
         assert seen == []
 
         try:
             raise RuntimeError("not ours")
         except RuntimeError as exc:
-            uvicorn_logger.error(_UVICORN_MSG, exc_info = exc)
+            uvicorn_logger.error(_UVICORN_MSG, exc_info=exc)
         assert [m.strip() for m in seen] == ["Exception in ASGI application"]
     finally:
         uvicorn_logger.removeHandler(handler)

@@ -49,9 +49,9 @@ def _shared_setup_2(model_snapshot, tmp_path):
     event = build_worker_provenance_event(
         config,
         SimpleNamespace(),
-        model_load_target = str(model_snapshot),
-        model_load_in_4bit = True,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target=str(model_snapshot),
+        model_load_in_4bit=True,
+        dataset_loaded_from_exact_snapshot=True,
     )
     return config, event
 
@@ -60,9 +60,9 @@ def _shared_setup_3(config, model):
     event = build_worker_provenance_event(
         config,
         model,
-        model_load_target = "org/selected",
-        model_load_in_4bit = True,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/selected",
+        model_load_in_4bit=True,
+        dataset_loaded_from_exact_snapshot=True,
     )
     updates = normalize_worker_provenance_event(event, config)
     return event, updates
@@ -83,7 +83,7 @@ def _shared_setup_5(tmp_path):
         tmp_path,
         "org/actual-4bit",
         "actual-commit",
-        quantized = True,
+        quantized=True,
     )
     return actual
 
@@ -115,7 +115,7 @@ def _load_training_route():
     return module
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _cache_roots(monkeypatch, tmp_path):
     monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda **kw: [tmp_path])
     datasets_cache = tmp_path / "datasets-processed"
@@ -132,9 +132,9 @@ def _model_snapshot(
     weights: bool = True,
 ) -> Path:
     snapshot = root / f"models--{repo_id.replace('/', '--')}" / "snapshots" / commit
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     config = {"quantization_config": {"load_in_4bit": True}} if quantized else {}
-    (snapshot / "config.json").write_text(json.dumps(config), encoding = "utf-8")
+    (snapshot / "config.json").write_text(json.dumps(config), encoding="utf-8")
     if weights:
         (snapshot / "model.safetensors").write_bytes(b"weights")
     return snapshot
@@ -142,7 +142,7 @@ def _model_snapshot(
 
 def _dataset_snapshot(root: Path, repo_id: str, commit: str) -> Path:
     snapshot = root / f"datasets--{repo_id.replace('/', '--')}" / "snapshots" / commit
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "train.parquet").write_bytes(b"dataset")
     return snapshot
 
@@ -152,7 +152,7 @@ def _complete_event(tmp_path: Path, *, load_in_4bit: bool = False):
         tmp_path,
         "org/model",
         "model-commit",
-        quantized = load_in_4bit,
+        quantized=load_in_4bit,
     )
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     config = {
@@ -165,9 +165,9 @@ def _complete_event(tmp_path: Path, *, load_in_4bit: bool = False):
     event = build_worker_provenance_event(
         config,
         object(),
-        model_load_target = str(model),
-        model_load_in_4bit = load_in_4bit,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target=str(model),
+        model_load_in_4bit=load_in_4bit,
+        dataset_loaded_from_exact_snapshot=True,
     )
     return config, event, model, dataset
 
@@ -195,14 +195,14 @@ def test_a_4bit_run_declares_that_the_latest_sidecar_would_strand_it(tmp_path):
     ``require_exact_model_resource`` do not exist, because ``_sanitize_db_config``
     strips both before the row is written.
     """
-    config, event, model, _dataset = _complete_event(tmp_path, load_in_4bit = True)
+    config, event, model, _dataset = _complete_event(tmp_path, load_in_4bit=True)
     persisted = {**config, **normalize_worker_provenance_event(event, config)}
     assert "require_exact_resume_resources" not in persisted
     assert "require_exact_model_resource" not in persisted
 
     assert exact_resume_requires_current_4bit(persisted) is True
     # And the refusal it is predicting, from the flags routes/training.py rebuilds.
-    with patch("utils.transformers_version.latest_tier_active_for", return_value = True):
+    with patch("utils.transformers_version.latest_tier_active_for", return_value=True):
         with pytest.raises(ExactResumeResourcesUnavailable):
             effective_training_load_in_4bit(
                 {**persisted, "require_exact_model_resource": True}, str(model), None
@@ -210,14 +210,14 @@ def test_a_4bit_run_declares_that_the_latest_sidecar_would_strand_it(tmp_path):
 
 
 def test_a_16bit_run_has_no_4bit_load_mode_to_lose(tmp_path):
-    config, event, _model, _dataset = _complete_event(tmp_path, load_in_4bit = False)
+    config, event, _model, _dataset = _complete_event(tmp_path, load_in_4bit=False)
     persisted = {**config, **normalize_worker_provenance_event(event, config)}
     assert exact_resume_requires_current_4bit(persisted) is False
 
 
 def test_an_unresumable_provenance_is_not_made_worse_by_the_install(tmp_path):
     # Already refused, so there is no working resume for the install to take away.
-    config, event, _model, _dataset = _complete_event(tmp_path, load_in_4bit = True)
+    config, event, _model, _dataset = _complete_event(tmp_path, load_in_4bit=True)
     persisted = {**config, **normalize_worker_provenance_event(event, config)}
     persisted[RESOURCE_PROVENANCE_KEY] = {
         **persisted[RESOURCE_PROVENANCE_KEY],
@@ -245,14 +245,14 @@ def test_hub_valid_repo_ids_keep_exact_resume_provenance(tmp_path, repo_id):
     event = build_worker_provenance_event(
         config,
         SimpleNamespace(
-            config = SimpleNamespace(
-                _name_or_path = repo_id,
-                _commit_hash = "model-commit",
+            config=SimpleNamespace(
+                _name_or_path=repo_id,
+                _commit_hash="model-commit",
             )
         ),
-        model_load_target = str(model),
-        model_load_in_4bit = False,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target=str(model),
+        model_load_in_4bit=False,
+        dataset_loaded_from_exact_snapshot=True,
     )
 
     updates = normalize_worker_provenance_event(event, config)
@@ -268,9 +268,9 @@ def test_loaded_model_metadata_attests_actual_quantized_redirect(tmp_path):
     actual = _shared_setup_5(tmp_path)
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        config = SimpleNamespace(
-            _name_or_path = "org/actual-4bit",
-            _commit_hash = "actual-commit",
+        config=SimpleNamespace(
+            _name_or_path="org/actual-4bit",
+            _commit_hash="actual-commit",
         )
     )
     config = {
@@ -290,6 +290,7 @@ def test_loaded_model_metadata_attests_actual_quantized_redirect(tmp_path):
 
 def test_resume_load_target_validates_redirect_snapshot_against_actual_repo(tmp_path):
     from core.training.training import resolve_training_model_load_target
+
     actual = _shared_setup_5(tmp_path)
 
     assert resolve_training_model_load_target(
@@ -328,10 +329,10 @@ def test_resume_route_restores_attested_actual_model_repo(tmp_path):
         },
     }
     request = TrainingStartRequest(
-        model_name = "org/selected",
-        training_type = "LoRA/QLoRA",
-        format_type = "alpaca",
-        hf_dataset = "org/dataset",
+        model_name="org/selected",
+        training_type="LoRA/QLoRA",
+        format_type="alpaca",
+        hf_dataset="org/dataset",
     )
 
     actual_repo_id, _, _, _, _ = route._prepare_resume_resource_provenance(
@@ -351,9 +352,9 @@ def test_4bit_attestation_rejects_full_precision_selected_snapshot(tmp_path):
     _model_snapshot(tmp_path, "org/selected", "selected-commit")
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        config = SimpleNamespace(
-            _name_or_path = "org/selected",
-            _commit_hash = "selected-commit",
+        config=SimpleNamespace(
+            _name_or_path="org/selected",
+            _commit_hash="selected-commit",
         )
     )
     config = {
@@ -374,10 +375,10 @@ def test_4bit_attestation_accepts_verified_runtime_quantization(tmp_path):
     model_snapshot = _model_snapshot(tmp_path, "org/selected", "selected-commit")
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        is_loaded_in_4bit = True,
-        config = SimpleNamespace(
-            _name_or_path = "org/selected",
-            _commit_hash = "selected-commit",
+        is_loaded_in_4bit=True,
+        config=SimpleNamespace(
+            _name_or_path="org/selected",
+            _commit_hash="selected-commit",
         ),
     )
     config = {
@@ -401,8 +402,8 @@ def test_mlx_native_metadata_attests_unpinned_hub_load(tmp_path):
     model_snapshot = _model_snapshot(tmp_path, "org/model", "model-commit")
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        _hf_repo = "org/model",
-        _unsloth_base_commit_hash = "model-commit",
+        _hf_repo="org/model",
+        _unsloth_base_commit_hash="model-commit",
     )
     config = {
         "model_name": "org/model",
@@ -414,9 +415,9 @@ def test_mlx_native_metadata_attests_unpinned_hub_load(tmp_path):
     event = build_worker_provenance_event(
         config,
         model,
-        model_load_target = "org/model",
-        model_load_in_4bit = False,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/model",
+        model_load_in_4bit=False,
+        dataset_loaded_from_exact_snapshot=True,
     )
     updates = normalize_worker_provenance_event(event, config)
 
@@ -429,19 +430,19 @@ def test_mlx_runtime_4bit_metadata_attests_unpinned_hub_load(tmp_path):
     model_snapshot = _model_snapshot(tmp_path, "org/model", "model-commit")
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        _hf_repo = "org/model",
-        _unsloth_base_commit_hash = "model-commit",
-        _unsloth_quantized_source = "runtime",
-        _unsloth_quantization_policy = {"enabled": True, "bits": 4},
+        _hf_repo="org/model",
+        _unsloth_base_commit_hash="model-commit",
+        _unsloth_quantized_source="runtime",
+        _unsloth_quantization_policy={"enabled": True, "bits": 4},
     )
     config = _shared_setup_6(dataset)
 
     event = build_worker_provenance_event(
         config,
         model,
-        model_load_target = "org/model",
-        model_load_in_4bit = True,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/model",
+        model_load_in_4bit=True,
+        dataset_loaded_from_exact_snapshot=True,
     )
     updates = normalize_worker_provenance_event(event, config)
 
@@ -474,7 +475,7 @@ def _mlx_runtime_4bit_attrs():
 
 
 def _real_mlx_module(attrs):
-    nn = pytest.importorskip("mlx.nn", reason = "MLX is only installed on Apple Silicon")
+    nn = pytest.importorskip("mlx.nn", reason="MLX is only installed on Apple Silicon")
     module = nn.Linear(4, 4)
     for key, value in attrs.items():
         setattr(module, key, value)
@@ -484,9 +485,9 @@ def _real_mlx_module(attrs):
 @pytest.mark.parametrize(
     "make_model",
     [
-        pytest.param(lambda attrs: SimpleNamespace(**attrs), id = "plain-object"),
-        pytest.param(lambda attrs: _MappingModel(**attrs), id = "dict-subclass"),
-        pytest.param(_real_mlx_module, id = "real-mlx-module"),
+        pytest.param(lambda attrs: SimpleNamespace(**attrs), id="plain-object"),
+        pytest.param(lambda attrs: _MappingModel(**attrs), id="dict-subclass"),
+        pytest.param(_real_mlx_module, id="real-mlx-module"),
     ],
 )
 def test_mlx_runtime_4bit_attests_however_the_model_stores_metadata(tmp_path, make_model):
@@ -503,9 +504,9 @@ def test_mlx_runtime_4bit_attests_however_the_model_stores_metadata(tmp_path, ma
     event = build_worker_provenance_event(
         config,
         make_model(_mlx_runtime_4bit_attrs()),
-        model_load_target = "org/model",
-        model_load_in_4bit = True,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/model",
+        model_load_in_4bit=True,
+        dataset_loaded_from_exact_snapshot=True,
     )
     updates = normalize_worker_provenance_event(event, config)
 
@@ -528,19 +529,19 @@ def test_mlx_runtime_4bit_attestation_requires_exact_runtime_policy(tmp_path, so
     _model_snapshot(tmp_path, "org/model", "model-commit")
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        _hf_repo = "org/model",
-        _unsloth_base_commit_hash = "model-commit",
-        _unsloth_quantized_source = source,
-        _unsloth_quantization_policy = policy,
+        _hf_repo="org/model",
+        _unsloth_base_commit_hash="model-commit",
+        _unsloth_quantized_source=source,
+        _unsloth_quantization_policy=policy,
     )
     config = _shared_setup_6(dataset)
 
     event = build_worker_provenance_event(
         config,
         model,
-        model_load_target = "org/model",
-        model_load_in_4bit = True,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/model",
+        model_load_in_4bit=True,
+        dataset_loaded_from_exact_snapshot=True,
     )
 
     assert event["model"]["status"] == "incomplete"
@@ -550,7 +551,7 @@ def test_mlx_top_level_quantization_attests_prequantized_snapshot(tmp_path):
     model_snapshot = _model_snapshot(tmp_path, "org/model", "model-commit")
     (model_snapshot / "config.json").write_text(
         json.dumps({"quantization": {"bits": 4, "group_size": 64}}),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     config, event = _shared_setup_2(model_snapshot, tmp_path)
     updates = normalize_worker_provenance_event(event, config)
@@ -563,7 +564,7 @@ def test_mlx_top_level_8bit_quantization_does_not_attest_as_4bit(tmp_path):
     model_snapshot = _model_snapshot(tmp_path, "org/model", "model-commit")
     (model_snapshot / "config.json").write_text(
         json.dumps({"quantization": {"bits": 8, "group_size": 64}}),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     config, event = _shared_setup_2(model_snapshot, tmp_path)
 
@@ -582,7 +583,7 @@ def test_mlx_conflicting_quantization_widths_do_not_attest_as_4bit(tmp_path):
                 }
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     config, event = _shared_setup_2(model_snapshot, tmp_path)
 
@@ -590,12 +591,12 @@ def test_mlx_conflicting_quantization_widths_do_not_attest_as_4bit(tmp_path):
 
 
 def test_config_only_snapshot_cannot_attest_model_weights(tmp_path):
-    _model_snapshot(tmp_path, "org/model", "config-only", weights = False)
+    _model_snapshot(tmp_path, "org/model", "config-only", weights=False)
     dataset = _dataset_snapshot(tmp_path, "org/dataset", "dataset-commit")
     model = SimpleNamespace(
-        config = SimpleNamespace(
-            _name_or_path = "org/model",
-            _commit_hash = "config-only",
+        config=SimpleNamespace(
+            _name_or_path="org/model",
+            _commit_hash="config-only",
         )
     )
     config = {
@@ -608,9 +609,9 @@ def test_config_only_snapshot_cannot_attest_model_weights(tmp_path):
     event = build_worker_provenance_event(
         config,
         model,
-        model_load_target = "org/model",
-        model_load_in_4bit = False,
-        dataset_loaded_from_exact_snapshot = True,
+        model_load_target="org/model",
+        model_load_in_4bit=False,
+        dataset_loaded_from_exact_snapshot=True,
     )
 
     assert event["model"]["status"] == "incomplete"
@@ -625,7 +626,7 @@ def test_exact_model_snapshot_accepts_own_blob_symlink(tmp_path):
         tmp_path,
         "org/model",
         "blob-backed",
-        weights = False,
+        weights=False,
     )
     blob = snapshot.parent.parent / "blobs" / "weight-blob"
     blob.parent.mkdir()
@@ -638,10 +639,10 @@ def test_exact_model_snapshot_accepts_own_blob_symlink(tmp_path):
 def _shared_store_blob_symlink(repo: Path, link: Path, payload: bytes) -> Path:
     sha = "c791637d" * 8
     shared = repo.parent / "blobs" / sha[:2] / sha
-    shared.parent.mkdir(parents = True, exist_ok = True)
+    shared.parent.mkdir(parents=True, exist_ok=True)
     shared.write_bytes(payload)
     (shared.parent / f"{sha}.lock").touch()
-    (repo / "blobs").mkdir(exist_ok = True)
+    (repo / "blobs").mkdir(exist_ok=True)
     repo_blob = repo / "blobs" / ("fe5874" + "0" * 58)
     repo_blob.symlink_to(os.path.relpath(shared, repo_blob.parent))
     link.symlink_to(os.path.relpath(repo_blob, link.parent))
@@ -649,7 +650,7 @@ def _shared_store_blob_symlink(repo: Path, link: Path, payload: bytes) -> Path:
 
 
 def test_exact_model_snapshot_accepts_hub_shared_blob_store(tmp_path):
-    snapshot = _model_snapshot(tmp_path, "org/model", "xet-backed", weights = False)
+    snapshot = _model_snapshot(tmp_path, "org/model", "xet-backed", weights=False)
     _shared_store_blob_symlink(snapshot.parent.parent, snapshot / "model.safetensors", b"weights")
 
     assert exact_model_snapshot_path(str(snapshot), "org/model") == str(snapshot.resolve())
@@ -659,12 +660,12 @@ def test_exact_model_snapshot_accepts_hub_shared_blob_store(tmp_path):
 def test_exact_model_snapshot_rejects_blob_symlink_escaping_repo(
     tmp_path, tmp_path_factory, target
 ):
-    snapshot = _model_snapshot(tmp_path, "org/model", "escaping", weights = False)
+    snapshot = _model_snapshot(tmp_path, "org/model", "escaping", weights=False)
     if target == "outside-cache":
         escaped = tmp_path_factory.mktemp("elsewhere") / "blobs" / "c7" / "weights"
     else:
         escaped = tmp_path / "models--org--other" / "blobs" / "weights"
-    escaped.parent.mkdir(parents = True)
+    escaped.parent.mkdir(parents=True)
     escaped.write_bytes(b"weights")
     repo_blob = snapshot.parent.parent / "blobs" / "weight-blob"
     repo_blob.parent.mkdir()
@@ -703,7 +704,7 @@ def test_exact_model_snapshot_rejects_symlinked_directory(tmp_path):
     external.mkdir()
     (snapshot / "external-directory").symlink_to(
         external,
-        target_is_directory = True,
+        target_is_directory=True,
     )
 
     assert exact_model_snapshot_path(str(snapshot), "org/model") is None
@@ -728,7 +729,7 @@ def test_exact_model_snapshot_rejects_walk_error(tmp_path):
 
     with patch(
         "core.training.provenance.os.walk",
-        side_effect = PermissionError("unreadable"),
+        side_effect=PermissionError("unreadable"),
     ):
         assert exact_model_snapshot_path(str(snapshot), "org/model") is None
 
@@ -775,9 +776,9 @@ def test_exact_dataset_snapshot_rejects_unreadable_file(tmp_path):
 
 def test_dataset_snapshot_without_data_cannot_attest_provenance(tmp_path):
     snapshot = tmp_path / "datasets--org--dataset" / "snapshots" / "empty"
-    snapshot.mkdir(parents = True)
-    (snapshot / "README.md").write_text("metadata only", encoding = "utf-8")
-    (snapshot / "dataset_infos.json").write_text("{}", encoding = "utf-8")
+    snapshot.mkdir(parents=True)
+    (snapshot / "README.md").write_text("metadata only", encoding="utf-8")
+    (snapshot / "dataset_infos.json").write_text("{}", encoding="utf-8")
 
     assert exact_dataset_snapshot_path(str(snapshot), "org/dataset") is None
 
@@ -803,7 +804,7 @@ def test_resume_revalidates_dataset_payload(tmp_path):
 )
 def test_supported_dataset_payloads_can_attest_exact_snapshot(tmp_path, filename):
     snapshot = tmp_path / "datasets--org--dataset" / "snapshots" / "payload"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / filename).write_bytes(b"payload")
 
     assert exact_dataset_snapshot_path(str(snapshot), "org/dataset") == str(snapshot.resolve())
@@ -811,8 +812,8 @@ def test_supported_dataset_payloads_can_attest_exact_snapshot(tmp_path, filename
 
 def _loaded_dataset(*sources: str, num_bytes: int = 7):
     return SimpleNamespace(
-        info = SimpleNamespace(
-            download_checksums = {
+        info=SimpleNamespace(
+            download_checksums={
                 source: {"num_bytes": num_bytes, "checksum": None} for source in sources
             }
         )
@@ -844,7 +845,7 @@ def test_loaded_hub_dataset_rejects_source_size_mismatch(tmp_path):
     snapshot = _shared_setup_1(tmp_path)
     loaded = _loaded_dataset(
         str(snapshot / "train.parquet"),
-        num_bytes = 6,
+        num_bytes=6,
     )
 
     assert attest_loaded_dataset("org/dataset", loaded) == (None, "dataset_snapshot_unavailable")
@@ -854,8 +855,8 @@ def test_loaded_hub_dataset_rejects_source_size_mismatch(tmp_path):
 def test_loaded_hub_dataset_rejects_invalid_recorded_size(tmp_path, num_bytes):
     snapshot = _shared_setup_1(tmp_path)
     loaded = SimpleNamespace(
-        info = SimpleNamespace(
-            download_checksums = {
+        info=SimpleNamespace(
+            download_checksums={
                 str(snapshot / "train.parquet"): {
                     "num_bytes": num_bytes,
                     "checksum": None,
@@ -871,7 +872,7 @@ def test_loaded_hub_dataset_accepts_snapshot_blob_symlink(tmp_path):
     repo = tmp_path / "datasets--org--dataset"
     snapshot = repo / "snapshots" / "dataset-commit"
     blobs = repo / "blobs"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     blobs.mkdir()
     (blobs / "payload").write_bytes(b"dataset")
     (snapshot / "train.parquet").symlink_to(os.path.relpath(blobs / "payload", snapshot))
@@ -883,7 +884,7 @@ def test_loaded_hub_dataset_accepts_snapshot_blob_symlink(tmp_path):
 def test_loaded_hub_dataset_accepts_hub_shared_blob_store(tmp_path):
     repo = tmp_path / "datasets--org--dataset"
     snapshot = repo / "snapshots" / "dataset-commit"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     _shared_store_blob_symlink(repo, snapshot / "train.parquet", b"dataset")
     loaded = _loaded_dataset(str(snapshot / "train.parquet"))
 
@@ -987,6 +988,7 @@ def test_loaded_hub_dataset_rejects_encoded_windows_traversal(tmp_path):
 )
 def test_dataset_snapshot_source_rejects_cross_platform_paths(tmp_path, source_path):
     from core.training import provenance
+
     snapshot = _shared_setup_1(tmp_path)
 
     assert provenance._dataset_snapshot_contains(str(snapshot), source_path) is False
@@ -1033,7 +1035,7 @@ def test_shared_hf_loader_marks_only_successful_exact_dataset_load(tmp_path):
     }
     cached = object()
 
-    with patch.object(worker, "_load_cached_dataset_for_config", return_value = cached):
+    with patch.object(worker, "_load_cached_dataset_for_config", return_value=cached):
         loaded, eval_dataset = worker._load_hf_train_and_eval_datasets(
             config,
             None,
@@ -1099,9 +1101,9 @@ def test_first_remote_hub_load_produces_resumable_provenance(tmp_path):
     event = build_worker_provenance_event(
         config,
         object(),
-        model_load_target = str(model),
-        model_load_in_4bit = False,
-        dataset_loaded_from_exact_snapshot = config["_dataset_loaded_from_exact_snapshot"],
+        model_load_target=str(model),
+        model_load_in_4bit=False,
+        dataset_loaded_from_exact_snapshot=config["_dataset_loaded_from_exact_snapshot"],
     )
     persisted = {
         **config,
@@ -1148,12 +1150,12 @@ def test_unattested_current_provenance_without_hub_resources_can_resume(status):
         {"status": "pending"},
         {"version": 2, "status": "pending"},
     ],
-    ids = ["missing-version", "wrong-version"],
+    ids=["missing-version", "wrong-version"],
 )
 def test_malformed_pending_provenance_is_rejected_consistently(marker):
     config = {RESOURCE_PROVENANCE_KEY: marker}
 
-    with pytest.raises(ExactResumeResourcesUnavailable, match = "provenance is invalid"):
+    with pytest.raises(ExactResumeResourcesUnavailable, match="provenance is invalid"):
         exact_resume_resource_requirements(config)
     assert resource_provenance_allows_resume(config) is False
 
@@ -1189,7 +1191,7 @@ def test_current_provenance_enforces_only_hub_resources(tmp_path):
 
 
 def test_attested_hub_identity_cannot_be_shadowed_by_relative_local_path(tmp_path, monkeypatch):
-    (tmp_path / "org" / "model").mkdir(parents = True)
+    (tmp_path / "org" / "model").mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
     marker = {
         "version": 1,
@@ -1213,7 +1215,7 @@ def test_attested_hub_identity_cannot_be_shadowed_by_relative_local_path(tmp_pat
 
     with pytest.raises(
         ExactResumeResourcesUnavailable,
-        match = "model revision used by this run was not attested",
+        match="model revision used by this run was not attested",
     ):
         exact_resume_resource_requirements(config)
     assert resource_provenance_allows_resume(config) is False
@@ -1326,7 +1328,7 @@ def test_parent_persists_sanitized_attested_config_and_updates_respawn_state(tmp
         saved.append((run_id, json.loads(config_json)))
         return True
 
-    with patch("storage.studio_db.update_run_config_json", side_effect = persist):
+    with patch("storage.studio_db.update_run_config_json", side_effect=persist):
         backend._handle_resource_provenance_event(event)
 
     assert backend._db_config["model_snapshot_path"] == str(model.resolve())
@@ -1355,7 +1357,7 @@ def test_incomplete_worker_event_clears_stale_parent_pins(tmp_path):
     }
     backend._last_full_config = dict(backend._db_config)
 
-    with patch("storage.studio_db.update_run_config_json", return_value = True):
+    with patch("storage.studio_db.update_run_config_json", return_value=True):
         backend._handle_resource_provenance_event(
             incomplete_worker_provenance_event(
                 "model_cache_fallback",
@@ -1375,26 +1377,26 @@ def test_db_config_update_only_mutates_running_run(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path / "studio-home"))
     monkeypatch.setattr(studio_db, "_schema_ready", set())
     studio_db.create_run(
-        id = "run-db",
-        model_name = "org/model",
-        dataset_name = "org/dataset",
-        config_json = '{"before":true}',
-        started_at = "2026-01-01T00:00:00Z",
-        total_steps = 10,
+        id="run-db",
+        model_name="org/model",
+        dataset_name="org/dataset",
+        config_json='{"before":true}',
+        started_at="2026-01-01T00:00:00Z",
+        total_steps=10,
     )
 
     assert studio_db.update_run_config_json("run-db", '{"after":true}') is True
     assert json.loads(studio_db.get_run("run-db")["config_json"]) == {"after": True}
 
     studio_db.finish_run(
-        id = "run-db",
-        status = "stopped",
-        ended_at = "2026-01-01T00:01:00Z",
-        final_step = 1,
-        final_loss = 1.0,
-        duration_seconds = 60.0,
-        loss_sparkline = "[]",
-        config_json = '{"final":true}',
+        id="run-db",
+        status="stopped",
+        ended_at="2026-01-01T00:01:00Z",
+        final_step=1,
+        final_loss=1.0,
+        duration_seconds=60.0,
+        loss_sparkline="[]",
+        config_json='{"final":true}',
     )
     assert studio_db.update_run_config_json("run-db", '{"late":true}') is False
     assert json.loads(studio_db.get_run("run-db")["config_json"]) == {"final": True}
@@ -1418,7 +1420,7 @@ def test_finalization_persists_provenance_after_event_update_failure(tmp_path):
     with (
         patch(
             "storage.studio_db.update_run_config_json",
-            side_effect = RuntimeError("database is locked"),
+            side_effect=RuntimeError("database is locked"),
         ),
         patch("core.training.training.time.sleep"),
     ):
@@ -1426,9 +1428,9 @@ def test_finalization_persists_provenance_after_event_update_failure(tmp_path):
 
     with patch(
         "storage.studio_db.finish_run",
-        side_effect = lambda **kwargs: finished.append(kwargs),
+        side_effect=lambda **kwargs: finished.append(kwargs),
     ):
-        backend._finalize_run_in_db(status = "stopped")
+        backend._finalize_run_in_db(status="stopped")
 
     persisted = json.loads(finished[0]["config_json"])
     assert persisted[RESOURCE_PROVENANCE_KEY]["status"] == "complete"
@@ -1448,7 +1450,7 @@ def test_finalization_waits_for_inflight_provenance(tmp_path):
 
     def normalize(event_value, config_value):
         entered.set()
-        assert release.wait(timeout = 5)
+        assert release.wait(timeout=5)
         return normalize_worker_provenance_event(event_value, config_value)
 
     def finish(**kwargs):
@@ -1458,29 +1460,29 @@ def test_finalization_waits_for_inflight_provenance(tmp_path):
     with (
         patch(
             "core.training.provenance.normalize_worker_provenance_event",
-            side_effect = normalize,
+            side_effect=normalize,
         ),
-        patch("storage.studio_db.update_run_config_json", return_value = True),
+        patch("storage.studio_db.update_run_config_json", return_value=True),
         patch(
             "storage.studio_db.finish_run",
-            side_effect = finish,
+            side_effect=finish,
         ),
     ):
         provenance_thread = threading.Thread(
-            target = backend._handle_resource_provenance_event,
-            args = (event,),
+            target=backend._handle_resource_provenance_event,
+            args=(event,),
         )
         provenance_thread.start()
-        assert entered.wait(timeout = 5)
+        assert entered.wait(timeout=5)
         finalize_thread = threading.Thread(
-            target = backend._finalize_run_in_db,
-            kwargs = {"status": "stopped"},
+            target=backend._finalize_run_in_db,
+            kwargs={"status": "stopped"},
         )
         finalize_thread.start()
-        assert not finish_entered.wait(timeout = 0.1)
+        assert not finish_entered.wait(timeout=0.1)
         release.set()
-        provenance_thread.join(timeout = 5)
-        finalize_thread.join(timeout = 5)
+        provenance_thread.join(timeout=5)
+        finalize_thread.join(timeout=5)
 
     assert not provenance_thread.is_alive()
     assert not finalize_thread.is_alive()
@@ -1498,7 +1500,7 @@ def test_provenance_continues_after_failed_finalization(tmp_path):
 
     def fail_finish(**_kwargs):
         finish_entered.set()
-        assert release_finish.wait(timeout = 5)
+        assert release_finish.wait(timeout=5)
         raise RuntimeError("database is locked")
 
     def apply_provenance():
@@ -1506,22 +1508,22 @@ def test_provenance_continues_after_failed_finalization(tmp_path):
         provenance_done.set()
 
     with (
-        patch("storage.studio_db.finish_run", side_effect = fail_finish),
-        patch("storage.studio_db.update_run_config_json", return_value = True) as update,
+        patch("storage.studio_db.finish_run", side_effect=fail_finish),
+        patch("storage.studio_db.update_run_config_json", return_value=True) as update,
         patch("core.training.training.time.sleep"),
     ):
         finalize_thread = threading.Thread(
-            target = backend._finalize_run_in_db,
-            kwargs = {"status": "stopped"},
+            target=backend._finalize_run_in_db,
+            kwargs={"status": "stopped"},
         )
         finalize_thread.start()
-        assert finish_entered.wait(timeout = 5)
-        provenance_thread = threading.Thread(target = apply_provenance)
+        assert finish_entered.wait(timeout=5)
+        provenance_thread = threading.Thread(target=apply_provenance)
         provenance_thread.start()
-        assert not provenance_done.wait(timeout = 0.1)
+        assert not provenance_done.wait(timeout=0.1)
         release_finish.set()
-        finalize_thread.join(timeout = 5)
-        provenance_thread.join(timeout = 5)
+        finalize_thread.join(timeout=5)
+        provenance_thread.join(timeout=5)
 
     assert not finalize_thread.is_alive()
     assert not provenance_thread.is_alive()

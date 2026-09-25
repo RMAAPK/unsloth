@@ -35,7 +35,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "kaggle-t4-notebook-ci.yml"
-TEXT = WORKFLOW.read_text(encoding = "utf-8")
+TEXT = WORKFLOW.read_text(encoding="utf-8")
 DOC = yaml.safe_load(TEXT)
 TRIGGERS = DOC.get(True) or DOC.get("on")
 
@@ -76,14 +76,14 @@ def _nightly_legs():
             "grpo",
             "the schedule must select the leg; a nightly that runs the wired set "
             "is just another copy of the per-PR run",
-            id = "the_schedule_runs_the_grpo_leg",
+            id="the_schedule_runs_the_grpo_leg",
         ),
         # multi_gpu is nightly for makespan cost (+172.4s, +39.7s in A/B), not instability.
         pytest.param(
             "multi_gpu",
             "the nightly no longer runs multi_gpu, so unsloth's DEVICE_COUNT > 1 "
             "code path is covered by nothing: every other leg is pinned to one card",
-            id = "the_schedule_also_runs_the_multi_gpu_leg",
+            id="the_schedule_also_runs_the_multi_gpu_leg",
         ),
         # latest_compile is nightly because it does not FIT: 1323.0s at 12.73GB peak needs a
         # whole card, and the per-PR kernel's only slack is gpu1's 776.3s idle block.
@@ -92,7 +92,7 @@ def _nightly_legs():
             "the nightly no longer runs latest_compile, so nothing anywhere loads "
             "gemma-4-E2B-it on the newest transformers and trl, which is the "
             "pairing that found unsloth-zoo #1103",
-            id = "the_schedule_also_runs_the_latest_compile_leg",
+            id="the_schedule_also_runs_the_latest_compile_leg",
         ),
     ],
 )
@@ -179,9 +179,9 @@ def _build_step():
 def _compose_argv(
     event,
     tmp_path,
-    legs_input = "",
-    studio_concurrent = "",
-    github_output = "",
+    legs_input="",
+    studio_concurrent="",
+    github_output="",
 ):
     """Run the build step's shell body and return the argv it would invoke.
 
@@ -217,30 +217,30 @@ def _compose_argv(
     assert "${{" not in body, f"an unmodelled expression survives: {body}"
 
     bindir = tmp_path / "bin"
-    bindir.mkdir(parents = True, exist_ok = True)
+    bindir.mkdir(parents=True, exist_ok=True)
     argvfile = tmp_path / "argv.json"
     (bindir / "python").write_text(
         "#!/usr/bin/env python3\n"
         "import json, sys\n"
         f"open({str(argvfile)!r}, 'w').write(json.dumps(sys.argv[1:]))\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     (bindir / "python").chmod(0o755)
 
-    env = dict(os.environ, PATH = f"{bindir}{os.pathsep}{os.environ['PATH']}", **env_values)
+    env = dict(os.environ, PATH=f"{bindir}{os.pathsep}{os.environ['PATH']}", **env_values)
     # A real file, so the rules read what the step published, not what it printed.
     env["GITHUB_OUTPUT"] = github_output or str(tmp_path / "github_output")
     # `bash -e`, which is what GitHub runs a `run:` block under on Linux.
     proc = subprocess.run(
         ["bash", "-e", "-c", body],
-        cwd = ROOT,
-        env = env,
-        capture_output = True,
-        text = True,
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
     )
     assert proc.returncode == 0, f"the step body itself failed:\n{proc.stderr}"
     assert argvfile.exists(), f"the body never invoked python:\n{proc.stdout}\n{proc.stderr}"
-    argv = json.loads(argvfile.read_text(encoding = "utf-8"))
+    argv = json.loads(argvfile.read_text(encoding="utf-8"))
     assert argv and argv[0].endswith("build_kernel.py"), argv
     return argv, proc.stdout + proc.stderr, shlex.join(argv)
 
@@ -253,9 +253,9 @@ def _run_builder(argv, tmp_path):
     assert out != argv, "the step no longer writes to `kernel`, so this rule writes into the repo"
     return subprocess.run(
         [sys.executable, *out],
-        cwd = ROOT,
-        capture_output = True,
-        text = True,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
     )
 
 
@@ -325,7 +325,7 @@ def test_a_leg_list_dispatch_is_told_studio_is_not_aboard(tmp_path):
 def test_an_explicit_leg_dispatch_takes_the_same_path_as_the_nightly(tmp_path):
     """`legs` is a dispatch input as well as a schedule fallback and reaches
     the same branch, so a hand dispatch hit the identical build failure."""
-    argv, _, printed = _compose_argv("workflow_dispatch", tmp_path, legs_input = "grpo")
+    argv, _, printed = _compose_argv("workflow_dispatch", tmp_path, legs_input="grpo")
     assert "--with-studio" not in argv, printed
     proc = _run_builder(argv, tmp_path)
     assert proc.returncode == 0, f"{printed}\n{proc.stdout}\n{proc.stderr}"
@@ -339,7 +339,7 @@ def test_studio_concurrent_false_actually_removes_the_flag(tmp_path):
     `false` and finding the flag gone says the switch works, and that dispatch
     is the only way Studio's own two-card device selection is under test.
     """
-    off, _, printed = _compose_argv("workflow_dispatch", tmp_path, studio_concurrent = "false")
+    off, _, printed = _compose_argv("workflow_dispatch", tmp_path, studio_concurrent="false")
     assert "--studio-concurrent" not in off, (
         f"studio_concurrent=false still shares a card, so the two-card Studio "
         f"dispatch is unreachable: {printed}"
@@ -365,15 +365,15 @@ def test_the_studio_reporter_is_told_when_studio_is_not_aboard(tmp_path):
     """
     for event, expected in (("schedule", "false"), ("push", "true")):
         outfile = tmp_path / f"out_{event}"
-        outfile.write_text("", encoding = "utf-8")
+        outfile.write_text("", encoding="utf-8")
         argv, log, _ = _compose_argv(
             event,
             tmp_path / event,
-            github_output = str(outfile),
+            github_output=str(outfile),
         )
         written = dict(
             line.split("=", 1)
-            for line in outfile.read_text(encoding = "utf-8").splitlines()
+            for line in outfile.read_text(encoding="utf-8").splitlines()
             if "=" in line
         )
         assert written.get("studio") == expected, (

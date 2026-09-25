@@ -34,7 +34,7 @@ EDGE_SOCKET = "/com.microsoft.Edge.XXXXXX/SingletonSocket"
 
 
 def _workflow_tmpdirs() -> dict[str, str]:
-    text = WORKFLOW.read_text(encoding = "utf-8")
+    text = WORKFLOW.read_text(encoding="utf-8")
     found = dict(re.findall(r'echo "(TMPDIR|TMP|TEMP)=([^"]+)" >> "\$GITHUB_ENV"', text))
     assert set(found) == {
         "TMPDIR",
@@ -77,10 +77,10 @@ def _fits(path: Path, limit: int) -> bool:
     return len(os.fsencode(path)) + len(EDGE_SOCKET) <= limit
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "Chrome's singleton is a named pipe on Windows")
+@pytest.mark.skipif(os.name == "nt", reason="Chrome's singleton is a named pipe on Windows")
 def test_the_local_runner_uses_a_short_inherited_temp_dir(monkeypatch):
     runner = _runner(monkeypatch)
-    short = Path(tempfile.mkdtemp(prefix = "s", dir = "/tmp"))
+    short = Path(tempfile.mkdtemp(prefix="s", dir="/tmp"))
     try:
         monkeypatch.setattr(runner.tempfile, "tempdir", str(short))
         first = runner.browser_tmpdir()
@@ -89,10 +89,10 @@ def test_the_local_runner_uses_a_short_inherited_temp_dir(monkeypatch):
         assert first != second, "two runs must not share a temp dir"
         assert _fits(first, runner.sun_path_max())
     finally:
-        shutil.rmtree(short, ignore_errors = True)
+        shutil.rmtree(short, ignore_errors=True)
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "Chrome's singleton is a named pipe on Windows")
+@pytest.mark.skipif(os.name == "nt", reason="Chrome's singleton is a named pipe on Windows")
 def test_the_local_runner_falls_back_when_the_inherited_temp_dir_is_too_long(tmp_path, monkeypatch):
     runner = _runner(monkeypatch)
     deep = tmp_path / ("d" * 80)
@@ -104,31 +104,31 @@ def test_the_local_runner_falls_back_when_the_inherited_temp_dir_is_too_long(tmp
         assert made.parent == Path("/tmp")
         assert not any(deep.iterdir()), "the rejected temp dir was left behind"
     finally:
-        shutil.rmtree(made, ignore_errors = True)
+        shutil.rmtree(made, ignore_errors=True)
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "Chrome's singleton is a named pipe on Windows")
+@pytest.mark.skipif(os.name == "nt", reason="Chrome's singleton is a named pipe on Windows")
 def test_the_local_runner_never_uses_a_temp_dir_inside_the_checkout(monkeypatch):
     runner = _runner(monkeypatch)
-    inside = Path(tempfile.mkdtemp(prefix = ".t", dir = ROOT))
+    inside = Path(tempfile.mkdtemp(prefix=".t", dir=ROOT))
     try:
         monkeypatch.setattr(runner.tempfile, "tempdir", str(inside))
         made = runner.browser_tmpdir()
         try:
             assert ROOT not in made.resolve().parents, f"{made} is under the checkout"
         finally:
-            shutil.rmtree(made, ignore_errors = True)
+            shutil.rmtree(made, ignore_errors=True)
     finally:
-        shutil.rmtree(inside, ignore_errors = True)
+        shutil.rmtree(inside, ignore_errors=True)
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "Chrome's singleton is a named pipe on Windows")
+@pytest.mark.skipif(os.name == "nt", reason="Chrome's singleton is a named pipe on Windows")
 def test_the_local_runner_applies_the_macos_limit_on_macos(monkeypatch):
     """A path of 104 to 107 bytes fits Linux's sun_path and not macOS's, so it must fall back there."""
     runner = _runner(monkeypatch)
     # mkdtemp adds "/uqv-" plus 8 characters: pick the parent so the socket path lands on 105.
     parent_len = 105 - len(EDGE_SOCKET) - len("/uqv-") - 8
-    base = Path(tempfile.mkdtemp(prefix = "m", dir = "/tmp"))
+    base = Path(tempfile.mkdtemp(prefix="m", dir="/tmp"))
     try:
         parent = Path(str(base) + "/" + "p" * (parent_len - len(str(base)) - 1))
         parent.mkdir()
@@ -145,12 +145,12 @@ def test_the_local_runner_applies_the_macos_limit_on_macos(monkeypatch):
             ), "105 bytes is over macOS's limit and must fall back"
             assert _fits(on_macos, 103)
         finally:
-            shutil.rmtree(on_macos, ignore_errors = True)
+            shutil.rmtree(on_macos, ignore_errors=True)
     finally:
-        shutil.rmtree(base, ignore_errors = True)
+        shutil.rmtree(base, ignore_errors=True)
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "Chrome's singleton is a named pipe on Windows")
+@pytest.mark.skipif(os.name == "nt", reason="Chrome's singleton is a named pipe on Windows")
 def test_the_local_runner_sizes_the_path_for_edge_not_just_chrome(monkeypatch):
     """A temp dir that puts Chrome's socket at exactly 107 bytes puts Edge's at 108, which Edge
     rejects. The runner launches both, so it must fall back."""
@@ -158,7 +158,7 @@ def test_the_local_runner_sizes_the_path_for_edge_not_just_chrome(monkeypatch):
     assert runner.LONGEST_SOCKET == EDGE_SOCKET
     assert len(EDGE_SOCKET) == len(CHROME_SOCKET) + 1
     parent_len = 107 - len(CHROME_SOCKET) - len("/uqv-") - 8
-    base = Path(tempfile.mkdtemp(prefix = "e", dir = "/tmp"))
+    base = Path(tempfile.mkdtemp(prefix="e", dir="/tmp"))
     try:
         parent = Path(str(base) + "/" + "p" * (parent_len - len(str(base)) - 1))
         parent.mkdir()
@@ -170,6 +170,6 @@ def test_the_local_runner_sizes_the_path_for_edge_not_just_chrome(monkeypatch):
             assert made.parent == Path("/tmp"), "a path that only fits Chrome was kept for Edge"
             assert _fits(made, 107)
         finally:
-            shutil.rmtree(made, ignore_errors = True)
+            shutil.rmtree(made, ignore_errors=True)
     finally:
-        shutil.rmtree(base, ignore_errors = True)
+        shutil.rmtree(base, ignore_errors=True)

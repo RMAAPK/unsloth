@@ -23,7 +23,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_SH = REPO_ROOT / "docker" / "build.sh"
 
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason = "needs bash")
+pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
 
 UNSLOTH_SHA = "a" * 40
 ZOO_SHA = "b" * 40
@@ -31,7 +31,7 @@ NB_SHA = "c" * 40
 
 
 def _stub(path: Path, body: str) -> None:
-    path.write_text("#!/usr/bin/env bash\n" + body, encoding = "utf-8")
+    path.write_text("#!/usr/bin/env bash\n" + body, encoding="utf-8")
     path.chmod(0o755)
 
 
@@ -56,13 +56,13 @@ def _run(
     env.update(env_extra or {})
     proc = subprocess.run(
         ["bash", str(BUILD_SH)],
-        env = env,
-        capture_output = True,
-        text = True,
-        cwd = str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path),
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    argv = args_file.read_text(encoding = "utf-8").splitlines() if args_file.exists() else []
+    argv = args_file.read_text(encoding="utf-8").splitlines() if args_file.exists() else []
     return proc, argv
 
 
@@ -101,14 +101,14 @@ def test_the_default_main_refs_are_frozen_to_commits(tmp_path):
 def test_the_smoke_test_message_names_the_build_hosts_own_gpu(tmp_path):
     """It named a B200 on every host, including the ones that have no NVIDIA GPU."""
     proc, _argv = _run(
-        tmp_path, LS_REMOTE_STUB, stubs = {"nvidia-smi": 'echo "NVIDIA GeForce RTX 3090"\n'}
+        tmp_path, LS_REMOTE_STUB, stubs={"nvidia-smi": 'echo "NVIDIA GeForce RTX 3090"\n'}
     )
     assert "RTX 3090" in proc.stdout, proc.stdout
     assert "B200" not in proc.stdout and "sm_100" not in proc.stdout
 
 
 def test_the_smoke_test_message_claims_no_gpu_when_there_is_none(tmp_path):
-    proc, _argv = _run(tmp_path, LS_REMOTE_STUB, stubs = {"nvidia-smi": "exit 9\n"})
+    proc, _argv = _run(tmp_path, LS_REMOTE_STUB, stubs={"nvidia-smi": "exit 9\n"})
     assert "Smoke test on this host:" in proc.stdout, proc.stdout
 
 
@@ -117,7 +117,7 @@ def test_a_failing_gpu_query_is_not_shown_as_a_gpu_name(tmp_path):
     proc, _argv = _run(
         tmp_path,
         LS_REMOTE_STUB,
-        stubs = {
+        stubs={
             "nvidia-smi": 'echo "NVIDIA-SMI has failed because it could not communicate"; exit 9\n'
         },
     )

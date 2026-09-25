@@ -59,10 +59,10 @@ from hub.services.models import (
 router = APIRouter()
 
 
-@router.get("/local", response_model = LocalModelListResponse)
+@router.get("/local", response_model=LocalModelListResponse)
 async def list_local_models(
     models_dir: str = Query(
-        default = "./models", description = "Directory to scan for local model folders"
+        default="./models", description="Directory to scan for local model folders"
     ),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -73,16 +73,16 @@ async def list_local_models(
         payload = await local_inventory.list_local_models_response(models_dir)
     except HTTPException as error:
         raise HTTPException(
-            status_code = error.status_code,
-            detail = redact_inventory_error_detail(error.detail, via_api_key = via_api_key),
-            headers = error.headers,
+            status_code=error.status_code,
+            detail=redact_inventory_error_detail(error.detail, via_api_key=via_api_key),
+            headers=error.headers,
         ) from error
-    return redact_inventory_host_paths(payload, via_api_key = via_api_key)
+    return redact_inventory_host_paths(payload, via_api_key=via_api_key)
 
 
 # Plain def, not async: synchronous SQLite and filesystem work runs in FastAPI's thread pool instead
 # of blocking the event loop.
-@router.get("/scan-folders", response_model = ScanFoldersResponse)
+@router.get("/scan-folders", response_model=ScanFoldersResponse)
 def get_scan_folders(
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -91,14 +91,14 @@ def get_scan_folders(
         payload = local_inventory.get_scan_folders_response()
     except HTTPException as error:
         raise HTTPException(
-            status_code = error.status_code,
-            detail = redact_inventory_error_detail(error.detail, via_api_key = via_api_key),
-            headers = error.headers,
+            status_code=error.status_code,
+            detail=redact_inventory_error_detail(error.detail, via_api_key=via_api_key),
+            headers=error.headers,
         ) from error
-    return redact_inventory_host_paths(payload, via_api_key = via_api_key)
+    return redact_inventory_host_paths(payload, via_api_key=via_api_key)
 
 
-@router.post("/scan-folders", response_model = ScanFolderInfo, status_code = 201)
+@router.post("/scan-folders", response_model=ScanFolderInfo, status_code=201)
 def add_scan_folder_endpoint(
     body: AddScanFolderRequest,
     current_subject: str = Depends(get_current_subject),
@@ -111,21 +111,21 @@ def add_scan_folder_endpoint(
         payload = local_inventory.add_scan_folder_response(body.path)
     except HTTPException as error:
         raise HTTPException(
-            status_code = error.status_code,
-            detail = redact_inventory_error_detail(error.detail, via_api_key = via_api_key),
-            headers = error.headers,
+            status_code=error.status_code,
+            detail=redact_inventory_error_detail(error.detail, via_api_key=via_api_key),
+            headers=error.headers,
         ) from error
-    return redact_inventory_host_paths(payload, via_api_key = via_api_key)
+    return redact_inventory_host_paths(payload, via_api_key=via_api_key)
 
 
-@router.delete("/scan-folders/{folder_id}", response_model = RemoveScanFolderResponse)
+@router.delete("/scan-folders/{folder_id}", response_model=RemoveScanFolderResponse)
 def remove_scan_folder_endpoint(
     folder_id: int, current_subject: str = Depends(get_current_subject)
 ):
     return local_inventory.remove_scan_folder_response(folder_id)
 
 
-@router.get("/models-folder", response_model = ModelsFolderResponse)
+@router.get("/models-folder", response_model=ModelsFolderResponse)
 def get_models_folder(
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -136,17 +136,17 @@ def get_models_folder(
         payload = local_inventory.get_models_folder_response()
     except HTTPException as error:
         raise HTTPException(
-            status_code = error.status_code,
-            detail = redact_inventory_error_detail(error.detail, via_api_key = via_api_key),
-            headers = error.headers,
+            status_code=error.status_code,
+            detail=redact_inventory_error_detail(error.detail, via_api_key=via_api_key),
+            headers=error.headers,
         ) from error
-    return redact_inventory_host_paths(payload, via_api_key = via_api_key)
+    return redact_inventory_host_paths(payload, via_api_key=via_api_key)
 
 
-@router.get("/gguf-variants", response_model = GgufVariantsResponse)
+@router.get("/gguf-variants", response_model=GgufVariantsResponse)
 async def get_gguf_variants(
     repo_id: str = Query(
-        ..., description = "HuggingFace repo ID (e.g. 'unsloth/gemma-3-4b-it-GGUF')"
+        ..., description="HuggingFace repo ID (e.g. 'unsloth/gemma-3-4b-it-GGUF')"
     ),
     prefer_local_cache: bool = Query(False),
     offline: bool = Query(False),
@@ -163,16 +163,16 @@ async def get_gguf_variants(
     return redact_host_paths(
         await gguf_variants.get_gguf_variants_response(
             resolve_host_path_reference(repo_id) or repo_id,
-            prefer_local_cache = prefer_local_cache,
-            offline = offline,
-            local_path = resolve_host_path_reference(local_path) or local_path,
-            hf_token = hf_token,
+            prefer_local_cache=prefer_local_cache,
+            offline=offline,
+            local_path=resolve_host_path_reference(local_path) or local_path,
+            hf_token=hf_token,
         ),
-        via_api_key = via_api_key,
+        via_api_key=via_api_key,
     )
 
 
-@router.post("/download", response_model = DownloadStartResponse, status_code = 202)
+@router.post("/download", response_model=DownloadStartResponse, status_code=202)
 async def download_model(
     body: DownloadModelRequest,
     hf_token: Optional[str] = Depends(get_hf_token),
@@ -182,21 +182,21 @@ async def download_model(
     return await downloads.download_model_response(
         body,
         hf_token,
-        allow_ambient_token = allow_ambient_token,
+        allow_ambient_token=allow_ambient_token,
     )
 
 
-@router.post("/download/cancel", response_model = CancelDownloadResponse, status_code = 202)
+@router.post("/download/cancel", response_model=CancelDownloadResponse, status_code=202)
 async def cancel_download_model(
     body: CancelDownloadRequest, current_subject: str = Depends(get_current_subject)
 ):
     return await downloads.cancel_download_model_response(body)
 
 
-@router.get("/download-status", response_model = DownloadJobStatus)
+@router.get("/download-status", response_model=DownloadJobStatus)
 async def get_download_status(
-    repo_id: str = Query(..., description = "HuggingFace repo ID"),
-    gguf_variant: str = Query("", description = "Quantization variant (empty for safetensors)"),
+    repo_id: str = Query(..., description="HuggingFace repo ID"),
+    gguf_variant: str = Query("", description="Quantization variant (empty for safetensors)"),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
 ):
@@ -204,22 +204,22 @@ async def get_download_status(
     # download reads the host layout from a route with no path field at all.
     return redact_host_paths(
         await downloads.get_download_status_response(repo_id, gguf_variant),
-        via_api_key = via_api_key,
+        via_api_key=via_api_key,
     )
 
 
-@router.get("/active-downloads", response_model = ActiveDownloadsResponse)
+@router.get("/active-downloads", response_model=ActiveDownloadsResponse)
 async def get_active_downloads(
-    repo_id: str = Query("", description = "HuggingFace repo ID"),
+    repo_id: str = Query("", description="HuggingFace repo ID"),
     current_subject: str = Depends(get_current_subject),
 ):
     return await downloads.get_active_downloads_response(repo_id)
 
 
-@router.get("/transport-status", response_model = TransportStatusResponse)
+@router.get("/transport-status", response_model=TransportStatusResponse)
 async def get_model_transport_status(
-    repo_id: str = Query(..., description = "HuggingFace repo ID"),
-    gguf_variant: str = Query("", description = "Quantization variant (empty for safetensors)"),
+    repo_id: str = Query(..., description="HuggingFace repo ID"),
+    gguf_variant: str = Query("", description="Quantization variant (empty for safetensors)"),
     hf_token: HfTokenArg = Depends(get_request_hf_token),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -230,19 +230,19 @@ async def get_model_transport_status(
             gguf_variant,
             hf_token,
         ),
-        via_api_key = via_api_key,
+        via_api_key=via_api_key,
     )
 
 
 @router.get(
     "/gguf-download-progress",
-    response_model = DownloadProgressResponse,
-    response_model_exclude_none = True,
+    response_model=DownloadProgressResponse,
+    response_model_exclude_none=True,
 )
 async def get_gguf_download_progress(
-    repo_id: str = Query(..., description = "HuggingFace repo ID"),
-    variant: str = Query("", description = "Quantization variant (e.g. UD-TQ1_0)"),
-    expected_bytes: int = Query(0, description = "Expected total download size in bytes"),
+    repo_id: str = Query(..., description="HuggingFace repo ID"),
+    variant: str = Query("", description="Quantization variant (e.g. UD-TQ1_0)"),
+    expected_bytes: int = Query(0, description="Expected total download size in bytes"),
     hf_token: HfTokenArg = Depends(get_request_hf_token),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -250,18 +250,18 @@ async def get_gguf_download_progress(
     return redact_host_paths(
         await downloads.get_gguf_download_progress_response(
             repo_id,
-            variant = variant,
-            expected_bytes = expected_bytes,
-            hf_token = hf_token,
+            variant=variant,
+            expected_bytes=expected_bytes,
+            hf_token=hf_token,
         ),
-        via_api_key = via_api_key,
+        via_api_key=via_api_key,
     )
 
 
-@router.get("/download-progress", response_model = DownloadProgressResponse)
+@router.get("/download-progress", response_model=DownloadProgressResponse)
 async def get_download_progress(
-    repo_id: str = Query(..., description = "HuggingFace repo ID"),
-    expected_bytes: int = Query(0, description = "Expected total download size in bytes"),
+    repo_id: str = Query(..., description="HuggingFace repo ID"),
+    expected_bytes: int = Query(0, description="Expected total download size in bytes"),
     hf_token: HfTokenArg = Depends(get_request_hf_token),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -269,36 +269,36 @@ async def get_download_progress(
     return redact_host_paths(
         await downloads.get_download_progress_response(
             repo_id,
-            expected_bytes = expected_bytes,
-            hf_token = hf_token,
+            expected_bytes=expected_bytes,
+            hf_token=hf_token,
         ),
-        via_api_key = via_api_key,
+        via_api_key=via_api_key,
     )
 
 
-@router.get("/cached-gguf", response_model = CachedGgufResponse)
+@router.get("/cached-gguf", response_model=CachedGgufResponse)
 async def list_cached_gguf(
     hf_token: HfTokenArg = Depends(get_request_hf_token),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     return redact_host_paths(
-        await cache_inventory.list_cached_gguf_response(hf_token), via_api_key = via_api_key
+        await cache_inventory.list_cached_gguf_response(hf_token), via_api_key=via_api_key
     )
 
 
-@router.get("/cached-models", response_model = CachedModelsResponse)
+@router.get("/cached-models", response_model=CachedModelsResponse)
 async def list_cached_models(
     hf_token: HfTokenArg = Depends(get_request_hf_token),
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     return redact_host_paths(
-        await cache_inventory.list_cached_models_response(hf_token), via_api_key = via_api_key
+        await cache_inventory.list_cached_models_response(hf_token), via_api_key=via_api_key
     )
 
 
-@router.get("/hidden-models", response_model = HiddenModelsResponse)
+@router.get("/hidden-models", response_model=HiddenModelsResponse)
 async def list_hidden_models(
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -309,12 +309,12 @@ async def list_hidden_models(
 
     needles, exact_ids, exact_paths = await asyncio.to_thread(hidden_model_matchers)
     return redact_host_paths(
-        HiddenModelsResponse(needles = needles, exact_ids = exact_ids, exact_paths = exact_paths),
-        via_api_key = via_api_key,
+        HiddenModelsResponse(needles=needles, exact_ids=exact_ids, exact_paths=exact_paths),
+        via_api_key=via_api_key,
     )
 
 
-@router.post("/delete-impact", response_model = DeleteImpactResponse)
+@router.post("/delete-impact", response_model=DeleteImpactResponse)
 async def delete_impact(
     repo_id: str = Body(...),
     variant: Optional[str] = Body(None),
@@ -328,7 +328,7 @@ async def delete_impact(
     return await companion_cleanup.delete_impact_response(repo_id, variant)
 
 
-@router.get("/orphan-companions", response_model = OrphanCompanionsResponse)
+@router.get("/orphan-companions", response_model=OrphanCompanionsResponse)
 async def orphan_companions(
     current_subject: str = Depends(get_current_subject),
     via_api_key: bool = Depends(authenticated_via_api_key),
@@ -336,14 +336,14 @@ async def orphan_companions(
     """Cached companion assets no installed model needs. Listing only; removal goes through
     the ordinary guarded delete."""
     return redact_host_paths(
-        await companion_cleanup.orphan_companions_response(), via_api_key = via_api_key
+        await companion_cleanup.orphan_companions_response(), via_api_key=via_api_key
     )
 
 
 @router.delete(
     "/delete-cached",
-    response_model = DeleteCachedModelResponse,
-    response_model_exclude_none = True,
+    response_model=DeleteCachedModelResponse,
+    response_model_exclude_none=True,
 )
 async def delete_cached_model(
     repo_id: str = Body(...),

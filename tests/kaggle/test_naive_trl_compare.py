@@ -80,7 +80,7 @@ def test_the_control_module_never_imports_unsloth():
     imported unsloth has had transformers, trl and peft patched underneath it
     and is no longer a control; the comparison would be unsloth against itself
     with extra steps, and it would look exactly like a real result."""
-    tree = ast.parse((PAYLOAD / "naive_trl_compare.py").read_text(encoding = "utf-8"))
+    tree = ast.parse((PAYLOAD / "naive_trl_compare.py").read_text(encoding="utf-8"))
     imported = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -96,7 +96,7 @@ def test_the_payload_runs_the_control_in_a_separate_process():
     parent imported. It must be spawned, and it must be spawned AFTER the
     cycles: two 4bit models resident at once on a 14.56GB T4 is how a
     comparison becomes an OOM blamed on the thing being compared."""
-    src = (PAYLOAD / "run_t4_smoke.py").read_text(encoding = "utf-8")
+    src = (PAYLOAD / "run_t4_smoke.py").read_text(encoding="utf-8")
     assert "naive_trl_compare.py" in src
     assert "if args.compare_naive_trl:" in src
     cycles_at = src.index("runs.append(json.loads(report_file.read_text")
@@ -117,7 +117,7 @@ def test_the_control_arm_loads_the_repo_unsloth_resolved():
     question is what the two training stacks do, not which repo each loader
     picks.
     """
-    src = (ROOT / "tests" / "kaggle" / "t4_smoke" / "run_t4_smoke.py").read_text(encoding = "utf-8")
+    src = (ROOT / "tests" / "kaggle" / "t4_smoke" / "run_t4_smoke.py").read_text(encoding="utf-8")
     assert 'control_model = runs[0].get("resolved_checkpoint") or args.model' in src
     assert '("--model", control_model),' in src
 
@@ -131,7 +131,7 @@ def test_the_control_arm_uses_gradient_checkpointing():
     an OOM: the control asked for 8.75 GiB on top of 8.96 GiB already resident,
     on a 14.56 GiB card (kernel unsloth-probe-latestcompile-r4-e67ef2).
     """
-    src = (PAYLOAD / "naive_trl_compare.py").read_text(encoding = "utf-8")
+    src = (PAYLOAD / "naive_trl_compare.py").read_text(encoding="utf-8")
     assert "use_gradient_checkpointing = True" in src
     assert "gradient_checkpointing = True," in src
     # Non-reentrant, or a PEFT model's inputs carry no grad and the backward
@@ -146,7 +146,7 @@ def test_a_load_time_oom_can_be_reported_rather_than_failed():
     all. That is a statement about the card and the checkpoint, not about either
     training stack."""
     oom = {"error": "OutOfMemoryError: CUDA out of memory. Tried to allocate 8.75 GiB"}
-    assert comparison_failures(oom, [{"loss": 1.0}], allow_oom = True) == []
+    assert comparison_failures(oom, [{"loss": 1.0}], allow_oom=True) == []
 
 
 def test_an_oom_is_still_a_failure_when_the_leg_did_not_opt_in():
@@ -161,9 +161,9 @@ def test_an_oom_after_training_started_is_still_a_failure():
         "error": "OutOfMemoryError: CUDA out of memory",
         "metrics": [{"step": 1, "loss": 3.0}],
     }
-    assert comparison_failures(oom, [{"loss": 1.0}], allow_oom = True)
+    assert comparison_failures(oom, [{"loss": 1.0}], allow_oom=True)
 
 
 def test_a_non_oom_crash_is_never_excused():
     crash = {"error": "ImportError: no module named trl"}
-    assert comparison_failures(crash, [{"loss": 1.0}], allow_oom = True)
+    assert comparison_failures(crash, [{"loss": 1.0}], allow_oom=True)

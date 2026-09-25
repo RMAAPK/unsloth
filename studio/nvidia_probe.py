@@ -33,7 +33,7 @@ class NvidiaLibraryInventory:
     cuda_driver_version: tuple[int, int] | None
     driver_version: str
     # index, uuid, name, compute_cap ("8.9"); NVML order is physical and unmasked.
-    devices: list[dict[str, str]] = field(default_factory = list)
+    devices: list[dict[str, str]] = field(default_factory=list)
 
 
 def _library_candidates(kind: str) -> list[str]:
@@ -257,10 +257,10 @@ def _from_payload(payload: object) -> NvidiaLibraryInventory | None:
         if isinstance(row, dict)
     ]
     return NvidiaLibraryInventory(
-        source = str(payload["source"]),
-        cuda_driver_version = cuda if cuda and len(cuda) == 2 else None,
-        driver_version = str(payload.get("driver_version") or ""),
-        devices = devices,
+        source=str(payload["source"]),
+        cuda_driver_version=cuda if cuda and len(cuda) == 2 else None,
+        driver_version=str(payload.get("driver_version") or ""),
+        devices=devices,
     )
 
 
@@ -282,11 +282,11 @@ def probe(timeout: float = 20) -> NvidiaLibraryInventory | None:
     try:
         result = subprocess.run(
             [sys.executable, "-I", os.path.abspath(__file__), "--json"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = timeout,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
             **kwargs,
         )
     except Exception:
@@ -327,7 +327,7 @@ def cuda_version_for_driver(driver_version: str) -> tuple[int, int] | None:
 def proc_driver_version(path: str = "/proc/driver/nvidia/version") -> str:
     """The kernel module's version from /proc, or "": present on Linux whenever the driver is."""
     try:
-        with open(path, encoding = "utf-8", errors = "replace") as handle:
+        with open(path, encoding="utf-8", errors="replace") as handle:
             head = handle.readline()
     except OSError:
         return ""

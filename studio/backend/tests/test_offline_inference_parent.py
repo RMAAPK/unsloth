@@ -93,8 +93,8 @@ import pathlib
 
 @pytest.fixture
 def clean_offline_env(monkeypatch):
-    monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
-    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising = False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
 
 
 class TestEnvOffline:
@@ -161,13 +161,13 @@ class TestLoraDetectOffline:
         class _OfflineModeIsEnabled(Exception):
             pass
 
-        mock = MagicMock(side_effect = _OfflineModeIsEnabled("offline"))
+        mock = MagicMock(side_effect=_OfflineModeIsEnabled("offline"))
         with patch("huggingface_hub.model_info", mock):
             try:
                 ModelConfig.from_identifier(
-                    model_id = "unsloth/Qwen3.5-4B",
-                    hf_token = None,
-                    gguf_variant = None,
+                    model_id="unsloth/Qwen3.5-4B",
+                    hf_token=None,
+                    gguf_variant=None,
                 )
             except Exception:
                 pass  # registry miss OK; pinning the LoRA-detect call
@@ -188,7 +188,7 @@ class TestLoraDetectOffline:
 
         repo = tmp_path / "models--org--my-lora"
         snap = repo / "snapshots" / ("a" * 40)
-        snap.mkdir(parents = True)
+        snap.mkdir(parents=True)
         (snap / "adapter_config.json").write_text(
             '{"base_model_name_or_path": "unsloth/Llama-3-8B"}'
         )
@@ -201,9 +201,9 @@ class TestLoraDetectOffline:
         with patch("huggingface_hub.model_info", boom):
             try:
                 cfg = ModelConfig.from_identifier(
-                    model_id = "org/my-lora",
-                    hf_token = None,
-                    gguf_variant = None,
+                    model_id="org/my-lora",
+                    hf_token=None,
+                    gguf_variant=None,
                 )
             except Exception:
                 cfg = None
@@ -222,12 +222,12 @@ class TestTrainingWorkerProbeNoGlobalTimeout:
         import re
         from pathlib import Path
 
-        src = Path(_BACKEND_DIR, "core", "training", "worker.py").read_text(encoding = "utf-8")
+        src = Path(_BACKEND_DIR, "core", "training", "worker.py").read_text(encoding="utf-8")
         m = re.search(
             r'if\s+"HF_HUB_OFFLINE"\s+not\s+in\s+os\.environ.*?'
             r"print\([^)]*HF_HUB_OFFLINE=1[^)]*\)",
             src,
-            flags = re.DOTALL,
+            flags=re.DOTALL,
         )
         assert m is not None, "could not locate offline auto-detect block"
         block = m.group(0)
@@ -274,7 +274,7 @@ class TestInferenceWorkerProbesForItself:
     def _block(self):
         backend_root = pathlib.Path(__file__).resolve().parent.parent
         src = (backend_root / "core" / "inference" / "worker.py").read_text(
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         start = src.index("# Offline auto-detect")
         # To the end of the block, not a fixed slice: a gate added ahead of it would
@@ -284,7 +284,7 @@ class TestInferenceWorkerProbesForItself:
     def test_the_probe_exists_and_runs_before_activation(self):
         backend_root = pathlib.Path(__file__).resolve().parent.parent
         src = (backend_root / "core" / "inference" / "worker.py").read_text(
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         probe = src.index("# Offline auto-detect")
         # Both HF-reading steps the parent's verdict was meant to cover.
@@ -357,7 +357,7 @@ class TestWorkerProbesOnlyWhenTheHubIsNeeded:
         w = self._load("core/inference/worker.py", "inference_worker_gate_adapter")
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": "org/base"}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         base, needs_hub = w._recorded_local_base(str(tmp_path))
         assert (base, needs_hub) == ("org/base", False)
@@ -371,10 +371,10 @@ class TestWorkerProbesOnlyWhenTheHubIsNeeded:
     def test_both_probes_sit_behind_the_gate(self):
         backend_root = pathlib.Path(__file__).resolve().parent.parent
         inf = (backend_root / "core" / "inference" / "worker.py").read_text(
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         trn = (backend_root / "core" / "training" / "worker.py").read_text(
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         assert "not _hub_targets_are_local(" in inf
         assert "not _training_job_is_local(config)" in trn
@@ -401,7 +401,7 @@ class TestLocalLoraTrainingJobStillProbes:
         w = self._worker()
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": "org/base"}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         assert w._training_job_is_local({"model_name": str(tmp_path)}) is False
 
@@ -411,7 +411,7 @@ class TestLocalLoraTrainingJobStillProbes:
         base.mkdir()
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": str(base)}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         assert w._training_job_is_local({"model_name": str(tmp_path)}) is True
 
@@ -425,7 +425,7 @@ class TestLocalLoraTrainingJobStillProbes:
         w = self._worker()
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": None}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         assert w._training_job_is_local({"model_name": str(tmp_path)}) is False
 
@@ -434,7 +434,7 @@ class TestLocalLoraTrainingJobStillProbes:
         backend_root = pathlib.Path(__file__).resolve().parent.parent
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": "org/base"}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         spec = importlib.util.spec_from_file_location(
             "inference_worker_lora_gate",
@@ -462,7 +462,7 @@ class TestFullCheckpointBaseKeepsTheProbe:
         return mod
 
     def _checkpoint(self, tmp_path, config_json):
-        (tmp_path / "config.json").write_text(json.dumps(config_json), encoding = "utf-8")
+        (tmp_path / "config.json").write_text(json.dumps(config_json), encoding="utf-8")
         return str(tmp_path)
 
     def test_remote_model_name_keeps_the_probe(self, tmp_path):
@@ -495,7 +495,7 @@ class TestFullCheckpointBaseKeepsTheProbe:
         target = self._checkpoint(tmp_path, {"model_name": "org/from-config"})
         (tmp_path / "adapter_config.json").write_text(
             json.dumps({"base_model_name_or_path": "org/from-adapter"}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         inf = self._module("core/inference/worker.py", "inference_worker_order_gate")
         assert inf._recorded_local_base(target) == ("org/from-adapter", False)
@@ -503,7 +503,7 @@ class TestFullCheckpointBaseKeepsTheProbe:
     def test_a_baseless_adapter_needs_the_hub(self, tmp_path):
         """With no base on disk the resolver falls through to get_base_model_from_lora,
         which is a Hub call, so the gate must fail closed."""
-        (tmp_path / "adapter_config.json").write_text(json.dumps({}), encoding = "utf-8")
+        (tmp_path / "adapter_config.json").write_text(json.dumps({}), encoding="utf-8")
         inf = self._module("core/inference/worker.py", "inference_worker_baseless_gate")
         trn = self._module("core/training/worker.py", "training_worker_baseless_gate")
 
@@ -538,9 +538,9 @@ class TestFullCheckpointBaseKeepsTheProbe:
             d = tmp_path / name
             d.mkdir()
             if adapter is not None:
-                (d / "adapter_config.json").write_text(json.dumps(adapter), encoding = "utf-8")
+                (d / "adapter_config.json").write_text(json.dumps(adapter), encoding="utf-8")
             if config is not None:
-                (d / "config.json").write_text(json.dumps(config), encoding = "utf-8")
+                (d / "config.json").write_text(json.dumps(config), encoding="utf-8")
             if weights:
                 (d / "adapter_model.safetensors").write_bytes(b"")
 
@@ -574,7 +574,7 @@ class TestLoadRouteResolvesConfigOffTheLoop:
         import ast
 
         backend_root = pathlib.Path(__file__).resolve().parent.parent
-        src = (backend_root / "routes" / "inference.py").read_text(encoding = "utf-8")
+        src = (backend_root / "routes" / "inference.py").read_text(encoding="utf-8")
         tree = ast.parse(src)
 
         impl = next(

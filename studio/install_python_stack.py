@@ -3001,7 +3001,7 @@ def _generic_only_target_below_floor(gfx: "str | None", ver: "tuple[int, int] | 
 
 
 def _runtime_gfx_target(
-    inferred_linux_gfx: "str | None",
+    inferred_linux_gfx: "str | None"
 ) -> "tuple[str | None, list[str], str | None, list[str]]":
     """Return the selected gfx target, detected arches, corrected physical arch, and the
     machine as the probes saw it before any ROCr filtering.
@@ -9220,7 +9220,7 @@ def _pip_subcommand_of(cmd: "list[str]") -> str:
 
 
 def _pinned_pip_config_overrides(
-    subcommand: str = _PINNED_PIP_CONFIG_DEFAULT_SECTION,
+    subcommand: str = _PINNED_PIP_CONFIG_DEFAULT_SECTION
 ) -> "dict[str, str]":
     """pip's configured transport and binary policy, as PIP_ environment variables.
 

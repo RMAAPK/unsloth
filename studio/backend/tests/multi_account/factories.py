@@ -80,22 +80,23 @@ def seed_training(account) -> dict[str, str]:
 
 @seeder("api-key")
 def seed_api_key(account) -> dict[str, str]:
-    _, row = storage.create_api_key(account.username, name = SENTINEL)
+    _, row = storage.create_api_key(account.username, name=SENTINEL)
     return {"key_id": str(row["id"])}
 
 
 @seeder("mcp")
 def seed_mcp(account) -> dict[str, str]:
     from storage import mcp_servers_db
+
     run_as(
         account,
         mcp_servers_db.create_server,
         SERVER_ID,
         SENTINEL,
         "http://8.8.8.8:9/mcp",
-        headers_json = None,
-        is_enabled = False,
-        use_oauth = False,
+        headers_json=None,
+        is_enabled=False,
+        use_oauth=False,
     )
     return {"server_id": SERVER_ID}
 
@@ -112,12 +113,12 @@ def seed_skill(account) -> dict[str, str]:
         root = skills_module._owner_home() / ".agents" / "skills" / SKILL_NAME
     else:
         root = run_as(account, workspace_root) / "skills" / SKILL_NAME
-    root.mkdir(parents = True, exist_ok = True)
+    root.mkdir(parents=True, exist_ok=True)
     # Quoted: the sentinel carries a colon, which a plain YAML scalar cannot.
     (root / "SKILL.md").write_text(
         f"---\nname: {SKILL_NAME}\ndescription: {json.dumps(SENTINEL, ensure_ascii = False)}\n"
         "---\nInstructions\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     from routes.inference import _invalidate_agent_skills_cache
 
@@ -126,35 +127,35 @@ def seed_skill(account) -> dict[str, str]:
 
 
 CORE_FACTORIES = {
-    "routes.chat_history:GET:/threads/{thread_id}": Factory("chat", fragment = SENTINEL),
+    "routes.chat_history:GET:/threads/{thread_id}": Factory("chat", fragment=SENTINEL),
     "routes.chat_history:PATCH:/threads/{thread_id}": Factory(
-        "chat", {"title": EDITED}, fragment = EDITED
+        "chat", {"title": EDITED}, fragment=EDITED
     ),
-    "routes.chat_history:GET:/threads/{thread_id}/messages": Factory("chat", fragment = SENTINEL),
+    "routes.chat_history:GET:/threads/{thread_id}/messages": Factory("chat", fragment=SENTINEL),
     "routes.chat_history:GET:/threads/{thread_id}/messages/{message_id}": Factory(
-        "chat", fragment = SENTINEL
+        "chat", fragment=SENTINEL
     ),
     "routes.chat_history:PUT:/threads/{thread_id}/messages/{message_id}": Factory(
-        "chat", MESSAGE, fragment = SENTINEL
+        "chat", MESSAGE, fragment=SENTINEL
     ),
     "routes.chat_history:PUT:/threads/{thread_id}/messages": Factory(
-        "chat", {"messages": [MESSAGE]}, fragment = SENTINEL
+        "chat", {"messages": [MESSAGE]}, fragment=SENTINEL
     ),
-    "routes.chat_history:GET:/projects/{project_id}": Factory("project", fragment = SENTINEL),
+    "routes.chat_history:GET:/projects/{project_id}": Factory("project", fragment=SENTINEL),
     "routes.chat_history:PATCH:/projects/{project_id}": Factory(
-        "project", {"name": EDITED}, fragment = EDITED
+        "project", {"name": EDITED}, fragment=EDITED
     ),
-    "routes.training_history:GET:/runs/{run_id}": Factory("training", fragment = SENTINEL),
+    "routes.training_history:GET:/runs/{run_id}": Factory("training", fragment=SENTINEL),
     "routes.training_history:PATCH:/runs/{run_id}": Factory(
-        "training", {"display_name": EDITED}, fragment = EDITED
+        "training", {"display_name": EDITED}, fragment=EDITED
     ),
     "routes.auth:DELETE:/api-keys/{key_id}": Factory("api-key"),
     "routes.mcp_servers:PUT:/{server_id}": Factory(
-        "mcp", {"display_name": EDITED}, fragment = EDITED
+        "mcp", {"display_name": EDITED}, fragment=EDITED
     ),
-    "routes.mcp_servers:DELETE:/{server_id}": Factory("mcp", success = 204),
+    "routes.mcp_servers:DELETE:/{server_id}": Factory("mcp", success=204),
     "routes.skills:PUT:/{name}/enabled": Factory(
-        "skill", {"enabled": False}, fragment = SKILL_NAME, absent = SENTINEL
+        "skill", {"enabled": False}, fragment=SKILL_NAME, absent=SENTINEL
     ),
 }
 
@@ -185,7 +186,7 @@ SKIPPED = merge(*(domain.SKIPPED for domain in DOMAINS))
 def initialize_workspaces(accounts: dict) -> None:
     for account in accounts.values():
         path = run_as(account, workspace_root) / "studio.db"
-        seed_studio_db(path, populated = False)
+        seed_studio_db(path, populated=False)
         with closing(sqlite3.connect(path)) as conn:
             conn.executescript("""
                 CREATE TABLE mcp_servers (

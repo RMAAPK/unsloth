@@ -35,7 +35,7 @@ LEGACY = ".unsloth-studio-legacy"
 # expectation behind, which failed as an opaque runtime mismatch in Repo tests (CPU, python).
 RESTORE_NEEDS_APP_HINT = "run --restore under an image that has the Unsloth Studio code in"
 
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason = "needs bash")
+pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
 
 
 def _app(tmp_path: Path) -> Path:
@@ -50,7 +50,7 @@ def _app(tmp_path: Path) -> Path:
         ".venv_t5_550",
         "uv-cache",
     ):
-        (app / name).mkdir(parents = True)
+        (app / name).mkdir(parents=True)
     (app / "unsloth_studio" / "VERSION").write_text("new\n")
     (app / ".node.install.lock").write_text("")
     (app / "llama.cpp").symlink_to("/opt/unsloth/llama.cpp")
@@ -61,24 +61,24 @@ def _link(
     app: Path,
     home: Path,
     *args,
-    env = None,
-    path = None,
+    env=None,
+    path=None,
 ):
-    full = dict(os.environ, UNSLOTH_STUDIO_APP = str(app), UNSLOTH_STUDIO_HOME = str(home))
+    full = dict(os.environ, UNSLOTH_STUDIO_APP=str(app), UNSLOTH_STUDIO_HOME=str(home))
     full.update(env or {})
     if path:
         full["PATH"] = f"{path}:{full['PATH']}"
     return subprocess.run(
-        ["bash", str(LINKER), *args], env = full, capture_output = True, text = True, timeout = 60
+        ["bash", str(LINKER), *args], env=full, capture_output=True, text=True, timeout=60
     )
 
 
 def _legacy_home(tmp_path: Path) -> Path:
     """A volume created by an image from before the split: real code dirs next to data."""
     home = tmp_path / "home"
-    (home / "unsloth_studio").mkdir(parents = True)
+    (home / "unsloth_studio").mkdir(parents=True)
     (home / "unsloth_studio" / "VERSION").write_text("old\n")
-    (home / "src" / "studio").mkdir(parents = True)
+    (home / "src" / "studio").mkdir(parents=True)
     (home / "src" / "studio" / "uncommitted.py").write_text("mine")
     (home / ".node.install.lock").write_text("")
     (home / "auth").mkdir()
@@ -183,7 +183,7 @@ def test_restore_without_a_legacy_dir_copies_this_images_code_in(tmp_path):
     cannot run links into an app dir it does not have, so --restore materialises copies."""
     app = _app(tmp_path)
     home = tmp_path / "home"
-    (home / "outputs").mkdir(parents = True)
+    (home / "outputs").mkdir(parents=True)
     (home / "outputs" / "model.bin").write_text("weights")
     assert _link(app, home).returncode == 0
     res = _link(app, home, "--restore")
@@ -218,7 +218,7 @@ def test_the_restore_hint_this_file_expects_is_the_one_the_script_prints() -> No
     The test above compares against stderr, so when the wording moves it fails with two long
     strings and no indication that the fix is one line of shell. This names the file.
     """
-    assert RESTORE_NEEDS_APP_HINT in LINKER.read_text(encoding = "utf-8"), (
+    assert RESTORE_NEEDS_APP_HINT in LINKER.read_text(encoding="utf-8"), (
         f"{LINKER.relative_to(REPO)} no longer prints {RESTORE_NEEDS_APP_HINT!r}. If the wording "
         f"changed on purpose, update RESTORE_NEEDS_APP_HINT here to match."
     )
@@ -227,7 +227,7 @@ def test_the_restore_hint_this_file_expects_is_the_one_the_script_prints() -> No
 def test_keep_legacy_0_deletes_instead(tmp_path):
     app = _app(tmp_path)
     home = _legacy_home(tmp_path)
-    res = _link(app, home, env = {"UNSLOTH_STUDIO_KEEP_LEGACY": "0"})
+    res = _link(app, home, env={"UNSLOTH_STUDIO_KEEP_LEGACY": "0"})
     assert res.returncode == 0, res.stderr
     assert not (home / LEGACY).exists()
     assert (home / "src").is_symlink()
@@ -254,7 +254,7 @@ def test_runtime_data_is_never_touched(tmp_path):
     app = _app(tmp_path)
     home = tmp_path / "home"
     for name in ("auth", "outputs", "exports", "runs", "rag", "assets"):
-        (home / name).mkdir(parents = True)
+        (home / name).mkdir(parents=True)
         (home / name / "keep.txt").write_text(name)
     (home / "studio.db").write_text("chats")
     res = _link(app, home)
@@ -312,10 +312,10 @@ def test_a_second_run_is_silent_and_changes_nothing(tmp_path):
 
 def test_names_with_spaces_and_dotfiles_are_handled(tmp_path):
     app = tmp_path / "app dir"
-    (app / "my venv").mkdir(parents = True)
+    (app / "my venv").mkdir(parents=True)
     (app / ".hidden lock").write_text("")
     home = tmp_path / "home dir"
-    (home / "my venv").mkdir(parents = True)
+    (home / "my venv").mkdir(parents=True)
     res = _link(app, home)
     assert res.returncode == 0, res.stderr
     assert os.readlink(home / "my venv") == str(app / "my venv")
@@ -355,7 +355,7 @@ def test_nested_roots_are_refused(tmp_path):
 
 
 def _stub(bindir: Path, name: str, body: str):
-    bindir.mkdir(exist_ok = True)
+    bindir.mkdir(exist_ok=True)
     p = bindir / name
     p.write_text("#!/usr/bin/env bash\n" + body)
     p.chmod(0o755)
@@ -373,7 +373,7 @@ def test_an_interrupted_migration_never_loses_an_entry(tmp_path):
         'case "$*" in */src) echo "ln: simulated failure" >&2; exit 1;; esac\n'
         'exec /bin/ln "$@"\n',
     )
-    res = _link(app, home, path = str(bindir))
+    res = _link(app, home, path=str(bindir))
     assert res.returncode == 1
     assert "cannot link" in res.stderr
     assert "intact at" in res.stderr
@@ -396,7 +396,7 @@ def test_a_failed_move_changes_nothing(tmp_path):
     home = _legacy_home(tmp_path)
     bindir = tmp_path / "bin"
     _stub(bindir, "mv", 'echo "mv: simulated failure" >&2; exit 1\n')
-    res = _link(app, home, path = str(bindir))
+    res = _link(app, home, path=str(bindir))
     assert res.returncode == 1
     assert "cannot move" in res.stderr
     assert not (home / "unsloth_studio").is_symlink()
@@ -411,7 +411,7 @@ def test_a_link_where_the_kept_aside_copies_go_is_refused(tmp_path):
     app = _app(tmp_path)
     home = _legacy_home(tmp_path)
     decoy = tmp_path / "decoy"
-    (decoy / "src").mkdir(parents = True)
+    (decoy / "src").mkdir(parents=True)
     (decoy / "src" / "app.py").write_text("this image's code")
     (home / LEGACY).symlink_to(decoy)
     for args in ((), ("--restore",)):
@@ -450,7 +450,7 @@ def test_a_restore_copy_that_fails_leaves_the_link_and_no_half_tree(tmp_path):
         "esac\n"
         'exec /bin/cp "$@"\n',
     )
-    res = _link(app, home, "--restore", path = str(bindir))
+    res = _link(app, home, "--restore", path=str(bindir))
     assert res.returncode == 1
     assert "rerun --restore" in res.stderr
     assert (home / "src").is_symlink()
@@ -466,7 +466,7 @@ def test_a_restore_copy_that_fails_leaves_the_link_and_no_half_tree(tmp_path):
 
 @pytest.mark.skipif(
     os.name != "posix" or os.geteuid() == 0,
-    reason = "needs POSIX directory modes, and root ignores them",
+    reason="needs POSIX directory modes, and root ignores them",
 )
 def test_a_read_only_home_fails_loudly_and_touches_nothing(tmp_path):
     app = _app(tmp_path)
@@ -532,20 +532,20 @@ def test_a_killed_updates_record_is_recovered_before_studio_starts(tmp_path):
     stub.chmod(0o755)
     log = tmp_path / "calls.log"
     env = {"UNSLOTH_STUDIO_UPDATER": str(stub), "STUB_LOG": str(log)}
-    res = _link(app, home, env = env)
+    res = _link(app, home, env=env)
     assert res.returncode == 0, res.stderr
     assert log.read_text() == f"UPDATER --recover home={home}\n", log.read_text()
     assert "the previous install is back" in res.stderr, res.stderr
     assert (home / "unsloth_studio").is_symlink(), "recovery must run after the home is linked"
     # a failed recovery is loud but does not stop the container from starting
     log.unlink()
-    res = _link(app, home, env = {**env, "STUB_RC": "1"})
+    res = _link(app, home, env={**env, "STUB_RC": "1"})
     assert res.returncode == 0, res.stderr
     assert "WARNING" in res.stderr and "--recover" in res.stderr, res.stderr
     # no record: the updater is not run at all
     (app / ".src-update.rollback").unlink()
     log.unlink()
-    res = _link(app, home, env = env)
+    res = _link(app, home, env=env)
     assert res.returncode == 0 and not log.exists()
 
 
@@ -570,7 +570,7 @@ def test_the_linker_is_a_no_op_without_an_app_dir(tmp_path):
 
 def test_the_code_moves_in_the_same_layer_that_installs_it():
     """A `mv` in a later RUN stores the 10+ GB Studio install twice."""
-    body = STUDIO_DF.read_text(encoding = "utf-8")
+    body = STUDIO_DF.read_text(encoding="utf-8")
     runs = re.split(r"\n(?=RUN |COPY |ENV |ARG |FROM |EXPOSE |CMD |USER )", body)
     install = [r for r in runs if r.startswith("RUN ") and "bash install.sh --local" in r]
     assert len(install) == 1
@@ -586,7 +586,7 @@ def test_the_uv_cache_goes_with_the_code_and_cache_stays_data():
     linking the whole directory into the app dir would have deleted a volume's runtime
     state on upgrade and sent new state into the container layer. The image points uv
     at the app dir before the install RUN and leaves cache/ in the home."""
-    body = STUDIO_DF.read_text(encoding = "utf-8")
+    body = STUDIO_DF.read_text(encoding="utf-8")
     env_block = body[
         body.index("ENV UNSLOTH_STUDIO_HOME=") : body.index(
             "\n\n", body.index("ENV UNSLOTH_STUDIO_HOME=")
@@ -609,7 +609,7 @@ def test_the_uv_cache_goes_with_the_code_and_cache_stays_data():
 
 def test_the_entrypoint_relinks_before_it_touches_the_studio_venv_and_stops_on_failure():
     """A half-linked home must not reach Studio: the hook exits instead of warning."""
-    body = ENTRYPOINT.read_text(encoding = "utf-8")
+    body = ENTRYPOINT.read_text(encoding="utf-8")
     hook = body.index("/usr/local/bin/unsloth-studio-home")
     assert hook < body.index("select_cuda_jit_tools() {")
     block = body[hook : body.index("select_cuda_jit_tools() {")]
@@ -623,19 +623,19 @@ def test_the_in_app_updates_know_the_images_code_tree():
     checkout and offers nothing. It tells the two apart by the same variable the image
     sets, so the name must not drift apart from the image's."""
     flow = (REPO / "studio" / "backend" / "utils" / "prebuilt" / "update_flow.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     assert 'os.environ.get("UNSLOTH_STUDIO_APP")' in flow
-    assert "UNSLOTH_STUDIO_APP=/opt/unsloth-studio-app" in STUDIO_DF.read_text(encoding = "utf-8")
+    assert "UNSLOTH_STUDIO_APP=/opt/unsloth-studio-app" in STUDIO_DF.read_text(encoding="utf-8")
 
 
 def test_the_docs_mount_the_studio_home():
     for doc in (DOCKER / "DOCKERHUB.md", REPO / "README.md"):
-        assert "-v unsloth-studio:/opt/unsloth-studio" in doc.read_text(encoding = "utf-8"), doc
+        assert "-v unsloth-studio:/opt/unsloth-studio" in doc.read_text(encoding="utf-8"), doc
 
 
 def test_the_linker_is_in_the_build_context():
     """docker/.dockerignore is an allowlist; a file missing from it fails the build
     with `"/studio_home.sh": not found`."""
-    allowed = (DOCKER / ".dockerignore").read_text(encoding = "utf-8").splitlines()
+    allowed = (DOCKER / ".dockerignore").read_text(encoding="utf-8").splitlines()
     assert "!studio_home.sh" in allowed

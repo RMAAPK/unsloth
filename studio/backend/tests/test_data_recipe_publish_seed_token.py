@@ -36,14 +36,14 @@ def _stub_data_designer(monkeypatch, seen):
             if metadata_path.exists():
                 seen["uploaded_metadata"] = metadata_path.name
             if builder_config_path.exists():
-                seen["uploaded"] = builder_config_path.read_text(encoding = "utf-8")
+                seen["uploaded"] = builder_config_path.read_text(encoding="utf-8")
                 seen["uploaded_name"] = builder_config_path.name
 
     class _Card:
         @classmethod
         def from_metadata(cls, *, builder_config, **kwargs):
             seen["card"] = json.dumps(builder_config)
-            return SimpleNamespace(text = "", push_to_hub = lambda *args, **kwargs: None)
+            return SimpleNamespace(text="", push_to_hub=lambda *args, **kwargs: None)
 
     modules = {
         "data_designer.engine.storage.artifact_storage": {
@@ -71,14 +71,14 @@ def _publish(monkeypatch, tmp_path, builder_config):
     seen: dict = {}
     _stub_data_designer(monkeypatch, seen)
     monkeypatch.setattr(recipe_hf, "_resolve_recipe_artifact_path", lambda _: tmp_path)
-    (tmp_path / "metadata.json").write_text("{}", encoding = "utf-8")
+    (tmp_path / "metadata.json").write_text("{}", encoding="utf-8")
     if builder_config is not None:
-        (tmp_path / "builder_config.json").write_text(json.dumps(builder_config), encoding = "utf-8")
+        (tmp_path / "builder_config.json").write_text(json.dumps(builder_config), encoding="utf-8")
     recipe_hf.publish_recipe_dataset(
-        artifact_path = str(tmp_path),
-        repo_id = "org/dataset",
-        description = "d",
-        hf_token = "hf_publish",
+        artifact_path=str(tmp_path),
+        repo_id="org/dataset",
+        description="d",
+        hf_token="hf_publish",
     )
     return seen
 
@@ -105,7 +105,7 @@ def test_publish_keeps_the_seed_token_out_of_the_hub(monkeypatch, tmp_path, sour
         "library_version": "0.5.4",
     }
 
-    on_disk = json.loads((tmp_path / "builder_config.json").read_text(encoding = "utf-8"))
+    on_disk = json.loads((tmp_path / "builder_config.json").read_text(encoding="utf-8"))
     assert on_disk == builder_config
 
 

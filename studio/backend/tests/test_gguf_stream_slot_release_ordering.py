@@ -32,7 +32,7 @@ from .llama_backend_double import FakeLlamaCppBackend
 from .asgi_stream_helpers import wait_for_frame
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _fresh_queues():
     llama_admission.reset_llama_admission_queues()
     yield
@@ -97,7 +97,7 @@ class _CancelledMidStreamBackend(_OneSlotBackend):
 
     def generate_chat_completion(
         self,
-        cancel_event = None,
+        cancel_event=None,
         **kwargs,
     ):
         self.cancel_event = cancel_event
@@ -179,10 +179,10 @@ def test_slot_is_free_before_the_done_frame_reaches_send(monkeypatch):
 
         task = asyncio.create_task(app(_scope(app, body), receive, send))
         try:
-            await wait_for_frame(finished, task, what = "the finishing frame")
+            await wait_for_frame(finished, task, what="the finishing frame")
         finally:
             task.cancel()
-            await asyncio.gather(task, return_exceptions = True)
+            await asyncio.gather(task, return_exceptions=True)
 
         assert slots_at_done == [0], (
             "the slot was still held while the [DONE] frame was being written; "
@@ -233,7 +233,7 @@ def test_error_sentinel_keeps_the_slot_until_the_generator_is_closed(monkeypatch
 
         task = asyncio.create_task(app(_scope(app, body), receive, send))
         try:
-            await wait_for_frame(saw_error, task, what = "the error sentinel")
+            await wait_for_frame(saw_error, task, what="the error sentinel")
             # Wait until cleanup reaches gen.close(), so llama-server still holds the slot.
             for _ in range(500):
                 if backend.closing.is_set():
@@ -248,7 +248,7 @@ def test_error_sentinel_keeps_the_slot_until_the_generator_is_closed(monkeypatch
         finally:
             backend.finish_close.set()
             task.cancel()
-            await asyncio.gather(task, return_exceptions = True)
+            await asyncio.gather(task, return_exceptions=True)
 
     asyncio.run(_drive())
 
@@ -291,7 +291,7 @@ def test_cancelled_stream_keeps_the_slot_until_the_generator_is_closed(monkeypat
 
         task = asyncio.create_task(app(_scope(app, body), receive, send))
         try:
-            await wait_for_frame(saw_done, task, what = "the [DONE] frame")
+            await wait_for_frame(saw_done, task, what="the [DONE] frame")
             for _ in range(50):
                 if _active_slots() == 0:
                     break
@@ -308,6 +308,6 @@ def test_cancelled_stream_keeps_the_slot_until_the_generator_is_closed(monkeypat
         finally:
             wedged.set()
             task.cancel()
-            await asyncio.gather(task, return_exceptions = True)
+            await asyncio.gather(task, return_exceptions=True)
 
     asyncio.run(_drive())

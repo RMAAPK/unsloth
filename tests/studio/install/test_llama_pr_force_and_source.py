@@ -19,7 +19,7 @@ SETUP_PS1 = PACKAGE_ROOT / "studio" / "setup.ps1"
 BASH = "/bin/bash"
 PWSH = "/usr/bin/pwsh"
 PWSH_AVAILABLE = os.path.isfile(PWSH) and os.access(PWSH, os.X_OK)
-requires_pwsh = pytest.mark.skipif(not PWSH_AVAILABLE, reason = "pwsh not available")
+requires_pwsh = pytest.mark.skipif(not PWSH_AVAILABLE, reason="pwsh not available")
 
 
 def run_bash(
@@ -34,10 +34,10 @@ def run_bash(
         run_env.update(env)
     return subprocess.run(
         [BASH, "-c", script],
-        capture_output = True,
-        text = True,
-        timeout = timeout,
-        env = run_env,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=run_env,
     )
 
 
@@ -57,10 +57,10 @@ def run_pwsh(
     # See tests/_shared/unsloth_pwsh_runner.py.
     return run_pwsh_retrying(
         [PWSH, "-NoProfile", "-Command", script],
-        capture_output = True,
-        text = True,
-        timeout = timeout,
-        env = run_env,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=run_env,
     )
 
 
@@ -80,7 +80,7 @@ RUN_QUIET_STUB = textwrap.dedent("""\
 def make_mock_git(tmp_path: Path, *, fail_on: str = "") -> tuple[Path, Path]:
     """Create a mock git binary that logs calls. Returns (mock_bin, log_file)."""
     mock_bin = tmp_path / "mock_bin"
-    mock_bin.mkdir(exist_ok = True)
+    mock_bin.mkdir(exist_ok=True)
     log_file = tmp_path / "git_calls.log"
 
     if fail_on:
@@ -146,14 +146,14 @@ class TestBashPrForcePromotion:
     """PR_FORCE promotes to _LLAMA_PR when user hasn't set one."""
 
     def test_baked_in_pr_force_promotes(self):
-        script = _bash_resolution_fragment(default_pr_force = "12345")
+        script = _bash_resolution_fragment(default_pr_force="12345")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=12345" in r.stdout
         assert "baked-in PR_FORCE=12345" in r.stdout
 
     def test_env_pr_force_promotes(self):
-        script = _bash_resolution_fragment(llama_pr_force = "999")
+        script = _bash_resolution_fragment(llama_pr_force="999")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=999" in r.stdout
@@ -161,8 +161,8 @@ class TestBashPrForcePromotion:
     def test_user_pr_overrides_pr_force(self):
         """UNSLOTH_LLAMA_PR takes priority over PR_FORCE."""
         script = _bash_resolution_fragment(
-            llama_pr = "100",
-            llama_pr_force = "200",
+            llama_pr="100",
+            llama_pr_force="200",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -171,8 +171,8 @@ class TestBashPrForcePromotion:
 
     def test_user_pr_overrides_baked_in(self):
         script = _bash_resolution_fragment(
-            llama_pr = "100",
-            default_pr_force = "200",
+            llama_pr="100",
+            default_pr_force="200",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -180,34 +180,34 @@ class TestBashPrForcePromotion:
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_zero_ignored(self):
-        script = _bash_resolution_fragment(llama_pr_force = "0")
+        script = _bash_resolution_fragment(llama_pr_force="0")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_empty_ignored(self):
-        script = _bash_resolution_fragment(default_pr_force = "")
+        script = _bash_resolution_fragment(default_pr_force="")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_alpha_ignored(self):
-        script = _bash_resolution_fragment(llama_pr_force = "abc")
+        script = _bash_resolution_fragment(llama_pr_force="abc")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_negative_ignored(self):
-        script = _bash_resolution_fragment(llama_pr_force = "-5")
+        script = _bash_resolution_fragment(llama_pr_force="-5")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
 
     def test_pr_force_decimal_ignored(self):
-        script = _bash_resolution_fragment(llama_pr_force = "12.34")
+        script = _bash_resolution_fragment(llama_pr_force="12.34")
         r = run_bash(script)
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
@@ -226,7 +226,7 @@ class TestBashFixedMainlineSource:
 
     def test_env_source_override_is_ignored(self):
         script = _bash_resolution_fragment(
-            llama_source = "https://github.com/unslothai/llama.cpp.git",
+            llama_source="https://github.com/unslothai/llama.cpp.git",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -236,7 +236,7 @@ class TestBashFixedMainlineSource:
 
     def test_baked_in_source_stays_mainline(self):
         script = _bash_resolution_fragment(
-            default_source = "https://github.com/ggml-org/llama.cpp",
+            default_source="https://github.com/ggml-org/llama.cpp",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -283,8 +283,8 @@ class TestBashCloneUrlParameterized:
         script = self._clone_script(
             mock_bin,
             build_tmp,
-            llama_pr = "123",
-            llama_source = "https://github.com/unslothai/llama.cpp",
+            llama_pr="123",
+            llama_source="https://github.com/unslothai/llama.cpp",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -298,7 +298,7 @@ class TestBashCloneUrlParameterized:
         script = self._clone_script(
             mock_bin,
             build_tmp,
-            llama_source = "https://github.com/unslothai/llama.cpp",
+            llama_source="https://github.com/unslothai/llama.cpp",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -322,7 +322,7 @@ class TestBashCloneUrlParameterized:
         script = self._clone_script(
             mock_bin,
             build_tmp,
-            resolved_tag = "latest",
+            resolved_tag="latest",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -337,7 +337,7 @@ class TestBashCloneUrlParameterized:
         script = self._clone_script(
             mock_bin,
             build_tmp,
-            resolved_tag = "",
+            resolved_tag="",
         )
         r = run_bash(script)
         assert r.returncode == 0
@@ -349,9 +349,9 @@ class TestBashCloneUrlParameterized:
 class TestSourcePatternsSh:
     """Verify setup.sh keeps the temporary mainline-only llama.cpp policy."""
 
-    @pytest.fixture(autouse = True)
+    @pytest.fixture(autouse=True)
     def _load_source(self):
-        self.content = SETUP_SH.read_text(encoding = "utf-8")
+        self.content = SETUP_SH.read_text(encoding="utf-8")
 
     def test_has_default_pr_force(self):
         assert '_DEFAULT_LLAMA_PR_FORCE=""' in self.content
@@ -415,9 +415,9 @@ class TestSourcePatternsSh:
 class TestSourcePatternsPs1:
     """Verify setup.ps1 keeps the temporary mainline-only llama.cpp policy."""
 
-    @pytest.fixture(autouse = True)
+    @pytest.fixture(autouse=True)
     def _load_source(self):
-        self.content = SETUP_PS1.read_text(encoding = "utf-8")
+        self.content = SETUP_PS1.read_text(encoding="utf-8")
 
     def test_has_default_pr_force(self):
         assert '$DefaultLlamaPrForce = ""' in self.content
@@ -529,22 +529,22 @@ class TestPwshPrForcePromotion:
         run_env["UNSLOTH_LLAMA_PR_FORCE"] = ""
         if env:
             run_env.update(env)
-        return run_pwsh(script, env = run_env)
+        return run_pwsh(script, env=run_env)
 
     def test_baked_in_pr_force_promotes(self):
-        r = self._run(default_pr_force = "12345")
+        r = self._run(default_pr_force="12345")
         assert r.returncode == 0
         assert "LLAMA_PR=12345" in r.stdout
         assert "baked-in PR_FORCE=12345" in r.stdout
 
     def test_env_pr_force_promotes(self):
-        r = self._run(env = {"UNSLOTH_LLAMA_PR_FORCE": "999"})
+        r = self._run(env={"UNSLOTH_LLAMA_PR_FORCE": "999"})
         assert r.returncode == 0
         assert "LLAMA_PR=999" in r.stdout
 
     def test_user_pr_overrides_pr_force(self):
         r = self._run(
-            env = {
+            env={
                 "UNSLOTH_LLAMA_PR": "100",
                 "UNSLOTH_LLAMA_PR_FORCE": "200",
             }
@@ -554,19 +554,19 @@ class TestPwshPrForcePromotion:
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_zero_ignored(self):
-        r = self._run(env = {"UNSLOTH_LLAMA_PR_FORCE": "0"})
+        r = self._run(env={"UNSLOTH_LLAMA_PR_FORCE": "0"})
         assert r.returncode == 0
         assert "LLAMA_PR=" in r.stdout
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_pr_force_alpha_ignored(self):
-        r = self._run(env = {"UNSLOTH_LLAMA_PR_FORCE": "abc"})
+        r = self._run(env={"UNSLOTH_LLAMA_PR_FORCE": "abc"})
         assert r.returncode == 0
         assert "baked-in PR_FORCE" not in r.stdout
 
     def test_env_source_override_is_ignored(self):
         r = self._run(
-            env = {
+            env={
                 "UNSLOTH_LLAMA_SOURCE": "https://github.com/unslothai/llama.cpp",
             }
         )
@@ -583,7 +583,7 @@ class TestPwshPrForcePromotion:
 
     def test_trailing_git_override_is_ignored(self):
         r = self._run(
-            env = {
+            env={
                 "UNSLOTH_LLAMA_SOURCE": "https://github.com/unslothai/llama.cpp.git",
             }
         )
@@ -591,6 +591,6 @@ class TestPwshPrForcePromotion:
         assert "LLAMA_SOURCE=https://github.com/ggml-org/llama.cpp" in r.stdout
 
     def test_baked_in_source_stays_mainline(self):
-        r = self._run(default_source = "https://github.com/ggml-org/llama.cpp")
+        r = self._run(default_source="https://github.com/ggml-org/llama.cpp")
         assert r.returncode == 0
         assert "LLAMA_SOURCE=https://github.com/ggml-org/llama.cpp" in r.stdout

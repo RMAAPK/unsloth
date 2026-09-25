@@ -59,10 +59,10 @@ def _conversation():
 
 def _truncated_turn(
     *,
-    role = "assistant",
-    content = "a",
-    fits = True,
-    dropped_messages = 4,
+    role="assistant",
+    content="a",
+    fits=True,
+    dropped_messages=4,
 ):
     """A stored turn carrying a context-truncation record, with per-test overrides."""
     return {
@@ -80,7 +80,7 @@ def test_recall_runs_even_when_document_rag_is_off(archived):
     The recalled turns are the conversation's own, so gating on rag_scope would lose a
     compacted chat's history whenever documents are off.
     """
-    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style = "tool")
+    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style="tool")
 
     assert built is not None
     assert built["sources"] >= 1
@@ -89,7 +89,7 @@ def test_recall_runs_even_when_document_rag_is_off(archived):
 
 def test_tool_style_matches_the_rag_autoinject_shape(archived):
     """The UI renders forced retrieval through the existing tool-card path."""
-    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style = "tool")
+    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style="tool")
 
     assert [event["type"] for event in built["events"]] == [
         "status",
@@ -105,7 +105,7 @@ def test_tool_style_matches_the_rag_autoinject_shape(archived):
 
 def test_inline_style_returns_a_prefix_and_no_forged_tool_messages(archived):
     """The plain path sends no tools array; a tool role there is a template hazard."""
-    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style = "inline")
+    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style="inline")
 
     assert built["messages"] == []
     assert built["events"] == []
@@ -154,7 +154,7 @@ def test_archive_and_recall_reports_counts_only(archived):
     after = _conversation()
 
     result = llama_cpp._archive_and_recall(
-        after, before, thread_id = THREAD, style = "tool", recall_done = False
+        after, before, thread_id=THREAD, style="tool", recall_done=False
     )
 
     assert set(result["counts"]) <= {"archived_messages", "recalled_chunks"}
@@ -166,7 +166,7 @@ def test_archive_and_recall_skips_recall_once_already_done(archived):
     after = _conversation()
 
     result = llama_cpp._archive_and_recall(
-        after, before, thread_id = THREAD, style = "tool", recall_done = True
+        after, before, thread_id=THREAD, style="tool", recall_done=True
     )
 
     assert result["recalled"] is False
@@ -180,7 +180,7 @@ def test_a_refused_fit_still_archives_what_it_evicted(archived):
     after = _conversation()
 
     result = llama_cpp._archive_and_recall(
-        after, before, thread_id = THREAD, style = "tool", recall_done = True
+        after, before, thread_id=THREAD, style="tool", recall_done=True
     )
 
     assert result["counts"]["archived_messages"] >= 1
@@ -203,9 +203,9 @@ def test_a_shrunken_window_hands_the_respawn_refit_a_reduced_refusal():
 
     fitted, info = fit_rolling_context(
         messages,
-        context_length = 1000,
-        max_tokens = 250,
-        count_tokens = counter,
+        context_length=1000,
+        max_tokens=250,
+        count_tokens=counter,
     )
 
     assert counter(messages) > 1000 >= counter(fitted)
@@ -218,7 +218,7 @@ def test_archive_and_recall_is_a_noop_without_a_thread_id(archived):
     after = _conversation()
 
     result = llama_cpp._archive_and_recall(
-        after, after, thread_id = None, style = "tool", recall_done = False
+        after, after, thread_id=None, style="tool", recall_done=False
     )
 
     assert result["conversation"] is after
@@ -279,7 +279,7 @@ def test_search_conversation_tool_is_registered():
 
 def test_execute_tool_without_a_thread_returns_a_message_not_a_traceback():
     result = tools_mod.execute_tool(
-        "search_conversation", {"query": "anything"}, thread_id = None, timeout = None
+        "search_conversation", {"query": "anything"}, thread_id=None, timeout=None
     )
 
     assert isinstance(result, str)
@@ -288,7 +288,7 @@ def test_execute_tool_without_a_thread_returns_a_message_not_a_traceback():
 
 def test_execute_tool_rejects_an_empty_query(archived):
     result = tools_mod.execute_tool(
-        "search_conversation", {"query": "  "}, thread_id = THREAD, timeout = None
+        "search_conversation", {"query": "  "}, thread_id=THREAD, timeout=None
     )
 
     assert result == "Error: query is empty."
@@ -296,7 +296,7 @@ def test_execute_tool_rejects_an_empty_query(archived):
 
 def test_execute_tool_finds_an_archived_turn(archived):
     result = tools_mod.execute_tool(
-        "search_conversation", {"query": "pelicans"}, thread_id = THREAD, timeout = None
+        "search_conversation", {"query": "pelicans"}, thread_id=THREAD, timeout=None
     )
 
     assert "pelicans" in result
@@ -326,7 +326,7 @@ def _fake_studio_db(monkeypatch, messages):
 
     from core.inference import checkpoint
 
-    module = types.SimpleNamespace(list_chat_messages = lambda thread_id: messages)
+    module = types.SimpleNamespace(list_chat_messages=lambda thread_id: messages)
     package = types.ModuleType("storage")
     package.studio_db = module
     monkeypatch.setitem(sys.modules, "storage", package)
@@ -340,13 +340,14 @@ def _fake_studio_db(monkeypatch, messages):
 
 def test_sticky_boundary_reads_the_newest_assistant_truncation(monkeypatch):
     from core.inference import llama_cpp
+
     _fake_studio_db(
         monkeypatch,
         [
             {"role": "user", "content": "q"},
-            _truncated_turn(dropped_messages = 12),
+            _truncated_turn(dropped_messages=12),
             {"role": "user", "content": "q2"},
-            _truncated_turn(content = "a2", dropped_messages = 18),
+            _truncated_turn(content="a2", dropped_messages=18),
         ],
     )
 
@@ -365,10 +366,10 @@ def test_sticky_boundary_ignores_a_sibling_branchs_assistant_turn(monkeypatch):
         monkeypatch,
         [
             {"role": "user", "content": "q"},
-            _truncated_turn(content = "answer on the branch we are on"),
+            _truncated_turn(content="answer on the branch we are on"),
             _truncated_turn(
-                content = "regenerated answer the user switched away from",
-                dropped_messages = 40,
+                content="regenerated answer the user switched away from",
+                dropped_messages=40,
             ),
         ],
     )
@@ -397,8 +398,8 @@ def test_sticky_boundary_takes_the_smaller_of_two_identical_replies(monkeypatch)
         monkeypatch,
         [
             {"role": "user", "content": "q"},
-            _truncated_turn(content = "Done."),
-            _truncated_turn(content = "Done.", dropped_messages = 60),
+            _truncated_turn(content="Done."),
+            _truncated_turn(content="Done.", dropped_messages=60),
         ],
     )
     branch = [
@@ -421,8 +422,8 @@ def test_sticky_boundary_still_prefers_the_newest_distinguishable_reply(monkeypa
     _fake_studio_db(
         monkeypatch,
         [
-            _truncated_turn(content = "an earlier, shallower answer", dropped_messages = 2),
-            _truncated_turn(content = "the newest answer", dropped_messages = 30),
+            _truncated_turn(content="an earlier, shallower answer", dropped_messages=2),
+            _truncated_turn(content="the newest answer", dropped_messages=30),
         ],
     )
     branch = [
@@ -445,8 +446,8 @@ def test_sticky_boundary_prefers_a_reply_that_matches_the_branch_exactly(monkeyp
         monkeypatch,
         [
             {"role": "user", "content": "did it work"},
-            _truncated_turn(content = "Not done yet, still running."),
-            _truncated_turn(content = "Done", dropped_messages = 60),
+            _truncated_turn(content="Not done yet, still running."),
+            _truncated_turn(content="Done", dropped_messages=60),
         ],
     )
     branch = [
@@ -469,7 +470,7 @@ def test_sticky_boundary_still_reads_a_reply_no_branch_message_matches_exactly(m
     _fake_studio_db(
         monkeypatch,
         [
-            _truncated_turn(content = "the answer", dropped_messages = 9),
+            _truncated_turn(content="the answer", dropped_messages=9),
         ],
     )
     branch = [
@@ -513,7 +514,7 @@ def test_sticky_boundary_prefers_the_recorded_branch_boundary(monkeypatch):
 def _anchored_row(
     boundary,
     anchor,
-    content = "a",
+    content="a",
 ):
     return {
         "role": "assistant",
@@ -634,7 +635,7 @@ def test_sticky_boundary_falls_back_for_turns_saved_before_the_boundary_existed(
     _fake_studio_db(
         monkeypatch,
         [
-            _truncated_turn(dropped_messages = 6),
+            _truncated_turn(dropped_messages=6),
         ],
     )
 
@@ -671,7 +672,7 @@ def test_sticky_boundary_only_matches_assistant_messages(monkeypatch):
         monkeypatch,
         [
             {"role": "user", "content": "did the deploy finish? not done yet I think"},
-            _truncated_turn(content = "Done", dropped_messages = 60),
+            _truncated_turn(content="Done", dropped_messages=60),
         ],
     )
     branch = [{"role": "user", "content": "did the deploy finish? not done yet I think"}]
@@ -713,7 +714,7 @@ def test_sticky_boundary_ignores_a_fit_that_did_not_fit(monkeypatch):
     _fake_studio_db(
         monkeypatch,
         [
-            _truncated_turn(fits = False, dropped_messages = 40),
+            _truncated_turn(fits=False, dropped_messages=40),
         ],
     )
 
@@ -730,7 +731,7 @@ def test_sticky_boundary_never_raises_on_a_storage_failure(monkeypatch):
     def explode(thread_id):
         raise RuntimeError("database is locked")
 
-    module = types.SimpleNamespace(list_chat_messages = explode)
+    module = types.SimpleNamespace(list_chat_messages=explode)
     package = types.ModuleType("storage")
     package.studio_db = module
     monkeypatch.setitem(sys.modules, "storage", package)
@@ -767,7 +768,7 @@ def test_a_tool_loop_retrieval_leaves_room_for_the_turn_it_enables():
 
     # ctx 3000: budget 2250, fit landed at 747.
     single_shot = llama_cpp._retrieval_budget(3000, 3000, 747)
-    in_loop = llama_cpp._retrieval_budget(3000, 3000, 747, reply_returns = True)
+    in_loop = llama_cpp._retrieval_budget(3000, 3000, 747, reply_returns=True)
 
     assert single_shot == 2250 - 747
     assert in_loop == 1125
@@ -779,9 +780,9 @@ def test_a_retrieval_budget_is_only_capped_where_it_would_take_most_of_the_turn(
 
     # A window with room to spare is untouched: half of 24,576 is far more than the
     # 5,600-token remainder, so the cap never binds.
-    assert llama_cpp._retrieval_budget(32768, 32768, 18976, reply_returns = True) == 24576 - 18976
+    assert llama_cpp._retrieval_budget(32768, 32768, 18976, reply_returns=True) == 24576 - 18976
     # And a fit that already used the whole budget gets nothing, not a negative number.
-    assert llama_cpp._retrieval_budget(3000, 3000, 9000, reply_returns = True) == 0
+    assert llama_cpp._retrieval_budget(3000, 3000, 9000, reply_returns=True) == 0
 
 
 def test_a_recorded_boundary_is_still_not_a_replayable_one():
@@ -847,10 +848,10 @@ def test_the_sticky_boundary_is_applied_once_per_request():
 
     conversation, first = fit_rolling_context(
         conversation,
-        context_length = 8000,
-        max_tokens = 512,
-        count_tokens = counter,
-        sticky_dropped = 52,
+        context_length=8000,
+        max_tokens=512,
+        count_tokens=counter,
+        sticky_dropped=52,
     )
     assert first["dropped_messages"] == 52
     # A tool result lands and pushes the already-fitted conversation back over budget.
@@ -860,17 +861,17 @@ def test_the_sticky_boundary_is_applied_once_per_request():
     ]
     _, reapplied = fit_rolling_context(
         conversation,
-        context_length = 8000,
-        max_tokens = 512,
-        count_tokens = counter,
-        sticky_dropped = 52,
+        context_length=8000,
+        max_tokens=512,
+        count_tokens=counter,
+        sticky_dropped=52,
     )
     _, once = fit_rolling_context(
         conversation,
-        context_length = 8000,
-        max_tokens = 512,
-        count_tokens = counter,
-        sticky_dropped = 0,
+        context_length=8000,
+        max_tokens=512,
+        count_tokens=counter,
+        sticky_dropped=0,
     )
     assert reapplied["dropped_messages"] > once["dropped_messages"]
     # The second shape: the boundary describes the ORIGINAL transcript, so the first
@@ -878,7 +879,7 @@ def test_the_sticky_boundary_is_applied_once_per_request():
     from pathlib import Path
 
     source = Path(__file__).resolve().parent.parent / "core/inference/llama_cpp.py"
-    text = source.read_text(encoding = "utf-8")
+    text = source.read_text(encoding="utf-8")
     assert "_sticky_boundary_applied = True" in text
     # Whitespace-insensitive: the gate is one expression however the formatter wraps it.
     # Both halves are spent together, so the depth and its provenance cannot disagree.
@@ -893,10 +894,10 @@ def test_conversation_search_top_k_is_clamped(archived, monkeypatch):
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
-        extra_queries = None,
-        forced = False,
+        top_k=None,
+        branch_messages=None,
+        extra_queries=None,
+        forced=False,
     ):
         seen["top_k"] = top_k
         seen["branch_messages"] = branch_messages
@@ -925,10 +926,10 @@ def test_conversation_search_top_k_is_clamped_by_the_live_budget(archived, monke
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
-        extra_queries = None,
-        forced = False,
+        top_k=None,
+        branch_messages=None,
+        extra_queries=None,
+        forced=False,
     ):
         seen["top_k"] = top_k
         return ("earlier turn", [{"id": "1"}])
@@ -975,8 +976,8 @@ def test_an_omitted_top_k_still_means_the_configured_default(archived, monkeypat
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         asked.append(top_k)
         return ("an earlier turn", [{"id": "1"}])
@@ -1014,8 +1015,8 @@ def test_conversation_search_refuses_a_result_the_budget_cannot_hold(archived, m
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         asked.append(top_k)
         # Roughly what a real chunk renders to, wrapper included.
@@ -1041,8 +1042,8 @@ def test_conversation_search_returns_what_the_budget_does_hold(archived, monkeyp
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         return ("an earlier turn", [{"id": "1"}])
 
@@ -1070,19 +1071,19 @@ def test_the_conversation_tool_survives_studios_explicit_allowlist(monkeypatch):
     monkeypatch.setattr(routes_mod, "_thread_has_conversation_archive", lambda _tid: True)
 
     payload = types.SimpleNamespace(
-        enabled_tools = ["search_knowledge_base", "web_search"],
-        rag_scope = {"thread_id": THREAD},
-        thread_id = THREAD,
-        bypass_permissions = False,
+        enabled_tools=["search_knowledge_base", "web_search"],
+        rag_scope={"thread_id": THREAD},
+        thread_id=THREAD,
+        bypass_permissions=False,
     )
-    tools = asyncio.run(routes_mod._select_request_tools(payload, tools_on = True, mcp_allowed = False))
+    tools = asyncio.run(routes_mod._select_request_tools(payload, tools_on=True, mcp_allowed=False))
     names = [tool["function"]["name"] for tool in tools]
 
     assert "search_conversation" in names
     assert names.count("search_conversation") == 1
     # Still absent without an archive: an ordinary short chat never sees the schema.
     monkeypatch.setattr(routes_mod, "_thread_has_conversation_archive", lambda _tid: False)
-    tools = asyncio.run(routes_mod._select_request_tools(payload, tools_on = True, mcp_allowed = False))
+    tools = asyncio.run(routes_mod._select_request_tools(payload, tools_on=True, mcp_allowed=False))
     assert "search_conversation" not in [t["function"]["name"] for t in tools]
 
 
@@ -1101,7 +1102,7 @@ def test_both_retrieval_tools_share_the_per_turn_search_cap():
     # it under a safetensors model.
     backend = Path(__file__).resolve().parent.parent / "core/inference"
     for module in ("llama_cpp.py", "safetensors_agentic.py"):
-        text = (backend / module).read_text(encoding = "utf-8")
+        text = (backend / module).read_text(encoding="utf-8")
         # The cap and the counter must both key on the set, not on one tool name.
         assert "decision.tool_name in RAG_SEARCH_TOOLS" in text, module
         assert 'decision.tool_name == "search_knowledge_base"' not in text, module
@@ -1119,10 +1120,10 @@ def test_an_omitted_top_k_falls_through_to_the_configured_default(archived, monk
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
-        extra_queries = None,
-        forced = False,
+        top_k=None,
+        branch_messages=None,
+        extra_queries=None,
+        forced=False,
     ):
         seen["top_k"] = top_k
         seen["branch_messages"] = branch_messages
@@ -1167,10 +1168,10 @@ def test_the_forced_recall_searches_for_the_USERS_question(archived, monkeypatch
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
-        extra_queries = None,
-        forced = False,
+        top_k=None,
+        branch_messages=None,
+        extra_queries=None,
+        forced=False,
     ):
         seen["query"] = query
         return ("earlier turn", [{"id": "1"}])
@@ -1185,7 +1186,7 @@ def test_the_forced_recall_searches_for_the_USERS_question(archived, monkeypatch
     ]
 
     tools_mod.build_conversation_recall(
-        conversation, THREAD, style = "inline", branch_messages = branch
+        conversation, THREAD, style="inline", branch_messages=branch
     )
 
     assert seen["query"] == "what was the VULPINE code from earlier"
@@ -1203,8 +1204,8 @@ def test_a_model_initiated_search_is_filtered_to_the_request_branch(archived, mo
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         seen["branch_messages"] = branch_messages
         return ("earlier turn", [{"id": "1"}])
@@ -1215,8 +1216,8 @@ def test_a_model_initiated_search_is_filtered_to_the_request_branch(archived, mo
     tools_mod.execute_tool(
         "search_conversation",
         {"query": "pelicans"},
-        thread_id = THREAD,
-        conversation_branch = branch,
+        thread_id=THREAD,
+        conversation_branch=branch,
     )
 
     assert seen["branch_messages"] == branch
@@ -1244,11 +1245,11 @@ def test_inline_recall_anchors_only_the_turn_it_rewrote(archived, monkeypatch):
     out = llama_cpp._archive_and_recall(
         conversation,
         conversation,
-        thread_id = THREAD,
-        style = "inline",
-        recall_done = False,
+        thread_id=THREAD,
+        style="inline",
+        recall_done=False,
         # Any non-zero budget: with none, the fit obtained no room and recall is skipped.
-        recall_budget_tokens = 100_000,
+        recall_budget_tokens=100_000,
     )
 
     assert out["recalled"] is True
@@ -1278,10 +1279,10 @@ def test_tool_recall_anchors_the_synthetic_exchange(archived, monkeypatch):
     out = llama_cpp._archive_and_recall(
         conversation,
         conversation,
-        thread_id = THREAD,
-        style = "tool",
-        recall_done = False,
-        recall_budget_tokens = 100_000,
+        thread_id=THREAD,
+        style="tool",
+        recall_done=False,
+        recall_budget_tokens=100_000,
     )
 
     assert [id(message) for message in out["anchored"]] == [id(m) for m in out["conversation"][-2:]]
@@ -1304,7 +1305,7 @@ def test_an_over_budget_recall_is_retried_with_fewer_turns(archived, monkeypatch
         *,
         style,
         top_k,
-        branch_messages = None,
+        branch_messages=None,
     ):
         asked.append(top_k)
         # 1400 characters per requested chunk, so only the smallest k fits the budget.
@@ -1316,12 +1317,12 @@ def test_an_over_budget_recall_is_retried_with_fewer_turns(archived, monkeypatch
     out = llama_cpp._archive_and_recall(
         conversation,
         conversation,
-        thread_id = THREAD,
-        style = "inline",
-        recall_done = False,
+        thread_id=THREAD,
+        style="inline",
+        recall_done=False,
         # Room for four chunks by the estimate, but only one once actually counted.
-        recall_budget_tokens = 2500,
-        count_tokens = chars,
+        recall_budget_tokens=2500,
+        count_tokens=chars,
     )
 
     assert asked == [4, 2, 1]
@@ -1356,11 +1357,11 @@ def test_recall_is_dropped_when_the_real_prompt_exceeds_the_budget(archived, mon
     tight = llama_cpp._archive_and_recall(
         conversation,
         conversation,
-        thread_id = THREAD,
-        style = "inline",
-        recall_done = False,
-        recall_budget_tokens = 10,
-        count_tokens = chars,
+        thread_id=THREAD,
+        style="inline",
+        recall_done=False,
+        recall_budget_tokens=10,
+        count_tokens=chars,
     )
     assert tight["recalled"] is False
     assert tight["conversation"] == conversation
@@ -1369,11 +1370,11 @@ def test_recall_is_dropped_when_the_real_prompt_exceeds_the_budget(archived, mon
     roomy = llama_cpp._archive_and_recall(
         conversation,
         conversation,
-        thread_id = THREAD,
-        style = "inline",
-        recall_done = False,
-        recall_budget_tokens = 100_000,
-        count_tokens = chars,
+        thread_id=THREAD,
+        style="inline",
+        recall_done=False,
+        recall_budget_tokens=100_000,
+        count_tokens=chars,
     )
     assert roomy["recalled"] is True
     assert chars(roomy["conversation"]) > chars(conversation)
@@ -1416,8 +1417,8 @@ def test_a_conversation_search_charges_token_dense_text_properly(archived, monke
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         asked.append(top_k)
         return ("\u6df1\u5c64\u5b66\u7fd2" * 250 * (top_k or 1), [{"id": "1"}])
@@ -1445,7 +1446,7 @@ def test_a_tool_exchange_this_request_created_stays_on_the_branch(monkeypatch):
     from pathlib import Path
 
     source = Path(__file__).resolve().parent.parent / "core/inference/llama_cpp.py"
-    text = " ".join(source.read_text(encoding = "utf-8").split())
+    text = " ".join(source.read_text(encoding="utf-8").split())
 
     # The branch handed to both the forced recall and a model-initiated search is the
     # accumulated one, never the request's own messages.
@@ -1468,7 +1469,7 @@ INSTRUCTION = (
 )
 
 
-def _instructed_thread(thread_id = THREAD):
+def _instructed_thread(thread_id=THREAD):
     """A thread whose instruction is archived and whose newest message is filler."""
     from storage import studio_db
 
@@ -1519,7 +1520,7 @@ def test_an_anaphoric_latest_message_recalls_the_governing_instruction(
     branch = turns + [{"role": "user", "content": "continue"}]
 
     built = tools_mod.build_conversation_recall(
-        branch, THREAD, style = "inline", top_k = 4, branch_messages = branch
+        branch, THREAD, style="inline", top_k=4, branch_messages=branch
     )
 
     assert built is not None
@@ -1542,7 +1543,7 @@ def test_a_short_self_contained_request_keeps_the_only_recall_slot(
     branch = turns + [{"role": "user", "content": "section 3"}]
 
     built = tools_mod.build_conversation_recall(
-        branch, THREAD, style = "inline", top_k = 1, branch_messages = branch
+        branch, THREAD, style="inline", top_k=1, branch_messages=branch
     )
 
     assert built is not None
@@ -1565,7 +1566,7 @@ def test_a_substantive_latest_message_still_drives_the_query_alone(
 
     monkeypatch.setattr(conversation_archive, "recall", recording)
     tools_mod.build_conversation_recall(
-        branch, THREAD, style = "inline", top_k = 4, branch_messages = branch
+        branch, THREAD, style="inline", top_k=4, branch_messages=branch
     )
 
     assert seen["extra"] is None
@@ -1604,9 +1605,9 @@ def test_no_earlier_instruction_means_no_second_query(
     block = tools_mod.build_conversation_recall(
         turns + [{"role": "user", "content": "continue"}],
         THREAD,
-        style = "inline",
-        top_k = 4,
-        branch_messages = turns + [{"role": "user", "content": "continue"}],
+        style="inline",
+        top_k=4,
+        branch_messages=turns + [{"role": "user", "content": "continue"}],
     )
 
     # The archive is not searched AT ALL: a nudge with no earlier instruction has nothing
@@ -1643,8 +1644,8 @@ def test_both_recall_styles_state_that_a_later_turn_supersedes_an_earlier_one(ar
     conversation_archive.archive_turns(THREAD, extra)
     conversation = _conversation()
 
-    inline = tools_mod.build_conversation_recall(conversation, THREAD, style = "inline", top_k = 4)
-    tool_style = tools_mod.build_conversation_recall(conversation, THREAD, style = "tool", top_k = 4)
+    inline = tools_mod.build_conversation_recall(conversation, THREAD, style="inline", top_k=4)
+    tool_style = tools_mod.build_conversation_recall(conversation, THREAD, style="tool", top_k=4)
 
     assert "supersedes" in inline["prefix"] and "oldest first" in inline["prefix"]
     tool_result = [m for m in tool_style["messages"] if m.get("role") == "tool"][0]
@@ -1656,7 +1657,7 @@ def test_both_recall_styles_state_that_a_later_turn_supersedes_an_earlier_one(ar
 def test_a_single_recalled_turn_makes_no_ordering_claim(archived):
     """One passage cannot be in an order, and the backoff's last rung is where room is
     tightest -- so the header must not be spent there."""
-    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style = "inline", top_k = 1)
+    built = tools_mod.build_conversation_recall(_conversation(), THREAD, style="inline", top_k=1)
 
     assert built is not None
     assert "supersedes" not in built["prefix"]
@@ -1677,8 +1678,8 @@ def test_a_dense_ascii_result_is_priced_by_the_callers_tokenizer(archived, monke
         thread_id,
         query,
         *,
-        top_k = None,
-        branch_messages = None,
+        top_k=None,
+        branch_messages=None,
     ):
         return (source, [])
 
@@ -1837,7 +1838,7 @@ def test_a_short_earlier_prompt_is_still_worth_searching_for(
     monkeypatch.setattr(conversation_archive, "recall", recording)
     branch = turns + [{"role": "user", "content": "continue"}]
     block = tools_mod.build_conversation_recall(
-        branch, THREAD, style = "inline", top_k = 4, branch_messages = branch
+        branch, THREAD, style="inline", top_k=4, branch_messages=branch
     )
 
     assert block is not None, "the nudge was searched for nothing at all"

@@ -24,13 +24,13 @@ def _patch_status(status):
     """Patch huggingface_hub.model_info to return one fixed security_repo_status."""
 
     def _mi(*_args, **_kwargs):
-        return SimpleNamespace(security_repo_status = status)
+        return SimpleNamespace(security_repo_status=status)
 
-    return patch("huggingface_hub.model_info", side_effect = _mi)
+    return patch("huggingface_hub.model_info", side_effect=_mi)
 
 
-def _patch_raises(exc = RuntimeError("offline")):
-    return patch("huggingface_hub.model_info", side_effect = exc)
+def _patch_raises(exc=RuntimeError("offline")):
+    return patch("huggingface_hub.model_info", side_effect=exc)
 
 
 def _patch_no_index():
@@ -38,17 +38,17 @@ def _patch_no_index():
     from huggingface_hub.utils import EntryNotFoundError
 
     def _dl(
-        repo_id = None,
-        filename = None,
-        token = None,
+        repo_id=None,
+        filename=None,
+        token=None,
         **kw,
     ):
         raise EntryNotFoundError(filename or "")
 
-    return patch("huggingface_hub.hf_hub_download", side_effect = _dl)
+    return patch("huggingface_hub.hf_hub_download", side_effect=_dl)
 
 
-def _patch_index(weight_map, index_filename = "pytorch_model.bin.index.json"):
+def _patch_index(weight_map, index_filename="pytorch_model.bin.index.json"):
     """Serve a root weight index mapping tensor names -> shard paths; others 404."""
     import json
     import tempfile
@@ -57,9 +57,9 @@ def _patch_index(weight_map, index_filename = "pytorch_model.bin.index.json"):
     from huggingface_hub.utils import EntryNotFoundError
 
     def _dl(
-        repo_id = None,
-        filename = None,
-        token = None,
+        repo_id=None,
+        filename=None,
+        token=None,
         **kw,
     ):
         if filename == index_filename:
@@ -68,21 +68,21 @@ def _patch_index(weight_map, index_filename = "pytorch_model.bin.index.json"):
             return str(p)
         raise EntryNotFoundError(filename or "")
 
-    return patch("huggingface_hub.hf_hub_download", side_effect = _dl)
+    return patch("huggingface_hub.hf_hub_download", side_effect=_dl)
 
 
 def _patch_index_unreadable():
     """Make every index fetch fail transiently (inconclusive lookup -> fail closed)."""
 
     def _dl(
-        repo_id = None,
-        filename = None,
-        token = None,
+        repo_id=None,
+        filename=None,
+        token=None,
         **kw,
     ):
         raise RuntimeError("transient network error")
 
-    return patch("huggingface_hub.hf_hub_download", side_effect = _dl)
+    return patch("huggingface_hub.hf_hub_download", side_effect=_dl)
 
 
 def _patch_index_mixed(weight_map, readable_index, failing_index):
@@ -95,9 +95,9 @@ def _patch_index_mixed(weight_map, readable_index, failing_index):
     from huggingface_hub.utils import EntryNotFoundError
 
     def _dl(
-        repo_id = None,
-        filename = None,
-        token = None,
+        repo_id=None,
+        filename=None,
+        token=None,
         **kw,
     ):
         if filename == readable_index:
@@ -108,7 +108,7 @@ def _patch_index_mixed(weight_map, readable_index, failing_index):
             raise RuntimeError("transient network error")
         raise EntryNotFoundError(filename or "")
 
-    return patch("huggingface_hub.hf_hub_download", side_effect = _dl)
+    return patch("huggingface_hub.hf_hub_download", side_effect=_dl)
 
 
 @pytest.mark.parametrize("level", ["unsafe", "suspicious", "malicious"])
@@ -161,7 +161,7 @@ def test_fail_open_scans_done_no_issues():
 
 def test_skips_local_path():
     # A local path has no Hub scan; must not even call model_info.
-    with patch("huggingface_hub.model_info", side_effect = AssertionError("should not be called")):
+    with patch("huggingface_hub.model_info", side_effect=AssertionError("should not be called")):
         d = evaluate_file_security("/tmp/some/local/model")
     assert d.blocked is False
     assert "local" in d.reason
@@ -171,7 +171,7 @@ def test_scans_inactive_hf_cache_snapshot_path(tmp_path):
     # An inactive HF cache loads by snapshot path; the gate must recover the repo id + commit from
     # models--org--repo/snapshots/<rev> and scan that exact commit, not the default branch.
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     status = {
         "scansDone": True,
         "filesWithIssues": [{"path": "pytorch_model.bin", "level": "unsafe"}],
@@ -187,15 +187,15 @@ def test_local_only_scan_inspects_exact_inactive_snapshot(tmp_path):
     repo = tmp_path / "models--evil--repo"
     selected = repo / "snapshots" / "commit-old"
     active = repo / "snapshots" / "commit-new"
-    selected.mkdir(parents = True)
-    active.mkdir(parents = True)
+    selected.mkdir(parents=True)
+    active.mkdir(parents=True)
     (selected / "pytorch_model.bin").write_bytes(b"pickle")
     (active / "model.safetensors").write_bytes(b"safe")
     (repo / "refs").mkdir()
     (repo / "refs" / "main").write_text("commit-new")
 
-    with patch("utils.utils.hf_cache_snapshot_dir", return_value = active):
-        decision = evaluate_file_security(str(selected), local_only_load = True)
+    with patch("utils.utils.hf_cache_snapshot_dir", return_value=active):
+        decision = evaluate_file_security(str(selected), local_only_load=True)
 
     assert decision.blocked is True
     assert decision.unsafe_files == [{"path": "pytorch_model.bin", "level": "unscanned"}]
@@ -203,14 +203,14 @@ def test_local_only_scan_inspects_exact_inactive_snapshot(tmp_path):
 
 def test_local_only_scan_allows_exact_safetensors_snapshot(tmp_path):
     snapshot = tmp_path / "models--good--repo" / "snapshots" / "deadbeef"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "model.safetensors").write_bytes(b"safe")
 
     with patch(
         "utils.security.file_security._fetch_security_status",
-        side_effect = AssertionError("local-only scan must not contact the Hub"),
+        side_effect=AssertionError("local-only scan must not contact the Hub"),
     ):
-        decision = evaluate_file_security(str(snapshot), local_only_load = True)
+        decision = evaluate_file_security(str(snapshot), local_only_load=True)
 
     assert decision.blocked is False
     assert "inert" in decision.reason
@@ -218,12 +218,12 @@ def test_local_only_scan_allows_exact_safetensors_snapshot(tmp_path):
 
 def test_unavailable_hub_scan_falls_back_to_exact_snapshot(tmp_path):
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "pytorch_model.bin").write_bytes(b"pickle")
 
     with patch(
         "utils.security.file_security._fetch_security_status",
-        return_value = None,
+        return_value=None,
     ):
         decision = evaluate_file_security(str(snapshot))
 
@@ -235,16 +235,16 @@ def test_unavailable_hub_scan_falls_back_to_exact_snapshot(tmp_path):
 def test_unavailable_hub_scan_inspects_explicit_load_subdirs(tmp_path):
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
     llm = snapshot / "LLM"
-    llm.mkdir(parents = True)
+    llm.mkdir(parents=True)
     (llm / "pytorch_model.bin").write_bytes(b"pickle")
 
     with patch(
         "utils.security.file_security._fetch_security_status",
-        return_value = None,
+        return_value=None,
     ):
         decision = evaluate_file_security(
             str(snapshot),
-            load_subdirs = ("LLM",),
+            load_subdirs=("LLM",),
         )
 
     assert decision.blocked is True
@@ -255,15 +255,15 @@ def test_local_fallback_preserves_native_sentence_transformer_module_path(tmp_pa
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
     module_path = r"encoder\pooling"
     module = snapshot / Path(module_path)
-    module.mkdir(parents = True)
+    module.mkdir(parents=True)
     pickle = module / "pytorch_model.bin"
     pickle.write_bytes(b"pickle")
     (snapshot / "modules.json").write_text(
         json.dumps([{"path": module_path}]),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
-    decision = evaluate_file_security(str(snapshot), local_only_load = True)
+    decision = evaluate_file_security(str(snapshot), local_only_load=True)
 
     assert decision.blocked is True
     assert decision.unsafe_files == [
@@ -273,13 +273,13 @@ def test_local_fallback_preserves_native_sentence_transformer_module_path(tmp_pa
 
 def test_local_fallback_blocks_traversing_sentence_transformer_module_path(tmp_path):
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "modules.json").write_text(
         json.dumps([{"path": "../payload"}]),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
-    decision = evaluate_file_security(str(snapshot), local_only_load = True)
+    decision = evaluate_file_security(str(snapshot), local_only_load=True)
 
     assert decision.blocked is True
     assert "could not read" in decision.reason
@@ -287,10 +287,10 @@ def test_local_fallback_blocks_traversing_sentence_transformer_module_path(tmp_p
 
 def test_online_exact_scan_blocks_sentence_transformer_module_weight(tmp_path):
     snapshot = tmp_path / "models--evil--repo" / "snapshots" / "deadbeef"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "modules.json").write_text(
         json.dumps([{"path": "0_Transformer"}]),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     status = {
         "scansDone": True,
@@ -323,7 +323,7 @@ def test_remote_gguf_named_repo_is_still_scanned():
 
 def test_skips_local_gguf_file():
     # A local .gguf path is caught by is_local_path -- no Hub call.
-    with patch("huggingface_hub.model_info", side_effect = AssertionError("should not be called")):
+    with patch("huggingface_hub.model_info", side_effect=AssertionError("should not be called")):
         d = evaluate_file_security("/tmp/models/model.gguf")
     assert d.blocked is False
     assert "local" in d.reason
@@ -467,8 +467,8 @@ def test_partial_index_read_with_transient_failure_blocks_subdir_pickle():
         _patch_status(status),
         _patch_index_mixed(
             safetensors_map,
-            readable_index = "model.safetensors.index.json",
-            failing_index = "pytorch_model.bin.index.json",
+            readable_index="model.safetensors.index.json",
+            failing_index="pytorch_model.bin.index.json",
         ),
     ):
         d = evaluate_file_security("evil/mixed-index")
@@ -540,7 +540,7 @@ def test_flagged_pickle_under_load_subdir_blocks():
         "filesWithIssues": [{"path": "LLM/pytorch_model.bin", "level": "unsafe"}],
     }
     with _patch_status(status), _patch_no_index():
-        d = evaluate_file_security("org/spark-tts", load_subdirs = ("LLM",))
+        d = evaluate_file_security("org/spark-tts", load_subdirs=("LLM",))
     assert d.blocked is True
     assert d.unsafe_files == [{"path": "LLM/pytorch_model.bin", "level": "unsafe"}]
 
@@ -571,9 +571,9 @@ def test_indexed_shard_under_load_subdir_blocks():
     }
     with (
         _patch_status(status),
-        _patch_index(weight_map, index_filename = "LLM/pytorch_model.bin.index.json"),
+        _patch_index(weight_map, index_filename="LLM/pytorch_model.bin.index.json"),
     ):
-        d = evaluate_file_security("org/spark-tts", load_subdirs = ("LLM",))
+        d = evaluate_file_security("org/spark-tts", load_subdirs=("LLM",))
     assert d.blocked is True
 
 
@@ -618,17 +618,17 @@ def _patch_status_capture(status):
 
     def _mi(repo, *_a, **_k):
         seen["repo"] = repo
-        return SimpleNamespace(security_repo_status = status)
+        return SimpleNamespace(security_repo_status=status)
 
-    return patch("huggingface_hub.model_info", side_effect = _mi), seen
+    return patch("huggingface_hub.model_info", side_effect=_mi), seen
 
 
 def test_spark_tts_llm_alias_scans_real_repo():
     # "Spark-TTS-0.5B/LLM" loads as unsloth/Spark-TTS-0.5B with LLM as load root; the literal alias 404s.
     status = {"filesWithIssues": [{"path": "LLM/pytorch_model.bin", "level": "unsafe"}]}
     cap, seen = _patch_status_capture(status)
-    with cap, patch("utils.paths.is_local_path", return_value = False), _patch_no_index():
-        d = evaluate_file_security("Spark-TTS-0.5B/LLM", load_subdirs = ())
+    with cap, patch("utils.paths.is_local_path", return_value=False), _patch_no_index():
+        d = evaluate_file_security("Spark-TTS-0.5B/LLM", load_subdirs=())
     assert seen["repo"] == "unsloth/Spark-TTS-0.5B"  # scanned the real repo, not the alias
     assert d.model_name == "unsloth/Spark-TTS-0.5B"
     assert d.blocked is True
@@ -639,7 +639,7 @@ def test_non_llm_alias_is_not_rewritten():
     # A normal repo id with one slash must be scanned as-is (no spurious rewrite).
     status = {"filesWithIssues": [{"path": "pytorch_model.bin", "level": "unsafe"}]}
     cap, seen = _patch_status_capture(status)
-    with cap, patch("utils.paths.is_local_path", return_value = False):
+    with cap, patch("utils.paths.is_local_path", return_value=False):
         d = evaluate_file_security("org/model")
     assert seen["repo"] == "org/model"
     assert d.model_name == "org/model"
@@ -649,7 +649,7 @@ def test_generic_slash_llm_repo_is_scanned_as_itself():
     # A third-party repo merely ending in "/LLM" is not a bicodec alias, so scan it as itself.
     status = {"filesWithIssues": [{"path": "pytorch_model.bin", "level": "unsafe"}]}
     cap, seen = _patch_status_capture(status)
-    with cap, patch("utils.paths.is_local_path", return_value = False):
+    with cap, patch("utils.paths.is_local_path", return_value=False):
         d = evaluate_file_security("evil/LLM")
     assert seen["repo"] == "evil/LLM"  # scanned the real repo, not unsloth/evil
     assert d.model_name == "evil/LLM"

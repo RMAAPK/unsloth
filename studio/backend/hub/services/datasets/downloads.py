@@ -177,10 +177,10 @@ def get_dataset_snapshot_metadata_cached(
     try:
         from huggingface_hub import HfApi
 
-        info = HfApi(token = hf_token).dataset_info(
+        info = HfApi(token=hf_token).dataset_info(
             repo_id,
-            files_metadata = True,
-            timeout = _DATASET_SIZE_TIMEOUT_SECONDS,
+            files_metadata=True,
+            timeout=_DATASET_SIZE_TIMEOUT_SECONDS,
         )
         total = total_size_for_siblings(info.siblings)
         hashes = blob_hashes_for_siblings(info.siblings)
@@ -190,7 +190,7 @@ def get_dataset_snapshot_metadata_cached(
             _dataset_size_neg_cache[cache_key] = time.monotonic()
             _dataset_size_neg_cache.move_to_end(cache_key)
             while len(_dataset_size_neg_cache) > _DATASET_SIZE_CACHE_MAX:
-                _dataset_size_neg_cache.popitem(last = False)
+                _dataset_size_neg_cache.popitem(last=False)
         return 0, frozenset()
     with _dataset_size_cache_lock:
         _dataset_size_cache[repo_id] = (
@@ -203,7 +203,7 @@ def get_dataset_snapshot_metadata_cached(
         _dataset_size_cache.move_to_end(repo_id)
         _dataset_size_neg_cache.pop(cache_key, None)
         while len(_dataset_size_cache) > _DATASET_SIZE_CACHE_MAX:
-            _dataset_size_cache.popitem(last = False)
+            _dataset_size_cache.popitem(last=False)
     return total, hashes
 
 
@@ -225,13 +225,13 @@ async def get_dataset_download_progress_response(
             account_access.require_download_progress_access, registry, repo_id, "dataset"
         )
     return await snapshot_progress.snapshot_progress_response(
-        repo_type = "dataset",
-        repo_id = repo_id,
-        job_key = _download_job_key(repo_id),
-        expected_bytes = expected_bytes,
-        hf_token = hf_token,
-        registry = registry,
-        metadata_resolver = get_dataset_snapshot_metadata_cached,
+        repo_type="dataset",
+        repo_id=repo_id,
+        job_key=_download_job_key(repo_id),
+        expected_bytes=expected_bytes,
+        hf_token=hf_token,
+        registry=registry,
+        metadata_resolver=get_dataset_snapshot_metadata_cached,
     )
 
 
@@ -239,11 +239,11 @@ def _dataset_status(key: str, *, repo_id: Optional[str] = None) -> DatasetDownlo
     state, error, generation = download_lifecycle.idle_status(
         _account_registry(),
         key,
-        repo_type = "dataset",
-        repo_id = repo_id,
-        variant = None,
+        repo_type="dataset",
+        repo_id=repo_id,
+        variant=None,
     )
-    return DatasetDownloadJobStatus(state = state, error = error, generation = generation)
+    return DatasetDownloadJobStatus(state=state, error=error, generation=generation)
 
 
 async def download_dataset_response(
@@ -258,20 +258,20 @@ async def download_dataset_response(
     repos named over the API rather than chosen here.
     """
     if account_is_retired():
-        raise HTTPException(status_code = 403, detail = "Account is retired")
+        raise HTTPException(status_code=403, detail="Account is retired")
     hf_token = account_hf_token(hf_token)
     allow_ambient_token = allow_ambient_token and not managed_account()
     repo_id = body.repo_id.strip()
     if not _is_valid_repo_id(repo_id):
         raise HTTPException(
-            status_code = 400,
-            detail = f"Invalid repo_id: {repo_id!r}",
+            status_code=400,
+            detail=f"Invalid repo_id: {repo_id!r}",
         )
     if managed_account():
         # Before the claim: a conflict reply would otherwise reveal another account's job.
         await asyncio.to_thread(account_access.authorize_download, repo_id, "dataset", hf_token)
     # Canonicalize so two different-cased paste-ins share one job + cache dir.
-    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type = "dataset")
+    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type="dataset")
     key = _download_job_key(repo_id)
 
     # Size and Auto resolution may perform network probes, so keep both off the event loop.
@@ -279,16 +279,16 @@ async def download_dataset_response(
         download_lifecycle.largest_download_file_bytes,
         "dataset",
         repo_id,
-        hf_token = hf_token,
-        allow_ambient_token = allow_ambient_token,
+        hf_token=hf_token,
+        allow_ambient_token=allow_ambient_token,
     )
     use_xet, transport_reason = await asyncio.to_thread(
         download_lifecycle.resolve_requested_use_xet,
         getattr(body, "transport_mode", None),
         body.use_xet,
-        largest_file_bytes = largest_file_bytes,
+        largest_file_bytes=largest_file_bytes,
     )
-    transport = download_lifecycle.resolve_transport(use_xet, largest_file_bytes = largest_file_bytes)
+    transport = download_lifecycle.resolve_transport(use_xet, largest_file_bytes=largest_file_bytes)
     logger.info("Download transport for %s: %s (%s)", repo_id, transport, transport_reason)
     from utils.hf_cache_settings import get_hf_cache_paths
 
@@ -303,10 +303,10 @@ async def download_dataset_response(
             registry,
             key,
             transport,
-            repo_type = "dataset",
-            repo_id = repo_id,
-            hub_cache = str(cache_paths.hub_cache),
-            xet_cache = str(cache_paths.xet_cache),
+            repo_type="dataset",
+            repo_id=repo_id,
+            hub_cache=str(cache_paths.hub_cache),
+            xet_cache=str(cache_paths.xet_cache),
         )
         generation = registry.current_generation(key)
         if not claimed:
@@ -333,28 +333,28 @@ async def download_dataset_response(
             "dataset",
             repo_id,
             None,
-            hub_cache = cache_paths.hub_cache,
+            hub_cache=cache_paths.hub_cache,
         )
 
         state = download_lifecycle.launch_worker(
             registry,
             key,
-            spawn = lambda: download_lifecycle.spawn_worker(
+            spawn=lambda: download_lifecycle.spawn_worker(
                 ["--repo-id", repo_id, "--dataset"],
                 hf_token,
-                use_xet = use_xet,
-                cache_env = cache_env,
-                allow_ambient_token = allow_ambient_token,
+                use_xet=use_xet,
+                cache_env=cache_env,
+                allow_ambient_token=allow_ambient_token,
             ),
-            hf_token = hf_token,
-            allow_ambient_token = allow_ambient_token,
-            label = repo_id,
-            log_prefix = "Dataset download",
-            logger = logger,
-            repo_type = "dataset",
-            repo_id = repo_id,
-            transport = transport,
-            watch_name = f"hf-dataset-download-watch-{repo_id}",
+            hf_token=hf_token,
+            allow_ambient_token=allow_ambient_token,
+            label=repo_id,
+            log_prefix="Dataset download",
+            logger=logger,
+            repo_type="dataset",
+            repo_id=repo_id,
+            transport=transport,
+            watch_name=f"hf-dataset-download-watch-{repo_id}",
         )
 
         return {
@@ -375,18 +375,18 @@ async def cancel_dataset_download_response(body: CancelDatasetDownloadRequest) -
     repo_id = body.repo_id.strip()
     if not _is_valid_repo_id(repo_id):
         raise HTTPException(
-            status_code = 400,
-            detail = f"Invalid repo_id: {repo_id!r}",
+            status_code=400,
+            detail=f"Invalid repo_id: {repo_id!r}",
         )
-    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type = "dataset")
+    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type="dataset")
     key = _download_job_key(repo_id)
 
     state = download_lifecycle.cancel_worker(
         _account_registry(),
         key,
-        generation = body.generation,
-        label = f"dataset {repo_id}",
-        logger = logger,
+        generation=body.generation,
+        label=f"dataset {repo_id}",
+        logger=logger,
     )
     return {"repo_id": repo_id, "state": state}
 
@@ -395,25 +395,25 @@ async def get_dataset_download_status_response(repo_id: str) -> DatasetDownloadJ
     """Return the latest state of a background dataset download job."""
     repo_id = repo_id.strip()
     if not _is_valid_repo_id(repo_id):
-        return DatasetDownloadJobStatus(state = "idle")
-    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type = "dataset")
-    return _dataset_status(_download_job_key(repo_id), repo_id = repo_id)
+        return DatasetDownloadJobStatus(state="idle")
+    repo_id = await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type="dataset")
+    return _dataset_status(_download_job_key(repo_id), repo_id=repo_id)
 
 
 async def get_active_dataset_downloads_response(repo_id: str = "") -> ActiveDownloadsResponse:
     repo_id = repo_id.strip()
     if repo_id and not _is_valid_repo_id(repo_id):
-        return ActiveDownloadsResponse(downloads = [])
+        return ActiveDownloadsResponse(downloads=[])
     canonical_repo_id = (
-        await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type = "dataset")
+        await asyncio.to_thread(resolve_cached_repo_id_case, repo_id, repo_type="dataset")
         if repo_id
         else None
     )
     return ActiveDownloadsResponse(
-        downloads = download_lifecycle.active_download_refs(
+        downloads=download_lifecycle.active_download_refs(
             _account_registry(),
             canonical_repo_id,
-            with_variant = False,
+            with_variant=False,
         )
     )
 
@@ -453,13 +453,13 @@ def retire_account_downloads() -> None:
     stragglers = []
     for job in registry.active_job_refs():
         download_lifecycle.cancel_worker(
-            registry, job.key, generation = job.generation, label = "dataset", logger = logger
+            registry, job.key, generation=job.generation, label="dataset", logger=logger
         )
         proc = registry.get_process(job.key)
         if proc is None:
             continue
         try:
-            proc.wait(timeout = 10)
+            proc.wait(timeout=10)
         except Exception:
             stragglers.append(job.key)
     if stragglers:

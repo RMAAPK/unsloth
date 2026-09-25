@@ -28,18 +28,18 @@ def _run(
     tmp_path,
     *,
     mask,
-    gpu_ids = None,
-    extra_args = None,
+    gpu_ids=None,
+    extra_args=None,
 ):
     if mask is None:
-        monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
+        monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     else:
         monkeypatch.setenv("CUDA_VISIBLE_DEVICES", mask)
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
-    backend, gguf = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, gguf = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     backend._select_gpus = lambda *args, **kwargs: ([0, 1], False)
     kwargs = {} if extra_args is None else {"extra_args": extra_args}
-    result = _launch(backend, gguf, n_ctx = 4096, gpu_ids = gpu_ids, **kwargs)
+    result = _launch(backend, gguf, n_ctx=4096, gpu_ids=gpu_ids, **kwargs)
     return backend, result
 
 
@@ -49,33 +49,33 @@ def _device_arg(cmd):
 
 def test_reordered_parent_mask_reaches_the_child(monkeypatch, tmp_path):
     """A numeric mask carries ORDER, not just membership, so it must survive."""
-    _, result = _run(monkeypatch, tmp_path, mask = "1,0")
+    _, result = _run(monkeypatch, tmp_path, mask="1,0")
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "1,0"
 
 
 def test_an_explicit_pick_outranks_the_inherited_mask(monkeypatch, tmp_path):
     """Both name an order. The picker is the more explicit and more recent one."""
-    backend, result = _run(monkeypatch, tmp_path, mask = "1,0", gpu_ids = [0, 1])
+    backend, result = _run(monkeypatch, tmp_path, mask="1,0", gpu_ids=[0, 1])
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
     # The ordinal -> physical map the buffer parser reads has to match what we emitted.
     assert backend._child_gpu_physical_ids == (0, 1)
 
 
 def test_the_picked_order_is_the_child_order(monkeypatch, tmp_path):
-    backend, result = _run(monkeypatch, tmp_path, mask = None, gpu_ids = [1, 0])
+    backend, result = _run(monkeypatch, tmp_path, mask=None, gpu_ids=[1, 0])
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "1,0"
     assert backend._child_gpu_physical_ids == (1, 0)
     assert backend.requested_gpu_ids == [1, 0]
 
 
 def test_ascending_parent_mask_is_left_alone(monkeypatch, tmp_path):
-    _, result = _run(monkeypatch, tmp_path, mask = "0,1")
+    _, result = _run(monkeypatch, tmp_path, mask="0,1")
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
 
 
 def test_partial_mask_cannot_order_the_rest(monkeypatch, tmp_path):
     """A mask covering only some pinned ids says nothing about where the others go."""
-    _, result = _run(monkeypatch, tmp_path, mask = "1")
+    _, result = _run(monkeypatch, tmp_path, mask="1")
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
 
 
@@ -96,22 +96,22 @@ def test_tensor_split_repoint_declines_a_mismatched_width(monkeypatch, tmp_path)
 
 def test_user_tensor_split_keeps_ascending_order(monkeypatch, tmp_path):
     """Their shares are positional over the order they expected. Decline, don't rewrite."""
-    _, result = _run(monkeypatch, tmp_path, mask = "1,0", extra_args = ["--tensor-split", "60,40"])
+    _, result = _run(monkeypatch, tmp_path, mask="1,0", extra_args=["--tensor-split", "60,40"])
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
     assert result["cmd"][result["cmd"].index("--tensor-split") + 1] == "60,40"
 
 
 def test_narrowing_pick_still_owns_device_flags(monkeypatch, tmp_path):
     """A --device naming a deselected card must not outlive the picker."""
-    backend, gguf = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, gguf = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0,1")
     backend._select_gpus = lambda *args, **kwargs: ([1], False)
     result = _launch(
         backend,
         gguf,
-        n_ctx = 4096,
-        gpu_ids = [1],
-        extra_args = ["--device", "CUDA0", "--top-k", "5"],
+        n_ctx=4096,
+        gpu_ids=[1],
+        extra_args=["--device", "CUDA0", "--top-k", "5"],
     )
     assert _device_arg(result["cmd"]) is None
     assert result["cmd"][result["cmd"].index("--top-k") + 1] == "5"
@@ -120,7 +120,7 @@ def test_narrowing_pick_still_owns_device_flags(monkeypatch, tmp_path):
 def test_an_unparseable_user_split_still_vetoes_the_reorder(monkeypatch, tmp_path):
     """The veto is presence, not a successful parse: the repointer does no numeric
     validation and takes the LAST --tensor-split, which is the user's."""
-    _, result = _run(monkeypatch, tmp_path, mask = "1,0", extra_args = ["--tensor-split", "3x,1"])
+    _, result = _run(monkeypatch, tmp_path, mask="1,0", extra_args=["--tensor-split", "3x,1"])
     cmd = result["cmd"]
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
     assert cmd[len(cmd) - 1 - cmd[::-1].index("--tensor-split") + 1] == "3x,1"
@@ -136,12 +136,12 @@ def test_a_split_scrubbed_from_the_child_does_not_veto(monkeypatch, tmp_path):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1,0")
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
     monkeypatch.setenv("LLAMA_ARG_TENSOR_SPLIT", "60,40")
-    backend, gguf = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, gguf = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     backend._get_gguf_size_bytes = lambda _path: 14 * 1024**3
     backend._select_gpus = lambda *args, **kwargs: ([0, 1], False)
     # No explicit pick: here the picker outranks the inherited mask, so only an
     # unpicked load reaches the mask reorder this cell is about.
-    result = _launch(backend, gguf, n_ctx = 4096, tensor_parallel = True)
+    result = _launch(backend, gguf, n_ctx=4096, tensor_parallel=True)
     assert result["env"].get("LLAMA_ARG_TENSOR_SPLIT") is None
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "1,0"
 
@@ -150,7 +150,7 @@ def test_a_split_the_child_does_inherit_still_vetoes(monkeypatch, tmp_path):
     """The control: the child receives it here, so it is positional over the order
     the user expected and the reorder must decline."""
     monkeypatch.setenv("LLAMA_ARG_TENSOR_SPLIT", "60,40")
-    _, result = _run(monkeypatch, tmp_path, mask = "1,0")
+    _, result = _run(monkeypatch, tmp_path, mask="1,0")
     assert result["env"].get("LLAMA_ARG_TENSOR_SPLIT") == "60,40"
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
 
@@ -161,7 +161,7 @@ def test_an_explicit_pick_always_owns_device_flags(monkeypatch, tmp_path):
     already does that, and the pass-through cost a recomputation every consumer of
     the strip had to agree about, so an explicit pick owns placement again.
     """
-    backend, _ = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, _ = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0,1")
     own = backend._gpu_ids_own_placement
     assert own([0, 1]) is True
@@ -177,9 +177,9 @@ def test_the_authoritative_effective_pin_keeps_the_picked_order(monkeypatch, tmp
     """
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0,1")
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
-    backend, gguf = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, gguf = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     backend._select_gpus = lambda *args, **kwargs: ([1, 0], False)
-    _launch(backend, gguf, n_ctx = 4096, gpu_ids = [1, 0])
+    _launch(backend, gguf, n_ctx=4096, gpu_ids=[1, 0])
     assert backend._gpu_ids == [1, 0], f"the effective pin was re-sorted: {backend._gpu_ids}"
 
 
@@ -188,12 +188,12 @@ def test_the_reported_split_follows_the_reorder(monkeypatch, tmp_path):
     reorder rewrote it, so each share was paired with the wrong visible device."""
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1,0")
     monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
-    backend, gguf = _backend(tmp_path, vulkan = False, memory = _TWO_GPUS)
+    backend, gguf = _backend(tmp_path, vulkan=False, memory=_TWO_GPUS)
     backend._get_gguf_size_bytes = lambda _path: 14 * 1024**3
     backend._select_gpus = lambda *args, **kwargs: ([0, 1], False)
     # No explicit pick: in this branch an explicit pick outranks the inherited
     # mask, so only an unpicked load reaches the mask reorder at all.
-    result = _launch(backend, gguf, n_ctx = 4096, tensor_parallel = True)
+    result = _launch(backend, gguf, n_ctx=4096, tensor_parallel=True)
     cmd = result["cmd"]
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "1,0"
     in_argv = [float(x) for x in cmd[cmd.index("--tensor-split") + 1].split(",")]
@@ -212,9 +212,9 @@ def test_a_full_set_pick_strips_a_device_flag(monkeypatch, tmp_path):
     _, result = _run(
         monkeypatch,
         tmp_path,
-        mask = "0,1",
-        gpu_ids = [0, 1],
-        extra_args = ["--device", "CUDA1,CUDA0"],
+        mask="0,1",
+        gpu_ids=[0, 1],
+        extra_args=["--device", "CUDA1,CUDA0"],
     )
     assert _device_arg(result["cmd"]) is None
     assert result["env"].get("LLAMA_ARG_DEVICE") is None
@@ -226,6 +226,6 @@ def test_the_picker_is_how_a_full_pick_orders_its_cards(monkeypatch, tmp_path):
     In this branch the picker carries the order and outranks the inherited mask,
     so the pick is what the child enumerates by.
     """
-    backend, result = _run(monkeypatch, tmp_path, mask = "0,1", gpu_ids = [1, 0])
+    backend, result = _run(monkeypatch, tmp_path, mask="0,1", gpu_ids=[1, 0])
     assert result["env"]["CUDA_VISIBLE_DEVICES"] == "1,0"
     assert backend._child_gpu_physical_ids == (1, 0)

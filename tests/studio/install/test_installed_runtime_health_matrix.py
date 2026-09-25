@@ -49,46 +49,46 @@ HostInfo = ILP.HostInfo
 
 def _host(**kw) -> HostInfo:
     base = dict(
-        system = "Linux",
-        machine = "x86_64",
-        is_windows = False,
-        is_linux = True,
-        is_macos = False,
-        is_x86_64 = True,
-        is_arm64 = False,
-        nvidia_smi = None,
-        driver_cuda_version = None,
-        compute_caps = [],
-        visible_cuda_devices = None,
-        has_physical_nvidia = False,
-        has_usable_nvidia = False,
+        system="Linux",
+        machine="x86_64",
+        is_windows=False,
+        is_linux=True,
+        is_macos=False,
+        is_x86_64=True,
+        is_arm64=False,
+        nvidia_smi=None,
+        driver_cuda_version=None,
+        compute_caps=[],
+        visible_cuda_devices=None,
+        has_physical_nvidia=False,
+        has_usable_nvidia=False,
     )
     base.update(kw)
     return HostInfo(**base)
 
 
 LINUX = _host()
-LINUX_ARM64 = _host(machine = "aarch64", is_x86_64 = False, is_arm64 = True)
-WINDOWS = _host(system = "Windows", machine = "AMD64", is_windows = True, is_linux = False)
+LINUX_ARM64 = _host(machine="aarch64", is_x86_64=False, is_arm64=True)
+WINDOWS = _host(system="Windows", machine="AMD64", is_windows=True, is_linux=False)
 MACOS_ARM64 = _host(
-    system = "Darwin",
-    machine = "arm64",
-    is_windows = False,
-    is_linux = False,
-    is_macos = True,
-    is_x86_64 = False,
-    is_arm64 = True,
-    macos_version = (15, 5),
+    system="Darwin",
+    machine="arm64",
+    is_windows=False,
+    is_linux=False,
+    is_macos=True,
+    is_x86_64=False,
+    is_arm64=True,
+    macos_version=(15, 5),
 )
 MACOS_X64 = _host(
-    system = "Darwin",
-    machine = "x86_64",
-    is_windows = False,
-    is_linux = False,
-    is_macos = True,
-    is_x86_64 = True,
-    is_arm64 = False,
-    macos_version = (14, 6),
+    system="Darwin",
+    machine="x86_64",
+    is_windows=False,
+    is_linux=False,
+    is_macos=True,
+    is_x86_64=True,
+    is_arm64=False,
+    macos_version=(14, 6),
 )
 
 HOSTS = [
@@ -332,7 +332,7 @@ def build_tree(
     root: Path,
     *,
     host: HostInfo = LINUX,
-    marker = "default",
+    marker="default",
     backend: str = "cuda",
     payload: bool = True,
     cudart: bool = False,
@@ -350,26 +350,26 @@ def build_tree(
     ext = ".exe" if host.is_windows else ""
     runtime = _runtime_dir(root, host)
     if runtime_dir:
-        runtime.mkdir(parents = True)
+        runtime.mkdir(parents=True)
     else:
-        root.mkdir(parents = True, exist_ok = True)
+        root.mkdir(parents=True, exist_ok=True)
 
     if binaries:
         targets = [root / f"llama-server{ext}", root / f"llama-quantize{ext}"]
         if runtime_dir:
             targets += [runtime / f"llama-server{ext}", runtime / f"llama-quantize{ext}"]
         for path in targets:
-            path.write_text("#!/bin/sh\nexit 0\n", encoding = "utf-8")
+            path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
             os.chmod(path, 0o755)
-    (root / "convert_hf_to_gguf.py").write_text("", encoding = "utf-8")
-    (root / "gguf-py").mkdir(exist_ok = True)
+    (root / "convert_hf_to_gguf.py").write_text("", encoding="utf-8")
+    (root / "gguf-py").mkdir(exist_ok=True)
 
     if marker == "default":
         marker = S12
     if marker is not None:
         (root / "UNSLOTH_PREBUILT_INFO.json").write_text(
             marker if isinstance(marker, str) else json.dumps(marker) + "\n",
-            encoding = "utf-8",
+            encoding="utf-8",
         )
 
     if payload and runtime_dir:
@@ -379,7 +379,7 @@ def build_tree(
         if cudart:
             names += list(_CUDART_TRIO)
         for name in names:
-            (runtime / name).write_text("x", encoding = "utf-8")
+            (runtime / name).write_text("x", encoding="utf-8")
     return root
 
 
@@ -394,18 +394,18 @@ CELLS = [
 CELL_IDS = [cell[0] for cell in CELLS]
 
 
-@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids = CELL_IDS)
+@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids=CELL_IDS)
 def test_a_complete_install_of_every_shipped_shape_is_healthy_everywhere(
     tmp_path, cell, host, backend, shape
 ):
     """The backwards-compatibility half: a wrong ``(False, ...)`` on any shape sends every user
     carrying it into a repair on next launch."""
     marker = shape_with_backend(shape, backend)
-    root = build_tree(tmp_path / "llama.cpp", host = host, marker = marker, backend = backend)
-    assert ILP.installed_runtime_health(root, host = host) == (True, ""), cell
+    root = build_tree(tmp_path / "llama.cpp", host=host, marker=marker, backend=backend)
+    assert ILP.installed_runtime_health(root, host=host) == (True, ""), cell
 
 
-@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids = CELL_IDS)
+@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids=CELL_IDS)
 def test_removing_any_single_required_file_is_reported_broken(tmp_path, cell, host, backend, shape):
     """One file at a time, the shape quarantine leaves: the tree is otherwise whole, so a
     check that only looks at the directory or the marker would pass it."""
@@ -419,12 +419,12 @@ def test_removing_any_single_required_file_is_reported_broken(tmp_path, cell, ho
     for victim in dict.fromkeys(victims):
         root = build_tree(
             tmp_path / victim.replace("*", "_"),
-            host = host,
-            marker = marker,
-            backend = backend,
+            host=host,
+            marker=marker,
+            backend=backend,
         )
         (_runtime_dir(root, host) / victim).unlink()
-        verdict = ILP.installed_runtime_health(root, host = host)
+        verdict = ILP.installed_runtime_health(root, host=host)
         assert verdict is not None, f"{cell}: {victim}"
         ok, reason = verdict
         assert ok is False, f"{cell}: removing {victim} was called healthy"
@@ -434,7 +434,7 @@ def test_removing_any_single_required_file_is_reported_broken(tmp_path, cell, ho
         }, f"{cell}: {victim} -> {reason}"
 
 
-@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids = CELL_IDS)
+@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids=CELL_IDS)
 def test_a_broken_tree_is_never_one_the_repair_would_keep(tmp_path, cell, host, backend, shape):
     """THE INVARIANT, as a property over the matrix rather than as examples.
 
@@ -456,13 +456,13 @@ def test_a_broken_tree_is_never_one_the_repair_would_keep(tmp_path, cell, host, 
     for label, victim in damages:
         root = build_tree(
             tmp_path / label,
-            host = host,
-            marker = marker,
-            backend = backend,
+            host=host,
+            marker=marker,
+            backend=backend,
         )
         if victim is not None:
             (_runtime_dir(root, host) / str(victim)).unlink()
-        verdict = ILP.installed_runtime_health(root, host = host)
+        verdict = ILP.installed_runtime_health(root, host=host)
         if label == "healthy":
             # The positive control, without which the implication below holds for free.
             assert verdict == (True, ""), cell
@@ -476,7 +476,7 @@ def test_a_broken_tree_is_never_one_the_repair_would_keep(tmp_path, cell, host, 
         )
 
 
-@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids = CELL_IDS)
+@pytest.mark.parametrize(("cell", "host", "backend", "shape"), CELLS, ids=CELL_IDS)
 def test_the_structural_damage_cases_are_broken_and_never_kept(
     tmp_path, cell, host, backend, shape
 ):
@@ -486,12 +486,12 @@ def test_the_structural_damage_cases_are_broken_and_never_kept(
 
     without_dir = build_tree(
         tmp_path / "no-runtime-dir",
-        host = host,
-        marker = marker,
-        backend = backend,
-        runtime_dir = False,
+        host=host,
+        marker=marker,
+        backend=backend,
+        runtime_dir=False,
     )
-    assert ILP.installed_runtime_health(without_dir, host = host) == (
+    assert ILP.installed_runtime_health(without_dir, host=host) == (
         False,
         "llama_runtime_dir_missing",
     ), cell
@@ -501,11 +501,11 @@ def test_the_structural_damage_cases_are_broken_and_never_kept(
     # it broken would offer a repair for a runtime the user never installed here.
     without_marker = build_tree(
         tmp_path / "no-marker",
-        host = host,
-        marker = None,
-        backend = backend,
+        host=host,
+        marker=None,
+        backend=backend,
     )
-    assert ILP.installed_runtime_health(without_marker, host = host) is None, cell
+    assert ILP.installed_runtime_health(without_marker, host=host) is None, cell
 
     # A present but unreadable marker is graded on its tree, not short-circuited to "nothing
     # installed"; load_prebuilt_metadata cannot tell the two apart, so the file itself does.
@@ -513,25 +513,25 @@ def test_the_structural_damage_cases_are_broken_and_never_kept(
     # keeps it too (confirm_install_tree only checks the marker file exists).
     corrupt = build_tree(
         tmp_path / "corrupt-marker",
-        host = host,
-        marker = "{not json",
-        backend = backend,
+        host=host,
+        marker="{not json",
+        backend=backend,
     )
-    assert ILP.installed_runtime_health(corrupt, host = host) == (True, ""), cell
+    assert ILP.installed_runtime_health(corrupt, host=host) == (True, ""), cell
     assert ILP._existing_install_runs(corrupt, host) is True, cell
 
     # Damaged as well as unreadable: the case the old behaviour missed, leaving preflight
     # Ready with a library gone.
     corrupt_and_gutted = build_tree(
         tmp_path / "corrupt-marker-gutted",
-        host = host,
-        marker = "{not json",
-        backend = backend,
+        host=host,
+        marker="{not json",
+        backend=backend,
     )
     for path in sorted(_runtime_dir(corrupt_and_gutted, host).glob("*")):
         if path.is_file() and not path.name.startswith("llama-"):
             path.unlink()
-    verdict = ILP.installed_runtime_health(corrupt_and_gutted, host = host)
+    verdict = ILP.installed_runtime_health(corrupt_and_gutted, host=host)
     assert verdict is not None and verdict[0] is False, cell
     assert ILP._existing_install_runs(corrupt_and_gutted, host) is False, cell
 
@@ -541,25 +541,25 @@ def test_removing_a_file_this_install_kind_does_not_owe_stays_healthy(tmp_path):
     asserted too: the diffusion visual server outside a published Vulkan install, and
     llama-server-impl.dll on a Windows archive built before the upstream impl split."""
     cuda = shape_with_backend(S12, "cuda")
-    root = build_tree(tmp_path / "cuda", host = LINUX, marker = cuda, backend = "cuda")
+    root = build_tree(tmp_path / "cuda", host=LINUX, marker=cuda, backend="cuda")
     (_runtime_dir(root, LINUX) / "llama-diffusion-gemma-visual-server").unlink()
-    assert ILP.installed_runtime_health(root, host = LINUX) == (True, "")
+    assert ILP.installed_runtime_health(root, host=LINUX) == (True, "")
 
     old_windows = shape_with_backend(S2, "cpu")  # tag b6099, before build 9283
-    win = build_tree(tmp_path / "win", host = WINDOWS, marker = old_windows, backend = "cpu")
+    win = build_tree(tmp_path / "win", host=WINDOWS, marker=old_windows, backend="cpu")
     (_runtime_dir(win, WINDOWS) / "llama-server-impl.dll").unlink()
-    assert ILP.installed_runtime_health(win, host = WINDOWS) == (True, "")
+    assert ILP.installed_runtime_health(win, host=WINDOWS) == (True, "")
 
     # S11 and older cannot record a cudart pairing, so demanding the trio would reject every
     # Windows CUDA install that exists today, on every launch.
     unpaired = build_tree(
         tmp_path / "unpaired",
-        host = WINDOWS,
-        marker = shape_with_backend(S11, "cuda"),
-        backend = "cuda",
-        cudart = False,
+        host=WINDOWS,
+        marker=shape_with_backend(S11, "cuda"),
+        backend="cuda",
+        cudart=False,
     )
-    assert ILP.installed_runtime_health(unpaired, host = WINDOWS) == (True, "")
+    assert ILP.installed_runtime_health(unpaired, host=WINDOWS) == (True, "")
 
 
 def test_the_split_dylibs_are_owed_on_a_post_split_macos_bundle(tmp_path):
@@ -570,13 +570,13 @@ def test_the_split_dylibs_are_owed_on_a_post_split_macos_bundle(tmp_path):
     """
     post = build_tree(
         tmp_path / "post",
-        host = MACOS_ARM64,
-        marker = shape_with_backend(S12_REAL, "metal"),
-        backend = "metal",
+        host=MACOS_ARM64,
+        marker=shape_with_backend(S12_REAL, "metal"),
+        backend="metal",
     )
-    assert ILP.installed_runtime_health(post, host = MACOS_ARM64) == (True, "")
+    assert ILP.installed_runtime_health(post, host=MACOS_ARM64) == (True, "")
     (_runtime_dir(post, MACOS_ARM64) / "libllama-server-impl.dylib").unlink()
-    assert ILP.installed_runtime_health(post, host = MACOS_ARM64) == (
+    assert ILP.installed_runtime_health(post, host=MACOS_ARM64) == (
         False,
         "llama_runtime_payload_incomplete",
     )
@@ -585,11 +585,11 @@ def test_the_split_dylibs_are_owed_on_a_post_split_macos_bundle(tmp_path):
     # them there would reinstall forever.
     pre = build_tree(
         tmp_path / "pre",
-        host = MACOS_ARM64,
-        marker = shape_with_backend(S1, "metal"),  # upstream b6099, before build 9283
-        backend = "metal",
+        host=MACOS_ARM64,
+        marker=shape_with_backend(S1, "metal"),  # upstream b6099, before build 9283
+        backend="metal",
     )
-    assert ILP.installed_runtime_health(pre, host = MACOS_ARM64) == (True, "")
+    assert ILP.installed_runtime_health(pre, host=MACOS_ARM64) == (True, "")
 
 
 # ---------------------------------------------------------------------------
@@ -611,22 +611,22 @@ GPU_HOSTS = [
 @pytest.mark.parametrize(
     ("host_id", "host"),
     HOSTS,
-    ids = [h[0] for h in HOSTS],
+    ids=[h[0] for h in HOSTS],
 )
 def test_the_verdict_does_not_move_with_the_detected_gpu(tmp_path, host_id, host, backend):
     """Same tree, six hardware stories, one verdict. Asserted healthy and gutted, so a check
     that silently relaxed on, say, an Intel host is caught."""
     marker = shape_with_backend(S12, backend)
-    healthy = build_tree(tmp_path / "healthy", host = host, marker = marker, backend = backend)
-    gutted = build_tree(tmp_path / "gutted", host = host, marker = marker, backend = backend)
+    healthy = build_tree(tmp_path / "healthy", host=host, marker=marker, backend=backend)
+    gutted = build_tree(tmp_path / "gutted", host=host, marker=marker, backend=backend)
     (_runtime_dir(gutted, host) / _SHARED_PAYLOAD[_platform_of(host)][0]).unlink()
 
     healthy_verdicts = set()
     gutted_verdicts = set()
     for gpu_id, fields in GPU_HOSTS:
         variant = _host(**{**host.__dict__, **fields})
-        healthy_verdicts.add(ILP.installed_runtime_health(healthy, host = variant))
-        gutted_verdicts.add(ILP.installed_runtime_health(gutted, host = variant))
+        healthy_verdicts.add(ILP.installed_runtime_health(healthy, host=variant))
+        gutted_verdicts.add(ILP.installed_runtime_health(gutted, host=variant))
     assert healthy_verdicts == {(True, "")}, f"{host_id}-{backend}: {healthy_verdicts}"
     assert gutted_verdicts == {
         (False, "llama_runtime_payload_incomplete")
@@ -641,22 +641,22 @@ def test_the_verdict_does_not_move_with_the_detected_gpu(tmp_path, host_id, host
 @pytest.mark.parametrize(
     ("host_id", "host"),
     HOSTS,
-    ids = [h[0] for h in HOSTS],
+    ids=[h[0] for h in HOSTS],
 )
 @pytest.mark.parametrize(
     "missing",
     [("server",), ("quantize",), ("server", "quantize")],
-    ids = ["server", "quantize", "both"],
+    ids=["server", "quantize", "both"],
 )
 def test_a_missing_entrypoint_is_caught_with_a_complete_library_payload(
     tmp_path, host_id, host, missing
 ):
     marker = shape_with_backend(S12, "cuda")
-    root = build_tree(tmp_path / "tree", host = host, marker = marker, backend = "cuda")
+    root = build_tree(tmp_path / "tree", host=host, marker=marker, backend="cuda")
     ext = ".exe" if host.is_windows else ""
     for name in missing:
         (_runtime_dir(root, host) / f"llama-{name}{ext}").unlink()
-    ok, reason = ILP.installed_runtime_health(root, host = host)
+    ok, reason = ILP.installed_runtime_health(root, host=host)
     assert ok is False
     if host.is_windows and "server" in missing:
         # llama-server.exe is itself in the Windows shared payload, so the payload check
@@ -673,35 +673,35 @@ def test_a_missing_entrypoint_is_caught_with_a_complete_library_payload(
 
 def test_an_install_dir_reached_through_a_symlink_is_judged_the_same(tmp_path):
     """Installs move, and a symlink at the old path is how users keep the launcher working."""
-    real = build_tree(tmp_path / "real", host = LINUX, marker = S12, backend = "cuda")
+    real = build_tree(tmp_path / "real", host=LINUX, marker=S12, backend="cuda")
     link = tmp_path / "link"
-    link.symlink_to(real, target_is_directory = True)
-    assert ILP.installed_runtime_health(link, host = LINUX) == (True, "")
+    link.symlink_to(real, target_is_directory=True)
+    assert ILP.installed_runtime_health(link, host=LINUX) == (True, "")
 
 
 def test_a_runtime_path_that_is_a_file_is_broken_not_an_exception(tmp_path):
     """A truncated extract can leave build/bin as a regular file, and globbing a
     non-directory must not raise on the launch path."""
     root = tmp_path / "llama.cpp"
-    (root / "build").mkdir(parents = True)
-    (root / "build" / "bin").write_text("not a directory", encoding = "utf-8")
-    (root / "UNSLOTH_PREBUILT_INFO.json").write_text(json.dumps(S12), encoding = "utf-8")
-    assert ILP.installed_runtime_health(root, host = LINUX) == (False, "llama_runtime_dir_missing")
+    (root / "build").mkdir(parents=True)
+    (root / "build" / "bin").write_text("not a directory", encoding="utf-8")
+    (root / "UNSLOTH_PREBUILT_INFO.json").write_text(json.dumps(S12), encoding="utf-8")
+    assert ILP.installed_runtime_health(root, host=LINUX) == (False, "llama_runtime_dir_missing")
     assert ILP._existing_install_runs(root, LINUX) is False
 
 
-@pytest.mark.skipif(WINDOWS_HOST, reason = "chmod cannot clear read permission on Windows")
-@pytest.mark.skipif(ROOT_USER, reason = "root reads a 000 file regardless of its mode")
+@pytest.mark.skipif(WINDOWS_HOST, reason="chmod cannot clear read permission on Windows")
+@pytest.mark.skipif(ROOT_USER, reason="root reads a 000 file regardless of its mode")
 def test_a_marker_the_process_cannot_read_is_graded_on_its_tree(tmp_path):
     """Permission denied is one more way a marker stops parsing, so it lands in the same arm as
     a truncated one: the tree is real and is graded rather than called not installed."""
-    root = build_tree(tmp_path / "llama.cpp", host = LINUX, marker = S12, backend = "cuda")
+    root = build_tree(tmp_path / "llama.cpp", host=LINUX, marker=S12, backend="cuda")
     marker_path = root / "UNSLOTH_PREBUILT_INFO.json"
     os.chmod(marker_path, 0o000)
     try:
         if os.access(marker_path, os.R_OK):
             pytest.skip("running as a user that ignores the mode, so nothing is denied")
-        assert ILP.installed_runtime_health(root, host = LINUX) == (True, "")
+        assert ILP.installed_runtime_health(root, host=LINUX) == (True, "")
     finally:
         os.chmod(marker_path, 0o644)
 
@@ -709,7 +709,7 @@ def test_a_marker_the_process_cannot_read_is_graded_on_its_tree(tmp_path):
 @pytest.mark.parametrize(
     "body",
     ["[]", '["cuda"]', "123", '"cuda"', "null", "", "   ", "{}", "﻿{}", '{"tag": "b1"'],
-    ids = [
+    ids=[
         "array",
         "array-of-strings",
         "number",
@@ -726,8 +726,8 @@ def test_a_marker_that_is_not_an_object_never_raises_and_never_loops(tmp_path, b
     """Valid JSON that is not an object and invalid JSON both read as "no marker" through
     load_prebuilt_metadata. The empty object is a marker, and it names no backend, so it owes
     the payload every install kind on the platform shares."""
-    root = build_tree(tmp_path / "llama.cpp", host = LINUX, marker = body, backend = "cuda")
-    verdict = ILP.installed_runtime_health(root, host = LINUX)
+    root = build_tree(tmp_path / "llama.cpp", host=LINUX, marker=body, backend="cuda")
+    verdict = ILP.installed_runtime_health(root, host=LINUX)
     assert verdict in (None, (True, ""))
     if verdict is not None and verdict[0] is False:
         assert ILP._existing_install_runs(root, LINUX) is False
@@ -736,13 +736,13 @@ def test_a_marker_that_is_not_an_object_never_raises_and_never_loops(tmp_path, b
 def test_a_tree_full_of_unrelated_files_is_still_answered_fast(tmp_path):
     """On the launch path, so timed as well as checked: the payload check globs the runtime
     directory once per group, and a user's also holds every model shard they dropped in it."""
-    root = build_tree(tmp_path / "llama.cpp", host = LINUX, marker = S12, backend = "cuda")
+    root = build_tree(tmp_path / "llama.cpp", host=LINUX, marker=S12, backend="cuda")
     runtime = _runtime_dir(root, LINUX)
     for index in range(2000):
-        (runtime / f"unrelated-{index}.bin").write_text("", encoding = "utf-8")
+        (runtime / f"unrelated-{index}.bin").write_text("", encoding="utf-8")
 
     start = time.perf_counter()
-    verdict = ILP.installed_runtime_health(root, host = LINUX)
+    verdict = ILP.installed_runtime_health(root, host=LINUX)
     elapsed = time.perf_counter() - start
     assert verdict == (True, "")
     assert elapsed < 1.0, f"took {elapsed:.3f}s with 2000 extra files"
@@ -751,15 +751,15 @@ def test_a_tree_full_of_unrelated_files_is_still_answered_fast(tmp_path):
 @pytest.mark.parametrize(
     "name",
     ["with spaces", "unslöth ünicode", "日本語のパス", "trailing.dot."],
-    ids = ["spaces", "unicode-latin", "unicode-cjk", "trailing-dot"],
+    ids=["spaces", "unicode-latin", "unicode-cjk", "trailing-dot"],
 )
 def test_an_awkward_install_path_is_judged_normally(tmp_path, name):
     """Default install roots sit under the user's home, so a path handled as anything other
     than a Path would fail at launch for those users only."""
-    root = build_tree(tmp_path / name / "llama.cpp", host = LINUX, marker = S12, backend = "cuda")
-    assert ILP.installed_runtime_health(root, host = LINUX) == (True, "")
+    root = build_tree(tmp_path / name / "llama.cpp", host=LINUX, marker=S12, backend="cuda")
+    assert ILP.installed_runtime_health(root, host=LINUX) == (True, "")
     (_runtime_dir(root, LINUX) / "libggml.so").unlink()
-    assert ILP.installed_runtime_health(root, host = LINUX) == (
+    assert ILP.installed_runtime_health(root, host=LINUX) == (
         False,
         "llama_runtime_payload_incomplete",
     )
@@ -771,19 +771,19 @@ def test_a_very_deep_install_path_is_judged_normally(tmp_path):
     deep = tmp_path
     for index in range(40):
         deep = deep / f"level{index}"
-    root = build_tree(deep / "llama.cpp", host = LINUX, marker = S12, backend = "cuda")
-    assert ILP.installed_runtime_health(root, host = LINUX) == (True, "")
+    root = build_tree(deep / "llama.cpp", host=LINUX, marker=S12, backend="cuda")
+    assert ILP.installed_runtime_health(root, host=LINUX) == (True, "")
 
 
 def test_the_probe_never_executes_anything_it_finds(tmp_path, monkeypatch):
     """Preflight runs at every launch and the setup scripts own the exec probes, so this looks
     and does not run. Also why the invariant is one-directional: this call can only be as
     strict as, or looser than, the keep path."""
-    root = build_tree(tmp_path / "llama.cpp", host = LINUX, marker = S12, backend = "cuda")
+    root = build_tree(tmp_path / "llama.cpp", host=LINUX, marker=S12, backend="cuda")
 
     def refuse(*args, **kwargs):
         raise AssertionError("installed_runtime_health must not spawn a process")
 
     monkeypatch.setattr(ILP.subprocess, "run", refuse)
     monkeypatch.setattr(ILP.shutil, "which", refuse)
-    assert ILP.installed_runtime_health(root, host = LINUX) == (True, "")
+    assert ILP.installed_runtime_health(root, host=LINUX) == (True, "")

@@ -36,7 +36,7 @@ def _powershell_block(source: str, marker: str) -> str:
 
 
 def test_windows_direct_torch_installs_are_skipped_in_no_torch_mode():
-    source = SETUP_PS1.read_text(encoding = "utf-8")
+    source = SETUP_PS1.read_text(encoding="utf-8")
     guarded = _powershell_block(source, "if (-not $NoTorchMode) {")
 
     for install_path in (
@@ -53,7 +53,7 @@ def test_windows_direct_torch_installs_are_skipped_in_no_torch_mode():
 
 
 def test_no_torch_value_is_normalized_before_shared_dependency_install():
-    source = SETUP_PS1.read_text(encoding = "utf-8")
+    source = SETUP_PS1.read_text(encoding="utf-8")
     parsed = source.index(
         "$NoTorchMode = $env:UNSLOTH_NO_TORCH -match '^\\s*(?i:true|1|yes|on)\\s*$'"
     )
@@ -66,7 +66,7 @@ def test_no_torch_value_is_normalized_before_shared_dependency_install():
 
 
 def _extract(pattern: str, source: str) -> str:
-    match = re.search(pattern, source, flags = re.DOTALL)
+    match = re.search(pattern, source, flags=re.DOTALL)
     assert match is not None, f"setup.ps1 block not found: {pattern}"
     return match.group(0)
 
@@ -77,7 +77,7 @@ def _no_torch_resolution_script() -> str:
     Extracted rather than reimplemented so the test cannot drift away from the
     production text the way a hand-copied predicate would.
     """
-    source = SETUP_PS1.read_text(encoding = "utf-8")
+    source = SETUP_PS1.read_text(encoding="utf-8")
     getter = _extract(r"function Get-PersistedNoTorch \{.*?\n\}\n", source)
     setter = _extract(r"function Set-PersistedNoTorch \{.*?\n\}\n", source)
     marker = _extract(r'\$NoTorchMarker = "[^"]+"', source)
@@ -94,7 +94,7 @@ def _no_torch_resolution_script() -> str:
     )
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason = "PowerShell is unavailable")
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason="PowerShell is unavailable")
 @pytest.mark.parametrize(
     ("env_value", "manifest", "marker", "expected"),
     [
@@ -138,9 +138,9 @@ def test_no_torch_mode_survives_a_studio_update(tmp_path, env_value, manifest, m
     venv_dir.mkdir()
     if manifest is not None:
         payload = manifest if isinstance(manifest, str) else json.dumps(manifest)
-        (venv_dir / "unsloth_install_manifest.json").write_text(payload, encoding = "utf-8")
+        (venv_dir / "unsloth_install_manifest.json").write_text(payload, encoding="utf-8")
     if marker:
-        (venv_dir / ".unsloth-no-torch").write_text("", encoding = "utf-8")
+        (venv_dir / ".unsloth-no-torch").write_text("", encoding="utf-8")
 
     env = os.environ.copy()
     env.pop("UNSLOTH_NO_TORCH", None)
@@ -158,10 +158,10 @@ def test_no_torch_mode_survives_a_studio_update(tmp_path, env_value, manifest, m
             "-Command",
             f'$VenvDir = "{venv_dir.as_posix()}"\n{_no_torch_resolution_script()}',
         ],
-        check = True,
-        capture_output = True,
-        text = True,
-        env = env,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
     )
     # The exported value matters as much as $NoTorchMode: install_python_stack.py drops the manifest before it runs, so
     # the env var is all it has to go on.

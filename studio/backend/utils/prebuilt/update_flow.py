@@ -304,7 +304,7 @@ def managed_install_root(
     marker_root: Optional[Path],
     server_path_var: str,
     cpp_path_var: str,
-    dir_name: str,
+    dir_name: str
 ) -> Optional[Path]:
     """The Unsloth-managed component root the active binary lives under, or None when unmanaged. Installing where the active binary is not would not replace what discovery runs (a pinned server path, then the custom dir, then a component tree), so we refuse rather than install into an inactive or foreign tree."""
     if marker_root is not None:

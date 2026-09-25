@@ -206,15 +206,15 @@ def start_vite(port: int, *, host: str = "127.0.0.1") -> subprocess.Popen[str]:
     npm = shutil.which("npm") or "npm"
     proc = subprocess.Popen(
         [npm, "run", "dev", "--", "--host", host, "--port", str(port), "--strictPort"],
-        cwd = FRONTEND,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.STDOUT,
-        text = True,
+        cwd=FRONTEND,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
         **process_group,
     )
-    tail: deque[str] = deque(maxlen = 20)
+    tail: deque[str] = deque(maxlen=20)
     proc.vite_tail = tail  # type: ignore[attr-defined]
-    threading.Thread(target = drain_process_output, args = (proc, tail), daemon = True).start()
+    threading.Thread(target=drain_process_output, args=(proc, tail), daemon=True).start()
     _LIVE_SERVERS.append(proc)
     _arm_teardown_signals()
     atexit.register(_stop_live_servers)
@@ -231,9 +231,9 @@ def stop_process(proc: subprocess.Popen[str]) -> None:
     if os.name == "nt":
         subprocess.run(
             ["taskkill", "/PID", str(proc.pid), "/T"],
-            check = False,
-            stdout = subprocess.DEVNULL,
-            stderr = subprocess.DEVNULL,
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
     else:
         try:
@@ -242,14 +242,14 @@ def stop_process(proc: subprocess.Popen[str]) -> None:
             return
 
     try:
-        proc.wait(timeout = 10)
+        proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
         if os.name == "nt":
             subprocess.run(
                 ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
-                check = False,
-                stdout = subprocess.DEVNULL,
-                stderr = subprocess.DEVNULL,
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         else:
             try:
@@ -258,7 +258,7 @@ def stop_process(proc: subprocess.Popen[str]) -> None:
                 pass
         # Called from a `finally`: never raise over the failure that sent us here.
         try:
-            proc.wait(timeout = 10)
+            proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             pass
 
@@ -315,8 +315,8 @@ def wait_for_smoke_page(
                 f"vite exited with code {proc.returncode} before serving {url}\n{tail}"
             )
         try:
-            with urllib.request.urlopen(url, timeout = 3.0) as r:
-                body = r.read().decode("utf-8", errors = "replace")
+            with urllib.request.urlopen(url, timeout=3.0) as r:
+                body = r.read().decode("utf-8", errors="replace")
                 if r.status == 200 and entry in body:
                     if info is not None:
                         info(f"{url} ready (serves {entry})")
@@ -333,9 +333,9 @@ def wait_for_smoke_page(
 
 def _http_get_status_and_body(url: str, timeout: float) -> tuple[int, dict | None]:
     try:
-        with urllib.request.urlopen(url, timeout = timeout) as r:
+        with urllib.request.urlopen(url, timeout=timeout) as r:
             try:
-                body = json.loads(r.read().decode("utf-8", errors = "replace"))
+                body = json.loads(r.read().decode("utf-8", errors="replace"))
             except Exception:
                 body = None
             return r.status, body
@@ -359,7 +359,7 @@ def wait_for_health(
     while time.monotonic() < deadline:
         status, body = _http_get_status_and_body(
             f"{base_url}/api/health",
-            timeout = 3.0,
+            timeout=3.0,
         )
         last_status, last_body = status, body
         # Accept any 200 -- different Unsloth builds report status differently.
@@ -398,10 +398,10 @@ def recover_or_replace_page(
             info(f"recovery: page.is_closed() check failed: {exc!r}")
     if goto_url is not None:
         try:
-            page.goto(goto_url, wait_until = "domcontentloaded", timeout = default_timeout_ms)
+            page.goto(goto_url, wait_until="domcontentloaded", timeout=default_timeout_ms)
             if settle_networkidle:
                 try:
-                    page.wait_for_load_state("networkidle", timeout = 30_000)
+                    page.wait_for_load_state("networkidle", timeout=30_000)
                 except Exception:
                     pass
         except Exception as exc:
@@ -430,7 +430,7 @@ def click_and_wait_for_response(
     try:
         with page.expect_response(
             lambda r: url_substr in r.url and r.request.method == method,
-            timeout = timeout_ms,
+            timeout=timeout_ms,
         ) as resp_info:
             do_click()
         resp = resp_info.value
@@ -501,7 +501,7 @@ def wait_for_first(locator: Any, *, timeout_ms: int = 10_000) -> Any | None:
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
     try:
-        locator.first.wait_for(state = "attached", timeout = timeout_ms)
+        locator.first.wait_for(state="attached", timeout=timeout_ms)
     except PlaywrightTimeoutError:
         return None
     return locator.first
@@ -568,15 +568,15 @@ def dump_diagnostics(
     Diagnostic only, never raises; both best-effort."""
     art = Path(art_dir)
     try:
-        art.mkdir(parents = True, exist_ok = True)
+        art.mkdir(parents=True, exist_ok=True)
     except Exception:
         pass
     try:
         page.screenshot(
-            path = str(art / f"{name}.png"),
-            full_page = True,
-            timeout = 90_000,
-            animations = "disabled",
+            path=str(art / f"{name}.png"),
+            full_page=True,
+            timeout=90_000,
+            animations="disabled",
         )
     except Exception as exc:
         if info is not None:
@@ -606,8 +606,8 @@ def dump_diagnostics(
         payload["extra"] = extra
     try:
         (art / f"{name}.json").write_text(
-            json.dumps(payload, indent = 2, default = str),
-            encoding = "utf-8",
+            json.dumps(payload, indent=2, default=str),
+            encoding="utf-8",
         )
     except Exception as exc:
         if info is not None:
@@ -667,7 +667,7 @@ def robust_evaluate(
                 pass
             if page is not None:
                 try:
-                    page.wait_for_load_state("domcontentloaded", timeout = 10_000)
+                    page.wait_for_load_state("domcontentloaded", timeout=10_000)
                 except Exception:
                     pass
             time.sleep((backoff_ms * (2**attempt)) / 1000.0)
@@ -760,7 +760,7 @@ def evaluate_fetch(
         # robust_evaluate retries the evaluate when a navigation destroys the execution context mid-call; the loop here
         # retries transport failures.
         result = robust_evaluate(
-            page, js, payload, retries = ctx_retries, backoff_ms = transport_backoff_ms
+            page, js, payload, retries=ctx_retries, backoff_ms=transport_backoff_ms
         )
         last = result
         try:
@@ -808,7 +808,7 @@ class _WallClockWatchdog:
         self._ceiling = started + float(total_deadline_s) if total_deadline_s else None
         self._deadline = self._clamp(started + self._budget_s)
         self._cancelled = threading.Event()
-        self._thread = threading.Thread(target = self._run, daemon = True)
+        self._thread = threading.Thread(target=self._run, daemon=True)
         self.kicked = False
 
     def at_ceiling(self) -> bool:
@@ -882,7 +882,8 @@ def install_wall_clock_watchdog(
         # sync API the main thread stops at the driver loop: driver vs our code, no finer.
         try:
             import faulthandler
-            faulthandler.dump_traceback(file = sys.stderr, all_threads = True)
+
+            faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
             sys.stderr.flush()
         except Exception:
             pass
@@ -927,9 +928,9 @@ def click_forced(
     rather than here with a scrolling one.
     """
     try:
-        locator.scroll_into_view_if_needed(timeout = timeout_ms)
+        locator.scroll_into_view_if_needed(timeout=timeout_ms)
     except Exception:
         pass
     # Callers pass their own `timeout` through: several of these clicks wait longer than the default because the tab
     # they open is doing work behind the overlay.
-    locator.click(force = True, **click_kwargs)
+    locator.click(force=True, **click_kwargs)

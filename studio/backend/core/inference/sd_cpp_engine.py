@@ -74,6 +74,7 @@ def _verbose_native_logs() -> bool:
     """Return whether Studio verbose logging is enabled."""
     try:
         from loggers.config import verbose_logging_requested
+
         return verbose_logging_requested()
     except Exception:
         return False
@@ -224,7 +225,7 @@ def iter_sd_cpp_records(stream) -> Iterator[str]:
     while True:
         chunk = raw.read1(_READ_CHUNK)
         if not chunk:
-            pending += decoder.decode(b"", final = True)
+            pending += decoder.decode(b"", final=True)
             break
         pending += decoder.decode(chunk)
         records, pending = split_progress_records(pending)
@@ -257,7 +258,7 @@ def _terminate(proc: "subprocess.Popen") -> None:
             pass
     # reap the killed child: callers raise right after _terminate
     try:
-        proc.wait(timeout = 5)
+        proc.wait(timeout=5)
     except Exception:  # noqa: BLE001 -- best-effort reap; never block teardown
         pass
 
@@ -303,7 +304,7 @@ def _layout_candidates(root: Path, stem: str = _BINARY_STEM) -> list[Path]:
     ]
     try:
         subdirs = [p for p in root.iterdir() if p.is_dir()]
-        subdirs.sort(key = lambda p: p.stat().st_mtime, reverse = True)
+        subdirs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         for sub in subdirs:
             cands.append(sub / name)
             cands.append(sub / "bin" / name)
@@ -353,7 +354,7 @@ def _identity_key(binary: str) -> Optional[tuple[str, int, int, int]]:
         st = os.stat(binary)
     except OSError:
         return None
-    return (str(Path(binary).resolve(strict = False)), st.st_mtime_ns, st.st_ctime_ns, st.st_size)
+    return (str(Path(binary).resolve(strict=False)), st.st_mtime_ns, st.st_ctime_ns, st.st_size)
 
 
 def help_text_identifies_sd_cpp(help_text: str) -> bool:
@@ -402,13 +403,13 @@ def sd_cpp_binary_identifies(binary: str) -> bool:
     try:
         result = subprocess.run(
             [binary, "--help"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 10,
-            check = False,
-            env = runtime_env(binary),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+            env=runtime_env(binary),
             **windows_hidden_subprocess_kwargs(),
         )
         help_text = (result.stdout or "") + "\n" + (result.stderr or "")
@@ -628,9 +629,9 @@ def find_sd_cpp_binary() -> Optional[str]:
     """Locate the one-shot ``sd-cli`` binary (env ``SD_CLI_PATH``), or None. Probes ``sd-cli`` then
     legacy ``sd``. The fallback engine once ``sd-server`` exists; also backs ESRGAN upscale."""
     return _find_binary(
-        direct_env = "SD_CLI_PATH",
-        path_stems = (_BINARY_STEM, _LEGACY_STEM),
-        layout_stem = _BINARY_STEM,
+        direct_env="SD_CLI_PATH",
+        path_stems=(_BINARY_STEM, _LEGACY_STEM),
+        layout_stem=_BINARY_STEM,
     )
 
 
@@ -639,9 +640,9 @@ def find_sd_server_binary() -> Optional[str]:
     as ``find_sd_cpp_binary`` keyed to the ``sd-server`` stem. Preferred over the one-shot CLI: it
     loads the model once and serves many generations without reloading."""
     return _find_binary(
-        direct_env = "SD_SERVER_PATH",
-        path_stems = (_SERVER_STEM,),
-        layout_stem = _SERVER_STEM,
+        direct_env="SD_SERVER_PATH",
+        path_stems=(_SERVER_STEM,),
+        layout_stem=_SERVER_STEM,
     )
 
 
@@ -667,13 +668,13 @@ class SdCppEngine:
         try:
             res = subprocess.run(
                 [self.binary, "--version"],
-                capture_output = True,
-                text = True,
-                encoding = "utf-8",
-                errors = "replace",
-                timeout = timeout,
-                check = False,
-                env = runtime_env(self.binary),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout,
+                check=False,
+                env=runtime_env(self.binary),
             )
         except (OSError, subprocess.SubprocessError):
             return None
@@ -713,19 +714,19 @@ class SdCppEngine:
             self._require_binary(),
             files,
             params,
-            output_path = str(self._prepare_out(output_path)),
-            offload = offload,
-            threads = threads,
-            verbose = verbose,
-            extra_args = merged_extra,
+            output_path=str(self._prepare_out(output_path)),
+            offload=offload,
+            threads=threads,
+            verbose=verbose,
+            extra_args=merged_extra,
         )
         return self._run(
             cmd,
             output_path,
-            timeout = timeout,
-            env = env,
-            on_log = on_log,
-            cancel_event = cancel_event,
+            timeout=timeout,
+            env=env,
+            on_log=on_log,
+            cancel_event=cancel_event,
         )
 
     def upscale(
@@ -744,17 +745,17 @@ class SdCppEngine:
         cmd = build_sd_cpp_upscale_command(
             self._require_binary(),
             params,
-            output_path = str(self._prepare_out(output_path)),
-            verbose = verbose,
-            extra_args = extra_args,
+            output_path=str(self._prepare_out(output_path)),
+            verbose=verbose,
+            extra_args=extra_args,
         )
         return self._run(
             cmd,
             output_path,
-            timeout = timeout,
-            env = env,
-            on_log = on_log,
-            cancel_event = cancel_event,
+            timeout=timeout,
+            env=env,
+            on_log=on_log,
+            cancel_event=cancel_event,
         )
 
     def generate_video(
@@ -776,18 +777,18 @@ class SdCppEngine:
             self._require_binary(),
             files,
             params,
-            output_path = str(self._prepare_out(output_path)),
-            offload = offload,
-            verbose = verbose,
-            extra_args = extra_args,
+            output_path=str(self._prepare_out(output_path)),
+            offload=offload,
+            verbose=verbose,
+            extra_args=extra_args,
         )
         return self._run(
             cmd,
             output_path,
-            timeout = timeout,
-            env = env,
-            on_log = on_log,
-            cancel_event = cancel_event,
+            timeout=timeout,
+            env=env,
+            on_log=on_log,
+            cancel_event=cancel_event,
         )
 
     def _require_binary(self) -> str:
@@ -801,9 +802,9 @@ class SdCppEngine:
     @staticmethod
     def _prepare_out(output_path: str) -> Path:
         out = Path(output_path)
-        out.parent.mkdir(parents = True, exist_ok = True)
+        out.parent.mkdir(parents=True, exist_ok=True)
         # drop a stale file so the post-run is_file() check proves THIS run produced the image
-        out.unlink(missing_ok = True)
+        out.unlink(missing_ok=True)
         return out
 
     def _run(
@@ -839,14 +840,14 @@ class SdCppEngine:
             raise SdCppCancelled("Unsloth is shutting down; not starting sd-cli.")
         proc = subprocess.Popen(
             cmd,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            env = run_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=run_env,
             # Own session/process group so cancellation/timeout kills the whole tree (POSIX).
-            start_new_session = (os.name == "posix"),
+            start_new_session=(os.name == "posix"),
             # Bind the child to the parent's lifetime (PR_SET_PDEATHSIG) so a parent crash cannot orphan sd-cli holding
             # VRAM/RAM.
             **child_popen_kwargs(),
@@ -876,7 +877,7 @@ class SdCppEngine:
             finally:
                 line_q.put(None)
 
-        reader = threading.Thread(target = _drain, daemon = True)
+        reader = threading.Thread(target=_drain, daemon=True)
         reader.start()
 
         deadline = None if timeout is None else time.monotonic() + float(timeout)
@@ -891,7 +892,7 @@ class SdCppEngine:
                     _terminate(proc)
                     raise RuntimeError(f"sd-cli timed out after {timeout}s")
                 try:
-                    line = line_q.get(timeout = 0.1)
+                    line = line_q.get(timeout=0.1)
                 except queue.Empty:
                     if proc.poll() is not None and stdout_done:
                         break
@@ -906,7 +907,7 @@ class SdCppEngine:
                     tail.pop(0)
                 if on_log is not None:
                     on_log(line)
-            ret = proc.wait(timeout = 5.0)
+            ret = proc.wait(timeout=5.0)
         finally:
             if proc.poll() is None:
                 _terminate(proc)

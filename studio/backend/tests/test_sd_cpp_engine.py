@@ -42,16 +42,16 @@ def _shared_setup_1(monkeypatch, tmp_path):
 
 def _shared_setup_2(e, out):
     e.generate(
-        SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-        SdCppGenParams(prompt = "x"),
-        output_path = str(out),
+        SdCppModelFiles(diffusion_model="/m/z.gguf"),
+        SdCppGenParams(prompt="x"),
+        output_path=str(out),
     )
 
 
 # ── binary discovery ────────────────────────────────────────────────────────
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _isolate_binary_discovery(tmp_path_factory, monkeypatch):
     """Point every hop of the finder at an empty tree, so a real install on the machine running the
     tests cannot satisfy it.
@@ -69,14 +69,14 @@ def _isolate_binary_discovery(tmp_path_factory, monkeypatch):
     eng._IDENTITY_MEMO.clear()  # a verdict from another test must never answer for this one
     root = tmp_path_factory.mktemp("no_sd_cpp")
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(root / "studio"))
-    monkeypatch.delenv("STUDIO_HOME", raising = False)
+    monkeypatch.delenv("STUDIO_HOME", raising=False)
     monkeypatch.setattr(eng, "in_tree_install_root", lambda: root / "in_tree")
     monkeypatch.setattr(eng.Path, "home", staticmethod(lambda: root / "nohome"))
 
 
 def _clear_env(monkeypatch):
-    monkeypatch.delenv("SD_CLI_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_SD_CPP_PATH", raising = False)
+    monkeypatch.delenv("SD_CLI_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_SD_CPP_PATH", raising=False)
 
 
 def test_find_prefers_sd_cli_path_env(tmp_path, monkeypatch):
@@ -93,7 +93,7 @@ def test_find_custom_install_dir_build_layout(tmp_path, monkeypatch):
     _clear_env(monkeypatch)
     root = tmp_path / "sdcpp"
     built = root / "build" / "bin" / "sd-cli"
-    built.parent.mkdir(parents = True)
+    built.parent.mkdir(parents=True)
     built.write_text("x")
     monkeypatch.setenv("UNSLOTH_SD_CPP_PATH", str(root))
     monkeypatch.setattr(eng.shutil, "which", lambda *_a: None)
@@ -119,9 +119,9 @@ def test_find_rejects_unrelated_ubuntu_sd_on_path(tmp_path, monkeypatch, caplog)
     def _run(*_args, **kwargs):
         run_kwargs.update(kwargs)
         return types.SimpleNamespace(
-            stdout = "Find & replace occurrences of a pattern\nUsage: sd [OPTIONS] <FIND> <REPLACE>",
-            stderr = "",
-            returncode = 0,
+            stdout="Find & replace occurrences of a pattern\nUsage: sd [OPTIONS] <FIND> <REPLACE>",
+            stderr="",
+            returncode=0,
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _run)
@@ -156,12 +156,12 @@ def test_find_accepts_genuine_legacy_sd_on_path(tmp_path, monkeypatch):
         eng.subprocess,
         "run",
         lambda *_a, **_k: types.SimpleNamespace(
-            stdout = (
+            stdout=(
                 "usage: /opt/sd.cpp/bin/sd [arguments]\n"
                 "--model [MODEL]\n--negative-prompt PROMPT\n--cfg-scale SCALE\n--steps STEPS"
             ),
-            stderr = "",
-            returncode = 0,
+            stderr="",
+            returncode=0,
         ),
     )
 
@@ -178,9 +178,9 @@ def test_rejected_legacy_sd_allows_managed_install(tmp_path, monkeypatch):
         eng.subprocess,
         "run",
         lambda *_a, **_k: types.SimpleNamespace(
-            stdout = "Find & replace occurrences of a pattern\nUsage: sd [OPTIONS] <FIND> <REPLACE>",
-            stderr = "",
-            returncode = 0,
+            stdout="Find & replace occurrences of a pattern\nUsage: sd [OPTIONS] <FIND> <REPLACE>",
+            stderr="",
+            returncode=0,
         ),
     )
     installed = tmp_path / "managed" / "sd-cli"
@@ -194,7 +194,7 @@ def test_rejected_legacy_sd_allows_managed_install(tmp_path, monkeypatch):
     stub.install = _install
     monkeypatch.setitem(sys.modules, "install_sd_cpp_prebuilt", stub)
 
-    assert backend.ensure_sd_cpp_binary(accelerator = "cpu") == str(installed)
+    assert backend.ensure_sd_cpp_binary(accelerator="cpu") == str(installed)
     assert installs == [{"accelerator": "cpu"}]
 
 
@@ -209,7 +209,7 @@ def test_identity_probe_is_memoized_per_file_revision(tmp_path, monkeypatch):
     def _run(cmd, **_kwargs):
         runs.append(cmd)
         return types.SimpleNamespace(
-            stdout = "Find & replace occurrences of a pattern\n", stderr = "", returncode = 0
+            stdout="Find & replace occurrences of a pattern\n", stderr="", returncode=0
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _run)
@@ -225,7 +225,7 @@ def test_identity_probe_is_memoized_per_file_revision(tmp_path, monkeypatch):
     def _run_real(cmd, **_kwargs):
         runs.append(cmd)
         return types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version unknown\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version unknown\n", stderr="", returncode=0
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _run_real)
@@ -246,20 +246,20 @@ def test_identity_probe_rekeys_a_timestamp_preserving_replacement(tmp_path, monk
 
     def _reject(cmd, **_kwargs):
         runs.append(cmd)
-        return types.SimpleNamespace(stdout = "Find & replace\n", stderr = "", returncode = 0)
+        return types.SimpleNamespace(stdout="Find & replace\n", stderr="", returncode=0)
 
     monkeypatch.setattr(eng.subprocess, "run", _reject)
     assert find_sd_cpp_binary() is None
 
     # Same path, same size, mtime restored -- a different program underneath.
     candidate.write_text("B" * 64)
-    os.utime(candidate, ns = (stamp.st_atime_ns, stamp.st_mtime_ns))
+    os.utime(candidate, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
     assert os.stat(candidate).st_mtime_ns == stamp.st_mtime_ns
 
     def _accept(cmd, **_kwargs):
         runs.append(cmd)
         return types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version unknown\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version unknown\n", stderr="", returncode=0
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _accept)
@@ -280,9 +280,9 @@ def test_identity_probe_does_not_memoize_a_nonzero_exit_it_learned_nothing_from(
         eng.subprocess,
         "run",
         lambda *_a, **_k: types.SimpleNamespace(
-            stdout = "",
-            stderr = "sd: error while loading shared libraries: libggml.so: cannot open",
-            returncode = 127,
+            stdout="",
+            stderr="sd: error while loading shared libraries: libggml.so: cannot open",
+            returncode=127,
         ),
     )
     assert find_sd_cpp_binary() is None
@@ -293,7 +293,7 @@ def test_identity_probe_does_not_memoize_a_nonzero_exit_it_learned_nothing_from(
         eng.subprocess,
         "run",
         lambda *_a, **_k: types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version unknown\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version unknown\n", stderr="", returncode=0
         ),
     )
     assert find_sd_cpp_binary() == str(candidate)
@@ -310,9 +310,9 @@ def test_identity_probe_memoizes_an_identifying_build_that_exits_nonzero(tmp_pat
         lambda cmd, **_k: (
             runs.append(cmd),
             types.SimpleNamespace(
-                stdout = "usage: sd\n --negative-prompt P\n --cfg-scale S\n --steps N\n",
-                stderr = "",
-                returncode = 1,
+                stdout="usage: sd\n --negative-prompt P\n --cfg-scale S\n --steps N\n",
+                stderr="",
+                returncode=1,
             ),
         )[1],
     )
@@ -332,7 +332,7 @@ def test_identity_verdict_expires(tmp_path, monkeypatch):
 
     def _reject(cmd, **_kwargs):
         runs.append(cmd)
-        return types.SimpleNamespace(stdout = "Find & replace\n", stderr = "", returncode = 0)
+        return types.SimpleNamespace(stdout="Find & replace\n", stderr="", returncode=0)
 
     monkeypatch.setattr(eng.subprocess, "run", _reject)
     assert find_sd_cpp_binary() is None
@@ -345,7 +345,7 @@ def test_identity_verdict_expires(tmp_path, monkeypatch):
     def _accept(cmd, **_kwargs):
         runs.append(cmd)
         return types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version unknown\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version unknown\n", stderr="", returncode=0
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _accept)
@@ -373,7 +373,7 @@ def test_identity_probe_does_not_memoize_a_probe_that_failed(tmp_path, monkeypat
         eng.subprocess,
         "run",
         lambda *_a, **_k: types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version unknown\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version unknown\n", stderr="", returncode=0
         ),
     )
     assert find_sd_cpp_binary() == str(candidate)
@@ -392,7 +392,7 @@ def test_identity_probe_does_not_memoize_a_candidate_it_cannot_stat(monkeypatch)
         "run",
         lambda cmd, **_k: (
             runs.append(cmd),
-            types.SimpleNamespace(stdout = "unrelated\n", stderr = "", returncode = 0),
+            types.SimpleNamespace(stdout="unrelated\n", stderr="", returncode=0),
         )[1],
     )
 
@@ -413,9 +413,9 @@ def test_find_returns_none_when_absent(tmp_path, monkeypatch):
 
 
 def _clear_server_env(monkeypatch):
-    monkeypatch.delenv("SD_SERVER_PATH", raising = False)
-    monkeypatch.delenv("SD_CLI_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_SD_CPP_PATH", raising = False)
+    monkeypatch.delenv("SD_SERVER_PATH", raising=False)
+    monkeypatch.delenv("SD_CLI_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_SD_CPP_PATH", raising=False)
 
 
 def test_find_server_prefers_sd_server_path_env(tmp_path, monkeypatch):
@@ -431,7 +431,7 @@ def test_find_server_build_layout(tmp_path, monkeypatch):
     _clear_server_env(monkeypatch)
     root = tmp_path / "sdcpp"
     built = root / "build" / "bin" / "sd-server"
-    built.parent.mkdir(parents = True)
+    built.parent.mkdir(parents=True)
     built.write_text("x")
     monkeypatch.setenv("UNSLOTH_SD_CPP_PATH", str(root))
     monkeypatch.setattr(eng.shutil, "which", lambda *_a: None)
@@ -451,7 +451,7 @@ def test_find_server_not_confused_with_sd_cli(tmp_path, monkeypatch):
     # A tree with only sd-cli must NOT be reported as an sd-server (and vice versa), so the backend falls back to one-shot.
     _clear_server_env(monkeypatch)
     root = tmp_path / "sdcpp"
-    (root / "build" / "bin").mkdir(parents = True)
+    (root / "build" / "bin").mkdir(parents=True)
     (root / "build" / "bin" / "sd-cli").write_text("x")
     monkeypatch.setenv("UNSLOTH_SD_CPP_PATH", str(root))
     monkeypatch.setattr(eng.Path, "home", staticmethod(lambda: tmp_path / "nohome"))
@@ -466,7 +466,7 @@ def test_find_server_not_confused_with_sd_cli(tmp_path, monkeypatch):
 def test_engine_unavailable_when_no_binary(monkeypatch):
     # Force the "no binary anywhere" condition so the test is hermetic on a host that happens to have sd-cli installed.
     monkeypatch.setattr(eng, "find_sd_cpp_binary", lambda: None)
-    e = SdCppEngine(binary = None)
+    e = SdCppEngine(binary=None)
     assert e.is_available() is False
     assert e.version() is None
 
@@ -474,13 +474,13 @@ def test_engine_unavailable_when_no_binary(monkeypatch):
 def test_engine_version_parsed_and_cached(tmp_path, monkeypatch):
     binary = tmp_path / "sd-cli"
     binary.write_text("x")
-    e = SdCppEngine(binary = str(binary))
+    e = SdCppEngine(binary=str(binary))
     calls = {"n": 0}
 
     def _fake_run(*_a, **_k):
         calls["n"] += 1
         return types.SimpleNamespace(
-            stdout = "stable-diffusion.cpp version master-721\n", stderr = "", returncode = 0
+            stdout="stable-diffusion.cpp version master-721\n", stderr="", returncode=0
         )
 
     monkeypatch.setattr(eng.subprocess, "run", _fake_run)
@@ -522,9 +522,10 @@ def test_terminate_reaps_killed_child():
     # Cancellation/timeout paths call _terminate then raise, so it must reap the killed child itself or a burst of image
     # cancellations leaves zombies. After _terminate the returncode is set, so nothing lingers.
     import subprocess
+
     proc = subprocess.Popen(
         [sys.executable, "-c", "import time; time.sleep(30)"],
-        start_new_session = (os.name == "posix"),
+        start_new_session=(os.name == "posix"),
     )
     try:
         eng._terminate(proc)
@@ -553,7 +554,7 @@ class _FakePopen:
         returncode,
         out_file,
         write,
-        env = None,
+        env=None,
     ):
         type(self).captured_cmd = list(cmd)
         type(self).captured_env = dict(env or {})
@@ -567,7 +568,7 @@ class _FakePopen:
     def stdout(self):
         return iter(self._lines)
 
-    def wait(self, timeout = None):
+    def wait(self, timeout=None):
         if self._write:
             Path(self._out_file).write_bytes(b"\x89PNG\r\n")
         return self.returncode
@@ -585,16 +586,16 @@ def _patch_popen(
     lines,
     returncode,
     out_file,
-    write = True,
+    write=True,
 ):
     def _factory(cmd, **kw):
         return _FakePopen(
             cmd,
-            lines = lines,
-            returncode = returncode,
-            out_file = out_file,
-            write = write,
-            env = kw.get("env"),
+            lines=lines,
+            returncode=returncode,
+            out_file=out_file,
+            write=write,
+            env=kw.get("env"),
         )
 
     monkeypatch.setattr(eng.subprocess, "Popen", _factory)
@@ -603,20 +604,20 @@ def _patch_popen(
 def _engine(tmp_path):
     binary = tmp_path / "sd-cli"
     binary.write_text("x")
-    return SdCppEngine(binary = str(binary))
+    return SdCppEngine(binary=str(binary))
 
 
 def test_generate_success_returns_path_and_collects_logs(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
     _patch_popen(
-        monkeypatch, lines = ["loading model", "step 1/8", "done"], returncode = 0, out_file = out
+        monkeypatch, lines=["loading model", "step 1/8", "done"], returncode=0, out_file=out
     )
     seen: list[str] = []
-    files = SdCppModelFiles(diffusion_model = "/m/z.gguf", vae = "/m/ae.sft", llm = "/m/q.gguf")
-    params = SdCppGenParams(prompt = "a cat", steps = 8, seed = 1)
+    files = SdCppModelFiles(diffusion_model="/m/z.gguf", vae="/m/ae.sft", llm="/m/q.gguf")
+    params = SdCppGenParams(prompt="a cat", steps=8, seed=1)
 
-    result = e.generate(files, params, output_path = str(out), on_log = seen.append)
+    result = e.generate(files, params, output_path=str(out), on_log=seen.append)
 
     assert result == out and out.is_file()
     assert seen == ["loading model", "step 1/8", "done"]
@@ -642,22 +643,22 @@ def test_default_run_log_is_compact_and_omits_user_text_and_paths(
     tmp_path, monkeypatch, caplog, prompt, negative
 ):
     monkeypatch.setattr(eng, "_verbose_native_logs", lambda: False)
-    caplog.set_level("INFO", logger = eng.__name__)
+    caplog.set_level("INFO", logger=eng.__name__)
     e = _engine(tmp_path)
     out = tmp_path / "private-output.png"
-    _patch_popen(monkeypatch, lines = ["done"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["done"], returncode=0, out_file=out)
 
     e.generate(
-        SdCppModelFiles(diffusion_model = "/private/models/z.gguf"),
+        SdCppModelFiles(diffusion_model="/private/models/z.gguf"),
         SdCppGenParams(
-            prompt = prompt,
-            negative_prompt = negative,
-            width = 768,
-            height = 512,
-            steps = 8,
-            seed = 7,
+            prompt=prompt,
+            negative_prompt=negative,
+            width=768,
+            height=512,
+            steps=8,
+            seed=7,
         ),
-        output_path = str(out),
+        output_path=str(out),
     )
 
     messages = [record.getMessage() for record in caplog.records if record.name == eng.__name__]
@@ -679,16 +680,16 @@ def test_default_run_log_is_compact_and_omits_user_text_and_paths(
 
 def test_verbose_run_log_keeps_argv_but_redacts_prompts(tmp_path, monkeypatch, caplog):
     monkeypatch.setattr(eng, "_verbose_native_logs", lambda: True)
-    caplog.set_level("INFO", logger = eng.__name__)
+    caplog.set_level("INFO", logger=eng.__name__)
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
-    _patch_popen(monkeypatch, lines = ["done"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["done"], returncode=0, out_file=out)
 
     e.generate(
-        SdCppModelFiles(diffusion_model = "/models/z.gguf"),
-        SdCppGenParams(prompt = "a private cat", negative_prompt = "a private dog"),
-        output_path = str(out),
-        extra_args = ["-p", "a second private cat", "-n=a second private dog"],
+        SdCppModelFiles(diffusion_model="/models/z.gguf"),
+        SdCppGenParams(prompt="a private cat", negative_prompt="a private dog"),
+        output_path=str(out),
+        extra_args=["-p", "a second private cat", "-n=a second private dog"],
     )
 
     rendered = "\n".join(
@@ -709,16 +710,16 @@ def test_verbose_run_log_keeps_argv_but_redacts_prompts(tmp_path, monkeypatch, c
 def test_generate_raises_on_nonzero_exit(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
-    _patch_popen(monkeypatch, lines = ["boom: bad gguf"], returncode = 1, out_file = out, write = False)
-    with pytest.raises(RuntimeError, match = "exited 1"):
+    _patch_popen(monkeypatch, lines=["boom: bad gguf"], returncode=1, out_file=out, write=False)
+    with pytest.raises(RuntimeError, match="exited 1"):
         _shared_setup_2(e, out)
 
 
 def test_generate_raises_when_no_output_despite_success(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
-    _patch_popen(monkeypatch, lines = ["ok"], returncode = 0, out_file = out, write = False)
-    with pytest.raises(RuntimeError, match = "no image"):
+    _patch_popen(monkeypatch, lines=["ok"], returncode=0, out_file=out, write=False)
+    with pytest.raises(RuntimeError, match="no image"):
         _shared_setup_2(e, out)
 
 
@@ -727,19 +728,19 @@ def test_generate_does_not_return_stale_preexisting_output(tmp_path, monkeypatch
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
     out.write_bytes(b"stale")
-    _patch_popen(monkeypatch, lines = ["ok"], returncode = 0, out_file = out, write = False)
-    with pytest.raises(RuntimeError, match = "no image"):
+    _patch_popen(monkeypatch, lines=["ok"], returncode=0, out_file=out, write=False)
+    with pytest.raises(RuntimeError, match="no image"):
         _shared_setup_2(e, out)
     assert not out.exists()
 
 
 def test_generate_raises_when_binary_missing():
-    e = SdCppEngine(binary = None)
-    with pytest.raises(RuntimeError, match = "not found"):
+    e = SdCppEngine(binary=None)
+    with pytest.raises(RuntimeError, match="not found"):
         e.generate(
-            SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-            SdCppGenParams(prompt = "x"),
-            output_path = "/tmp/x.png",
+            SdCppModelFiles(diffusion_model="/m/z.gguf"),
+            SdCppGenParams(prompt="x"),
+            output_path="/tmp/x.png",
         )
 
 
@@ -770,7 +771,7 @@ class _HangingPopen:
     def poll(self):
         return None if self._alive else -9
 
-    def wait(self, timeout = None):
+    def wait(self, timeout=None):
         self._alive = False
         return -9
 
@@ -782,12 +783,12 @@ def test_generate_times_out_on_silent_hang(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     monkeypatch.setattr(eng.subprocess, "Popen", lambda cmd, **kw: _HangingPopen(cmd, **kw))
     t0 = time.time()
-    with pytest.raises(RuntimeError, match = "timed out"):
+    with pytest.raises(RuntimeError, match="timed out"):
         e.generate(
-            SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-            SdCppGenParams(prompt = "x"),
-            output_path = str(tmp_path / "x.png"),
-            timeout = 0.3,
+            SdCppModelFiles(diffusion_model="/m/z.gguf"),
+            SdCppGenParams(prompt="x"),
+            output_path=str(tmp_path / "x.png"),
+            timeout=0.3,
         )
     # The timeout is enforced promptly (not blocked until stdout EOF).
     assert time.time() - t0 < 5.0
@@ -798,11 +799,11 @@ def test_img2img_generate_passes_init_image(tmp_path, monkeypatch):
     out = tmp_path / "img.png"
     src = tmp_path / "src.png"
     src.write_bytes(b"\x89PNG\r\n")
-    _patch_popen(monkeypatch, lines = ["img2img"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["img2img"], returncode=0, out_file=out)
     e.generate(
-        SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-        SdCppGenParams(prompt = "x", init_img = str(src), strength = 0.5),
-        output_path = str(out),
+        SdCppModelFiles(diffusion_model="/m/z.gguf"),
+        SdCppGenParams(prompt="x", init_img=str(src), strength=0.5),
+        output_path=str(out),
     )
     assert "--init-img" in _FakePopen.captured_cmd
     assert str(src) == _FakePopen.captured_cmd[_FakePopen.captured_cmd.index("--init-img") + 1]
@@ -811,14 +812,14 @@ def test_img2img_generate_passes_init_image(tmp_path, monkeypatch):
 def test_generate_native_speed_dedupes_against_offload(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
-    _patch_popen(monkeypatch, lines = ["ok"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["ok"], returncode=0, out_file=out)
     # offload already adds --diffusion-fa; native_speed="default" would add it again.
     e.generate(
-        SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-        SdCppGenParams(prompt = "x"),
-        output_path = str(out),
-        offload = ["--offload-to-cpu", "--diffusion-fa"],
-        native_speed = "default",
+        SdCppModelFiles(diffusion_model="/m/z.gguf"),
+        SdCppGenParams(prompt="x"),
+        output_path=str(out),
+        offload=["--offload-to-cpu", "--diffusion-fa"],
+        native_speed="default",
     )
     # --diffusion-fa appears exactly once (de-duped), not twice.
     assert _FakePopen.captured_cmd.count("--diffusion-fa") == 1
@@ -827,13 +828,13 @@ def test_generate_native_speed_dedupes_against_offload(tmp_path, monkeypatch):
 def test_generate_native_speed_adds_flag_when_not_offloaded(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "img.png"
-    _patch_popen(monkeypatch, lines = ["ok"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["ok"], returncode=0, out_file=out)
     e.generate(
-        SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-        SdCppGenParams(prompt = "x"),
-        output_path = str(out),
-        offload = [],  # fast/resident tier: no offload, but speed flag still applies
-        native_speed = "default",
+        SdCppModelFiles(diffusion_model="/m/z.gguf"),
+        SdCppGenParams(prompt="x"),
+        output_path=str(out),
+        offload=[],  # fast/resident tier: no offload, but speed flag still applies
+        native_speed="default",
     )
     assert _FakePopen.captured_cmd.count("--diffusion-fa") == 1
 
@@ -841,10 +842,10 @@ def test_generate_native_speed_adds_flag_when_not_offloaded(tmp_path, monkeypatc
 def test_upscale_runs_and_returns_path(tmp_path, monkeypatch):
     e = _engine(tmp_path)
     out = tmp_path / "big.png"
-    _patch_popen(monkeypatch, lines = ["upscaling", "done"], returncode = 0, out_file = out)
+    _patch_popen(monkeypatch, lines=["upscaling", "done"], returncode=0, out_file=out)
     result = e.upscale(
-        SdCppUpscaleParams(input_image = "/in/small.png", upscale_model = "/m/esrgan.pth", repeats = 2),
-        output_path = str(out),
+        SdCppUpscaleParams(input_image="/in/small.png", upscale_model="/m/esrgan.pth", repeats=2),
+        output_path=str(out),
     )
     assert result == out and out.is_file()
     assert _FakePopen.captured_cmd[_FakePopen.captured_cmd.index("--mode") + 1] == "upscale"
@@ -853,11 +854,11 @@ def test_upscale_runs_and_returns_path(tmp_path, monkeypatch):
 
 def test_upscale_raises_when_binary_missing(monkeypatch, tmp_path):
     monkeypatch.setattr(eng, "find_sd_cpp_binary", lambda: None)
-    e = SdCppEngine(binary = None)
-    with pytest.raises(RuntimeError, match = "not found"):
+    e = SdCppEngine(binary=None)
+    with pytest.raises(RuntimeError, match="not found"):
         e.upscale(
-            SdCppUpscaleParams(input_image = "/i.png", upscale_model = "/m/e.pth"),
-            output_path = str(tmp_path / "x.png"),
+            SdCppUpscaleParams(input_image="/i.png", upscale_model="/m/e.pth"),
+            output_path=str(tmp_path / "x.png"),
         )
 
 
@@ -866,25 +867,25 @@ def test_upscale_raises_when_binary_missing(monkeypatch, tmp_path):
 
 def test_routing_gpu_backends_use_diffusers():
     for backend in ("cuda", "rocm", "xpu"):
-        assert select_diffusion_engine(backend, native_available = True) == ENGINE_DIFFUSERS
+        assert select_diffusion_engine(backend, native_available=True) == ENGINE_DIFFUSERS
 
 
 def test_routing_cpu_and_mps_use_native_when_available():
-    assert select_diffusion_engine("cpu", native_available = True) == ENGINE_SD_CPP
-    assert select_diffusion_engine("mps", native_available = True) == ENGINE_SD_CPP
+    assert select_diffusion_engine("cpu", native_available=True) == ENGINE_SD_CPP
+    assert select_diffusion_engine("mps", native_available=True) == ENGINE_SD_CPP
 
 
 def test_routing_cpu_falls_back_to_diffusers_without_binary():
-    assert select_diffusion_engine("cpu", native_available = False) == ENGINE_DIFFUSERS
+    assert select_diffusion_engine("cpu", native_available=False) == ENGINE_DIFFUSERS
 
 
 def test_routing_prefer_native_overrides_gpu():
     assert (
-        select_diffusion_engine("cuda", native_available = True, prefer_native = True) == ENGINE_SD_CPP
+        select_diffusion_engine("cuda", native_available=True, prefer_native=True) == ENGINE_SD_CPP
     )
     # but only if a binary is actually available
     assert (
-        select_diffusion_engine("cuda", native_available = False, prefer_native = True)
+        select_diffusion_engine("cuda", native_available=False, prefer_native=True)
         == ENGINE_DIFFUSERS
     )
 
@@ -1007,16 +1008,16 @@ def test_run_forwards_clean_redraws_to_on_log(tmp_path, monkeypatch):
     out = tmp_path / "img.png"
     _patch_popen(
         monkeypatch,
-        lines = [_REDRAW.format(1, 2), _REDRAW.format(2, 2) + "\n"],
-        returncode = 0,
-        out_file = str(out),
+        lines=[_REDRAW.format(1, 2), _REDRAW.format(2, 2) + "\n"],
+        returncode=0,
+        out_file=str(out),
     )
     seen: list[str] = []
     e.generate(
-        SdCppModelFiles(diffusion_model = "/m/z.gguf"),
-        SdCppGenParams(prompt = "p"),
-        output_path = str(out),
-        on_log = seen.append,
+        SdCppModelFiles(diffusion_model="/m/z.gguf"),
+        SdCppGenParams(prompt="p"),
+        output_path=str(out),
+        on_log=seen.append,
     )
     bars = [s for s in seen if "|" in s]
     assert bars == [

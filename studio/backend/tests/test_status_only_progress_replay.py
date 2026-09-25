@@ -71,7 +71,7 @@ def test_evaluation_status_lines_do_not_replot_the_last_step():
     # A 4-minute evaluation after step 200 publishes a status roughly every 15s; each
     # one arrives with step 200's loss still on the shared progress object.
     on_progress, published = _emitter()
-    step_200 = _Progress(step = 200, total_steps = 1000, loss = 0.42, learning_rate = 1e-4)
+    step_200 = _Progress(step=200, total_steps=1000, loss=0.42, learning_rate=1e-4)
     on_progress(step_200)
     for seen in (8, 24, 40, 56):
         step_200.status_message = f"Evaluating... {seen} batches"
@@ -84,8 +84,8 @@ def test_evaluation_status_lines_do_not_replot_the_last_step():
 
 def test_a_new_step_is_still_published():
     on_progress, published = _emitter()
-    on_progress(_Progress(step = 200, total_steps = 1000, loss = 0.42))
-    on_progress(_Progress(step = 201, total_steps = 1000, loss = 0.41))
+    on_progress(_Progress(step=200, total_steps=1000, loss=0.42))
+    on_progress(_Progress(step=201, total_steps=1000, loss=0.41))
     assert published == [200, 201]
 
 
@@ -93,22 +93,22 @@ def test_the_same_step_with_a_new_measurement_is_still_published():
     # Evaluation ends and reports eval_loss while global_step has not moved yet; that
     # is a real new number, not a replay.
     on_progress, published = _emitter()
-    on_progress(_Progress(step = 200, total_steps = 1000, loss = 0.42))
-    on_progress(_Progress(step = 200, total_steps = 1000, loss = 0.42, eval_loss = 0.55))
+    on_progress(_Progress(step=200, total_steps=1000, loss=0.42))
+    on_progress(_Progress(step=200, total_steps=1000, loss=0.42, eval_loss=0.55))
     assert published == [200, 200]
 
 
 def test_a_warning_mid_run_does_not_replot_either():
     # _record_warning notifies the same callbacks with the metrics untouched.
     on_progress, published = _emitter()
-    progress = _Progress(step = 12, total_steps = 100, loss = 1.5, grad_norm = 0.9)
+    progress = _Progress(step=12, total_steps=100, loss=1.5, grad_norm=0.9)
     on_progress(progress)
     on_progress(progress)
     assert published == [12]
 
 
 def test_the_worker_publishes_only_changed_measurements():
-    text = (_BACKEND / "core/training/worker.py").read_text(encoding = "utf-8")
+    text = (_BACKEND / "core/training/worker.py").read_text(encoding="utf-8")
     body = text[text.index("def _create_trainer_progress_callback") :]
     body = body[: body.index("def _create_embedding_progress_callback")]
     assert "is_repeat = metrics == last_metrics[0]" in body

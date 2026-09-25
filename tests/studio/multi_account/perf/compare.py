@@ -27,12 +27,12 @@ def regressions(results: dict, *, tolerance: float = 0.05) -> list[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description = __doc__)
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--base-ref", default = None, help = "defaults to the merge base with origin/main"
+        "--base-ref", default=None, help="defaults to the merge base with origin/main"
     )
-    parser.add_argument("--rounds", type = int, default = 3)
-    parser.add_argument("--output", type = Path, default = REPO / "artifacts/perf.json")
+    parser.add_argument("--rounds", type=int, default=3)
+    parser.add_argument("--output", type=Path, default=REPO / "artifacts/perf.json")
     args = parser.parse_args()
     assert args.rounds >= 1
     assert args.output.resolve().is_relative_to(REPO), "Benchmark artifacts must stay in this clone"
@@ -45,20 +45,20 @@ def main() -> None:
             raise SystemExit("no baseline commit reachable; pass --base-ref")
 
     scratch_parent = REPO / ".tmp"
-    scratch_parent.mkdir(exist_ok = True)
-    with tempfile.TemporaryDirectory(prefix = "account-perf-", dir = scratch_parent) as directory:
+    scratch_parent.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="account-perf-", dir=scratch_parent) as directory:
         scratch = Path(directory)
         base = materialize_revision(args.base_ref, scratch / "baseline")
         series = {"base": [], "head": []}
         for iteration in range(args.rounds):
             # Alternate order to reduce a monotonic machine-load or temperature bias.
             for label in ("base", "head") if iteration % 2 == 0 else ("head", "base"):
-                print(f"Round {iteration + 1}/{args.rounds}: {label}", flush = True)
+                print(f"Round {iteration + 1}/{args.rounds}: {label}", flush=True)
                 series[label].append(
                     run_probe(
                         base if label == "base" else REPO / "studio/backend",
                         scratch / f"{label}-{iteration}",
-                        mode = "timing",
+                        mode="timing",
                     )
                 )
         results = {
@@ -74,18 +74,18 @@ def main() -> None:
     results["rounds"] = series
     results["base_ref"] = args.base_ref
     results["base_commit"] = subprocess.check_output(
-        ["git", "rev-parse", f"{args.base_ref}^{{commit}}"], cwd = REPO, text = True
+        ["git", "rev-parse", f"{args.base_ref}^{{commit}}"], cwd=REPO, text=True
     ).strip()
     results["head_commit"] = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd = REPO, text = True
+        ["git", "rev-parse", "HEAD"], cwd=REPO, text=True
     ).strip()
     results["python"] = platform.python_version()
     results["platform"] = platform.platform()
     failures = regressions(results)
     results["passed"] = not failures
     results["failures"] = failures
-    args.output.parent.mkdir(parents = True, exist_ok = True)
-    args.output.write_text(json.dumps(results, indent = 2) + "\n", encoding = "utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
     for endpoint in ("status", "history"):
         for metric in ("p50_ms", "p95_ms"):
             base_value, head_value = (

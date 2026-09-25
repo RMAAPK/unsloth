@@ -495,7 +495,7 @@ _LINE_START_TOKENS = frozenset({tokenize.NEWLINE, tokenize.NL, tokenize.INDENT, 
 
 def _is_fstring(tok_string: str) -> bool:
     """True if a STRING token is an f-string (3.10/3.11 emit one STRING token). A bare f-string statement evaluates its expressions at import, so unlike an inert docstring it must never be blanked."""
-    q = min((tok_string.find(c) for c in "'\"" if c in tok_string), default = -1)
+    q = min((tok_string.find(c) for c in "'\"" if c in tok_string), default=-1)
     return q > 0 and "f" in tok_string[:q].lower()
 
 
@@ -542,7 +542,7 @@ def _strip_noncode(content: str, blank_comments: bool = True) -> str:
     if not spans:
         return content
 
-    buf = content.splitlines(keepends = True)
+    buf = content.splitlines(keepends=True)
     for srow, scol, erow, ecol in spans:
         for row in range(srow, erow + 1):
             line = buf[row - 1]
@@ -577,7 +577,7 @@ def _hidden_payload_findings(
     if not RE_EXEC_EVAL.search(stripped):
         return []
     # Only docstrings/strings run via exec(__doc__)/exec(<str>); comments cannot. Isolate that span: keep comments as real code, take what string-blanking removed (length-preserved, so offsets stay exact).
-    code = _strip_noncode(original, blank_comments = False)
+    code = _strip_noncode(original, blank_comments=False)
     removed = "".join(o if o != s else " " for o, s in zip(original, code))
     out = []
 
@@ -1219,7 +1219,7 @@ def _extract_evidence(
             return
         overflow_count += 1
         for piece in _RE_EVIDENCE_SPLIT.split(rendered):
-            piece = _RE_EVIDENCE_PREFIX.sub("", piece, count = 1).rstrip()
+            piece = _RE_EVIDENCE_PREFIX.sub("", piece, count=1).rstrip()
             if not piece:
                 continue
             if overflow_started:
@@ -1503,34 +1503,34 @@ def iter_archive_files(archive_path: str):
                     print(
                         f"  [WARN] {path.name}: refused; member count "
                         f"{count} exceeds cap {HARD_MAX_MEMBERS}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     return
                 reason = _refuse_unsafe_member_name(info.filename)
                 if reason is not None:
                     print(
                         f"  [WARN] {path.name}: refused member ({reason})",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 if info.file_size > HARD_MAX_FILE_BYTES:
                     print(
                         f"  [WARN] {path.name}: skipped {info.filename!r} "
                         f"(declared {info.file_size} > cap {HARD_MAX_FILE_BYTES})",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 if total + info.file_size > HARD_MAX_TOTAL_BYTES:
                     print(
                         f"  [WARN] {path.name}: cumulative bytes cap "
                         f"{HARD_MAX_TOTAL_BYTES} hit at {info.filename!r}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     return
                 try:
                     data = zf.read(info.filename)
                     total += len(data)
-                    text = data.decode("utf-8", errors = "replace")
+                    text = data.decode("utf-8", errors="replace")
                     yield info.filename, text
                 except Exception:
                     continue
@@ -1538,27 +1538,27 @@ def iter_archive_files(archive_path: str):
     elif path.name.endswith((".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar")):
         total = 0
         count = 0
-        with tarfile.open(path, mode = "r|*") as tf:
+        with tarfile.open(path, mode="r|*") as tf:
             for member in tf:
                 count += 1
                 if count > HARD_MAX_MEMBERS:
                     print(
                         f"  [WARN] {path.name}: refused; member count "
                         f"{count} exceeds cap {HARD_MAX_MEMBERS}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     return
                 # Refuse symlinks/hardlinks/devices: tar parsers have historically dereferenced them on extract.
                 if member.issym() or member.islnk():
                     print(
                         f"  [WARN] {path.name}: refused link member " f"{member.name!r}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 if member.isdev() or member.isfifo():
                     print(
                         f"  [WARN] {path.name}: refused special member " f"{member.name!r}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 if not member.isfile():
@@ -1567,7 +1567,7 @@ def iter_archive_files(archive_path: str):
                 if reason is not None:
                     print(
                         f"  [WARN] {path.name}: refused member ({reason})",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 declared = max(member.size, 0)
@@ -1575,14 +1575,14 @@ def iter_archive_files(archive_path: str):
                     print(
                         f"  [WARN] {path.name}: skipped {member.name!r} "
                         f"(declared {declared} > cap {HARD_MAX_FILE_BYTES})",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     continue
                 if total + declared > HARD_MAX_TOTAL_BYTES:
                     print(
                         f"  [WARN] {path.name}: cumulative bytes cap "
                         f"{HARD_MAX_TOTAL_BYTES} hit at {member.name!r}",
-                        file = sys.stderr,
+                        file=sys.stderr,
                     )
                     return
                 try:
@@ -1595,16 +1595,16 @@ def iter_archive_files(archive_path: str):
                         print(
                             f"  [WARN] {path.name}: body of "
                             f"{member.name!r} exceeded declared cap",
-                            file = sys.stderr,
+                            file=sys.stderr,
                         )
                         continue
                     total += len(data)
-                    text = data.decode("utf-8", errors = "replace")
+                    text = data.decode("utf-8", errors="replace")
                     yield member.name, text
                 except Exception:
                     continue
     else:
-        print(f"  [WARN] Unknown archive format: {path.name}", file = sys.stderr)
+        print(f"  [WARN] Unknown archive format: {path.name}", file=sys.stderr)
 
 
 def scan_archive(archive_path: str, package: str) -> list[Finding]:
@@ -1721,17 +1721,17 @@ def _spec_pin_version(spec: str) -> str | None:
 
 def _pypi_json(name: str, version: str | None = None) -> dict | None:
     """Fetch PyPI metadata JSON (read-only HTTPS GET, no exec); None on error. With ``version`` it fetches that release's document, whose ``requires_dist`` is accurate for the pin (the project-level doc describes only the latest)."""
-    url = "https://pypi.org/pypi/" + urllib.parse.quote(name, safe = "")
+    url = "https://pypi.org/pypi/" + urllib.parse.quote(name, safe="")
     if version:
-        url += "/" + urllib.parse.quote(version, safe = "")
+        url += "/" + urllib.parse.quote(version, safe="")
     url += "/json"
     try:
-        req = urllib.request.Request(url, headers = {"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout = 30) as resp:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
             if getattr(resp, "status", 200) != 200:
                 return None
             data = resp.read(16 * 1024 * 1024)  # metadata is small; cap regardless
-        return json.loads(data.decode("utf-8", errors = "replace"))
+        return json.loads(data.decode("utf-8", errors="replace"))
     except Exception:
         return None
 
@@ -1819,6 +1819,7 @@ def _marker_holds_by_default(marker: str) -> bool:
         # still has to be requested when it is AND-ed with them.
         try:
             from packaging.markers import Marker
+
             return _marker_can_hold_without_extras(Marker(m)._markers)
         except Exception:
             return True  # an unknown shape: keep, and scan it
@@ -1867,7 +1868,7 @@ def _requires_dist_for(
     if vmeta is None:
         msg = f"metadata fetch failed for pinned {name}=={version}; dependency scan incomplete"
         if errors is None:
-            print(f"  [WARN] {msg}", file = sys.stderr)
+            print(f"  [WARN] {msg}", file=sys.stderr)
         else:
             errors.append(msg)
         return []
@@ -1900,8 +1901,8 @@ def _download_sdist_direct(
     safe_fname = _RE_PKG_NAME_SANITIZE.sub("_", os.path.basename(fname)) or "sdist.tar.gz"
     out = os.path.join(dest, safe_fname)
     try:
-        req = urllib.request.Request(url, headers = {"Accept": "application/octet-stream"})
-        with urllib.request.urlopen(req, timeout = _SDIST_DOWNLOAD_TIMEOUT) as resp:
+        req = urllib.request.Request(url, headers={"Accept": "application/octet-stream"})
+        with urllib.request.urlopen(req, timeout=_SDIST_DOWNLOAD_TIMEOUT) as resp:
             if getattr(resp, "status", 200) != 200:
                 return None, f"sdist HTTP {getattr(resp, 'status', '?')} for {name}"
             data = resp.read(_MAX_SDIST_BYTES + 1)
@@ -1911,7 +1912,7 @@ def _download_sdist_direct(
             fh.write(data)
         print(
             f"  [INFO] fetched sdist directly (no build) for {name}: {safe_fname}",
-            file = sys.stderr,
+            file=sys.stderr,
         )
         return out, None
     except Exception as exc:
@@ -1936,7 +1937,7 @@ def _pip_download_with_deps(
         dest,
     ] + list(specs)
     try:
-        proc = subprocess.run(cmd, capture_output = True, text = True, timeout = timeout, env = env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
         return proc.returncode, proc.stderr or ""
     except subprocess.TimeoutExpired:
         return 124, "pip download (with deps) timed out"
@@ -1970,7 +1971,7 @@ def _resolve_per_spec_with_deps(
             spec,
         ]
         try:
-            proc = subprocess.run(cmd, capture_output = True, text = True, timeout = 300, env = env)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=env)
         except subprocess.TimeoutExpired:
             download_errors.append(f"per-spec --with-deps timed out for {spec}")
             continue
@@ -1978,7 +1979,7 @@ def _resolve_per_spec_with_deps(
             continue  # archives landed in dest; collected by the caller
         meta = _pypi_json(name)
         if meta is not None and not _release_has_wheel(meta, version):
-            fpath, serr = _download_sdist_direct(name, version, dest, meta = meta)
+            fpath, serr = _download_sdist_direct(name, version, dest, meta=meta)
             if fpath is None:
                 download_errors.append(serr or f"sdist fetch failed for {name}")
                 continue
@@ -1997,7 +1998,7 @@ def _resolve_per_spec_with_deps(
             spec,
         ]
         try:
-            nd = subprocess.run(nd_cmd, capture_output = True, text = True, timeout = 180, env = env)
+            nd = subprocess.run(nd_cmd, capture_output=True, text=True, timeout=180, env=env)
         except subprocess.TimeoutExpired:
             download_errors.append(f"per-spec --no-deps timed out for {spec}")
             continue
@@ -2005,14 +2006,14 @@ def _resolve_per_spec_with_deps(
             print(
                 f"  [INFO] {name}: full tree unresolvable; scanned the package "
                 f"alone (--no-deps), recovering deps individually.",
-                file = sys.stderr,
+                file=sys.stderr,
             )
             # The --with-deps failure may have been a sdist-only TRANSITIVE dep, which --no-deps skips. Recover the declared deps so that class is still scanned.
             if meta is not None:
                 sdist_dep_followups.extend(_requires_dist_for(name, version, meta, download_errors))
             continue
         if meta is not None:
-            fpath, _serr = _download_sdist_direct(name, version, dest, meta = meta)
+            fpath, _serr = _download_sdist_direct(name, version, dest, meta=meta)
             if fpath is not None:
                 continue
         download_errors.append(
@@ -2041,20 +2042,20 @@ def _resolve_per_spec_with_deps(
             dep,
         ]
         try:
-            proc = subprocess.run(cmd, capture_output = True, text = True, timeout = 300, env = env)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=env)
         except subprocess.TimeoutExpired:
-            print(f"  [WARN] dep download timed out for {dep}", file = sys.stderr)
+            print(f"  [WARN] dep download timed out for {dep}", file=sys.stderr)
             continue
         if proc.returncode == 0:
             continue
         meta = _pypi_json(dep_name)
         if meta is None:
-            print(f"  [WARN] could not resolve indirect dep {dep}; skipping", file = sys.stderr)
+            print(f"  [WARN] could not resolve indirect dep {dep}; skipping", file=sys.stderr)
             continue
         if not _release_has_wheel(meta, dep_ver):
-            fpath, serr = _download_sdist_direct(dep_name, dep_ver, dest, meta = meta)
+            fpath, serr = _download_sdist_direct(dep_name, dep_ver, dest, meta=meta)
             if fpath is None:
-                print(f"  [WARN] could not fetch sdist dep {dep}: {serr}", file = sys.stderr)
+                print(f"  [WARN] could not fetch sdist dep {dep}: {serr}", file=sys.stderr)
             elif depth < _MAX_DEP_FOLLOWUP_DEPTH:
                 worklist.extend((d, depth + 1) for d in _requires_dist_for(dep_name, dep_ver, meta))
             continue
@@ -2070,17 +2071,17 @@ def _resolve_per_spec_with_deps(
             dep,
         ]
         try:
-            nd = subprocess.run(nd_cmd, capture_output = True, text = True, timeout = 180, env = env)
+            nd = subprocess.run(nd_cmd, capture_output=True, text=True, timeout=180, env=env)
         except subprocess.TimeoutExpired:
-            print(f"  [WARN] dep --no-deps timed out for {dep}", file = sys.stderr)
+            print(f"  [WARN] dep --no-deps timed out for {dep}", file=sys.stderr)
             continue
         if nd.returncode == 0:
             if depth < _MAX_DEP_FOLLOWUP_DEPTH:
                 worklist.extend((d, depth + 1) for d in _requires_dist_for(dep_name, dep_ver, meta))
             continue
-        fpath, _serr = _download_sdist_direct(dep_name, dep_ver, dest, meta = meta)
+        fpath, _serr = _download_sdist_direct(dep_name, dep_ver, dest, meta=meta)
         if fpath is None:
-            print(f"  [WARN] could not resolve indirect dep {dep}; skipping", file = sys.stderr)
+            print(f"  [WARN] could not resolve indirect dep {dep}; skipping", file=sys.stderr)
         elif depth < _MAX_DEP_FOLLOWUP_DEPTH:
             worklist.extend((d, depth + 1) for d in _requires_dist_for(dep_name, dep_ver, meta))
 
@@ -2102,7 +2103,7 @@ def download_packages(
     env = _pip_download_env()
 
     if with_deps:
-        os.makedirs(dest, exist_ok = True)
+        os.makedirs(dest, exist_ok=True)
         # Fast path: resolve and download the whole transitive tree in one call. `--only-binary :all:` refuses sdists so we never build for metadata.
         rc, stderr = _pip_download_with_deps(specs, dest, env)
         if rc != 0:
@@ -2111,7 +2112,7 @@ def download_packages(
                 f"  [INFO] bulk --with-deps resolve failed "
                 f"({stderr.strip()[:160]}); falling back to per-spec resolution "
                 f"for {len(specs)} spec(s).",
-                file = sys.stderr,
+                file=sys.stderr,
             )
             _resolve_per_spec_with_deps(specs, dest, env, download_errors)
         _collect_flat_dir(dest, results)
@@ -2121,7 +2122,7 @@ def download_packages(
             # Sanitize before joining into `dest` to prevent path traversal
             safe_name = _RE_PKG_NAME_SANITIZE.sub("_", raw_name) or "_pkg"
             pkg_dir = os.path.join(dest, safe_name)
-            os.makedirs(pkg_dir, exist_ok = True)
+            os.makedirs(pkg_dir, exist_ok=True)
             cmd = [
                 sys.executable,
                 "-m",
@@ -2134,7 +2135,7 @@ def download_packages(
                 spec,
             ]
             try:
-                proc = subprocess.run(cmd, capture_output = True, text = True, timeout = 120, env = env)
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
             except subprocess.TimeoutExpired:
                 download_errors.append(f"pip download timed out for {spec}")
                 continue
@@ -2143,7 +2144,7 @@ def download_packages(
                 version = _spec_pin_version(spec)
                 meta = _pypi_json(name)
                 if meta is not None and not _release_has_wheel(meta, version):
-                    fpath, serr = _download_sdist_direct(name, version, pkg_dir, meta = meta)
+                    fpath, serr = _download_sdist_direct(name, version, pkg_dir, meta=meta)
                     if fpath is not None:
                         results.append((spec, fpath))
                         continue
@@ -2200,7 +2201,7 @@ def parse_requirements(req_files: list[str]) -> list[dict]:
                         }
                     )
         except FileNotFoundError:
-            print(f"  [ERROR] Requirements file not found: {req_file}", file = sys.stderr)
+            print(f"  [ERROR] Requirements file not found: {req_file}", file=sys.stderr)
     return results
 
 
@@ -2233,7 +2234,7 @@ def print_findings(findings: list[Finding]) -> None:
         print("\n  All clean. No suspicious patterns found.")
         return
 
-    findings.sort(key = lambda f: SEVERITY_ORDER.get(f.severity, 99))
+    findings.sort(key=lambda f: SEVERITY_ORDER.get(f.severity, 99))
 
     print(f"\n  {'=' * 72}")
     print(f"  SCAN RESULTS: {len(findings)} finding(s)")
@@ -2273,7 +2274,7 @@ def version_sort_key(v: str) -> tuple:
             pass
 
     v_clean = re.split(
-        r"[-_.]?(a|alpha|b|beta|rc|c|pre|preview|dev|post)", v, maxsplit = 1, flags = re.I
+        r"[-_.]?(a|alpha|b|beta|rc|c|pre|preview|dev|post)", v, maxsplit=1, flags=re.I
     )
     base = v_clean[0]
     suffix = v[len(base) :]
@@ -2311,15 +2312,15 @@ def fetch_pypi_versions(name: str) -> list[str]:
     """
     url = f"https://pypi.org/pypi/{name}/json"
     try:
-        req = urllib.request.Request(url, headers = {"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout = 30) as resp:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except Exception as e:
-        print(f"  [ERROR] Failed to query PyPI for {name}: {e}", file = sys.stderr)
+        print(f"  [ERROR] Failed to query PyPI for {name}: {e}", file=sys.stderr)
         return []
 
     versions = list(data.get("releases", {}).keys())
-    versions.sort(key = version_sort_key)
+    versions.sort(key=version_sort_key)
     return versions
 
 
@@ -2332,7 +2333,7 @@ def find_safe_version(
     """Search backward from bad_ver for a clean version, downloading and scanning up to max_search older versions. Returns the first clean version found, or None."""
     versions = fetch_pypi_versions(name)
     if not versions:
-        print(f"  [WARN] No versions found on PyPI for {name}", file = sys.stderr)
+        print(f"  [WARN] No versions found on PyPI for {name}", file=sys.stderr)
         return None
 
     try:
@@ -2353,7 +2354,7 @@ def find_safe_version(
     candidates = candidates[:max_search]
 
     if not candidates:
-        print(f"  [WARN] No older versions to scan for {name}", file = sys.stderr)
+        print(f"  [WARN] No older versions to scan for {name}", file=sys.stderr)
         return None
 
     print(f"  Searching {len(candidates)} older version(s) of {name}...")
@@ -2361,12 +2362,12 @@ def find_safe_version(
     for ver in candidates:
         spec = f"{name}=={ver}"
         scan_dir = os.path.join(tmpdir, f"{name}_{ver}")
-        os.makedirs(scan_dir, exist_ok = True)
+        os.makedirs(scan_dir, exist_ok=True)
 
         downloaded, download_errors = download_packages([spec], scan_dir)
         if not downloaded:
             for err in download_errors:
-                print(f"    [WARN] {err}", file = sys.stderr)
+                print(f"    [WARN] {err}", file=sys.stderr)
             continue
 
         clean = True
@@ -2382,7 +2383,7 @@ def find_safe_version(
                 print(f"    {ver} -- CRITICAL finding(s), skipping")
                 break
 
-        shutil.rmtree(scan_dir, ignore_errors = True)
+        shutil.rmtree(scan_dir, ignore_errors=True)
 
         if clean:
             print(f"    {ver} -- clean!")
@@ -2413,7 +2414,7 @@ def update_req_line(raw_line: str, safe_ver: str, old_ver: str | None) -> str:
         r"([A-Za-z0-9._-]+)\s*(?:[><=!~]=?[^;#,\s]*(?:\s*,\s*[><=!~]=?[^;#,\s]*)*)?",
         lambda m: f"{m.group(1)}=={safe_ver}",
         code_part.strip(),
-        count = 1,
+        count=1,
     )
 
     was_note = f" (was {old_ver})" if old_ver else ""
@@ -2429,7 +2430,7 @@ def update_req_file(filepath: str, updates: dict[int, str]) -> None:
     # locale, and a non-ASCII comment is mangled or raises. studio/backend has a guard for exactly
     # this (tests/test_text_io_encoding.py) but it scans BACKEND_ROOT only, so scripts/ was never
     # covered by it.
-    with open(filepath, encoding = "utf-8") as f:
+    with open(filepath, encoding="utf-8") as f:
         lines = f.readlines()
 
     for line_num, new_text in updates.items():
@@ -2440,8 +2441,8 @@ def update_req_file(filepath: str, updates: dict[int, str]) -> None:
 
     dirpath = os.path.dirname(os.path.abspath(filepath)) or "."
     fd, tmp_path = tempfile.mkstemp(
-        prefix = ".req_fix.",
-        dir = dirpath,
+        prefix=".req_fix.",
+        dir=dirpath,
     )
     try:
         # newline = "\n" so the line endings the loop above went to the trouble of preserving
@@ -2449,7 +2450,7 @@ def update_req_file(filepath: str, updates: dict[int, str]) -> None:
         # in memory, and the default newline then translates it back to os.linesep -- which on
         # Windows rewrites every line of a tracked requirements file and makes the "preserve line
         # ending" above a no-op.
-        with os.fdopen(fd, "w", encoding = "utf-8", newline = "\n") as f:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             f.writelines(lines)
             f.flush()
             os.fsync(f.fileno())
@@ -2471,7 +2472,7 @@ def _run_fix(critical_pkgs: set[str], entries: list[dict], max_search: int) -> N
 
     changes_summary: list[str] = []
 
-    with tempfile.TemporaryDirectory(prefix = "pth_fix_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="pth_fix_") as tmpdir:
         for pkg_name in sorted(critical_pkgs):
             norm = pkg_name.lower().replace("-", "_").replace(".", "_")
             related = pkg_entries.get(norm, [])
@@ -2493,14 +2494,14 @@ def _run_fix(critical_pkgs: set[str], entries: list[dict], max_search: int) -> N
 
             if not current_ver:
                 dl_dir = os.path.join(tmpdir, f"resolve_{pkg_name}")
-                os.makedirs(dl_dir, exist_ok = True)
+                os.makedirs(dl_dir, exist_ok=True)
                 downloaded, download_errors = download_packages([pkg_name], dl_dir)
                 if downloaded:
                     current_ver = get_downloaded_version(downloaded[0][1])
                 else:
                     for err in download_errors:
-                        print(f"  [WARN] {err}", file = sys.stderr)
-                shutil.rmtree(dl_dir, ignore_errors = True)
+                        print(f"  [WARN] {err}", file=sys.stderr)
+                shutil.rmtree(dl_dir, ignore_errors=True)
 
             if not current_ver:
                 print(f"  [WARN] Cannot determine current version of {pkg_name}, skipping fix")
@@ -2584,7 +2585,7 @@ _RE_SDIST_ROOT = re.compile(r"^[^/]+-\d[^/]*/")
 
 def _relpath_in_package(filename: str) -> str:
     """Package-relative path: drop an sdist's version-carrying archive root. Wheel members are already package-relative; sdist members sit under ``numba-0.60.0/...``."""
-    return _RE_SDIST_ROOT.sub("", filename, count = 1)
+    return _RE_SDIST_ROOT.sub("", filename, count=1)
 
 
 # Evidence joins matched spans with " | " and a newline between labelled groups, each span tagged "L<NN>: ". Split only on those real delimiters, never on a bare "|", since matched code may contain a bitwise-or or union type. The prefix strips only a genuine leading marker, so a marker-like "L<NN>:" inside raw code is left intact.
@@ -2596,7 +2597,7 @@ def _canon_evidence(evidence: str) -> str:
     """Matched code lines in discovery order (markers removed), duplicates kept. Line shifts are absorbed by stripping the L<NN>: markers, not by sorting, so order stays significant and reordering matched lines reopens the finding; keeping duplicates means an appended identical occurrence still changes the key."""
     spans = []
     for s in _RE_EVIDENCE_SPLIT.split(evidence or ""):
-        s = _RE_EVIDENCE_PREFIX.sub("", s, count = 1).rstrip()
+        s = _RE_EVIDENCE_PREFIX.sub("", s, count=1).rstrip()
         if s:
             spans.append(s)
     return "\n".join(spans)
@@ -2620,19 +2621,19 @@ def _finding_key(f: Finding) -> tuple[str, str, str, str]:
 def _load_baseline(path: str) -> "dict[tuple[str, str, str, str], set[str] | None]":
     """Load an allowlist JSON into {match key: pinned file digests}. None means unpinned: the key alone suppresses. A set of digests covers only those exact file contents, so any other edit to the file reopens the finding, which matters for files whose danger sits outside the matched lines."""
     try:
-        with open(path, "r", encoding = "utf-8") as fh:
+        with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
     except FileNotFoundError:
         return {}
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"  [WARN] could not read baseline {path}: {exc}", file = sys.stderr)
+        print(f"  [WARN] could not read baseline {path}: {exc}", file=sys.stderr)
         return {}
     if not isinstance(data, dict):
-        print(f"  [WARN] baseline {path} is not a JSON object", file = sys.stderr)
+        print(f"  [WARN] baseline {path} is not a JSON object", file=sys.stderr)
         return {}
     entries = data.get("entries", [])
     if not isinstance(entries, list):
-        print(f"  [WARN] baseline {path} entries is not a list", file = sys.stderr)
+        print(f"  [WARN] baseline {path} entries is not a list", file=sys.stderr)
         return {}
     keys: dict[tuple[str, str, str, str], "set[str] | None"] = {}
     legacy = 0
@@ -2664,7 +2665,7 @@ def _load_baseline(path: str) -> "dict[tuple[str, str, str, str], set[str] | Non
             f"  [WARN] baseline {path}: {legacy} entries lack evidence_hash and may "
             f"not suppress until regenerated with --write-baseline (findings reopen "
             f"rather than risk hiding changed code under a coarse key)",
-            file = sys.stderr,
+            file=sys.stderr,
         )
     return keys
 
@@ -2687,7 +2688,7 @@ def _load_baseline_evidence(
     if not path:
         return {}
     try:
-        with open(path, "r", encoding = "utf-8") as fh:
+        with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return {}
@@ -2737,7 +2738,7 @@ def _classify_reviewed_site(f: Finding, entries: list[tuple[str, list[str]]]) ->
     digest = _evidence_hash(f.evidence)
     if any(digest == h for h, _ in entries):
         return ("pin", "same matched code, file digest outside the pin")
-    best = min((_span_delta(spans, b) for _, b in entries), key = lambda d: (d[0] + d[1], d[0]))
+    best = min((_span_delta(spans, b) for _, b in entries), key=lambda d: (d[0] + d[1], d[0]))
     added, removed = best
     if added and not removed:
         return ("unread", f"{added} matched line(s) appended to a reviewed file, none gone")
@@ -2787,7 +2788,7 @@ def _report_reviewed_sites(
         f"reviewed in {baseline_path}. What differs from the reviewed entry:"
     )
     verdicts = []
-    for f in sorted(moved, key = lambda f: (f.package, _relpath_in_package(f.filename))):
+    for f in sorted(moved, key=lambda f: (f.package, _relpath_in_package(f.filename))):
         rel = _relpath_in_package(f.filename)
         entries = site_evidence.get((_norm_pkg(f.package), rel, f.check), [])
         kind, why = (
@@ -2817,7 +2818,7 @@ def _write_baseline(
     pinned = {k for k, v in _load_baseline(source or path).items() if v is not None}
     entries = []
     seen: set[tuple[str, str, str, str]] = set()
-    for f in sorted(findings, key = lambda f: SEVERITY_ORDER.get(f.severity, 99)):
+    for f in sorted(findings, key=lambda f: SEVERITY_ORDER.get(f.severity, 99)):
         if f.severity not in (CRITICAL, HIGH):
             continue
         key = _finding_key(f)
@@ -2854,8 +2855,8 @@ def _write_baseline(
     # "\n" json.dump emits to os.linesep, and --write-baseline rewrites the tracked
     # scripts/scan_packages_baseline.json in place, so on Windows a one-entry review turned into a
     # whole-file CRLF diff over several thousand lines.
-    with open(path, "w", encoding = "utf-8", newline = "\n") as fh:
-        json.dump(doc, fh, indent = 2, sort_keys = False)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=False)
         fh.write("\n")
     print(f"  Wrote {len(entries)} baseline entr(y/ies) to {path}")
 
@@ -2880,58 +2881,58 @@ def _partition_baseline(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description = __doc__,
-        formatter_class = argparse.RawDescriptionHelpFormatter,
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "packages",
-        nargs = "*",
-        help = "Package specs (e.g. requests==2.32.5 fastapi)",
+        nargs="*",
+        help="Package specs (e.g. requests==2.32.5 fastapi)",
     )
     parser.add_argument(
         "-r",
         "--requirements",
-        action = "append",
-        default = [],
-        metavar = "FILE",
-        help = "Requirements file(s) to scan",
+        action="append",
+        default=[],
+        metavar="FILE",
+        help="Requirements file(s) to scan",
     )
     parser.add_argument(
         "-d",
         "--scan-dir",
-        action = "append",
-        default = [],
-        metavar = "DIR",
-        help = "Recursively find requirements*.txt files in DIR",
+        action="append",
+        default=[],
+        metavar="DIR",
+        help="Recursively find requirements*.txt files in DIR",
     )
     parser.add_argument(
         "--with-deps",
-        action = "store_true",
-        help = "Also download and scan transitive dependencies (full dependency tree)",
+        action="store_true",
+        help="Also download and scan transitive dependencies (full dependency tree)",
     )
     parser.add_argument(
         "--jobs",
-        type = int,
-        default = 0,
-        help = "Archive-scanning worker processes (default: min(4, cpu count); 1 = serial)",
+        type=int,
+        default=0,
+        help="Archive-scanning worker processes (default: min(4, cpu count); 1 = serial)",
     )
     parser.add_argument(
         "--fix",
-        action = "store_true",
-        help = "Auto-search for safe versions and update requirements files",
+        action="store_true",
+        help="Auto-search for safe versions and update requirements files",
     )
     parser.add_argument(
         "--max-search",
-        type = int,
-        default = 10,
-        metavar = "N",
-        help = "Max older versions to scan when searching for safe version (default: 10)",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Max older versions to scan when searching for safe version (default: 10)",
     )
     parser.add_argument(
         "--baseline",
-        metavar = "FILE",
-        default = None,
-        help = (
+        metavar="FILE",
+        default=None,
+        help=(
             "Allowlist JSON of triaged known-good findings to suppress. "
             f"Defaults to {os.path.basename(_DEFAULT_BASELINE_PATH)} next to this "
             "script if present."
@@ -2939,14 +2940,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--no-baseline",
-        action = "store_true",
-        help = "Ignore the auto-discovered baseline allowlist.",
+        action="store_true",
+        help="Ignore the auto-discovered baseline allowlist.",
     )
     parser.add_argument(
         "--write-baseline",
-        metavar = "FILE",
-        default = None,
-        help = (
+        metavar="FILE",
+        default=None,
+        help=(
             "Write the current CRITICAL/HIGH findings to FILE as an allowlist, "
             "then exit 0. Review every entry before committing it."
         ),
@@ -2962,7 +2963,7 @@ def main() -> int:
                 print(f"    {f}")
             req_files.extend(found)
         else:
-            print(f"  [WARN] No requirements files found in {scan_dir}/", file = sys.stderr)
+            print(f"  [WARN] No requirements files found in {scan_dir}/", file=sys.stderr)
 
     entries: list[dict] = []
 
@@ -3002,8 +3003,8 @@ def main() -> int:
     specs, blocked_findings = _check_blocked_pypi_versions(specs)
     all_findings.extend(blocked_findings)
 
-    tmpdir = tempfile.mkdtemp(prefix = "pth_scan_")
-    atexit.register(lambda d = tmpdir: shutil.rmtree(d, ignore_errors = True))
+    tmpdir = tempfile.mkdtemp(prefix="pth_scan_")
+    atexit.register(lambda d=tmpdir: shutil.rmtree(d, ignore_errors=True))
     download_errors: list[str] = []
     # Scan-side failures, kept beside the download ones so both reach the SCAN INCOMPLETE block below. A stall has to exit 2 like any other partial scan: exit 1 is reserved for "non-baselined CRITICAL or HIGH findings detected".
     scan_errors: list[str] = []
@@ -3011,7 +3012,7 @@ def main() -> int:
         downloaded, download_errors = download_packages(
             specs,
             tmpdir,
-            with_deps = args.with_deps,
+            with_deps=args.with_deps,
         )
         print(f"  Downloaded {len(downloaded)} archive(s).")
 
@@ -3021,11 +3022,11 @@ def main() -> int:
         if jobs > 1 and len(tasks) > 1:
             print(f"  Scanning {len(tasks)} archive(s) across {jobs} workers...")
             ctx = multiprocessing.get_context("spawn")
-            with ctx.Pool(processes = jobs) as pool:
-                results = pool.imap(_scan_one, tasks, chunksize = 1)
+            with ctx.Pool(processes=jobs) as pool:
+                results = pool.imap(_scan_one, tasks, chunksize=1)
                 for i, (archive_path, _pkg) in enumerate(tasks):
                     try:
-                        captured, findings = results.next(timeout = 900)
+                        captured, findings = results.next(timeout=900)
                     except multiprocessing.TimeoutError:
                         # A worker died (OOM or segfault on a hostile archive). Without this the iterator blocks forever and the job only ends at the workflow timeout with no reason given. Recorded rather than raised, since `raise SystemExit(<str>)` exits 1 and 1 already means "CRITICAL or HIGH findings detected"; routing it here gets SCAN INCOMPLETE and exit 2.
                         scan_errors.append(
@@ -3048,7 +3049,7 @@ def main() -> int:
                 except OSError:
                     pass
     finally:
-        shutil.rmtree(tmpdir, ignore_errors = True)
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
     if args.no_baseline:
         baseline_path = None
@@ -3089,19 +3090,19 @@ def main() -> int:
             f"\n  {'=' * 72}\n"
             f"  SCAN INCOMPLETE: {len(incomplete_errors)} failure(s):\n"
             f"  {'=' * 72}",
-            file = sys.stderr,
+            file=sys.stderr,
         )
         for err in incomplete_errors:
-            print(f"  [ERROR] {err}", file = sys.stderr)
+            print(f"  [ERROR] {err}", file=sys.stderr)
         print(
             "  Refusing to report 'all clean' on a partial scan; exiting 2.",
-            file = sys.stderr,
+            file=sys.stderr,
         )
         return 2
 
     # --write-baseline: persist the full current CRITICAL/HIGH set as the new allowlist (ignoring any loaded baseline), then exit 0. Only reached once the scan is known complete.
     if args.write_baseline:
-        _write_baseline(args.write_baseline, all_findings, source = baseline_path)
+        _write_baseline(args.write_baseline, all_findings, source=baseline_path)
         return 0
 
     # Exit 1 only if a NON-baselined CRITICAL or HIGH remains. This is the signal CI gates on once the baseline reaches a clean run.

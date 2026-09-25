@@ -12,12 +12,12 @@ from utils.account_context import AccountContext, OWNER, run_as
 ALICE = AccountContext("a" * 32, "alice")
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Scan:
     repos: frozenset
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Repo:
     repo_id: str
     repo_type: str = "model"
@@ -30,7 +30,7 @@ def _repo(repo_id):
 
 def test_managed_previews_see_only_visible_repos(monkeypatch):
     mine, theirs = _repo("alice/base"), _repo("bob/private-base")
-    scans = [Scan(repos = frozenset({mine, theirs}))]
+    scans = [Scan(repos=frozenset({mine, theirs}))]
     monkeypatch.setattr(cache_inventory, "all_hf_cache_scans", lambda: scans)
     monkeypatch.setattr(
         access,

@@ -28,7 +28,7 @@ def runtime_path() -> Path:
 
 def _download() -> bytes:
     data = bytearray()
-    with httpx.stream("GET", ARCHIVE_URL, follow_redirects = True, timeout = 30) as response:
+    with httpx.stream("GET", ARCHIVE_URL, follow_redirects=True, timeout=30) as response:
         response.raise_for_status()
         for chunk in response.iter_bytes():
             data.extend(chunk)
@@ -40,7 +40,7 @@ def _download() -> bytes:
 def _extract(data: bytes, target: Path) -> None:
     if hashlib.sha256(data).hexdigest() != ARCHIVE_SHA256:
         raise ValueError("Blender MCP download checksum mismatch")
-    with tarfile.open(fileobj = io.BytesIO(data), mode = "r:gz") as archive:
+    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
         for member in archive:
             parts = PurePosixPath(member.name).parts
             if len(parts) < 4 or parts[1:3] != ("mcp", "blmcp"):
@@ -60,16 +60,16 @@ def _extract(data: bytes, target: Path) -> None:
             if source is None:
                 raise ValueError("Missing Blender MCP archive entry")
             destination = target / str(relative)
-            destination.parent.mkdir(parents = True, exist_ok = True)
+            destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(source.read())
     prompt = target / "blmcp/data/prompts.yml"
-    text = prompt.read_text(encoding = "utf-8")
+    text = prompt.read_text(encoding="utf-8")
     start, end = text.index("  # Bundled Manuals"), text.index("  # Executing Code")
     prompt.write_text(
         text[:start]
         + "  # Documentation\n\n  Offline documentation tools are not installed.\n\n"
         + text[end:],
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     if not (target / "blmcp/__init__.py").is_file():
         raise ValueError("Incomplete Blender MCP runtime")
@@ -79,16 +79,16 @@ def ensure_runtime() -> Path:
     from filelock import FileLock
 
     target = runtime_path()
-    target.parent.mkdir(parents = True, exist_ok = True)
-    with FileLock(str(target) + ".lock", timeout = 120):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(target) + ".lock", timeout=120):
         if (target / ".ready").is_file():
             return target
         if target.exists():
             raise ValueError("Incomplete Blender MCP cache; remove this runtime cache and retry")
-        with tempfile.TemporaryDirectory(prefix = ".install-", dir = target.parent) as temporary:
+        with tempfile.TemporaryDirectory(prefix=".install-", dir=target.parent) as temporary:
             staged = Path(temporary) / "runtime"
             staged.mkdir()
             _extract(_download(), staged)
-            (staged / ".ready").write_text(ARCHIVE_SHA256, encoding = "ascii")
+            (staged / ".ready").write_text(ARCHIVE_SHA256, encoding="ascii")
             staged.rename(target)
     return target

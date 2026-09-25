@@ -179,14 +179,14 @@ def run_settle(
     }
     with tempfile.TemporaryDirectory() as tmp:
         harness = Path(tmp) / "harness.js"
-        harness.write_text(HARNESS_JS, encoding = "utf-8")
+        harness.write_text(HARNESS_JS, encoding="utf-8")
         js = Path(tmp) / "reasoning.js"
-        js.write_text(REASONING_JS, encoding = "utf-8")
+        js.write_text(REASONING_JS, encoding="utf-8")
         got = subprocess.run(
             [exe, str(harness), str(js), json.dumps(cfg)],
-            capture_output = True,
-            text = True,
-            timeout = 120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
     assert got.returncode == 0, f"node failed:\n{got.stderr}"
     return json.loads(got.stdout.strip().splitlines()[-1])
@@ -200,7 +200,7 @@ def test_a_slow_state_flip_does_not_bank_quiet_frames_before_it():
     there gives 44,075 -- the number this whole change exists to retract -- and gives it with
     `censored: false`, which is worse than giving nothing.
     """
-    out = run_settle(flip_frame = 6, mount_done_frame = 40)
+    out = run_settle(flip_frame=6, mount_done_frame=40)
     assert out["spansOpen"] != SPANS_BEFORE, (
         "the span census was read on the frame the state flipped, before the content it counts "
         "had mounted. That is the defect the settling fix exists to remove, reproduced inside "
@@ -215,7 +215,7 @@ def test_a_slow_state_flip_does_not_bank_quiet_frames_before_it():
 
 def test_the_streak_requires_that_many_frames_after_the_flip():
     """The quiet window is measured from the flip, so the read lands after the mount finishes."""
-    out = run_settle(flip_frame = 6, mount_done_frame = 40)
+    out = run_settle(flip_frame=6, mount_done_frame=40)
     # The census stops moving at frame 40; the streak then needs SETTLE_QUIET_FRAMES more.
     assert out["openFrames"] >= 40 + SETTLE_QUIET_FRAMES
     assert out["quietFramesRequired"] == SETTLE_QUIET_FRAMES
@@ -224,7 +224,7 @@ def test_the_streak_requires_that_many_frames_after_the_flip():
 def test_a_census_that_never_goes_quiet_is_withheld_with_a_reason():
     """Silence beats a confident wrong answer: no number, and a reason naming the budget."""
     # Spans still climbing when the budget runs out: 8000ms / 16ms = 500 frames.
-    out = run_settle(flip_frame = 6, mount_done_frame = 100_000)
+    out = run_settle(flip_frame=6, mount_done_frame=100_000)
     assert out["spansOpen"] is None
     assert out["openMs"] is None
     assert out["openCensored"] is True
@@ -235,7 +235,7 @@ def test_a_census_that_never_goes_quiet_is_withheld_with_a_reason():
 
 def test_a_state_that_is_never_reached_says_so_instead():
     """The other censoring reason, so the two failures are not reported as one."""
-    out = run_settle(flip_frame = 100_000, mount_done_frame = 100_001)
+    out = run_settle(flip_frame=100_000, mount_done_frame=100_001)
     assert out["openCensored"] is True
     assert "never reached" in out["openCensoredReason"]
     assert out["openStateReachedMs"] is None
@@ -248,7 +248,7 @@ def test_a_page_that_is_already_settled_still_returns_promptly():
     possible reading. It has to come back quickly and uncensored, or the fix has traded a wrong
     number for no number at all.
     """
-    out = run_settle(flip_frame = 1, mount_done_frame = 2, spans_static = True)
+    out = run_settle(flip_frame=1, mount_done_frame=2, spans_static=True)
     assert out["openCensored"] is False
     assert out["spansOpen"] == SPANS_BEFORE
     assert out["openFrames"] <= 1 + SETTLE_QUIET_FRAMES + 1
@@ -261,11 +261,11 @@ def test_losing_the_state_restarts_the_streak():
     return on a streak accumulated across the gap -- reading a document that was mid-change.
     """
     out = run_settle(
-        flip_frame = 2,
-        mount_done_frame = 3,
-        spans_static = True,
-        lose_state_after = 1,
-        lose_state_for = 6,
+        flip_frame=2,
+        mount_done_frame=3,
+        spans_static=True,
+        lose_state_after=1,
+        lose_state_for=6,
     )
     assert out["openCensored"] is False
     # It cannot have returned during the window where the count was below `want`.
@@ -284,7 +284,7 @@ def test_the_timing_includes_the_click_dispatch_it_names():
     With a 40 ms handler on 16 panes the settle alone reads 96 ms against 640 ms of dispatch it had
     just performed.
     """
-    out = run_settle(flip_frame = 2, mount_done_frame = 3, spans_static = True, click_ms = 40.0)
+    out = run_settle(flip_frame=2, mount_done_frame=3, spans_static=True, click_ms=40.0)
     dispatch = PANES * 40.0
     assert out["openDispatchMs"] == dispatch
     assert out["openMs"] >= dispatch, (
@@ -292,13 +292,13 @@ def test_the_timing_includes_the_click_dispatch_it_names():
         "measures. That is this branch's own defect, committed by the fix for it."
     )
     # And the two halves are reported apart, because they answer different questions.
-    assert out["openMs"] == pytest.approx(out["openDispatchMs"] + out["openSettleMs"], abs = 0.2)
+    assert out["openMs"] == pytest.approx(out["openDispatchMs"] + out["openSettleMs"], abs=0.2)
     assert out["openSettleMs"] < out["openMs"]
 
 
 def test_the_state_reached_mark_shares_the_timing_origin():
     """`open_state_reached_ms` is quoted against `open_ms`, so it cannot start from a later zero."""
-    out = run_settle(flip_frame = 3, mount_done_frame = 20, click_ms = 25.0)
+    out = run_settle(flip_frame=3, mount_done_frame=20, click_ms=25.0)
     dispatch = PANES * 25.0
     assert out["openStateReachedMs"] >= dispatch, (
         "the state-reached mark was measured from the settle's start while open_ms was measured "
@@ -325,7 +325,7 @@ def test_a_collapse_is_not_settled_while_its_panes_are_still_mounted():
     returns while every span it would have counted is still in the document -- a pre-settled point,
     reported as a measurement of the collapse.
     """
-    out = run_settle(flip_frame = 1, mount_done_frame = 2, close_unmount_frame = 12)
+    out = run_settle(flip_frame=1, mount_done_frame=2, close_unmount_frame=12)
     assert out["closeCensored"] is False
     assert out["closeFrames"] >= 12 + SETTLE_QUIET_FRAMES, (
         f"the close settle returned after {out['closeFrames']} frames, before the panes it had "
@@ -343,8 +343,8 @@ def test_the_close_bias_does_not_depend_on_the_paint_interval():
     was measured to the unmount; a fast one was not. Both must now be measured to the unmount, so
     the two readings mean the same thing.
     """
-    fast_page = run_settle(flip_frame = 1, mount_done_frame = 2, close_unmount_frame = 20)
-    slow_page = run_settle(flip_frame = 1, mount_done_frame = 2, close_unmount_frame = 2)
+    fast_page = run_settle(flip_frame=1, mount_done_frame=2, close_unmount_frame=20)
+    slow_page = run_settle(flip_frame=1, mount_done_frame=2, close_unmount_frame=2)
     assert fast_page["closeFrames"] >= 20 + SETTLE_QUIET_FRAMES
     assert slow_page["closeFrames"] >= 2 + SETTLE_QUIET_FRAMES
     # Both readings are the same quantity: the teardown, plus the streak that proves it is over.
@@ -358,7 +358,7 @@ def test_a_collapse_that_never_tears_down_is_censored_and_says_which_half_failed
     closed. Reported as "the open count never reached 0" it would send a reader to the wrong half
     of the app.
     """
-    out = run_settle(flip_frame = 1, mount_done_frame = 2, close_unmount_frame = 100_000)
+    out = run_settle(flip_frame=1, mount_done_frame=2, close_unmount_frame=100_000)
     assert out["closeCensored"] is True
     assert out["closeMs"] is None
     assert "still mounted" in out["closeCensoredReason"]
@@ -366,6 +366,6 @@ def test_a_collapse_that_never_tears_down_is_censored_and_says_which_half_failed
 
 def test_an_instant_teardown_still_returns_promptly():
     """The control. The fix must not turn the cheap case into a censored one."""
-    out = run_settle(flip_frame = 1, mount_done_frame = 2, close_unmount_frame = 0)
+    out = run_settle(flip_frame=1, mount_done_frame=2, close_unmount_frame=0)
     assert out["closeCensored"] is False
     assert out["closeFrames"] <= 1 + SETTLE_QUIET_FRAMES + 1

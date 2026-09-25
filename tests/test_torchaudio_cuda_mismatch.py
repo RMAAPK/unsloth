@@ -110,7 +110,7 @@ MISMATCH = RuntimeError(
 
 def test_a_mismatched_torchaudio_is_made_absent(monkeypatch, fresh):
     _stage(monkeypatch, fresh, MISMATCH)
-    with pytest.warns(UserWarning, match = "torchaudio cannot initialise"):
+    with pytest.warns(UserWarning, match="torchaudio cannot initialise"):
         fresh.disable_torchaudio_if_cuda_mismatched()
     assert sys.modules.get("torchaudio", "missing") is None
 
@@ -130,7 +130,7 @@ def test_the_speech_backend_goes_down_with_torchaudio(monkeypatch, fresh):
     # Stand up the 5.x shape explicitly rather than asking whichever
     # transformers happens to be installed: on 4.x both readers share one
     # module global, so the 4.x version of this test cannot fail.
-    monkeypatch.delattr(tf_iu, "_torchaudio_available", raising = False)
+    monkeypatch.delattr(tf_iu, "_torchaudio_available", raising=False)
     monkeypatch.setattr(tf_iu, "is_torchaudio_available", lru_cache(lambda: True))
     monkeypatch.setattr(
         tf_iu, "is_speech_available", lru_cache(lambda: tf_iu.is_torchaudio_available())
@@ -138,7 +138,7 @@ def test_the_speech_backend_goes_down_with_torchaudio(monkeypatch, fresh):
 
     _stage(monkeypatch, fresh, MISMATCH)
     assert tf_iu.is_speech_available() is True  # warmed, as a live process would be
-    with pytest.warns(UserWarning, match = "torchaudio cannot initialise"):
+    with pytest.warns(UserWarning, match="torchaudio cannot initialise"):
         fresh.disable_torchaudio_if_cuda_mismatched()
     assert tf_iu.is_torchaudio_available() is False
     assert tf_iu.is_speech_available() is False
@@ -163,7 +163,7 @@ def test_an_unrelated_failure_is_re_raised(monkeypatch, fresh):
     """Swallowing it would hide a real error behind a message about CUDA
     versions, which is the failure mode this whole file exists to avoid."""
     _stage(monkeypatch, fresh, RuntimeError("something else entirely"))
-    with pytest.raises(RuntimeError, match = "something else entirely"):
+    with pytest.raises(RuntimeError, match="something else entirely"):
         fresh.disable_torchaudio_if_cuda_mismatched()
 
 
@@ -226,6 +226,7 @@ def test_it_runs_before_the_torchcodec_repair_because_it_has_to():
 def import_fixes_dir():
     import unsloth
     from pathlib import Path
+
     return Path(unsloth.__file__).parent
 
 
@@ -245,7 +246,7 @@ def test_the_guard_runs_before_anything_can_import_torchaudio():
 
     src = (
         (Path(__file__).resolve().parents[1] / "unsloth" / "_gpu_init.py")
-        .read_text(encoding = "utf-8")
+        .read_text(encoding="utf-8")
         .splitlines()
     )
 

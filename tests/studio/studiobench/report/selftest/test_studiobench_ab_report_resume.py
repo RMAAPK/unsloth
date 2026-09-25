@@ -61,8 +61,8 @@ def _payload(out: Path, session: str) -> Paths:
         _cell("r10K.treatment.rep0", "treatment", session),
         _keystroke("r10K.treatment.rep0", session, 50.0),
     ]
-    paths.payload_jsonl.parent.mkdir(parents = True, exist_ok = True)
-    paths.payload_jsonl.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding = "utf-8")
+    paths.payload_jsonl.parent.mkdir(parents=True, exist_ok=True)
+    paths.payload_jsonl.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     return paths
 
 
@@ -70,7 +70,7 @@ def test_a_fully_resumed_ab_keeps_the_table_the_measured_run_wrote(tmp_path):
     paths = _payload(tmp_path / "run", MEASURED)
 
     _render_ab(paths, SIDES, MEASURED, "c0ffee")
-    measured = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    measured = (paths.out / "ab.md").read_text(encoding="utf-8")
     # A real reading, as opposed to an empty table. The fixture is one pair, so the verdict is
     # INCONCLUSIVE rather than a direction; what matters is that something was measured.
     assert "NO READING" not in measured
@@ -78,17 +78,17 @@ def test_a_fully_resumed_ab_keeps_the_table_the_measured_run_wrote(tmp_path):
 
     # The resumed run: same output directory, new session id, not one cell of its own.
     _render_ab(paths, SIDES, RESUMED, "c0ffee")
-    assert (paths.out / "ab.md").read_text(encoding = "utf-8") == measured
+    assert (paths.out / "ab.md").read_text(encoding="utf-8") == measured
 
 
 def test_a_run_that_measured_still_rewrites_the_table(tmp_path):
     """The control: refusing to overwrite must not turn into refusing to report."""
 
     paths = _payload(tmp_path / "run", MEASURED)
-    (paths.out / "ab.md").write_text("stale table from an older run\n", encoding = "utf-8")
+    (paths.out / "ab.md").write_text("stale table from an older run\n", encoding="utf-8")
 
     _render_ab(paths, SIDES, MEASURED, "c0ffee")
-    text = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    text = (paths.out / "ab.md").read_text(encoding="utf-8")
     assert "stale table" not in text
     assert "NO READING" not in text
     assert "keystroke_p95_ms" in text
@@ -99,7 +99,7 @@ def test_a_first_run_with_no_readings_still_gets_a_table(tmp_path):
 
     paths = _payload(tmp_path / "run", MEASURED)
     _render_ab(paths, SIDES, RESUMED, "c0ffee")
-    assert "NO READING" in (paths.out / "ab.md").read_text(encoding = "utf-8")
+    assert "NO READING" in (paths.out / "ab.md").read_text(encoding="utf-8")
 
 
 def _probe_rows(session: str, probe: str) -> list:
@@ -133,22 +133,22 @@ def test_a_resumed_probe_replaces_the_clean_table_it_inherited(tmp_path):
 
     paths = _payload(tmp_path / "run", MEASURED)
     _render_ab(paths, SIDES, MEASURED, "c0ffee")
-    clean = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    clean = (paths.out / "ab.md").read_text(encoding="utf-8")
     assert "keystroke_p95_ms" in clean
 
     # The fresh probe run: archived payload, new one recorded whole, killed before rendering.
-    archive_payload(paths, log = lambda _msg: None)
+    archive_payload(paths, log=lambda _msg: None)
     paths.payload_jsonl.write_text(
         "".join(json.dumps(r) + "\n" for r in _probe_rows("s-probe", "potency.js")),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
-    assert (paths.out / "ab.md").read_text(encoding = "utf-8") == clean
+    assert (paths.out / "ab.md").read_text(encoding="utf-8") == clean
 
     # The resume: every cell already complete, so nothing runs and nothing is recorded.
     assert _resume_set(paths) == {"r10K.base.rep0", "r10K.treatment.rep0"}
-    _render_ab(paths, SIDES, "s-resumed-probe", "c0ffee", planned = [])
+    _render_ab(paths, SIDES, "s-resumed-probe", "c0ffee", planned=[])
 
-    text = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    text = (paths.out / "ab.md").read_text(encoding="utf-8")
     assert "NO A/B TABLE" in text
     assert "potency.js" in text
     assert "keystroke_p95_ms" not in text
@@ -159,12 +159,13 @@ def test_a_clean_fully_resumed_ab_still_keeps_its_table(tmp_path):
 
     paths = _payload(tmp_path / "run", MEASURED)
     _render_ab(paths, SIDES, MEASURED, "c0ffee")
-    measured = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    measured = (paths.out / "ab.md").read_text(encoding="utf-8")
 
-    _render_ab(paths, SIDES, RESUMED, "c0ffee", planned = [])
-    assert (paths.out / "ab.md").read_text(encoding = "utf-8") == measured
+    _render_ab(paths, SIDES, RESUMED, "c0ffee", planned=[])
+    assert (paths.out / "ab.md").read_text(encoding="utf-8") == measured
 
 
 if __name__ == "__main__":
     import pytest
+
     raise SystemExit(pytest.main([__file__, "-q"]))

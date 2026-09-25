@@ -47,9 +47,9 @@ def _print_topology() -> None:
     try:
         out = subprocess.run(
             ["nvidia-smi", "topo", "-m"],
-            capture_output = True,
-            text = True,
-            timeout = 30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
     except Exception as e:  # noqa: BLE001 -- diagnostic, never fatal
         print(f"topology read failed: {e}\n")
@@ -117,19 +117,19 @@ def _print_nvml_agreement() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description = __doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "--sizes-mib",
-        type = int,
-        nargs = "+",
-        default = list(SIZES_MIB),
-        help = "copy sizes to test, in MiB",
+        type=int,
+        nargs="+",
+        default=list(SIZES_MIB),
+        help="copy sizes to test, in MiB",
     )
     parser.add_argument(
         "--repeats",
-        type = int,
-        default = REPEATS,
-        help = "copies per pair per size",
+        type=int,
+        default=REPEATS,
+        help="copies per pair per size",
     )
     args = parser.parse_args()
 
@@ -198,12 +198,12 @@ def main() -> int:
                     s = d = None
                     try:
                         try:
-                            s = torch.arange(elements, dtype = torch.float32, device = f"cuda:{src}")
+                            s = torch.arange(elements, dtype=torch.float32, device=f"cuda:{src}")
                             d = torch.full(
                                 (elements,),
                                 SENTINEL,
-                                dtype = torch.float32,
-                                device = f"cuda:{dst}",
+                                dtype=torch.float32,
+                                device=f"cuda:{dst}",
                             )
                         except Exception as alloc_exc:  # noqa: BLE001
                             # No transfer was attempted (usually a resident model

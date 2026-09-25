@@ -67,7 +67,7 @@ def public_and_lan(monkeypatch):
 
     monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
     monkeypatch.setattr(socket, "socket", lambda *a, **k: _FakeSocket())
-    monkeypatch.delenv(run.DISABLE_PUBLIC_CHECK_ENV, raising = False)
+    monkeypatch.delenv(run.DISABLE_PUBLIC_CHECK_ENV, raising=False)
 
 
 # ── resolution ───────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ def test_network_share_host_is_lan_not_public(monkeypatch):
     monkeypatch.setattr(
         run,
         "_resolve_lan_ip",
-        lambda ip_version = 4: LAN_IP if ip_version == 4 else LAN_IPV6,
+        lambda ip_version=4: LAN_IP if ip_version == 4 else LAN_IPV6,
     )
     assert _network_share_host_for_bind("0.0.0.0") == LAN_IP
     assert _network_share_host_for_bind("::") == LAN_IPV6
@@ -107,7 +107,7 @@ def test_external_ip_falls_back_to_the_raw_route_address(monkeypatch):
     """The LAN detector's filtering is right for an address we advertise and wrong
     as the last resort for "where am I": _resolve_external_ip keeps its own route
     lookup, so a WSL/NAT host with no public answer still reports a real address."""
-    monkeypatch.setattr(lan_access, "detect_lan_addresses", lambda _ip_version = 4: [])
+    monkeypatch.setattr(lan_access, "detect_lan_addresses", lambda _ip_version=4: [])
     monkeypatch.setattr(
         urllib.request,
         "urlopen",
@@ -128,7 +128,7 @@ def test_external_ip_falls_back_to_the_raw_route_address(monkeypatch):
 
 
 def test_direct_server_url_is_the_lan_address(monkeypatch):
-    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version = 4: LAN_IP)
+    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version=4: LAN_IP)
     assert _direct_server_url("0.0.0.0", 8888) == f"http://{LAN_IP}:8888"
 
 
@@ -148,9 +148,9 @@ def test_direct_server_url_is_unset_when_no_lan_address_is_detectable(monkeypatc
     """Never publish the wildcard: the frontend prefers any non-null server_url
     over the origin the client actually reached, so http://0.0.0.0:8888 would be
     what the API panel, the desktop agent command and a copied preview link name."""
-    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version = 4: "0.0.0.0")
+    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version=4: "0.0.0.0")
     assert _direct_server_url("0.0.0.0", 8888) is None
-    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version = 6: "::")
+    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version=6: "::")
     assert _direct_server_url("::", 8888) is None
 
 
@@ -185,7 +185,7 @@ def _rewritten_startup_line(logger, bind_host: str) -> str:
 def test_startup_log_line_names_the_lan_address(uvicorn_log_filters, monkeypatch):
     """#8868 as reported: the line reads as a claim about where this machine
     answers, so a wildcard bind must not be rewritten to the public WAN IP."""
-    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version = 4: LAN_IP)
+    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version=4: LAN_IP)
     run._install_uvicorn_startup_log_rewrite("0.0.0.0")
     line = _rewritten_startup_line(uvicorn_log_filters, "0.0.0.0")
     assert f"http://{LAN_IP}:8888" in line
@@ -196,7 +196,7 @@ def test_startup_log_line_keeps_the_wildcard_when_no_lan_address_resolves(
     uvicorn_log_filters, monkeypatch
 ):
     # The issue's own "expected behavior": say 0.0.0.0 rather than invent an address.
-    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version = 4: "0.0.0.0")
+    monkeypatch.setattr(run, "_resolve_lan_ip", lambda ip_version=4: "0.0.0.0")
     run._install_uvicorn_startup_log_rewrite("0.0.0.0")
     assert "http://0.0.0.0:8888" in _rewritten_startup_line(uvicorn_log_filters, "0.0.0.0")
 
@@ -206,10 +206,10 @@ def test_startup_log_line_keeps_the_wildcard_when_no_lan_address_resolves(
 
 def test_banner_network_line_shows_lan_ip_not_public_ip(capsys):
     print_studio_access_banner(
-        port = 8888,
-        bind_host = "0.0.0.0",
-        display_host = PUBLIC_IP,
-        network_host = LAN_IP,
+        port=8888,
+        bind_host="0.0.0.0",
+        display_host=PUBLIC_IP,
+        network_host=LAN_IP,
     )
     out = capsys.readouterr().out
     assert f"http://{LAN_IP}:8888" in out
@@ -218,10 +218,10 @@ def test_banner_network_line_shows_lan_ip_not_public_ip(capsys):
 
 def test_banner_network_line_brackets_ipv6_for_a_wildcard_alias(capsys):
     print_studio_access_banner(
-        port = 8888,
-        bind_host = "::0",
-        display_host = PUBLIC_IP,
-        network_host = LAN_IPV6,
+        port=8888,
+        bind_host="::0",
+        display_host=PUBLIC_IP,
+        network_host=LAN_IPV6,
     )
     out = capsys.readouterr().out
     assert f"http://[{LAN_IPV6}]:8888" in out
@@ -231,8 +231,8 @@ def test_banner_network_line_brackets_ipv6_for_a_wildcard_alias(capsys):
 def test_banner_falls_back_to_display_host_when_network_host_is_unset(capsys):
     # Back-compat for a caller that only ever had one address to give.
     print_studio_access_banner(
-        port = 8888,
-        bind_host = "0.0.0.0",
-        display_host = "203.0.113.9",
+        port=8888,
+        bind_host="0.0.0.0",
+        display_host="203.0.113.9",
     )
     assert "http://203.0.113.9:8888" in capsys.readouterr().out

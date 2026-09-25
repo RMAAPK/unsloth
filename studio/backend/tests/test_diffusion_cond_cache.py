@@ -25,10 +25,10 @@ class _EncodePipe:
     def encode_prompt(
         self,
         prompt,
-        device = None,
-        num_images_per_prompt = 1,
-        max_sequence_length = 256,
-        prompt_embeds = None,
+        device=None,
+        num_images_per_prompt=1,
+        max_sequence_length=256,
+        prompt_embeds=None,
     ):
         if prompt_embeds is not None:
             return (prompt_embeds, None)
@@ -47,13 +47,13 @@ def cache_env(tmp_path, monkeypatch):
 
 
 def _install(pipe, **overrides):
-    kwargs = dict(family = "flux.1", repo_id = "unsloth/repo", dtype = "torch.bfloat16")
+    kwargs = dict(family="flux.1", repo_id="unsloth/repo", dtype="torch.bfloat16")
     kwargs.update(overrides)
     return cond_cache.install(pipe, **kwargs)
 
 
 def test_off_by_default(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_DIFFUSION_COND_CACHE_DIR", raising = False)
+    monkeypatch.delenv("UNSLOTH_DIFFUSION_COND_CACHE_DIR", raising=False)
     pipe = _EncodePipe()
     assert _install(pipe) is False
     assert pipe.encode_prompt.__func__ is _EncodePipe.encode_prompt  # untouched
@@ -69,8 +69,8 @@ def test_blank_dir_means_off(monkeypatch):
 def test_repeated_prompt_skips_the_encode_forward(cache_env):
     pipe = _EncodePipe()
     assert _install(pipe) is True
-    first = pipe.encode_prompt("a sloth", device = "cpu")
-    second = pipe.encode_prompt("a sloth", device = "cpu")
+    first = pipe.encode_prompt("a sloth", device="cpu")
+    second = pipe.encode_prompt("a sloth", device="cpu")
     assert pipe.calls == 1  # warm repeat never ran the text encoder
     assert torch.equal(first[0], second[0])
     assert first[1] is None and second[1] is None  # None slot round-trips
@@ -82,15 +82,15 @@ def test_distinct_prompts_and_arguments_key_separately(cache_env):
     _install(pipe)
     pipe.encode_prompt("a sloth")
     pipe.encode_prompt("a fox")
-    pipe.encode_prompt("a sloth", num_images_per_prompt = 4)  # shape-changing arg
+    pipe.encode_prompt("a sloth", num_images_per_prompt=4)  # shape-changing arg
     assert pipe.calls == 3
 
 
 def test_device_argument_excluded_from_the_key(cache_env):
     pipe = _EncodePipe()
     _install(pipe)
-    pipe.encode_prompt("a sloth", device = "cpu")
-    out = pipe.encode_prompt("a sloth", device = torch.device("cpu"))
+    pipe.encode_prompt("a sloth", device="cpu")
+    out = pipe.encode_prompt("a sloth", device=torch.device("cpu"))
     assert pipe.calls == 1  # placement detail: still a hit, moved to the target
     assert out[0].device.type == "cpu"
 
@@ -113,10 +113,10 @@ def test_load_fingerprint_keys_apart(cache_env):
     _install(a)
     a.encode_prompt("a sloth")
     b = _EncodePipe()
-    _install(b, repo_id = "unsloth/other-repo")
+    _install(b, repo_id="unsloth/other-repo")
     b.encode_prompt("a sloth")
     c = _EncodePipe()
-    _install(c, te_quant = "fp8")
+    _install(c, te_quant="fp8")
     c.encode_prompt("a sloth")
     assert (a.calls, b.calls, c.calls) == (1, 1, 1)
 
@@ -125,15 +125,15 @@ def test_companion_base_keys_apart(cache_env):
     # A GGUF / single-file checkpoint takes its TEXT ENCODERS from the companion base, so the same checkpoint reloaded
     # against a different base must re-encode rather than reuse the previous base's embeddings.
     first = _EncodePipe()
-    _install(first, repo_id = "org/model-GGUF", base_repo = "base/one")
+    _install(first, repo_id="org/model-GGUF", base_repo="base/one")
     first.encode_prompt("a sloth")
     second = _EncodePipe()
-    _install(second, repo_id = "org/model-GGUF", base_repo = "base/two")
+    _install(second, repo_id="org/model-GGUF", base_repo="base/two")
     second.encode_prompt("a sloth")
     assert (first.calls, second.calls) == (1, 1)
     # The same base is still a warm hit (the whole point of the cache).
     third = _EncodePipe()
-    _install(third, repo_id = "org/model-GGUF", base_repo = "base/one")
+    _install(third, repo_id="org/model-GGUF", base_repo="base/one")
     third.encode_prompt("a sloth")
     assert third.calls == 0
 
@@ -141,21 +141,21 @@ def test_companion_base_keys_apart(cache_env):
 def test_a_local_base_updated_in_place_keys_apart(cache_env, tmp_path):
     # A directory path is not a version: editing the text encoder in place must MISS, or the run conditions on the old encoder's embeddings.
     base = tmp_path / "base"
-    (base / "text_encoder").mkdir(parents = True)
+    (base / "text_encoder").mkdir(parents=True)
     weights = base / "text_encoder" / "model.safetensors"
     weights.write_bytes(b"v1")
     first = _EncodePipe()
-    _install(first, repo_id = "org/model-GGUF", base_repo = str(base))
+    _install(first, repo_id="org/model-GGUF", base_repo=str(base))
     first.encode_prompt("a sloth")
     # Unchanged base -> warm hit (the cache still has to work).
     warm = _EncodePipe()
-    _install(warm, repo_id = "org/model-GGUF", base_repo = str(base))
+    _install(warm, repo_id="org/model-GGUF", base_repo=str(base))
     warm.encode_prompt("a sloth")
     assert (first.calls, warm.calls) == (1, 0)
     # Same path, new contents -> re-encode.
     weights.write_bytes(b"v2-different-length")
     updated = _EncodePipe()
-    _install(updated, repo_id = "org/model-GGUF", base_repo = str(base))
+    _install(updated, repo_id="org/model-GGUF", base_repo=str(base))
     updated.encode_prompt("a sloth")
     assert updated.calls == 1
 
@@ -182,8 +182,8 @@ class _ListEncodePipe(_EncodePipe):
     def encode_prompt(
         self,
         prompt,
-        device = None,
-        do_classifier_free_guidance = True,
+        device=None,
+        do_classifier_free_guidance=True,
     ):
         self.calls += 1
         prompts = prompt if isinstance(prompt, list) else [prompt]
@@ -207,7 +207,7 @@ def test_tensor_arguments_pass_through_uncached(cache_env):
     pipe = _EncodePipe()
     _install(pipe)
     supplied = torch.ones(1, 4)
-    out = pipe.encode_prompt("a sloth", prompt_embeds = supplied)
+    out = pipe.encode_prompt("a sloth", prompt_embeds=supplied)
     assert out[0] is supplied
     assert pipe.calls == 0
     assert pipe._unsloth_cond_cache_stats == {"hits": 0, "misses": 0}

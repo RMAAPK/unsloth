@@ -13,7 +13,7 @@ from unsloth_cli.commands.chat import _get_base_load_in_4bit
 
 def _config(tmp_path, payload, base_model):
     (tmp_path / "adapter_config.json").write_text(json.dumps(payload))
-    return SimpleNamespace(is_lora = True, path = str(tmp_path), base_model = base_model)
+    return SimpleNamespace(is_lora=True, path=str(tmp_path), base_model=base_model)
 
 
 @pytest.mark.parametrize("recorded", [True, False])

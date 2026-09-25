@@ -46,13 +46,13 @@ def _proxy(provider_type: str, **payload_fields) -> tuple[list[dict], dict]:
         return {"type": "http.disconnect"}
 
     chunks: list[dict] = []
-    with _Server(handler = _UsageHandler) as server:
+    with _Server(handler=_UsageHandler) as server:
         payload = ChatCompletionRequest(
-            provider_type = provider_type,
-            provider_base_url = server.base_url,
-            messages = [{"role": "user", "content": "hi"}],
-            model = "a-model",
-            stream = True,
+            provider_type=provider_type,
+            provider_base_url=server.base_url,
+            messages=[{"role": "user", "content": "hi"}],
+            model="a-model",
+            stream=True,
             **payload_fields,
         )
         request = Request(
@@ -85,7 +85,7 @@ def _usage_chunks(chunks: list[dict]) -> list[dict]:
 
 
 def test_only_an_opted_in_caller_receives_the_usage_chunk():
-    opted_in, _ = _proxy("vllm", stream_options = {"include_usage": True})
+    opted_in, _ = _proxy("vllm", stream_options={"include_usage": True})
     plain, _ = _proxy("vllm")
     assert _usage_chunks(opted_in) == [_USAGE]
     assert _usage_chunks(plain) == []
@@ -94,7 +94,7 @@ def test_only_an_opted_in_caller_receives_the_usage_chunk():
 
 def test_the_opt_in_does_not_reach_a_custom_endpoint():
     # "custom" is never asked for usage upstream: a strict endpoint 400s on the field.
-    _, opted_in = _proxy("custom", stream_options = {"include_usage": True})
+    _, opted_in = _proxy("custom", stream_options={"include_usage": True})
     _, plain = _proxy("custom")
     assert opted_in == plain
     assert "stream_options" not in opted_in

@@ -21,7 +21,7 @@ STORAGE = FRONTEND / "utils/chat-history-storage.ts"
 
 
 def _read(path: Path) -> str:
-    return " ".join(path.read_text(encoding = "utf-8").split())
+    return " ".join(path.read_text(encoding="utf-8").split())
 
 
 def test_the_repair_reads_its_own_messages_as_late_as_it_can():
@@ -114,7 +114,7 @@ def test_the_write_is_guarded_on_the_message_it_took_the_title_from():
     repair = _read(REPAIR)
     assert "expectedOpeningMessageId: repair.openingMessageId," in repair
 
-    backend = (BACKEND / "routes/chat_history.py").read_text(encoding = "utf-8")
+    backend = (BACKEND / "routes/chat_history.py").read_text(encoding="utf-8")
     assert "expectedOpeningMessageId: Optional[str] = None" in backend
 
 
@@ -132,7 +132,7 @@ def test_the_migration_stays_off_where_the_guard_is_not_enforced():
     # Only a settled answer is cached, or a 401 at startup parks the migration.
     assert "if (!probe.settled) guardSupport = null;" in repair
 
-    backend = (BACKEND / "routes/chat_history.py").read_text(encoding = "utf-8")
+    backend = (BACKEND / "routes/chat_history.py").read_text(encoding="utf-8")
     # The probe reads the schema, so the fields have to be declared on the model.
     assert "expectedTitle: Optional[str] = None" in backend
 

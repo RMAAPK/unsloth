@@ -52,7 +52,7 @@ _CONSOLE_SCRIPT = _SCRIPT_DIR / ("unsloth.exe" if os.name == "nt" else "unsloth"
 
 requires_console_script = pytest.mark.skipif(
     not _CONSOLE_SCRIPT.is_file(),
-    reason = f"no `unsloth` console script beside {sys.executable}; install the package first",
+    reason=f"no `unsloth` console script beside {sys.executable}; install the package first",
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -89,9 +89,9 @@ def _run(argv: list[str], env: dict[str, str] | None = None) -> subprocess.Compl
     """Run *argv* with captured bytes. Text mode would hide an encoding fault."""
     return subprocess.run(
         argv,
-        capture_output = True,
-        timeout = 120,
-        env = env,
+        capture_output=True,
+        timeout=120,
+        env=env,
     )
 
 
@@ -99,7 +99,7 @@ _INSTALLED_PACKAGE = _installed_package_dir()
 
 requires_this_checkout_installed = pytest.mark.skipif(
     _INSTALLED_PACKAGE is None or _INSTALLED_PACKAGE.resolve() != _REPO_PACKAGE,
-    reason = (
+    reason=(
         f"`import unsloth_cli` in a child resolves to {_INSTALLED_PACKAGE}, not "
         f"{_REPO_PACKAGE}; install this checkout (pip install -e .) to run the "
         "subprocess parity cases"
@@ -122,11 +122,11 @@ def _console_argv(*args: str) -> list[str]:
 # Cover a clean exit, both help renderers (rich draws box characters here), and the two error
 # shapes: an unknown option at the root and inside a subcommand.
 PARITY_CASES = [
-    pytest.param(["--version"], id = "version"),
-    pytest.param(["--help"], id = "help"),
-    pytest.param(["studio", "--help"], id = "studio-help"),
-    pytest.param(["--definitely-not-a-flag"], id = "unknown-root-flag"),
-    pytest.param(["studio", "run", "--definitely-not-a-flag"], id = "unknown-subcommand-flag"),
+    pytest.param(["--version"], id="version"),
+    pytest.param(["--help"], id="help"),
+    pytest.param(["studio", "--help"], id="studio-help"),
+    pytest.param(["--definitely-not-a-flag"], id="unknown-root-flag"),
+    pytest.param(["studio", "run", "--definitely-not-a-flag"], id="unknown-subcommand-flag"),
 ]
 
 
@@ -168,7 +168,7 @@ def test_trampoline_matches_the_console_script(args):
 @pytest.mark.parametrize(
     "argv_builder",
     [_module_argv, _trampoline_argv],
-    ids = ["module", "trampoline"],
+    ids=["module", "trampoline"],
 )
 def test_the_program_name_is_unsloth_not_the_launcher(argv_builder):
     """Without the argv[0] rewrite, usage strings read `__main__.py` or `-c`."""
@@ -211,7 +211,7 @@ def test_the_attached_np_short_is_still_canonicalised(monkeypatch):
 
     # SystemExit, because __main__ ends in sys.exit(app()) exactly as the console script does.
     with pytest.raises(SystemExit) as exit_info:
-        runpy.run_module("unsloth_cli", run_name = "__main__", alter_sys = True)
+        runpy.run_module("unsloth_cli", run_name="__main__", alter_sys=True)
     assert exit_info.value.code in (None, 0)
 
     assert recorded["argv"] == ["unsloth", "studio", "run", "-np", "8"], (
@@ -227,7 +227,7 @@ def test_the_attached_np_short_is_still_canonicalised(monkeypatch):
 @pytest.mark.parametrize(
     "argv_builder",
     [_module_argv, _trampoline_argv],
-    ids = ["module", "trampoline"],
+    ids=["module", "trampoline"],
 )
 def test_help_matches_the_console_script_under_a_narrow_encoding(argv_builder):
     """rich draws box characters cp1252 cannot encode; --help must still agree.
@@ -241,8 +241,8 @@ def test_help_matches_the_console_script_under_a_narrow_encoding(argv_builder):
     env = dict(os.environ)
     env["PYTHONIOENCODING"] = "cp1252"
 
-    reference = _run(_console_argv("--help"), env = env)
-    result = _run(argv, env = env)
+    reference = _run(_console_argv("--help"), env=env)
+    result = _run(argv, env=env)
 
     assert result.returncode == reference.returncode, (
         "--help died under a narrow stdout encoding:\n"
@@ -260,7 +260,7 @@ def test_the_module_entry_source_keeps_its_two_load_bearing_details():
     prog_name would sail through. Both details are invisible at a glance and
     each has already been shipped wrong once, so pin them in the source too.
     """
-    source = (_REPO_PACKAGE / "__main__.py").read_text(encoding = "utf-8")
+    source = (_REPO_PACKAGE / "__main__.py").read_text(encoding="utf-8")
 
     argv_assignment = source.find('sys.argv[0] = "unsloth"')
     package_import = source.find("import unsloth_cli")
@@ -291,14 +291,14 @@ def test_the_advertised_module_route_ignores_a_shadowing_directory(tmp_path):
     """
     shadow = tmp_path / "unsloth_cli"
     shadow.mkdir()
-    (shadow / "__init__.py").write_text("app = None\n", encoding = "utf-8")
-    (shadow / "__main__.py").write_text("print('SHADOWED')\n", encoding = "utf-8")
+    (shadow / "__init__.py").write_text("app = None\n", encoding="utf-8")
+    (shadow / "__main__.py").write_text("print('SHADOWED')\n", encoding="utf-8")
 
     plain = subprocess.run(
         [sys.executable, "-m", "unsloth_cli", "--version"],
-        capture_output = True,
-        timeout = 120,
-        cwd = tmp_path,
+        capture_output=True,
+        timeout=120,
+        cwd=tmp_path,
     )
     assert (
         b"SHADOWED" in plain.stdout
@@ -325,7 +325,7 @@ def test_every_advertised_module_route_is_isolated():
         "install.ps1",
     }
     for name in sorted(advertised):
-        source = (_REPO_ROOT / name).read_text(encoding = "utf-8")
+        source = (_REPO_ROOT / name).read_text(encoding="utf-8")
         for line in source.splitlines():
             if "-m unsloth_cli" not in line:
                 continue
@@ -344,7 +344,7 @@ def test_the_module_docstring_documents_the_user_site_exception():
     that has a launcher under %APPDATA% -- exactly the user-writable location a
     default AppLocker policy denies -- so it is the population this route exists for.
     """
-    source = (_REPO_PACKAGE / "__main__.py").read_text(encoding = "utf-8")
+    source = (_REPO_PACKAGE / "__main__.py").read_text(encoding="utf-8")
     assert "pip install --user" in source
     assert "-I implies -s" in source
     assert (
@@ -365,16 +365,16 @@ def test_safe_path_leaves_an_explicit_pythonpath_alone(tmp_path):
     existed: the console script loaded the shadow, the trampoline did not.
     """
     shadow = tmp_path / "shadow"
-    (shadow / "unsloth_cli").mkdir(parents = True)
+    (shadow / "unsloth_cli").mkdir(parents=True)
     (shadow / "unsloth_cli" / "__init__.py").write_text(
-        "raise SystemExit('SHADOWED')\n", encoding = "utf-8"
+        "raise SystemExit('SHADOWED')\n", encoding="utf-8"
     )
     env = dict(os.environ)
     env["PYTHONSAFEPATH"] = "1"
     env["PYTHONPATH"] = str(shadow)
 
-    reference = _run(_console_argv("--version"), env = env)
-    trampoline = _run(_trampoline_argv("--version"), env = env)
+    reference = _run(_console_argv("--version"), env=env)
+    trampoline = _run(_trampoline_argv("--version"), env=env)
 
     assert trampoline.returncode == reference.returncode
     assert trampoline.stdout == reference.stdout
@@ -386,9 +386,9 @@ def test_safe_path_leaves_an_explicit_pythonpath_alone(tmp_path):
 def test_the_working_directory_is_still_stripped_without_safe_path(tmp_path):
     """The other half: the guard must not disarm the filter it guards."""
     shadow = tmp_path / "shadow"
-    (shadow / "unsloth_cli").mkdir(parents = True)
+    (shadow / "unsloth_cli").mkdir(parents=True)
     (shadow / "unsloth_cli" / "__init__.py").write_text(
-        "raise SystemExit('SHADOWED')\n", encoding = "utf-8"
+        "raise SystemExit('SHADOWED')\n", encoding="utf-8"
     )
     env = dict(os.environ)
     env.pop("PYTHONSAFEPATH", None)
@@ -396,10 +396,10 @@ def test_the_working_directory_is_still_stripped_without_safe_path(tmp_path):
 
     result = subprocess.run(
         _trampoline_argv("--version"),
-        capture_output = True,
-        timeout = 120,
-        env = env,
-        cwd = shadow,
+        capture_output=True,
+        timeout=120,
+        env=env,
+        cwd=shadow,
     )
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
     assert result.stdout.startswith(b"unsloth "), result.stdout

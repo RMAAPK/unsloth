@@ -149,10 +149,10 @@ def _probe(
             "-c",
             _SNIPPET % {"settled": settled, "deferred": deferred, "warm": warm},
         ],
-        cwd = str(_BACKEND_DIR),
-        capture_output = True,
-        text = True,
-        timeout = 900,
+        cwd=str(_BACKEND_DIR),
+        capture_output=True,
+        text=True,
+        timeout=900,
     )
     assert (
         proc.returncode == 0
@@ -164,7 +164,7 @@ def _probe(
 def test_an_unsettled_verdict_is_published_as_still_warming_up():
     """Without this the watchdog ends its startup grace on the first reply, and the next
     GIL stall inside the torch import reads as three dead probes."""
-    result = _probe(settled = False)
+    result = _probe(settled=False)
 
     assert result["status_code"] == 200
     assert result["status"] == "alive"
@@ -186,7 +186,7 @@ def test_a_late_warm_stage_still_holds_the_startup_grace_open():
     which is exactly what the reported "torch warm finished in 8190.4ms" timeline shows
     happening well after detection, is billed as three dead probes against a healthy
     backend."""
-    result = _probe(settled = True, warm = "running")
+    result = _probe(settled=True, warm="running")
 
     assert not result["has_detecting_key"], (
         "the point of this case is a settled verdict; if detection still reads unsettled "
@@ -202,7 +202,7 @@ def test_a_late_warm_stage_still_holds_the_startup_grace_open():
 def test_a_settled_verdict_carries_no_warming_up_marker():
     """The markers are the whole signal, so they have to disappear once the warm is done, or
     the watchdog never counts a real failure until the grace period expires."""
-    result = _probe(settled = True, warm = "finished")
+    result = _probe(settled=True, warm="finished")
 
     assert result["status"] == "alive"
     assert not result["has_detecting_key"], (
@@ -218,7 +218,7 @@ def test_a_settled_verdict_carries_no_warming_up_marker():
 def test_a_deferred_warm_says_so_instead_of_looking_like_a_slow_start():
     """With UNSLOTH_STUDIO_DISABLE_TORCH_WARM=1 nothing will settle the verdict, so a bare
     hardware_detecting would be indistinguishable from a backend still importing torch."""
-    result = _probe(settled = False, deferred = True, warm = "never")
+    result = _probe(settled=False, deferred=True, warm="never")
 
     assert result["hardware_detecting"] is True
     assert result["hardware_detection_deferred"] is True
@@ -232,7 +232,7 @@ def test_a_warm_retired_mid_stage_is_not_reported_as_warming_forever():
     """A shutdown stops the warm at a stage boundary, so it never sets finished and its
     thread is gone. Deriving the marker from "not finished" alone would leave it lit for
     the rest of the process, which is the deferred trap by another route."""
-    result = _probe(settled = False, warm = "retired")
+    result = _probe(settled=False, warm="retired")
 
     assert not result["has_warm_key"], (
         "a warm whose thread has exited is reported as still running; the watchdog would "
@@ -251,7 +251,7 @@ def _watchdog_probe_budget_s() -> float:
     assert _COMMANDS_RS.is_file(), f"{_COMMANDS_RS} moved; update this guard"
     match = re.search(
         r"const HEALTH_PROBE_TIMEOUT: Duration = Duration::from_secs\((\d+)\)",
-        _COMMANDS_RS.read_text(encoding = "utf-8"),
+        _COMMANDS_RS.read_text(encoding="utf-8"),
     )
     assert match, "commands.rs no longer sets a whole-seconds probe timeout"
     return float(match.group(1))
@@ -260,7 +260,7 @@ def _watchdog_probe_budget_s() -> float:
 def test_liveness_answers_immediately_and_never_starts_detection():
     """The route exists because health's detection wait is too expensive to probe every
     15s. The stub raises if detection is started, so returning at all proves it was not."""
-    result = _probe(settled = False)
+    result = _probe(settled=False)
 
     # Returning at all is most of the assertion: `must_not_run` raises if detection starts,
     # and DETECTION_COMPLETE is cleared, so a route awaiting one never returns.
@@ -294,7 +294,7 @@ def test_the_desktop_watchdog_still_reads_these_fields():
     """Cross-language guard: the marker only does anything because commands.rs reads it,
     and either side can be changed without the other."""
     assert _COMMANDS_RS.is_file(), f"{_COMMANDS_RS} moved; update this guard"
-    rust = _COMMANDS_RS.read_text(encoding = "utf-8")
+    rust = _COMMANDS_RS.read_text(encoding="utf-8")
     probe = rust[rust.index("async fn check_health_inner") :]
     end = probe.find("\n}\n")
     if end != -1:

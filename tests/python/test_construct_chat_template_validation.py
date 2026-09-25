@@ -36,9 +36,9 @@ class _FakeTokenizer:
 def test_missing_placeholder_in_chat_template_raises(template, expected_in_message):
     with pytest.raises(RuntimeError) as exc_info:
         construct_chat_template(
-            tokenizer = _FakeTokenizer(),
-            chat_template = template,
-            extra_eos_tokens = ["</s>"],
+            tokenizer=_FakeTokenizer(),
+            chat_template=template,
+            extra_eos_tokens=["</s>"],
         )
     assert expected_in_message in str(exc_info.value)
 
@@ -49,9 +49,9 @@ def test_single_pair_template_raises_clear_error_not_attribute_error():
     template = "user: {INPUT}\nassistant: {OUTPUT}\n"
     with pytest.raises(RuntimeError):
         construct_chat_template(
-            tokenizer = _FakeTokenizer(),
-            chat_template = template,
-            extra_eos_tokens = ["</s>"],
+            tokenizer=_FakeTokenizer(),
+            chat_template=template,
+            extra_eos_tokens=["</s>"],
         )
 
 
@@ -61,9 +61,9 @@ def test_error_message_excerpt_is_bounded():
     huge = ("garbage " * 5000) + "{INPUT}"  # ~40 KB, missing {OUTPUT}
     with pytest.raises(RuntimeError) as exc_info:
         construct_chat_template(
-            tokenizer = _FakeTokenizer(),
-            chat_template = huge,
-            extra_eos_tokens = ["</s>"],
+            tokenizer=_FakeTokenizer(),
+            chat_template=huge,
+            extra_eos_tokens=["</s>"],
         )
     msg = str(exc_info.value)
     assert len(msg) < 1000
@@ -79,7 +79,7 @@ class _SuccessFakeTokenizer(_FakeTokenizer):
 
     def __call__(self, text):
         # input_ids[0] must differ from bos_token_id so the BOS-handling branch is skipped.
-        return SimpleNamespace(input_ids = [5])
+        return SimpleNamespace(input_ids=[5])
 
 
 @pytest.mark.parametrize(
@@ -95,9 +95,9 @@ def test_chat_template_does_not_leak_sentinel_when_section_starts_with_it(chat_t
     branch in the internal `process()` helper used to slice from `find()` (which is 0
     here) instead of past the sentinel, re-including the literal `{INPUT}`/`{OUTPUT}`."""
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = chat_template,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=chat_template,
+        extra_eos_tokens=["</s>"],
     )
     assert "{INPUT}" not in jinja_template
     assert "{OUTPUT}" not in jinja_template
@@ -113,18 +113,18 @@ _SYSTEM_CHAT_TEMPLATE = (
 def _render(
     jinja_template,
     messages,
-    add_generation_prompt = False,
-    bos_token = "<s>",
+    add_generation_prompt=False,
+    bos_token="<s>",
 ):
     from jinja2.sandbox import ImmutableSandboxedEnvironment
 
     env = ImmutableSandboxedEnvironment()
     env.globals["raise_exception"] = lambda message: (_ for _ in ()).throw(RuntimeError(message))
     return env.from_string(jinja_template).render(
-        messages = messages,
-        bos_token = bos_token,
-        eos_token = "</s>",
-        add_generation_prompt = add_generation_prompt,
+        messages=messages,
+        bos_token=bos_token,
+        eos_token="</s>",
+        add_generation_prompt=add_generation_prompt,
     )
 
 
@@ -140,10 +140,10 @@ def test_system_message_is_consumed_by_the_system_part(default_system_message):
     `raise_exception`.
     """
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = _SYSTEM_CHAT_TEMPLATE,
-        default_system_message = default_system_message,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=_SYSTEM_CHAT_TEMPLATE,
+        default_system_message=default_system_message,
+        extra_eos_tokens=["</s>"],
     )
     rendered = _render(
         jinja_template,
@@ -163,10 +163,10 @@ def test_absent_system_message_still_renders_without_default():
     """`default_system_message = None` with no system message in the input must
     keep working -- the `{% else %}` arm has to bind `loop_messages = messages`."""
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = _SYSTEM_CHAT_TEMPLATE,
-        default_system_message = None,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=_SYSTEM_CHAT_TEMPLATE,
+        default_system_message=None,
+        extra_eos_tokens=["</s>"],
     )
     rendered = _render(jinja_template, [{"role": "user", "content": "Hi"}])
     assert "Hi" in rendered
@@ -183,12 +183,12 @@ def test_static_prefix_without_system_still_rejects_system_message():
     """A template with a static prefix but no {SYSTEM} placeholder cannot render a
     caller system message, so it must still raise rather than silently drop it."""
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = _NO_SYSTEM_CHAT_TEMPLATE,
-        default_system_message = None,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=_NO_SYSTEM_CHAT_TEMPLATE,
+        default_system_message=None,
+        extra_eos_tokens=["</s>"],
     )
-    with pytest.raises(RuntimeError, match = "Only user and assistant roles are supported!"):
+    with pytest.raises(RuntimeError, match="Only user and assistant roles are supported!"):
         _render(
             jinja_template,
             [
@@ -202,10 +202,10 @@ def test_static_prefix_without_system_still_rejects_system_message():
 def test_static_prefix_without_system_renders_in_every_conversation(default_system_message):
     """A static prefix must render regardless of the default system message."""
     modelfile, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = _NO_SYSTEM_CHAT_TEMPLATE,
-        default_system_message = default_system_message,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=_NO_SYSTEM_CHAT_TEMPLATE,
+        default_system_message=default_system_message,
+        extra_eos_tokens=["</s>"],
     )
     rendered = _render(jinja_template, [{"role": "user", "content": "Hi"}])
     assert rendered.startswith("PREAMBLE\n"), rendered
@@ -224,13 +224,13 @@ def test_auto_appended_eos_prefers_the_tokenizer_eos_deterministically():
             return {"</s>": 0, "<|myeos|>": 2}
 
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _TwoEosTokenizer(),
-        chat_template = (
+        tokenizer=_TwoEosTokenizer(),
+        chat_template=(
             "### User: {INPUT}\n### Assistant: {OUTPUT}\n"
             "### User: {INPUT}\n### Assistant: {OUTPUT}\n"
         ),
-        default_system_message = None,
-        extra_eos_tokens = ["<|myeos|>"],
+        default_system_message=None,
+        extra_eos_tokens=["<|myeos|>"],
     )
     assistant_turn = jinja_template.split("'assistant' %}")[1].split("{% else %}")[0]
     assert _TwoEosTokenizer.eos_token in assistant_turn
@@ -243,13 +243,13 @@ def test_input_boundary_prefers_the_longest_eos_token():
             return {"</s>": 0, "</s>extra": 2}
 
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _PrefixEosTokenizer(),
-        chat_template = (
+        tokenizer=_PrefixEosTokenizer(),
+        chat_template=(
             "### User: {INPUT}</s>extra\n### Assistant: {OUTPUT}</s>\n"
             "### User: {INPUT}</s>extra\n### Assistant: {OUTPUT}</s>\n"
         ),
-        default_system_message = None,
-        extra_eos_tokens = ["</s>extra"],
+        default_system_message=None,
+        extra_eos_tokens=["</s>extra"],
     )
 
     rendered_user_turn = _render(jinja_template, [{"role": "user", "content": "Hi"}])
@@ -281,10 +281,10 @@ def test_quotes_and_backslashes_survive_into_the_jinja_template(default_system_m
     `C:\\Users` raised `truncated \\UXXXXXXXX escape`. Covers the system message and
     the instruction/response sections, which are spliced by three separate call sites."""
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _SuccessFakeTokenizer(),
-        chat_template = _APOSTROPHE_CHAT_TEMPLATE,
-        default_system_message = default_system_message,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_SuccessFakeTokenizer(),
+        chat_template=_APOSTROPHE_CHAT_TEMPLATE,
+        default_system_message=default_system_message,
+        extra_eos_tokens=["</s>"],
     )
 
     rendered = _render(jinja_template, [{"role": "user", "content": "Hi"}])
@@ -294,7 +294,7 @@ def test_quotes_and_backslashes_survive_into_the_jinja_template(default_system_m
     prompted = _render(
         jinja_template,
         [{"role": "user", "content": "Hi"}],
-        add_generation_prompt = True,
+        add_generation_prompt=True,
     )
     assert prompted.endswith("### Bot's reply: ")
 
@@ -306,7 +306,7 @@ class _BosFakeTokenizer(_SuccessFakeTokenizer):
 
     def __call__(self, text):
         # input_ids[0] == bos_token_id takes the BOS-handling branch.
-        return SimpleNamespace(input_ids = [1])
+        return SimpleNamespace(input_ids=[1])
 
 
 def test_bos_token_with_quote_or_backslash_is_not_emitted_twice():
@@ -315,34 +315,34 @@ def test_bos_token_with_quote_or_backslash_is_not_emitted_twice():
     unmatched, and the caller-system branch then emitted it a second time."""
     bos = _BosFakeTokenizer.bos_token
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _BosFakeTokenizer(),
-        chat_template = bos + _APOSTROPHE_CHAT_TEMPLATE,
-        default_system_message = "Be helpful.",
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_BosFakeTokenizer(),
+        chat_template=bos + _APOSTROPHE_CHAT_TEMPLATE,
+        default_system_message="Be helpful.",
+        extra_eos_tokens=["</s>"],
     )
 
     for messages in (
         [{"role": "user", "content": "Hi"}],
         [{"role": "system", "content": "Sysmsg"}, {"role": "user", "content": "Hi"}],
     ):
-        rendered = _render(jinja_template, messages, bos_token = bos)
+        rendered = _render(jinja_template, messages, bos_token=bos)
         assert rendered.count(bos) == 1, rendered
 
 
 def test_bos_only_prefix_still_rejects_system_message():
     bos = _BosFakeTokenizer.bos_token
     _, jinja_template, _, _ = construct_chat_template(
-        tokenizer = _BosFakeTokenizer(),
-        chat_template = bos + _NO_SYSTEM_CHAT_TEMPLATE.removeprefix("PREAMBLE\n"),
-        default_system_message = None,
-        extra_eos_tokens = ["</s>"],
+        tokenizer=_BosFakeTokenizer(),
+        chat_template=bos + _NO_SYSTEM_CHAT_TEMPLATE.removeprefix("PREAMBLE\n"),
+        default_system_message=None,
+        extra_eos_tokens=["</s>"],
     )
-    with pytest.raises(RuntimeError, match = "Only user and assistant roles are supported!"):
+    with pytest.raises(RuntimeError, match="Only user and assistant roles are supported!"):
         _render(
             jinja_template,
             [
                 {"role": "system", "content": "Be terse."},
                 {"role": "user", "content": "Hi"},
             ],
-            bos_token = bos,
+            bos_token=bos,
         )

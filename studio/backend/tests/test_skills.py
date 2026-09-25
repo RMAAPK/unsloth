@@ -26,16 +26,16 @@ def _write_skill(
     body: str = "Instructions",
 ) -> Path:
     root = home / (".agents" if source == "agents" else ".claude") / "skills" / name
-    root.mkdir(parents = True)
+    root.mkdir(parents=True)
     extra = f"\n{frontmatter.rstrip()}" if frontmatter else ""
     (root / "SKILL.md").write_text(
         f"---\nname: {name}\ndescription: {description}{extra}\n---\n{body}",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     return root
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _reset_tool_request_budget():
     # execute_tool never resets these, so the pagination test's tight budget must not leak.
     from core.inference import tools
@@ -78,11 +78,11 @@ def test_enabled_skill_cache_is_fresh_after_slow_discovery(monkeypatch):
 
 def test_discovers_both_roots_with_agents_precedence(isolated_skills):
     home, _ = isolated_skills
-    _write_skill(home, "agents", "shared", description = "Agent copy")
+    _write_skill(home, "agents", "shared", description="Agent copy")
     _write_skill(home, "claude", "claude-only")
-    _write_skill(home, "claude", "shared", description = "Claude copy")
+    _write_skill(home, "claude", "shared", description="Claude copy")
 
-    records = skills.list_skills(home = home)
+    records = skills.list_skills(home=home)
 
     assert [(item["name"], item["source"], item["shadowed"]) for item in records] == [
         ("shared", "agents", False),
@@ -101,14 +101,14 @@ def test_bundled_skill_creator_is_enabled_and_user_override_wins(isolated_skills
         ("claude", home / ".claude" / "skills"),
         ("bundled", Path(skills.__file__).with_name("bundled_skills")),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
 
     creator = next(record for record in skills.list_skills() if record["name"] == "skill-creator")
     assert creator["source"] == "bundled"
     # Bundled skills ship disabled: a fresh install must not carry skill tools into every chat.
     assert creator["enabled"] is False
     assert skills.enabled_skills() == []
-    with pytest.raises(skills.SkillError, match = "disabled"):
+    with pytest.raises(skills.SkillError, match="disabled"):
         skills.read_skill_resource("skill-creator")
     # Enabling one is an explicit override that survives a re-list; disabling clears it again.
     assert skills.set_skill_enabled("skill-creator", True)["enabled"] is True
@@ -117,7 +117,7 @@ def test_bundled_skill_creator_is_enabled_and_user_override_wins(isolated_skills
     assert skills.set_skill_enabled("skill-creator", False)["enabled"] is False
     assert skills._load_overrides() == {}
 
-    _write_skill(home, "agents", "skill-creator", description = "User override")
+    _write_skill(home, "agents", "skill-creator", description="User override")
     records = [record for record in skills.list_skills() if record["name"] == "skill-creator"]
     assert [(record["source"], record["shadowed"]) for record in records] == [
         ("agents", False),
@@ -142,11 +142,11 @@ def test_invalid_skill_is_reported_without_hiding_valid_skills(
 ):
     home, _ = isolated_skills
     invalid = home / ".agents" / "skills" / directory
-    invalid.mkdir(parents = True)
-    (invalid / "SKILL.md").write_text(manifest, encoding = "utf-8")
+    invalid.mkdir(parents=True)
+    (invalid / "SKILL.md").write_text(manifest, encoding="utf-8")
     _write_skill(home, "agents", "valid")
 
-    records = skills.list_skills(home = home)
+    records = skills.list_skills(home=home)
 
     invalid_record = next(item for item in records if item["name"] == directory)
     assert invalid_record["valid"] is False
@@ -156,34 +156,34 @@ def test_invalid_skill_is_reported_without_hiding_valid_skills(
 
 @pytest.mark.skipif(
     os.name == "nt" or sys.platform == "darwin",
-    reason = "Windows has no surrogate-escaped filenames and APFS rejects non-UTF-8 names",
+    reason="Windows has no surrogate-escaped filenames and APFS rejects non-UTF-8 names",
 )
 def test_non_utf8_directory_name_does_not_hide_valid_skills(isolated_skills):
     home, _ = isolated_skills
     root = home / ".agents" / "skills"
-    root.mkdir(parents = True)
+    root.mkdir(parents=True)
     os.mkdir(os.fsencode(root) + b"/bad-\xff")
     _write_skill(home, "agents", "valid")
 
-    records = skills.list_skills(home = home)
+    records = skills.list_skills(home=home)
 
     assert [record["name"] for record in records] == ["valid"]
-    json.dumps(records, ensure_ascii = False).encode("utf-8")
+    json.dumps(records, ensure_ascii=False).encode("utf-8")
 
 
 def test_disable_override_persists_without_touching_or_falling_through(isolated_skills):
     home, studio = isolated_skills
-    winner = _write_skill(home, "agents", "shared", body = "winner")
-    _write_skill(home, "claude", "shared", body = "shadowed")
+    winner = _write_skill(home, "agents", "shared", body="winner")
+    _write_skill(home, "claude", "shared", body="shadowed")
     before = (winner / "SKILL.md").read_bytes()
 
-    updated = skills.set_skill_enabled("shared", False, home = home)
+    updated = skills.set_skill_enabled("shared", False, home=home)
 
     assert updated["enabled"] is False
-    assert skills.enabled_skills(home = home) == []
+    assert skills.enabled_skills(home=home) == []
     assert json.loads((studio / "skill-overrides.json").read_text()) == {"shared": False}
     assert (winner / "SKILL.md").read_bytes() == before
-    skills.set_skill_enabled("shared", True, home = home)
+    skills.set_skill_enabled("shared", True, home=home)
     assert json.loads((studio / "skill-overrides.json").read_text()) == {}
 
 
@@ -192,20 +192,20 @@ def test_read_resource_is_contained_utf8_and_paginated(isolated_skills):
     root = _write_skill(home, "agents", "reader")
     resource = root / "references" / "guide.md"
     resource.parent.mkdir()
-    resource.write_text("abcdef", encoding = "utf-8")
+    resource.write_text("abcdef", encoding="utf-8")
 
-    page = skills.read_skill_resource("reader", "references/guide.md", 1, page_chars = 3, home = home)
+    page = skills.read_skill_resource("reader", "references/guide.md", 1, page_chars=3, home=home)
 
     assert "Characters: 1-4 of 6" in page
     assert "\nbcd\n" in page
     assert "offset=4" in page
-    skills.set_skill_enabled("reader", False, home = home)
-    with pytest.raises(skills.SkillError, match = "disabled"):
-        skills.read_skill_resource("reader", home = home)
+    skills.set_skill_enabled("reader", False, home=home)
+    with pytest.raises(skills.SkillError, match="disabled"):
+        skills.read_skill_resource("reader", home=home)
 
 
 @pytest.mark.skipif(
-    not hasattr(os, "mkfifo"), reason = "POSIX FIFOs are unavailable on this platform"
+    not hasattr(os, "mkfifo"), reason="POSIX FIFOs are unavailable on this platform"
 )
 def test_read_resource_rejects_fifo_without_blocking(isolated_skills):
     home, _ = isolated_skills
@@ -217,13 +217,13 @@ def test_read_resource_rejects_fifo_without_blocking(isolated_skills):
 
     def read_pipe():
         try:
-            skills.read_skill_resource("reader", "pipe", home = home)
+            skills.read_skill_resource("reader", "pipe", home=home)
         except Exception as exc:
             errors.append(exc)
         finally:
             finished.set()
 
-    worker = threading.Thread(target = read_pipe, daemon = True)
+    worker = threading.Thread(target=read_pipe, daemon=True)
     worker.start()
     completed_without_writer = finished.wait(1)
     if not completed_without_writer:
@@ -240,26 +240,26 @@ def test_read_resource_rejects_escaping_symlink(isolated_skills):
     home, _ = isolated_skills
     root = _write_skill(home, "agents", "reader")
     outside = home / "secret.txt"
-    outside.write_text("secret", encoding = "utf-8")
+    outside.write_text("secret", encoding="utf-8")
     try:
         (root / "link.txt").symlink_to(outside)
     except (OSError, NotImplementedError):
         # Reason: Windows may deny symlink creation without Developer Mode.
         pytest.skip("symlinks are unavailable on this platform")
 
-    with pytest.raises(skills.SkillError, match = "symbolic links"):
-        skills.read_skill_resource("reader", "link.txt", home = home)
-    with pytest.raises(skills.SkillError, match = "stay inside"):
-        skills.read_skill_resource("reader", "../secret.txt", home = home)
+    with pytest.raises(skills.SkillError, match="symbolic links"):
+        skills.read_skill_resource("reader", "link.txt", home=home)
+    with pytest.raises(skills.SkillError, match="stay inside"):
+        skills.read_skill_resource("reader", "../secret.txt", home=home)
 
 
 def test_read_resource_rejects_link_swapped_during_open(isolated_skills, monkeypatch):
     home, _ = isolated_skills
     root = _write_skill(home, "agents", "reader")
     resource = root / "guide.md"
-    resource.write_text("safe", encoding = "utf-8")
+    resource.write_text("safe", encoding="utf-8")
     outside = home / "secret.txt"
-    outside.write_text("secret", encoding = "utf-8")
+    outside.write_text("secret", encoding="utf-8")
     original_open = os.open
     swapped = False
 
@@ -277,45 +277,45 @@ def test_read_resource_rejects_link_swapped_during_open(isolated_skills, monkeyp
         return original_open(path, *args, **kwargs)
 
     monkeypatch.setattr(os, "open", replacing_open)
-    with pytest.raises(skills.SkillError, match = "symbolic links"):
-        skills.read_skill_resource("reader", "guide.md", home = home)
+    with pytest.raises(skills.SkillError, match="symbolic links"):
+        skills.read_skill_resource("reader", "guide.md", home=home)
 
 
 def test_read_resource_rejects_skill_root_swapped_after_selection(isolated_skills, monkeypatch):
     home, _ = isolated_skills
     root = _write_skill(home, "agents", "reader")
-    (root / "guide.md").write_text("safe", encoding = "utf-8")
+    (root / "guide.md").write_text("safe", encoding="utf-8")
     outside = home / "outside"
     outside.mkdir()
-    (outside / "guide.md").write_text("secret", encoding = "utf-8")
+    (outside / "guide.md").write_text("secret", encoding="utf-8")
     original_root = home / "original-reader"
     original_selected_skill = skills._selected_skill
 
-    def replacing_selected_skill(name, *, home = None):
-        record, path, identity = original_selected_skill(name, home = home)
+    def replacing_selected_skill(name, *, home=None):
+        record, path, identity = original_selected_skill(name, home=home)
         root.rename(original_root)
         try:
-            root.symlink_to(outside, target_is_directory = True)
+            root.symlink_to(outside, target_is_directory=True)
         except (OSError, NotImplementedError):
             # Reason: Windows may deny symlink creation without Developer Mode.
             pytest.skip("symlinks are unavailable on this platform")
         return record, path, identity
 
     monkeypatch.setattr(skills, "_selected_skill", replacing_selected_skill)
-    with pytest.raises(skills.SkillError, match = "symbolic links"):
-        skills.read_skill_resource("reader", "guide.md", home = home)
+    with pytest.raises(skills.SkillError, match="symbolic links"):
+        skills.read_skill_resource("reader", "guide.md", home=home)
 
 
 def test_skill_directory_name_must_match_exactly(isolated_skills):
     home, _ = isolated_skills
     root = home / ".agents" / "skills" / "ｓｋｉｌｌ"
-    root.mkdir(parents = True)
+    root.mkdir(parents=True)
     (root / "SKILL.md").write_text(
         "---\nname: skill\ndescription: test\n---\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
-    record = skills.list_skills(home = home)[0]
+    record = skills.list_skills(home=home)[0]
 
     assert record["valid"] is False
     assert "match its parent directory" in record["error"]
@@ -328,7 +328,7 @@ def test_create_skill_writes_valid_manifest_without_overwriting(isolated_skills)
         "release-notes",
         "Draft concise release notes.",
         "# Workflow\n\n1. Inspect the diff.\n2. Summarize user-visible changes.",
-        home = home,
+        home=home,
     )
 
     assert record["name"] == "release-notes"
@@ -337,16 +337,16 @@ def test_create_skill_writes_valid_manifest_without_overwriting(isolated_skills)
     metadata, real_dir = skills._validate_skill_dir(created.parent)
     assert metadata["description"] == "Draft concise release notes."
     assert real_dir == created.parent
-    with pytest.raises(skills.SkillError, match = "already exists"):
-        skills.create_skill("release-notes", "Different", "Do something else.", home = home)
-    assert "Different" not in created.read_text(encoding = "utf-8")
+    with pytest.raises(skills.SkillError, match="already exists"):
+        skills.create_skill("release-notes", "Different", "Do something else.", home=home)
+    assert "Different" not in created.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("name", ("../escape", "Bad Name", "con"))
 def test_create_skill_rejects_unsafe_names(isolated_skills, name):
     home, _ = isolated_skills
     with pytest.raises(skills.SkillError):
-        skills.create_skill(name, "Description", "Instructions", home = home)
+        skills.create_skill(name, "Description", "Instructions", home=home)
 
 
 def test_create_skill_rejects_a_linked_agents_ancestor(isolated_skills):
@@ -354,12 +354,12 @@ def test_create_skill_rejects_a_linked_agents_ancestor(isolated_skills):
     outside = home.parent / "outside"
     outside.mkdir()
     try:
-        (home / ".agents").symlink_to(outside, target_is_directory = True)
+        (home / ".agents").symlink_to(outside, target_is_directory=True)
     except (OSError, NotImplementedError):
         pytest.skip("symlinks are unavailable on this platform")
 
-    with pytest.raises(skills.SkillError, match = "unsafe"):
-        skills.create_skill("escaped", "Description", "Instructions", home = home)
+    with pytest.raises(skills.SkillError, match="unsafe"):
+        skills.create_skill("escaped", "Description", "Instructions", home=home)
 
     assert not (outside / "skills").exists()
 
@@ -388,7 +388,7 @@ def test_create_skill_tool_does_not_commit_when_override_clear_fails(isolated_sk
 
     home, studio = isolated_skills
     studio.mkdir()
-    (studio / "skill-overrides.json").write_text('{"blocked":false}', encoding = "utf-8")
+    (studio / "skill-overrides.json").write_text('{"blocked":false}', encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
 
     def deny_override_write(_overrides):
@@ -416,7 +416,7 @@ def test_catalog_is_bounded_at_complete_entries():
         marker
         == f"- {20 - len(listed)} more enabled skills not listed; mention one as @skill-name."
     )
-    large = skills.format_skill_catalog(candidates, budget = skills.LARGE_SKILL_CATALOG_BYTES)
+    large = skills.format_skill_catalog(candidates, budget=skills.LARGE_SKILL_CATALOG_BYTES)
     assert len(large.splitlines()) > len(listed)
     assert "more enabled skills" not in skills.format_skill_catalog(candidates[:2])
 
@@ -424,28 +424,28 @@ def test_catalog_is_bounded_at_complete_entries():
 def test_linked_skill_directory_is_followed_once_and_pinned(isolated_skills, tmp_path):
     home, _ = isolated_skills
     real = tmp_path / "dotfiles" / "skills" / "linked"
-    real.mkdir(parents = True)
+    real.mkdir(parents=True)
     (real / "SKILL.md").write_text(
-        "---\nname: linked\ndescription: Linked in.\n---\nREAL", encoding = "utf-8"
+        "---\nname: linked\ndescription: Linked in.\n---\nREAL", encoding="utf-8"
     )
     root = home / ".agents" / "skills"
-    root.mkdir(parents = True)
+    root.mkdir(parents=True)
     try:
-        (root / "linked").symlink_to(real, target_is_directory = True)
-        (root / "dangling").symlink_to(tmp_path / "gone", target_is_directory = True)
+        (root / "linked").symlink_to(real, target_is_directory=True)
+        (root / "dangling").symlink_to(tmp_path / "gone", target_is_directory=True)
         (root / "to-file").symlink_to(real / "SKILL.md")
         (real / "escape.md").symlink_to(tmp_path / "dotfiles")
     except (OSError, NotImplementedError):
         # Reason: Windows may deny symlink creation without Developer Mode.
         pytest.skip("symlinks are unavailable on this platform")
 
-    records = {record["name"]: record for record in skills.list_skills(home = home)}
+    records = {record["name"]: record for record in skills.list_skills(home=home)}
 
     assert records["linked"]["valid"] is True
     assert records["dangling"]["valid"] is False and records["to-file"]["valid"] is False
-    assert skills.read_skill_resource("linked", home = home).endswith("REAL")
-    with pytest.raises(skills.SkillError, match = "symbolic links"):
-        skills.read_skill_resource("linked", "escape.md", home = home)
+    assert skills.read_skill_resource("linked", home=home).endswith("REAL")
+    with pytest.raises(skills.SkillError, match="symbolic links"):
+        skills.read_skill_resource("linked", "escape.md", home=home)
 
 
 def test_catalog_skips_an_oversized_entry_without_hiding_later_skills():
@@ -470,10 +470,10 @@ def test_authenticated_list_and_toggle_routes(isolated_skills, monkeypatch):
         ("agents", home / ".agents" / "skills"),
         ("claude", home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
 
     app = FastAPI()
-    app.include_router(router, prefix = "/api/skills")
+    app.include_router(router, prefix="/api/skills")
     assert TestClient(app).get("/api/skills").status_code in (401, 403)
     app.dependency_overrides[get_current_subject] = lambda: "test-user"
     client = TestClient(app)
@@ -485,17 +485,17 @@ def test_authenticated_list_and_toggle_routes(isolated_skills, monkeypatch):
     assert response.status_code == 200
     assert response.json()[0]["name"] == "api-skill"
     assert inference_routes._AGENT_SKILLS_CACHE == {}
-    response = client.put("/api/skills/api-skill/enabled", json = {"enabled": False})
+    response = client.put("/api/skills/api-skill/enabled", json={"enabled": False})
     assert response.status_code == 200
     assert response.json()["enabled"] is False
 
     monkeypatch.setattr(
         inference_routes, "_AGENT_SKILLS_CACHE", {None: (float("inf"), [{"name": "stale"}])}
     )
-    response = client.put("/api/skills/api-skill/enabled", json = {"enabled": True})
+    response = client.put("/api/skills/api-skill/enabled", json={"enabled": True})
     assert response.status_code == 200
     assert inference_routes._AGENT_SKILLS_CACHE == {}
-    assert client.put("/api/skills/api-skill/enabled", json = {"enabled": "false"}).status_code == 422
+    assert client.put("/api/skills/api-skill/enabled", json={"enabled": "false"}).status_code == 422
 
 
 def test_skill_tool_selection_honors_explicit_allowlist(isolated_skills, monkeypatch):
@@ -511,29 +511,29 @@ def test_skill_tool_selection_honors_explicit_allowlist(isolated_skills, monkeyp
         ("agents", home / ".agents" / "skills"),
         ("claude", home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
     monkeypatch.setattr(inference_routes, "_enabled_agent_skills", skills.enabled_skills)
     read_only = ChatCompletionRequest(
-        model = "test",
-        messages = [{"role": "user", "content": "hello"}],
-        enable_tools = True,
-        enabled_tools = ["read_skill"],
-        permission_mode = "auto",
-        stream = True,
+        model="test",
+        messages=[{"role": "user", "content": "hello"}],
+        enable_tools=True,
+        enabled_tools=["read_skill"],
+        permission_mode="auto",
+        stream=True,
     )
 
     selected = asyncio.run(
-        inference_routes._select_request_tools(read_only, tools_on = True, mcp_allowed = False)
+        inference_routes._select_request_tools(read_only, tools_on=True, mcp_allowed=False)
     )
     names = [tool["function"]["name"] for tool in selected]
     inference_routes._reject_confirm_gate_without_channel(
-        read_only, ui_events = False, selected_names = set(names)
+        read_only, ui_events=False, selected_names=set(names)
     )
     assert names == ["read_skill"]
 
-    local_default = read_only.model_copy(update = {"enabled_tools": ["read_skill", "create_skill"]})
+    local_default = read_only.model_copy(update={"enabled_tools": ["read_skill", "create_skill"]})
     selected = asyncio.run(
-        inference_routes._select_request_tools(local_default, tools_on = True, mcp_allowed = False)
+        inference_routes._select_request_tools(local_default, tools_on=True, mcp_allowed=False)
     )
     assert [tool["function"]["name"] for tool in selected] == ["read_skill", "create_skill"]
 
@@ -546,56 +546,56 @@ def test_skill_tools_registration_selection_and_prompt(isolated_skills, monkeypa
     from routes import inference as inference_routes
 
     home, _ = isolated_skills
-    _write_skill(home, "agents", "guided", description = "Guide this task")
+    _write_skill(home, "agents", "guided", description="Guide this task")
     _write_skill(home, "agents", "skill-creator")
     roots = (
         ("agents", home / ".agents" / "skills"),
         ("claude", home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
     monkeypatch.setattr(inference_routes, "_enabled_agent_skills", skills.enabled_skills)
     payload = ChatCompletionRequest(
-        model = "test",
-        messages = [{"role": "user", "content": "hello"}],
-        enabled_tools = ["read_skill", "create_skill"],
+        model="test",
+        messages=[{"role": "user", "content": "hello"}],
+        enabled_tools=["read_skill", "create_skill"],
     )
 
     selected = asyncio.run(
-        inference_routes._select_request_tools(payload, tools_on = True, mcp_allowed = False)
+        inference_routes._select_request_tools(payload, tools_on=True, mcp_allowed=False)
     )
     assert [tool["function"]["name"] for tool in selected] == ["read_skill", "create_skill"]
     assert tools_module.is_always_safe_tool("read_skill") is True
     assert tools_module.is_high_risk_tool_call("create_skill", {}) is True
     result = tools_module.execute_tool("read_skill", {"name": "guided"})
     assert "Skill: guided" in result
-    nudge = inference_routes._build_tool_action_nudge(tools = selected, model_name = "test")
+    nudge = inference_routes._build_tool_action_nudge(tools=selected, model_name="test")
     assert "- guided: Guide this task" in nudge
     assert "@skill-name" in nudge
     assert "create_skill" in nudge
     # Codex and external paths skip the general nudge but keep the catalog for @mentions.
     narrow = inference_routes._build_tool_action_nudge(
-        tools = [*selected, tools_module.WEB_SEARCH_TOOL],
-        model_name = "test",
-        full_access_only = True,
+        tools=[*selected, tools_module.WEB_SEARCH_TOOL],
+        model_name="test",
+        full_access_only=True,
     )
     assert "- guided: Guide this task" in narrow
     assert inference_routes._TOOL_BASE_NUDGE not in narrow
     assert "web_search" not in narrow
 
-    skills.set_skill_enabled("skill-creator", False, home = home)
+    skills.set_skill_enabled("skill-creator", False, home=home)
     selected = asyncio.run(
-        inference_routes._select_request_tools(payload, tools_on = True, mcp_allowed = False)
+        inference_routes._select_request_tools(payload, tools_on=True, mcp_allowed=False)
     )
     assert [tool["function"]["name"] for tool in selected] == ["read_skill"]
     assert "create_skill" not in inference_routes._build_tool_action_nudge(
-        tools = selected, model_name = "test"
+        tools=selected, model_name="test"
     )
-    with pytest.raises(skills.SkillError, match = "disabled"):
-        skills.read_skill_resource("skill-creator", home = home)
+    with pytest.raises(skills.SkillError, match="disabled"):
+        skills.read_skill_resource("skill-creator", home=home)
 
-    skills.set_skill_enabled("guided", False, home = home)
+    skills.set_skill_enabled("guided", False, home=home)
     selected = asyncio.run(
-        inference_routes._select_request_tools(payload, tools_on = True, mcp_allowed = False)
+        inference_routes._select_request_tools(payload, tools_on=True, mcp_allowed=False)
     )
     assert selected == []
 
@@ -604,18 +604,18 @@ def test_read_skill_tool_keeps_pagination_consistent_with_tight_room(isolated_sk
     from core.inference import tools as tools_module
 
     home, _ = isolated_skills
-    _write_skill(home, "agents", "paged", body = "x" * 12_000)
+    _write_skill(home, "agents", "paged", body="x" * 12_000)
     roots = (
         ("agents", home / ".agents" / "skills"),
         ("claude", home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
 
     result = tools_module.execute_tool(
         "read_skill",
         {"name": "paged"},
-        context_tokens = 4096,
-        result_budget_tokens = 300,
+        context_tokens=4096,
+        result_budget_tokens=300,
     )
 
     assert "Resource continues. Call read_skill again" in result
@@ -646,14 +646,15 @@ def managed_accounts(isolated_skills, monkeypatch):
 
 def _account_id() -> str:
     from utils.account_context import current_account_id
+
     return current_account_id()
 
 
 def _account_skill(studio: Path, account_id: str, name: str, description: str) -> None:
     root = studio / "accounts" / account_id / "skills" / name
-    root.mkdir(parents = True)
+    root.mkdir(parents=True)
     (root / "SKILL.md").write_text(
-        f"---\nname: {name}\ndescription: {description}\n---\nBody", encoding = "utf-8"
+        f"---\nname: {name}\ndescription: {description}\n---\nBody", encoding="utf-8"
     )
 
 
@@ -661,8 +662,8 @@ def test_managed_account_never_sees_the_owners_home_skills(managed_accounts):
     from utils.account_context import run_as
 
     home, studio, alice, bob = managed_accounts
-    _write_skill(home, "agents", "owner-only", description = "OWNER_PRIVATE")
-    _write_skill(home, "claude", "owner-claude", description = "OWNER_PRIVATE")
+    _write_skill(home, "agents", "owner-only", description="OWNER_PRIVATE")
+    _write_skill(home, "claude", "owner-claude", description="OWNER_PRIVATE")
     _account_skill(studio, _ALICE_ID, "alice-skill", "ALICE_PRIVATE")
 
     owner_names = [record["name"] for record in skills.list_skills()]
@@ -687,7 +688,7 @@ def test_managed_account_overrides_and_creation_stay_in_its_workspace(managed_ac
     from utils.account_context import run_as
 
     home, studio, alice, bob = managed_accounts
-    _write_skill(home, "agents", "shared-name", description = "owner copy")
+    _write_skill(home, "agents", "shared-name", description="owner copy")
     _account_skill(studio, _ALICE_ID, "shared-name", "alice copy")
 
     # Alice disabling her copy leaves the owner's enabled and writes only her overrides file.
@@ -722,7 +723,7 @@ def test_inference_catalog_cache_is_per_account(managed_accounts, monkeypatch):
     from utils.account_context import run_as
 
     home, studio, alice, bob = managed_accounts
-    _write_skill(home, "agents", "owner-only", description = "OWNER_PRIVATE")
+    _write_skill(home, "agents", "owner-only", description="OWNER_PRIVATE")
     _account_skill(studio, _ALICE_ID, "alice-skill", "ALICE_PRIVATE")
     monkeypatch.setattr(inference_routes, "_AGENT_SKILLS_CACHE", {})
 
@@ -737,12 +738,12 @@ def test_inference_catalog_cache_is_per_account(managed_accounts, monkeypatch):
     from models.inference import ChatCompletionRequest
 
     payload = ChatCompletionRequest(
-        model = "test", messages = [{"role": "user", "content": "hi"}], enable_tools = True
+        model="test", messages=[{"role": "user", "content": "hi"}], enable_tools=True
     )
 
     def select():
         return asyncio.run(
-            inference_routes._select_request_tools(payload, tools_on = True, mcp_allowed = False)
+            inference_routes._select_request_tools(payload, tools_on=True, mcp_allowed=False)
         )
 
     assert "read_skill" in [t["function"]["name"] for t in run_as(alice, select)]
@@ -752,7 +753,7 @@ def test_inference_catalog_cache_is_per_account(managed_accounts, monkeypatch):
     nudge = run_as(
         alice,
         lambda: inference_routes._build_tool_action_nudge(
-            tools = run_as(alice, select), model_name = "test"
+            tools=run_as(alice, select), model_name="test"
         ),
     )
     assert "ALICE_PRIVATE" in nudge and "OWNER_PRIVATE" not in nudge
@@ -766,7 +767,7 @@ def test_read_skill_page_floor_reports_no_room_instead_of_slivers(isolated_skill
 
     home, _ = isolated_skills
     monkeypatch.setattr(skills, "_owner_home", lambda: home)
-    _write_skill(home, "agents", "long", body = "x" * 12_000)
+    _write_skill(home, "agents", "long", body="x" * 12_000)
     # Whatever the room, a page smaller than the floor is not worth a round trip.
     monkeypatch.setattr(tools_module, "_fit_result_to_room", lambda result, name: result[:40])
     result = tools_module.execute_tool("read_skill", {"name": "long"})
@@ -776,32 +777,32 @@ def test_read_skill_page_floor_reports_no_room_instead_of_slivers(isolated_skill
 def test_read_resource_rejects_ancestor_swapped_after_selection(isolated_skills, monkeypatch):
     home, _ = isolated_skills
     root = _write_skill(home, "agents", "reader")
-    (root / "guide.md").write_text("safe", encoding = "utf-8")
+    (root / "guide.md").write_text("safe", encoding="utf-8")
     skills_root = root.parent
     outside = home / "outside"
     _write_skill(outside, "agents", "reader")
-    (outside / ".agents" / "skills" / "reader" / "guide.md").write_text("secret", encoding = "utf-8")
+    (outside / ".agents" / "skills" / "reader" / "guide.md").write_text("secret", encoding="utf-8")
     original_selected_skill = skills._selected_skill
 
-    def replacing_selected_skill(name, *, home = None):
-        selection = original_selected_skill(name, home = home)
+    def replacing_selected_skill(name, *, home=None):
+        selection = original_selected_skill(name, home=home)
         # The skill directory itself stays a real directory; only its parent is swapped.
         skills_root.rename(home / "original-skills")
         try:
-            skills_root.symlink_to(outside / ".agents" / "skills", target_is_directory = True)
+            skills_root.symlink_to(outside / ".agents" / "skills", target_is_directory=True)
         except (OSError, NotImplementedError):
             # Reason: Windows may deny symlink creation without Developer Mode.
             pytest.skip("symlinks are unavailable on this platform")
         return selection
 
     monkeypatch.setattr(skills, "_selected_skill", replacing_selected_skill)
-    with pytest.raises(skills.SkillError, match = "changed after it was selected"):
-        skills.read_skill_resource("reader", "guide.md", home = home)
+    with pytest.raises(skills.SkillError, match="changed after it was selected"):
+        skills.read_skill_resource("reader", "guide.md", home=home)
 
 
 @pytest.mark.skipif(
     os.name == "nt",
-    reason = "Windows sharing semantics refuse to replace a manifest that is still open for writing",
+    reason="Windows sharing semantics refuse to replace a manifest that is still open for writing",
 )
 def test_failed_create_keeps_a_manifest_another_writer_replaced(isolated_skills, monkeypatch):
     home, _ = isolated_skills
@@ -812,15 +813,15 @@ def test_failed_create_keeps_a_manifest_another_writer_replaced(isolated_skills,
         original_fsync(descriptor)
         replacement = manifest.with_name("SKILL.md.new")
         replacement.write_text(
-            "---\nname: racer\ndescription: Theirs.\n---\nTHEIRS", encoding = "utf-8"
+            "---\nname: racer\ndescription: Theirs.\n---\nTHEIRS", encoding="utf-8"
         )
         os.replace(replacement, manifest)
 
     monkeypatch.setattr(os, "fsync", replacing_fsync)
-    with pytest.raises(skills.SkillError, match = "changed while the manifest was being written"):
-        skills.create_skill("racer", "Mine.", "MINE", home = home)
+    with pytest.raises(skills.SkillError, match="changed while the manifest was being written"):
+        skills.create_skill("racer", "Mine.", "MINE", home=home)
 
-    assert manifest.read_text(encoding = "utf-8").endswith("THEIRS")
+    assert manifest.read_text(encoding="utf-8").endswith("THEIRS")
 
 
 def test_unreadable_root_reports_itself_without_hiding_other_roots(isolated_skills):
@@ -829,10 +830,10 @@ def test_unreadable_root_reports_itself_without_hiding_other_roots(isolated_skil
     home, _ = isolated_skills
     _write_skill(home, "claude", "visible")
     unreadable = home / ".agents" / "skills"
-    unreadable.mkdir(parents = True)
+    unreadable.mkdir(parents=True)
     unreadable.chmod(0)
     try:
-        records = skills.list_skills(home = home)
+        records = skills.list_skills(home=home)
     finally:
         unreadable.chmod(0o700)
 
@@ -846,10 +847,10 @@ def test_root_entry_limit_ignores_hidden_and_regular_files(isolated_skills):
     home, _ = isolated_skills
     root = _write_skill(home, "agents", "counted").parent
     for index in range(skills.MAX_SKILLS_PER_ROOT):
-        (root / f".hidden-{index}").write_text("", encoding = "utf-8")
-    (root / "README.md").write_text("about these skills", encoding = "utf-8")
+        (root / f".hidden-{index}").write_text("", encoding="utf-8")
+    (root / "README.md").write_text("about these skills", encoding="utf-8")
 
-    records = skills.list_skills(home = home)
+    records = skills.list_skills(home=home)
 
     assert [item["name"] for item in records] == ["counted"]
 
@@ -858,20 +859,20 @@ def test_corrupt_overrides_are_ignored_and_repaired_by_the_next_toggle(isolated_
     home, studio = isolated_skills
     _write_skill(home, "agents", "sturdy")
     studio.mkdir()
-    (studio / "skill-overrides.json").write_text("{not json", encoding = "utf-8")
+    (studio / "skill-overrides.json").write_text("{not json", encoding="utf-8")
 
-    assert next(item for item in skills.list_skills(home = home) if item["name"] == "sturdy")[
+    assert next(item for item in skills.list_skills(home=home) if item["name"] == "sturdy")[
         "enabled"
     ]
-    skills.set_skill_enabled("sturdy", False, home = home)
+    skills.set_skill_enabled("sturdy", False, home=home)
 
-    assert json.loads((studio / "skill-overrides.json").read_text(encoding = "utf-8")) == {
+    assert json.loads((studio / "skill-overrides.json").read_text(encoding="utf-8")) == {
         "sturdy": False
     }
     (studio / "skill-overrides.json").write_text(
-        '{"sturdy": "no", "Bad Name": false, "other": true}', encoding = "utf-8"
+        '{"sturdy": "no", "Bad Name": false, "other": true}', encoding="utf-8"
     )
-    assert next(item for item in skills.list_skills(home = home) if item["name"] == "sturdy")[
+    assert next(item for item in skills.list_skills(home=home) if item["name"] == "sturdy")[
         "enabled"
     ]
 
@@ -882,10 +883,10 @@ def test_indented_separator_inside_a_block_scalar_stays_in_the_frontmatter(isola
         home,
         "agents",
         "divided",
-        description = "|\n  Use for reports.\n  ---\n  Also for summaries.",
+        description="|\n  Use for reports.\n  ---\n  Also for summaries.",
     )
 
-    record = next(item for item in skills.list_skills(home = home) if item["name"] == "divided")
+    record = next(item for item in skills.list_skills(home=home) if item["name"] == "divided")
 
     assert record["valid"] is True
     assert record["description"] == "Use for reports.\n---\nAlso for summaries."
@@ -895,12 +896,12 @@ def test_read_skill_tool_applies_defaults_for_null_arguments(isolated_skills, mo
     from core.inference import tools as tools_module
 
     home, _ = isolated_skills
-    _write_skill(home, "agents", "nullable", body = "Body text")
+    _write_skill(home, "agents", "nullable", body="Body text")
     roots = (
         ("agents", home / ".agents" / "skills"),
         ("claude", home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(skills, "_skill_roots", lambda home = None: roots)
+    monkeypatch.setattr(skills, "_skill_roots", lambda home=None: roots)
 
     result = tools_module.execute_tool(
         "read_skill", {"name": "nullable", "resource": None, "offset": None}
@@ -913,8 +914,8 @@ def test_reserved_device_name_resource_gets_its_own_message(isolated_skills):
     home, _ = isolated_skills
     _write_skill(home, "agents", "reserved")
 
-    with pytest.raises(skills.SkillError, match = "reserved device name"):
-        skills.read_skill_resource("reserved", "con.md", home = home)
+    with pytest.raises(skills.SkillError, match="reserved device name"):
+        skills.read_skill_resource("reserved", "con.md", home=home)
 
 
 def test_aliased_metadata_cannot_expand_past_the_manifest_limit(isolated_skills):
@@ -925,10 +926,10 @@ def test_aliased_metadata_cannot_expand_past_the_manifest_limit(isolated_skills)
         home,
         "agents",
         "aliased",
-        frontmatter = f"big: &big {big}\nmetadata:\n{aliases}",
+        frontmatter=f"big: &big {big}\nmetadata:\n{aliases}",
     )
 
-    record = next(r for r in skills.list_skills(home = home) if r["name"] == "aliased")
+    record = next(r for r in skills.list_skills(home=home) if r["name"] == "aliased")
 
     assert record["valid"] is False and "16 KB" in record["error"]
 
@@ -936,8 +937,8 @@ def test_aliased_metadata_cannot_expand_past_the_manifest_limit(isolated_skills)
 @pytest.mark.parametrize("field", ["allowed-tools", "license"])
 def test_oversized_scalar_fields_are_rejected(isolated_skills, field):
     home, _ = isolated_skills
-    _write_skill(home, "agents", "wide", frontmatter = f"{field}: {'x' * 2000}")
+    _write_skill(home, "agents", "wide", frontmatter=f"{field}: {'x' * 2000}")
 
-    record = next(r for r in skills.list_skills(home = home) if r["name"] == "wide")
+    record = next(r for r in skills.list_skills(home=home) if r["name"] == "wide")
 
     assert record["valid"] is False and "1024" in record["error"]

@@ -221,7 +221,7 @@ _LOG = sys.stdout
 
 
 def info(message: str) -> None:
-    print(f"[{LABEL}] {message}", file = _LOG, flush = True)
+    print(f"[{LABEL}] {message}", file=_LOG, flush=True)
 
 
 def reasoning_flag_in_source() -> bool | None:
@@ -236,7 +236,7 @@ def reasoning_flag_in_source() -> bool | None:
     if _EXTERNAL:
         return None
     try:
-        text = FLAG_SOURCE.read_text(encoding = "utf-8")
+        text = FLAG_SOURCE.read_text(encoding="utf-8")
     except OSError:
         return None
     found = re.search(r"GRID_COLLAPSE_REASONING_ENABLED\s*=\s*(true|false)", text)
@@ -366,14 +366,14 @@ def summarise_layouts(events: list[dict]) -> dict:
     return {
         "layouts": len(durations) + without_duration,
         "layout_ms": round(sum(durations), 2),
-        "max_layout_ms": round(max(durations, default = 0.0), 2),
+        "max_layout_ms": round(max(durations, default=0.0), 2),
         "forced_layouts": len(forced_durations),
         "forced_layout_ms": round(sum(forced_durations), 2),
-        "max_forced_layout_ms": round(max(forced_durations, default = 0.0), 2),
-        "max_forced_total_objects": max(forced_total, default = 0),
+        "max_forced_layout_ms": round(max(forced_durations, default=0.0), 2),
+        "max_forced_total_objects": max(forced_total, default=0),
         "forced_layout_sources": sorted(sources)[:5],
-        "max_dirty_objects": max(dirty, default = 0),
-        "max_total_objects": max(total, default = 0),
+        "max_dirty_objects": max(dirty, default=0),
+        "max_total_objects": max(total, default=0),
         "whole_document_layouts": whole_document,
         "partial_layouts": partial,
         "unknown_scope_layouts": unknown_scope,
@@ -437,14 +437,14 @@ def run_cell(context, arm: str, fillers: int, options: argparse.Namespace) -> di
     page.on("pageerror", lambda e: errors.append(str(e)))
     problems: list[str] = []
     try:
-        page.goto(url, wait_until = "domcontentloaded", timeout = READY_TIMEOUT_MS)
+        page.goto(url, wait_until="domcontentloaded", timeout=READY_TIMEOUT_MS)
         # The page publishes `__probeReady` after two frames and puts the element count in it, so "document size" in the
         # report is measured rather than being the parameter restated.
-        page.wait_for_function("() => Boolean(window.__probeReady)", timeout = READY_TIMEOUT_MS)
+        page.wait_for_function("() => Boolean(window.__probeReady)", timeout=READY_TIMEOUT_MS)
         ready = page.evaluate("() => window.__probeReady")
 
         try:
-            page.wait_for_function(ARM_DRIVABLE_JS, timeout = 60_000)
+            page.wait_for_function(ARM_DRIVABLE_JS, timeout=60_000)
         except PlaywrightTimeoutError as exc:
             raise RuntimeError(
                 f"arm {arm!r} never rendered a [data-probe=trigger] with the grow hooks "
@@ -542,7 +542,7 @@ def render_scaling(cells: list[dict]) -> str:
     for arm, group in by_arm.items():
         if len(group) < 2:
             continue
-        ordered = sorted(group, key = lambda c: c["fillers"])
+        ordered = sorted(group, key=lambda c: c["fillers"])
         small, large = ordered[0], ordered[-1]
 
         def ratio(a: float, b: float) -> str:
@@ -662,7 +662,7 @@ def collect_failures(report: dict) -> list[str]:
     for arm, group in by_arm.items():
         if len(group) < 2:
             continue
-        ordered = sorted(group, key = lambda c: c["fillers"])
+        ordered = sorted(group, key=lambda c: c["fillers"])
         counts = [cell["elements"] or 0 for cell in ordered]
         if counts != sorted(counts) or counts[0] == counts[-1]:
             failures.append(
@@ -674,18 +674,18 @@ def collect_failures(report: dict) -> list[str]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description = "Measure what a collapsible toggle costs against the whole document.",
+        description="Measure what a collapsible toggle costs against the whole document.",
     )
     parser.add_argument(
         "--arm",
-        action = "append",
-        choices = ARMS,
-        help = "restrict the sweep to this arm; repeatable. Default: all four.",
+        action="append",
+        choices=ARMS,
+        help="restrict the sweep to this arm; repeatable. Default: all four.",
     )
     parser.add_argument(
         "--fillers",
-        default = None,
-        help = (
+        default=None,
+        help=(
             "comma separated filler-row counts to sweep. Default: "
             f"{','.join(str(n) for n in DEFAULT_FILLERS)}. A single value turns the sweep into "
             "one run and gives up the scaling comparison, which is the point of the sweep."
@@ -693,15 +693,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--cycles",
-        type = int,
-        default = DEFAULT_CYCLES,
-        help = f"open/close cycles per cell (default {DEFAULT_CYCLES}).",
+        type=int,
+        default=DEFAULT_CYCLES,
+        help=f"open/close cycles per cell (default {DEFAULT_CYCLES}).",
     )
     parser.add_argument(
         "--pane-paragraphs",
-        type = int,
-        default = DEFAULT_PANE_PARAGRAPHS,
-        help = (
+        type=int,
+        default=DEFAULT_PANE_PARAGRAPHS,
+        help=(
             "paragraphs inside the pane. Identical across cells on purpose: it is what makes a "
             f"cost that grows with the filler attributable to the filler (default "
             f"{DEFAULT_PANE_PARAGRAPHS})."
@@ -709,19 +709,19 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--throttle",
-        type = int,
-        default = DEFAULT_THROTTLE,
-        help = f"CDP CPU throttling rate, 1 for off (default {DEFAULT_THROTTLE}).",
+        type=int,
+        default=DEFAULT_THROTTLE,
+        help=f"CDP CPU throttling rate, 1 for off (default {DEFAULT_THROTTLE}).",
     )
     parser.add_argument(
         "--json",
-        action = "store_true",
-        help = "write the report to stdout as JSON; progress and tables move to stderr.",
+        action="store_true",
+        help="write the report to stdout as JSON; progress and tables move to stderr.",
     )
     parser.add_argument(
         "--headful",
-        action = "store_true",
-        help = "run the browser with a window, for watching a toggle by eye.",
+        action="store_true",
+        help="run the browser with a window, for watching a toggle by eye.",
     )
     args = parser.parse_args(argv)
     if args.fillers is None:
@@ -752,10 +752,10 @@ def run(options: argparse.Namespace) -> dict:
         "cells": [],
     }
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless = not options.headful, args = chromium_launch_args())
+        browser = p.chromium.launch(headless=not options.headful, args=chromium_launch_args())
         # A fixed viewport, because a filler row's height depends on how many times it wraps and therefore on the width;
         # a default that varied by machine would move the layout-object count between runs of the same command.
-        context = browser.new_context(viewport = {"width": 1200, "height": 900})
+        context = browser.new_context(viewport={"width": 1200, "height": 900})
         try:
             for arm in options.arms:
                 for fillers in options.filler_sizes:
@@ -782,8 +782,8 @@ def main(argv: list[str] | None = None) -> int:
         wait_for_smoke_page(
             f"{BASE}/{SMOKE_PAGE}",
             SMOKE_ENTRY,
-            proc = vite,
-            info = info,
+            proc=vite,
+            info=info,
         )
         report = run(options)
     finally:
@@ -794,8 +794,8 @@ def main(argv: list[str] | None = None) -> int:
     report["harness_failures"] = collect_failures(report)
 
     out = OUT / f"{LABEL}.json"
-    out.parent.mkdir(parents = True, exist_ok = True)
-    out.write_text(json.dumps(report, indent = 2), encoding = "utf-8")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     flag = report["grid_collapse_reasoning_enabled"]
     info(f"GRID_COLLAPSE_REASONING_ENABLED in this checkout: {flag}")
@@ -818,7 +818,7 @@ def main(argv: list[str] | None = None) -> int:
     info(f"wrote {out}")
 
     if options.json:
-        print(json.dumps(report, indent = 2), flush = True)
+        print(json.dumps(report, indent=2), flush=True)
 
     if report["harness_failures"]:
         for failure in report["harness_failures"]:

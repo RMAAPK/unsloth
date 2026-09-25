@@ -24,7 +24,7 @@ nn = pytest.importorskip("torch.nn")
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VISION = os.path.join(HERE, "unsloth", "models", "vision.py")
 
-_SRC = open(VISION, encoding = "utf-8").read()
+_SRC = open(VISION, encoding="utf-8").read()
 
 
 _DISTRIBUTED = [False]
@@ -73,7 +73,7 @@ _WSL_VARS = ("WSL_DISTRO_NAME", "WSL_INTEROP")
 
 
 @contextmanager
-def _as_platform(os_name, wsl = False):
+def _as_platform(os_name, wsl=False):
     """Drive the platform inputs directly instead of trusting the host's."""
     saved_env = {v: os.environ.get(v) for v in _WSL_VARS}
     saved_name = os.name
@@ -117,18 +117,18 @@ class _Opaque:
 
 def _tied_model():
     emb = nn.Embedding(32, 8)
-    lm = nn.Linear(8, 32, bias = False)
+    lm = nn.Linear(8, 32, bias=False)
     lm.weight = emb.weight
     return _Model(emb, lm)
 
 
 def _untied_model():
-    return _Model(nn.Embedding(32, 8), nn.Linear(8, 32, bias = False))
+    return _Model(nn.Embedding(32, 8), nn.Linear(8, 32, bias=False))
 
 
 def test_disabled_stays_disabled():
     for os_name, wsl in (("posix", False), ("nt", False), ("posix", True)):
-        with _as_platform(os_name, wsl = wsl):
+        with _as_platform(os_name, wsl=wsl):
             assert resolve(_untied_model(), False) is False
             assert resolve(_tied_model(), False) is False
 
@@ -198,7 +198,7 @@ class _Hook:
         self.execution_device = execution_device
 
 
-def _dispatched_model(execution_device = torch.device("cuda", 0)):
+def _dispatched_model(execution_device=torch.device("cuda", 0)):
     m = _untied_model()
     m.get_input_embeddings()._hf_hook = _Hook(execution_device)
     return m
@@ -251,8 +251,8 @@ class _FakeWeight:
     def __init__(
         self,
         n_bytes,
-        device_type = "cuda",
-        index = 0,
+        device_type="cuda",
+        index=0,
     ):
         self._bytes = n_bytes
         self.device = torch.device(
@@ -279,7 +279,7 @@ class _FakeEmbedding:
 def _card(total_bytes):
     """Drive total device memory directly; no GPU is touched."""
     saved = torch.cuda.get_device_properties
-    torch.cuda.get_device_properties = lambda index = 0: type(
+    torch.cuda.get_device_properties = lambda index=0: type(
         "_Props", (), {"total_memory": total_bytes}
     )()
     try:

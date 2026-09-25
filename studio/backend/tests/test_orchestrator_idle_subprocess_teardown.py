@@ -14,7 +14,7 @@ import time
 from core.inference.orchestrator import InferenceOrchestrator
 
 
-def _idle_orchestrator(models, loading = ()):
+def _idle_orchestrator(models, loading=()):
     """An orchestrator whose unload round-trip is stubbed to succeed."""
     o = InferenceOrchestrator.__new__(InferenceOrchestrator)
     o._gen_lock = threading.Lock()
@@ -33,7 +33,7 @@ def _idle_orchestrator(models, loading = ()):
     o._drain_queue = lambda: None
     o._send_cmd = lambda _cmd: None
     o._wait_response = lambda _token: None
-    o._shutdown_subprocess = lambda timeout = 10.0: o.shutdowns.append(timeout)
+    o._shutdown_subprocess = lambda timeout=10.0: o.shutdowns.append(timeout)
     return o
 
 
@@ -55,7 +55,7 @@ def test_unload_keeps_the_worker_while_a_model_is_still_resident():
 
 def test_unload_keeps_the_worker_while_a_load_is_in_flight():
     # Tearing down here would kill the load that is about to reuse the worker.
-    o = _idle_orchestrator({"m": {}}, loading = ("incoming",))
+    o = _idle_orchestrator({"m": {}}, loading=("incoming",))
 
     assert o.unload_model("m") is True
     assert o.shutdowns == []
@@ -70,20 +70,20 @@ def test_unload_keeps_the_worker_while_a_load_is_in_flight():
 def _sleeper(cmd_queue, resp_queue):
     while True:
         try:
-            msg = cmd_queue.get(timeout = 0.2)
+            msg = cmd_queue.get(timeout=0.2)
         except Exception:
             continue
         if isinstance(msg, dict) and msg.get("type") == "shutdown":
             return
 
 
-def _live_orchestrator(models, loading = ()):
+def _live_orchestrator(models, loading=()):
     """A real orchestrator with a live dummy worker; only the round-trip is stubbed."""
     ctx = mp.get_context("spawn")
     o = InferenceOrchestrator()
     o._cmd_queue, o._resp_queue = ctx.Queue(), ctx.Queue()
     o._cancel_event, o._drain_event = ctx.Event(), ctx.Event()
-    o._proc = ctx.Process(target = _sleeper, args = (o._cmd_queue, o._resp_queue), daemon = True)
+    o._proc = ctx.Process(target=_sleeper, args=(o._cmd_queue, o._resp_queue), daemon=True)
     o._proc.start()
     o.models = dict(models)
     o.loading_models = set(loading)
@@ -101,7 +101,7 @@ def test_real_teardown_kills_the_worker_and_leaves_clean_state():
         result["ok"] = o.unload_model("m")
         done.set()
 
-    threading.Thread(target = run, daemon = True).start()
+    threading.Thread(target=run, daemon=True).start()
     assert done.wait(60), "unload_model deadlocked on the real teardown"
     assert result["ok"] is True
     assert o.models == {} and o.active_model_name is None
@@ -109,7 +109,7 @@ def test_real_teardown_kills_the_worker_and_leaves_clean_state():
     assert not proc.is_alive(), "worker survived the teardown"
     assert o._proc is None and o._unload_pending is False
     # _gen_lock must be free for the next load.
-    assert o._gen_lock.acquire(timeout = 1)
+    assert o._gen_lock.acquire(timeout=1)
     o._gen_lock.release()
 
 
@@ -118,7 +118,7 @@ def test_real_teardown_failure_still_reports_the_unload_as_succeeded():
     proc = o._proc
     try:
 
-        def boom(timeout = 10.0):
+        def boom(timeout=10.0):
             raise RuntimeError("teardown exploded")
 
         o._shutdown_subprocess = boom
@@ -126,5 +126,5 @@ def test_real_teardown_failure_still_reports_the_unload_as_succeeded():
         assert o.models == {}
     finally:
         del o._shutdown_subprocess
-        o._shutdown_subprocess(timeout = 5)
-        proc.join(timeout = 5)
+        o._shutdown_subprocess(timeout=5)
+        proc.join(timeout=5)

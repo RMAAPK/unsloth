@@ -37,7 +37,7 @@ IF = _load_import_fixes()
 def _fake_host(
     monkeypatch,
     sysconfig_platform,
-    machine = "unknown-cpu",
+    machine="unknown-cpu",
 ):
     """`machine` defaults to something unmappable, so a passing test is passing on
     sysconfig.get_platform() alone, which is the point."""
@@ -134,28 +134,28 @@ def _install_fake_environment(
     monkeypatch,
     hf_xet_present,
     import_error,
-    distribution_installed = None,
+    distribution_installed=None,
 ):
     """`distribution_installed` is what importlib.metadata would say, a SEPARATE question from
     what the import system says, and the only one is_xet_available() asks."""
-    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising = False)
+    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising=False)
     real_find_spec = importlib.util.find_spec
     if distribution_installed is None:
         distribution_installed = hf_xet_present
     monkeypatch.setattr(IF, "_hf_xet_distribution_is_installed", lambda: distribution_installed)
 
-    def fake_find_spec(name, package = None):
+    def fake_find_spec(name, package=None):
         if name == "huggingface_hub":
             return importlib.machinery.ModuleSpec("huggingface_hub", None)
         if name == "hf_xet":
             if not hf_xet_present:
                 return None
-            spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package = True)
+            spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package=True)
             spec.submodule_search_locations = []
             return spec
         return real_find_spec(name, package)
 
-    def fake_import_module(name, package = None):
+    def fake_import_module(name, package=None):
         if name == "hf_xet":
             if import_error is not None:
                 raise import_error
@@ -180,12 +180,12 @@ _WRONG_ARCHITECTURE = ImportError(
 
 
 def test_fires_on_a_wrong_architecture_wheel(monkeypatch, caplog):
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
 
-    with caplog.at_level("WARNING", logger = IF.logger.name):
+    with caplog.at_level("WARNING", logger=IF.logger.name):
         IF.fix_broken_hf_xet_wheel()
 
     assert IF.os.environ.get("HF_HUB_DISABLE_XET") == "1"
@@ -203,20 +203,20 @@ def test_fires_on_a_wrong_architecture_wheel(monkeypatch, caplog):
 
 def test_does_not_fire_when_hf_xet_imports(monkeypatch):
     """The metadata only raises a suspicion; a successful import overrules it."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = None)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=None)
 
     IF.fix_broken_hf_xet_wheel()
     assert "HF_HUB_DISABLE_XET" not in IF.os.environ
 
 
 def test_does_not_fire_on_a_healthy_wheel(monkeypatch):
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_arm64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
 
     IF.fix_broken_hf_xet_wheel()
     assert "HF_HUB_DISABLE_XET" not in IF.os.environ
@@ -224,8 +224,8 @@ def test_does_not_fire_on_a_healthy_wheel(monkeypatch):
 
 def test_does_not_fire_when_hf_xet_is_absent(monkeypatch):
     """huggingface_hub already downgrades to HTTP by itself when hf_xet is not installed."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
-    _install_fake_environment(monkeypatch, hf_xet_present = False, import_error = None)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
+    _install_fake_environment(monkeypatch, hf_xet_present=False, import_error=None)
 
     IF.fix_broken_hf_xet_wheel()
     assert "HF_HUB_DISABLE_XET" not in IF.os.environ
@@ -235,13 +235,13 @@ def test_absence_is_decided_by_real_metadata_not_by_a_stub(monkeypatch):
     """REGRESSION. Every other no-fire test stubs `_hf_xet_distribution_is_installed`, so one that
     answered True for an uninstalled package would keep them green while a user with no hf_xet got
     the warning and HF_HUB_DISABLE_XET=1. Here the real helper is used."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
-    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising = False)
-    monkeypatch.setattr(IF, "importlib_version", _raise_package_not_found, raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
+    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising=False)
+    monkeypatch.setattr(IF, "importlib_version", _raise_package_not_found, raising=False)
 
     real_find_spec = importlib.util.find_spec
 
-    def fake_find_spec(name, package = None):
+    def fake_find_spec(name, package=None):
         if name == "huggingface_hub":
             return importlib.machinery.ModuleSpec("huggingface_hub", None)
         if name == "hf_xet":
@@ -259,14 +259,14 @@ def test_an_imported_hf_xet_short_circuits_before_any_lookup(monkeypatch):
     """REGRESSION. Removing that early return changes no other assertion, and raising from
     find_spec would not show it either since the lookup sits inside an `except Exception: return`.
     So the lookups are recorded and the assertion is that there were none."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     working = types.ModuleType("hf_xet")
     working.__file__ = "/site-packages/hf_xet/__init__.py"  # a bare ModuleType is a shell
     monkeypatch.setitem(IF.sys.modules, "hf_xet", working)
 
     lookups = []
 
-    def recording_find_spec(name, package = None):
+    def recording_find_spec(name, package=None):
         lookups.append(name)
         return None
 
@@ -289,19 +289,19 @@ def test_fires_when_hf_xet_is_only_an_empty_namespace_package(monkeypatch, caplo
     `import hf_xet` succeeded, and every download still went to Xet and died with
     "cannot import name 'PyXetDownloadInfo' from 'hf_xet' (unknown location)".
     """
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
-    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
+    monkeypatch.delitem(IF.sys.modules, "hf_xet", raising=False)
     monkeypatch.setattr(IF, "_hf_xet_distribution_is_installed", lambda: True)
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ())
 
     package = tmp_path / "hf_xet"
     package.mkdir()  # no __init__.py, no extension: exactly what makes it a namespace package
-    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package = True)
+    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package=True)
     spec.submodule_search_locations = [str(package)]
 
     real_find_spec = importlib.util.find_spec
 
-    def fake_find_spec(name, package = None):
+    def fake_find_spec(name, package=None):
         if name == "huggingface_hub":
             return importlib.machinery.ModuleSpec("huggingface_hub", None)
         if name == "hf_xet":
@@ -311,7 +311,7 @@ def test_fires_when_hf_xet_is_only_an_empty_namespace_package(monkeypatch, caplo
     namespace_module = types.ModuleType("hf_xet")
     namespace_module.__file__ = None  # what CPython gives a namespace package
 
-    def fake_import_module(name, package = None):
+    def fake_import_module(name, package=None):
         if name == "hf_xet":
             IF.sys.modules["hf_xet"] = namespace_module
             return namespace_module
@@ -324,7 +324,7 @@ def test_fires_when_hf_xet_is_only_an_empty_namespace_package(monkeypatch, caplo
         IF._hf_xet_extension_is_missing(spec) is True
     ), "the suspicion itself must still be raised"
 
-    with caplog.at_level("WARNING", logger = IF.logger.name):
+    with caplog.at_level("WARNING", logger=IF.logger.name):
         IF.fix_broken_hf_xet_wheel()
 
     assert IF.os.environ.get("HF_HUB_DISABLE_XET") == "1"
@@ -342,13 +342,13 @@ def test_fires_when_the_hub_already_cached_the_namespace_shell(monkeypatch, capl
     'PyXetDownloadInfo' from 'hf_xet' (unknown location)", the shell stayed cached with
     __file__ None, and routes_to_xet was still True afterwards.
     """
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     monkeypatch.setattr(IF, "_hf_xet_distribution_is_installed", lambda: True)
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ())
 
     package = tmp_path / "hf_xet"
     package.mkdir()
-    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package = True)
+    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package=True)
     spec.submodule_search_locations = [str(package)]
 
     shell = types.ModuleType("hf_xet")
@@ -357,14 +357,14 @@ def test_fires_when_the_hub_already_cached_the_namespace_shell(monkeypatch, capl
 
     real_find_spec = importlib.util.find_spec
 
-    def fake_find_spec(name, package = None):
+    def fake_find_spec(name, package=None):
         if name == "huggingface_hub":
             return importlib.machinery.ModuleSpec("huggingface_hub", None)
         if name == "hf_xet":
             return spec
         return real_find_spec(name, package)
 
-    def fake_import_module(name, package = None):
+    def fake_import_module(name, package=None):
         if name == "hf_xet":
             IF.sys.modules["hf_xet"] = shell
             return shell
@@ -373,7 +373,7 @@ def test_fires_when_the_hub_already_cached_the_namespace_shell(monkeypatch, capl
     monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
     monkeypatch.setattr(IF.importlib, "import_module", fake_import_module)
 
-    with caplog.at_level("WARNING", logger = IF.logger.name):
+    with caplog.at_level("WARNING", logger=IF.logger.name):
         IF.fix_broken_hf_xet_wheel()
 
     assert IF.os.environ.get("HF_HUB_DISABLE_XET") == "1"
@@ -383,15 +383,15 @@ def test_fires_when_the_hub_already_cached_the_namespace_shell(monkeypatch, capl
 def test_fires_when_only_the_distribution_metadata_survives(monkeypatch, caplog):
     """REGRESSION. find_spec says "not installed", but is_xet_available() asks
     importlib.metadata, which still succeeds, so every download still goes down the Xet branch."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _install_fake_environment(
         monkeypatch,
-        hf_xet_present = False,  # find_spec -> None
-        import_error = ModuleNotFoundError("No module named 'hf_xet'"),
-        distribution_installed = True,  # ...but importlib.metadata still sees it
+        hf_xet_present=False,  # find_spec -> None
+        import_error=ModuleNotFoundError("No module named 'hf_xet'"),
+        distribution_installed=True,  # ...but importlib.metadata still sees it
     )
 
-    with caplog.at_level("WARNING", logger = IF.logger.name):
+    with caplog.at_level("WARNING", logger=IF.logger.name):
         IF.fix_broken_hf_xet_wheel()
 
     assert IF.os.environ.get("HF_HUB_DISABLE_XET") == "1"
@@ -450,7 +450,7 @@ def test_extension_header_decides_when_wheel_metadata_is_unreadable(monkeypatch,
     extension = package / ("hf_xet" + importlib.machinery.EXTENSION_SUFFIXES[0])
     extension.write_bytes(_compiled_object("pe", 0x8664))  # x86-64 binary
 
-    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package = True)
+    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package=True)
     spec.submodule_search_locations = [str(package)]
 
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ())
@@ -467,7 +467,7 @@ def test_extension_header_is_not_consulted_when_the_wheel_tag_is_readable(monkey
     (package / ("hf_xet" + importlib.machinery.EXTENSION_SUFFIXES[0])).write_bytes(
         _compiled_object("pe", 0x8664)
     )
-    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package = True)
+    spec = importlib.machinery.ModuleSpec("hf_xet", None, is_package=True)
     spec.submodule_search_locations = [str(package)]
 
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("macosx_10_9_universal2",))
@@ -480,7 +480,7 @@ def test_never_overrides_an_explicit_setting(monkeypatch, user_value):
     monkeypatch.setenv("HF_HUB_DISABLE_XET", user_value)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
 
     IF.fix_broken_hf_xet_wheel()
     assert IF.os.environ["HF_HUB_DISABLE_XET"] == user_value
@@ -511,7 +511,7 @@ def test_an_explicit_enable_is_never_carried_through(monkeypatch, user_value):
     monkeypatch.setenv("HF_HUB_DISABLE_XET", user_value)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
     modules = _fake_hub_modules(monkeypatch, {"": _UNBOUND, "constants": False})
 
     IF.fix_broken_hf_xet_wheel()
@@ -540,10 +540,10 @@ _UNBOUND = object()
 def test_patches_the_frozen_constant_when_the_hub_is_already_imported(monkeypatch):
     """REGRESSION. huggingface_hub >= 0.34 evaluates HF_HUB_DISABLE_XET once, at import time, so
     for a user whose script starts with `import transformers` the variable alone fixes nothing."""
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
     modules = _fake_hub_modules(monkeypatch, {"": _UNBOUND, "constants": False})
 
     IF.fix_broken_hf_xet_wheel()
@@ -559,10 +559,10 @@ def test_patches_every_module_that_binds_the_flag(monkeypatch):
     `from .constants import HF_HUB_DISABLE_XET` would hold its own copy that patching constants.py
     could not reach. Today constants.py is the only binding that exists.
     """
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
     modules = _fake_hub_modules(
         monkeypatch,
         {
@@ -591,10 +591,10 @@ def test_does_not_invent_the_flag_on_hub_versions_that_never_had_it(monkeypatch)
     """Before 0.34 the Hub read os.environ per call, so the variable alone is the whole fix and
     creating the attribute would put a value into a namespace upstream does not own.
     """
-    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
+    monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
     _fake_host(monkeypatch, "win-arm64")
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
-    _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE)
+    _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE)
     modules = _fake_hub_modules(monkeypatch, {"": _UNBOUND, "constants": _UNBOUND})
 
     IF.fix_broken_hf_xet_wheel()
@@ -606,9 +606,9 @@ def test_does_not_invent_the_flag_on_hub_versions_that_never_had_it(monkeypatch)
 def test_does_not_import_huggingface_hub_just_to_patch_it(monkeypatch):
     """The normal ordering. Nothing is frozen yet, and importing the Hub here would move its cost
     into every unsloth import."""
-    monkeypatch.delitem(sys.modules, "huggingface_hub", raising = False)
+    monkeypatch.delitem(sys.modules, "huggingface_hub", raising=False)
     for name in [n for n in sys.modules if n.startswith("huggingface_hub.")]:
-        monkeypatch.delitem(sys.modules, name, raising = False)
+        monkeypatch.delitem(sys.modules, name, raising=False)
 
     assert IF._disable_xet_on_already_imported_huggingface_hub() == ()
     assert "huggingface_hub" not in sys.modules
@@ -621,15 +621,15 @@ def test_leaves_the_frozen_constant_alone_when_the_fix_does_not_fire(monkeypatch
     monkeypatch.setattr(IF, "_hf_xet_wheel_platform_tags", lambda: ("win_amd64",))
 
     if scenario == "healthy":
-        monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
-        _install_fake_environment(monkeypatch, hf_xet_present = True, import_error = None)
+        monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
+        _install_fake_environment(monkeypatch, hf_xet_present=True, import_error=None)
     elif scenario == "absent":
-        monkeypatch.delenv("HF_HUB_DISABLE_XET", raising = False)
-        _install_fake_environment(monkeypatch, hf_xet_present = False, import_error = None)
+        monkeypatch.delenv("HF_HUB_DISABLE_XET", raising=False)
+        _install_fake_environment(monkeypatch, hf_xet_present=False, import_error=None)
     else:
         monkeypatch.setenv("HF_HUB_DISABLE_XET", "0")
         _install_fake_environment(
-            monkeypatch, hf_xet_present = True, import_error = _WRONG_ARCHITECTURE
+            monkeypatch, hf_xet_present=True, import_error=_WRONG_ARCHITECTURE
         )
 
     IF.fix_broken_hf_xet_wheel()
@@ -672,7 +672,7 @@ def test_patching_survives_hostile_modules(monkeypatch):
 
 def test_runs_before_anything_imports_huggingface_hub():
     source = (Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     assert "fix_broken_hf_xet_wheel()" in source, (
         "DRIFT DETECTED: fix_broken_hf_xet_wheel is defined but never called in _gpu_init.py, "
@@ -688,7 +688,7 @@ def test_is_the_very_first_import_fix_called():
     """Survives refactoring, unlike the pairwise check above: a fix added later could freeze
     HF_HUB_DISABLE_XET before we set it with no failure anywhere to say so."""
     gpu_init = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    source = gpu_init.read_text(encoding = "utf-8")
+    source = gpu_init.read_text(encoding="utf-8")
 
     imported = source.split("from .import_fixes import (", 1)[1].split(")", 1)[0]
     names = [line.strip().rstrip(",") for line in imported.splitlines() if line.strip()]

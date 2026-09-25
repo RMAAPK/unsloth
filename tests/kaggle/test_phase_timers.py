@@ -46,7 +46,7 @@ def test_an_unattached_timer_reports_none_not_zero(monkeypatch):
     must be None: a report showing 0.0 is indistinguishable from a warm cache,
     and one of those is a measurement while the other is a broken instrument."""
     monkeypatch.setitem(sys.modules, "huggingface_hub", types.ModuleType("huggingface_hub"))
-    monkeypatch.delitem(sys.modules, "transformers.utils.hub", raising = False)
+    monkeypatch.delitem(sys.modules, "transformers.utils.hub", raising=False)
     timer = FetchTimer().install()
     try:
         assert timer.patched == []
@@ -70,7 +70,8 @@ def test_a_real_download_is_timed_and_sized(hub, tmp_path):
     hub.hf_hub_download = slow_download
     with FetchTimer() as timer:
         import huggingface_hub
-        huggingface_hub.hf_hub_download(repo_id = "org/model")
+
+        huggingface_hub.hf_hub_download(repo_id="org/model")
     record = timer.record(1.0)
     assert record["calls"] == 1
     assert record["fetch_seconds"] >= 0.0
@@ -91,6 +92,7 @@ def test_nested_calls_are_not_counted_twice(hub, tmp_path):
 
     def outer(*_a, **_k):
         import huggingface_hub
+
         for _ in range(3):
             huggingface_hub.hf_hub_download()
         return str(tmp_path)
@@ -102,7 +104,7 @@ def test_nested_calls_are_not_counted_twice(hub, tmp_path):
         import huggingface_hub
 
         started = time.time()
-        huggingface_hub.snapshot_download(repo_id = "org/model")
+        huggingface_hub.snapshot_download(repo_id="org/model")
         elapsed = time.time() - started
 
     assert timer.calls == 4, "every call is counted"
@@ -146,6 +148,7 @@ def test_the_split_never_reports_a_negative_weight_load(hub, tmp_path):
     hub.hf_hub_download = slow
     with FetchTimer() as timer:
         import huggingface_hub
+
         huggingface_hub.hf_hub_download()
     record = timer.record(0.05)
     assert record["weight_load_seconds"] == 0.0
@@ -260,7 +263,7 @@ def test_every_leg_ships_the_module():
 
 def test_the_payload_actually_calls_the_timer():
     """A module shipped and never used is coverage that does nothing."""
-    src = (PAYLOAD / "run_t4_smoke.py").read_text(encoding = "utf-8")
+    src = (PAYLOAD / "run_t4_smoke.py").read_text(encoding="utf-8")
     assert "from phase_timers import FetchTimer" in src
     assert "with FetchTimer() as fetch_timer:" in src
     assert '"load_phases": load_phases' in src

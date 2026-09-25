@@ -42,7 +42,7 @@ import pytest
 
 # daily-fresh-fetch collects this directory with only pytest installed.
 if importlib.util.find_spec("torch") is None:
-    pytest.skip("torch not installed", allow_module_level = True)
+    pytest.skip("torch not installed", allow_module_level=True)
 
 # Unsloth refuses to import without a torch accelerator, so the GPU-less runner needs the same spoof the sibling CPU
 # canaries use. Must precede any unsloth import, which is why it sits at module scope rather than in a fixture.
@@ -64,7 +64,7 @@ def test_sft_loss_type_default_is_nll_after_unsloth_patch():
     if not hasattr(trl.SFTConfig, "loss_type"):
         pytest.skip("this TRL has no SFTConfig.loss_type")
 
-    cfg = trl.SFTConfig(output_dir = "unused")
+    cfg = trl.SFTConfig(output_dir="unused")
     assert cfg.loss_type == "nll", (
         f"SFTConfig.loss_type resolved to {cfg.loss_type!r}, expected 'nll'. "
         "If TRL changed its default again, update the sft_trainer replacement in "
@@ -83,7 +83,7 @@ def test_loss_type_replacement_did_not_leak_to_other_trainers():
         cfg_cls = getattr(trl, name, None)
         if cfg_cls is None or not hasattr(cfg_cls, "loss_type"):
             continue
-        got = cfg_cls(output_dir = "unused").loss_type
+        got = cfg_cls(output_dir="unused").loss_type
         assert got == want, (
             f"{name}.loss_type is {got!r}, expected {want!r}. A loss_type "
             "replacement leaked out of the sft_trainer branch in rl.py."
@@ -97,7 +97,7 @@ def test_explicit_loss_type_still_wins():
 
     if not hasattr(trl.SFTConfig, "loss_type"):
         pytest.skip("this TRL has no SFTConfig.loss_type")
-    cfg = trl.SFTConfig(output_dir = "unused", loss_type = "chunked_nll")
+    cfg = trl.SFTConfig(output_dir="unused", loss_type="chunked_nll")
     assert cfg.loss_type == "chunked_nll", "explicit loss_type was clobbered"
 
 
@@ -127,7 +127,7 @@ def test_pristine_trl_sft_config_default_is_nll_too():
     if not hasattr(pristine, "loss_type"):
         pytest.skip("this TRL has no SFTConfig.loss_type")
 
-    got = pristine(output_dir = "unused").loss_type
+    got = pristine(output_dir="unused").loss_type
     assert got == "nll", (
         f"pristine {pristine.__name__}.loss_type resolved to {got!r}, expected "
         "'nll'. _pin_pristine_sft_loss_type in unsloth/models/rl.py stopped "
@@ -145,7 +145,7 @@ def test_pristine_trl_sft_config_keeps_an_explicit_loss_type():
         pytest.skip("this TRL has no SFTConfig.loss_type")
 
     for wanted in ("chunked_nll", "dft"):
-        got = pristine(output_dir = "unused", loss_type = wanted).loss_type
+        got = pristine(output_dir="unused", loss_type=wanted).loss_type
         assert got == wanted, f"explicit loss_type {wanted!r} was clobbered to {got!r}"
 
 
@@ -305,7 +305,7 @@ def test_rl_py_scopes_loss_type_to_sft_trainer():
             if node not in [
                 n
                 for b in (parent.body, parent.orelse)
-                for n in ast.walk(ast.Module(body = b, type_ignores = []))
+                for n in ast.walk(ast.Module(body=b, type_ignores=[]))
             ]:
                 continue
             if "trainer_file" in ast.dump(parent.test):

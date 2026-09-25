@@ -106,7 +106,7 @@ def _curve_modulation_forward(self: Any, temb: Any) -> tuple:
     if out_dtype is not None:
         temb = temb.to(out_dtype)
     temb = temb.view(-1, 6 * self.hidden_size)
-    return temb.chunk(6, dim = -1)
+    return temb.chunk(6, dim=-1)
 
 
 def _curve_norm_out_forward(self: Any, hidden_states: Any, temb: Any, timestep_indices: Any) -> Any:
@@ -115,7 +115,7 @@ def _curve_norm_out_forward(self: Any, hidden_states: Any, temb: Any, timestep_i
     No cast down here, unlike the block modulation: the reference's final layer also consumes its
     shift/scale at their own precision, and the model's forward sends this result straight into the
     float32 output heads, so promoting is what the dense path effectively does too."""
-    shift, scale = self.linear(temb.to(self.linear.weight.dtype)).chunk(2, dim = -1)
+    shift, scale = self.linear(temb.to(self.linear.weight.dtype)).chunk(2, dim=-1)
     hidden_states = self.norm(hidden_states)
     return hidden_states * (1.0 + scale.index_select(0, timestep_indices)) + shift.index_select(
         0, timestep_indices
@@ -138,14 +138,14 @@ def _build_curve_time_embedder(curve_grid: int, curve_dim: int) -> Any:
             # Persistent: this IS the checkpoint's `time_embedder.table` entry, assigned by load_state_dict. float32
             # like the reference; the curve is a smooth low-amplitude signal whose differences drive every block's
             # modulation.
-            self.register_buffer("table", torch.empty(curve_grid, curve_dim, dtype = torch.float32))
+            self.register_buffer("table", torch.empty(curve_grid, curve_dim, dtype=torch.float32))
             # The model's forward reads `self.time_embedder.linear_1.weight.dtype` to decide what to cast the timestep
             # to. The dense module has that Linear; this one does not, so expose a NON-PERSISTENT stand-in carrying only
             # the dtype. Non-persistent keeps it out of the state dict, so `strict = True` still matches the checkpoint
             # exactly.
             self.linear_1 = nn.Module()
             self.linear_1.register_buffer(
-                "weight", torch.zeros(1, dtype = torch.float32), persistent = False
+                "weight", torch.zeros(1, dtype=torch.float32), persistent=False
             )
 
         def forward(self, timestep: Any) -> Any:
@@ -153,7 +153,7 @@ def _build_curve_time_embedder(curve_grid: int, curve_dim: int) -> Any:
             grid = table.shape[0]
             # Out-of-range timesteps clamp to the curve's ends rather than extrapolating.
             pos = timestep.to(torch.float32).clamp(0.0, 1.0) * (grid - 1)
-            i0 = pos.floor().long().clamp(max = grid - 2)
+            i0 = pos.floor().long().clamp(max=grid - 2)
             return torch.lerp(table[i0], table[i0 + 1], (pos - i0).unsqueeze(1))
 
     return _MiniMaxH3CurveTimeEmbedder()
@@ -213,7 +213,8 @@ def apply_h3_adaln_curve(
         if not isinstance(linear, nn.Linear):
             raise ValueError(f"MiniMax-H3 curve conversion expected a Linear at {where}.")
         import torch
-        return nn.Linear(curve_dim, linear.out_features, bias = linear.bias is not None).to(
+
+        return nn.Linear(curve_dim, linear.out_features, bias=linear.bias is not None).to(
             torch.float32
         )
 
@@ -259,6 +260,6 @@ def h3_prepare_prequant_model(logger: Any = None) -> Any:
     ``apply_h3_adaln_curve`` to the callback's ``(transformer, metadata)`` shape."""
 
     def _prepare(transformer: Any, metadata: Optional[dict]) -> None:
-        apply_h3_adaln_curve(transformer, metadata, logger = logger)
+        apply_h3_adaln_curve(transformer, metadata, logger=logger)
 
     return _prepare

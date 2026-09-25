@@ -50,7 +50,7 @@ class TestTheResolver:
 
     def test_a_build_without_the_flag_is_off(self):
         """No flag emitted, so the padded, f16-floored arm is the right price."""
-        assert _planned_flash_attn_state(supports_flash_attn = False) is False
+        assert _planned_flash_attn_state(supports_flash_attn=False) is False
 
     @pytest.mark.parametrize(
         "extras",
@@ -69,16 +69,16 @@ class TestTheResolver:
 
     def test_the_environment_loses_to_the_managed_flag(self):
         """The env is read before argv (arg.cpp set_env), so the managed on wins."""
-        assert _planned_flash_attn_state(env = {"LLAMA_ARG_FLASH_ATTN": "0"}) is True
+        assert _planned_flash_attn_state(env={"LLAMA_ARG_FLASH_ATTN": "0"}) is True
 
     def test_a_user_off_still_beats_the_managed_flag(self):
         """Order of authority: environment, managed flag, then the user's extras."""
-        assert _planned_flash_attn_state(["-fa", "off"], env = {"LLAMA_ARG_FLASH_ATTN": "0"}) is False
-        assert _planned_flash_attn_state(["-fa", "off"], env = {}) is False
+        assert _planned_flash_attn_state(["-fa", "off"], env={"LLAMA_ARG_FLASH_ATTN": "0"}) is False
+        assert _planned_flash_attn_state(["-fa", "off"], env={}) is False
 
     def test_the_extras_beat_the_environment(self):
         assert (
-            _planned_flash_attn_state(["--flash-attn", "on"], env = {"LLAMA_ARG_FLASH_ATTN": "0"})
+            _planned_flash_attn_state(["--flash-attn", "on"], env={"LLAMA_ARG_FLASH_ATTN": "0"})
             is True
         )
 
@@ -86,14 +86,14 @@ class TestTheResolver:
     def test_a_quantized_v_cache_forces_it_on(self, v_type):
         """llama.cpp turns it on itself, so an explicit off does not survive."""
         assert (
-            _planned_flash_attn_state(["--flash-attn", "off"], planned_cache_types = ("f16", v_type))
+            _planned_flash_attn_state(["--flash-attn", "off"], planned_cache_types=("f16", v_type))
             is True
         )
 
     @pytest.mark.parametrize("v_type", ["f16", "bf16", "f32"])
     def test_an_unquantized_v_cache_forces_nothing(self, v_type):
         assert (
-            _planned_flash_attn_state(["--flash-attn", "off"], planned_cache_types = ("f16", v_type))
+            _planned_flash_attn_state(["--flash-attn", "off"], planned_cache_types=("f16", v_type))
             is False
         )
 
@@ -101,7 +101,7 @@ class TestTheResolver:
         """The launch rewrites V to f16 instead, so forcing "on" would under-reserve."""
         assert (
             _planned_flash_attn_state(
-                planned_cache_types = ("q8_0", "q8_0"), supports_flash_attn = False
+                planned_cache_types=("q8_0", "q8_0"), supports_flash_attn=False
             )
             is False
         )
@@ -110,8 +110,8 @@ class TestTheResolver:
 def _tensor_backend(tmp_path, *, free_mib: int):
     backend, gguf = _placement._backend(
         tmp_path,
-        vulkan = False,
-        memory = [(0, free_mib, free_mib), (1, free_mib, free_mib)],
+        vulkan=False,
+        memory=[(0, free_mib, free_mib), (1, free_mib, free_mib)],
     )
     # The harness turns KV estimation off; seed a real shape (Qwen3-0.6B) for arithmetic.
     backend._can_estimate_kv = lambda: True
@@ -143,9 +143,9 @@ class TestTheTensorPlanPricesTheLaunch:
     """A pool too small at f16-priced V and large enough once V is priced as launched."""
 
     def test_the_planned_context_matches_the_emitted_flash_attention(self, tmp_path):
-        backend, gguf = _tensor_backend(tmp_path, free_mib = 12000)
+        backend, gguf = _tensor_backend(tmp_path, free_mib=12000)
         captured = _placement._launch(
-            backend, gguf, n_ctx = NATIVE, cache_type_kv = "q8_0", tensor_parallel = True
+            backend, gguf, n_ctx=NATIVE, cache_type_kv="q8_0", tensor_parallel=True
         )
         cmd = captured["cmd"]
         assert _flash_attn_in(cmd), "the launch emits flash attention"
@@ -156,17 +156,17 @@ class TestTheTensorPlanPricesTheLaunch:
             [(0, 12000), (1, 12000)],
             4 * GB,
             NATIVE,
-            cache_type_kv = "q8_0",
-            max_target_ctx = NATIVE,
-            flash_attn = False,
+            cache_type_kv="q8_0",
+            max_target_ctx=NATIVE,
+            flash_attn=False,
         )[0]
         optimistic = backend._plan_tensor_parallel(
             [(0, 12000), (1, 12000)],
             4 * GB,
             NATIVE,
-            cache_type_kv = "q8_0",
-            max_target_ctx = NATIVE,
-            flash_attn = True,
+            cache_type_kv="q8_0",
+            max_target_ctx=NATIVE,
+            flash_attn=True,
         )[0]
         assert pessimistic < optimistic, "harness no longer straddles the difference"
         assert planned > pessimistic, (
@@ -177,33 +177,33 @@ class TestTheTensorPlanPricesTheLaunch:
 
     def test_the_published_ceiling_is_the_same_number(self, tmp_path):
         """max_context_length is what the context warning compares against."""
-        backend, gguf = _tensor_backend(tmp_path, free_mib = 12000)
+        backend, gguf = _tensor_backend(tmp_path, free_mib=12000)
         captured = _placement._launch(
-            backend, gguf, n_ctx = NATIVE, cache_type_kv = "q8_0", tensor_parallel = True
+            backend, gguf, n_ctx=NATIVE, cache_type_kv="q8_0", tensor_parallel=True
         )
         assert backend.max_context_length == _ctx_of(captured["cmd"])
 
     def test_an_unquantized_cache_is_unaffected(self, tmp_path):
         """On the arithmetic, not a hand-built plan: the loader charges extra overheads."""
-        backend, gguf = _tensor_backend(tmp_path, free_mib = 12000)
+        backend, gguf = _tensor_backend(tmp_path, free_mib=12000)
         captured = _placement._launch(
-            backend, gguf, n_ctx = NATIVE, cache_type_kv = "f16", tensor_parallel = True
+            backend, gguf, n_ctx=NATIVE, cache_type_kv="f16", tensor_parallel=True
         )
         planned = _ctx_of(captured["cmd"])
         assert backend._estimate_kv_cache_bytes(
-            planned, "f16", flash_attn = True
-        ) == backend._estimate_kv_cache_bytes(planned, "f16", flash_attn = False)
+            planned, "f16", flash_attn=True
+        ) == backend._estimate_kv_cache_bytes(planned, "f16", flash_attn=False)
 
 
 class TestTheSizingCallsSeeTheResolvedState:
     def _seen_flash_attn(self, tmp_path, **load_kwargs):
-        backend, gguf = _tensor_backend(tmp_path, free_mib = 12000)
+        backend, gguf = _tensor_backend(tmp_path, free_mib=12000)
         seen: list[object] = []
         real = backend._estimate_kv_cache_bytes
 
         def spy(
             n_ctx,
-            cache_type_kv = None,
+            cache_type_kv=None,
             **kwargs,
         ):
             seen.append(kwargs.get("flash_attn"))
@@ -216,7 +216,7 @@ class TestTheSizingCallsSeeTheResolvedState:
 
     def test_a_quantized_cache_is_priced_with_flash_attention_on(self, tmp_path):
         seen = self._seen_flash_attn(
-            tmp_path, n_ctx = NATIVE, cache_type_kv = "q8_0", tensor_parallel = True
+            tmp_path, n_ctx=NATIVE, cache_type_kv="q8_0", tensor_parallel=True
         )
         assert all(state is True for state in seen), (
             f"the load priced its KV cache with flash_attn states {sorted(set(map(str, seen)))} "
@@ -226,9 +226,9 @@ class TestTheSizingCallsSeeTheResolvedState:
     def test_an_explicit_off_in_the_extras_is_priced_off(self, tmp_path):
         seen = self._seen_flash_attn(
             tmp_path,
-            n_ctx = NATIVE,
-            cache_type_kv = "f16",
-            extra_args = ["--flash-attn", "off"],
+            n_ctx=NATIVE,
+            cache_type_kv="f16",
+            extra_args=["--flash-attn", "off"],
         )
         assert all(state is False for state in seen)
 
@@ -257,15 +257,15 @@ class TestAutoIsNotAnAnswer:
 
     def test_an_inherited_auto_is_overridden_by_the_managed_flag(self):
         """The managed flag is appended after the env is read, so only a USER auto survives."""
-        assert _planned_flash_attn_state(None, env = {"LLAMA_ARG_FLASH_ATTN": "auto"}) is True
+        assert _planned_flash_attn_state(None, env={"LLAMA_ARG_FLASH_ATTN": "auto"}) is True
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], env = {"LLAMA_ARG_FLASH_ATTN": "1"}) is False
+            _planned_flash_attn_state(["-fa", "auto"], env={"LLAMA_ARG_FLASH_ATTN": "1"}) is False
         )
         assert (
-            _planned_flash_attn_state(["-fa", "on"], env = {"LLAMA_ARG_FLASH_ATTN": "auto"}) is True
+            _planned_flash_attn_state(["-fa", "on"], env={"LLAMA_ARG_FLASH_ATTN": "auto"}) is True
         )
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], env = {"LLAMA_ARG_FLASH_ATTN": "1"}) is False
+            _planned_flash_attn_state(["-fa", "auto"], env={"LLAMA_ARG_FLASH_ATTN": "1"}) is False
         )
 
     def test_the_last_flag_still_wins(self):
@@ -274,29 +274,29 @@ class TestAutoIsNotAnAnswer:
 
     def test_a_quantized_v_cache_still_forces_it_on(self):
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], planned_cache_types = ("q8_0", "q4_0")) is True
+            _planned_flash_attn_state(["-fa", "auto"], planned_cache_types=("q8_0", "q4_0")) is True
         )
 
     def test_tensor_split_decides_auto_rather_than_leaving_it_open(self):
         """llama.cpp upgrades AUTO to ENABLED under SPLIT_MODE_TENSOR, so pricing the
         padded V there charges a cache the child never allocates."""
         # The three ways the launch decides the mode: toggle, extras, inherited env.
-        assert _planned_flash_attn_state(["-fa", "auto"], tensor_parallel = True) is True
-        assert _planned_flash_attn_state(["-fa", "auto", "--split-mode", "tensor"], env = {}) is True
+        assert _planned_flash_attn_state(["-fa", "auto"], tensor_parallel=True) is True
+        assert _planned_flash_attn_state(["-fa", "auto", "--split-mode", "tensor"], env={}) is True
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], env = {"LLAMA_ARG_SPLIT_MODE": "tensor"})
+            _planned_flash_attn_state(["-fa", "auto"], env={"LLAMA_ARG_SPLIT_MODE": "tensor"})
             is True
         )
         # An extras split mode last-wins over the toggle, so layer stays undecided.
         assert (
             _planned_flash_attn_state(
-                ["-fa", "auto", "--split-mode", "layer"], tensor_parallel = True, env = {}
+                ["-fa", "auto", "--split-mode", "layer"], tensor_parallel=True, env={}
             )
             is False
         )
-        assert _planned_flash_attn_state(["-fa", "auto"], env = {}) is False
+        assert _planned_flash_attn_state(["-fa", "auto"], env={}) is False
         # A user OFF is not silently flipped on: refusing the pair is the launch's job.
-        assert _planned_flash_attn_state(["-fa", "off"], tensor_parallel = True) is False
+        assert _planned_flash_attn_state(["-fa", "off"], tensor_parallel=True) is False
 
     def test_the_managed_launch_is_unaffected(self):
         assert _planned_flash_attn_state(None) is True
@@ -444,16 +444,16 @@ class TestTheReserveWhenTheFitterIsOff:
         from core.inference.llama_cpp import _reserved_flash_attn_state
 
         # The ordinary managed launch is unchanged: fitting is on, so the respawn re-places.
-        assert _reserved_flash_attn_state(True, None, env = {}) is True
-        assert _reserved_flash_attn_state(True, ["--ctx-size", "4096"], env = {}) is True
+        assert _reserved_flash_attn_state(True, None, env={}) is True
+        assert _reserved_flash_attn_state(True, ["--ctx-size", "4096"], env={}) is True
         # With the fitter off, the respawn lands on the placement this reserve chose.
-        assert _reserved_flash_attn_state(True, ["--fit", "off"], env = {}) is False
-        assert _reserved_flash_attn_state(True, ["--fit=off"], env = {}) is False
-        assert _reserved_flash_attn_state(True, None, env = {"LLAMA_ARG_FIT": "off"}) is False
+        assert _reserved_flash_attn_state(True, ["--fit", "off"], env={}) is False
+        assert _reserved_flash_attn_state(True, ["--fit=off"], env={}) is False
+        assert _reserved_flash_attn_state(True, None, env={"LLAMA_ARG_FIT": "off"}) is False
         # Last-wins, like every other flag: a later --fit on is the state that runs.
-        assert _reserved_flash_attn_state(True, ["--fit", "off", "--fit", "on"], env = {}) is True
+        assert _reserved_flash_attn_state(True, ["--fit", "off", "--fit", "on"], env={}) is True
         assert (
-            _reserved_flash_attn_state(True, ["--fit", "on"], env = {"LLAMA_ARG_FIT": "off"}) is True
+            _reserved_flash_attn_state(True, ["--fit", "on"], env={"LLAMA_ARG_FIT": "off"}) is True
         )
 
     def test_tensor_mode_keeps_its_answer(self):
@@ -462,10 +462,10 @@ class TestTheReserveWhenTheFitterIsOff:
         from core.inference.llama_cpp import _reserved_flash_attn_state
 
         assert (
-            _reserved_flash_attn_state(True, ["--fit", "off"], tensor_parallel = True, env = {}) is True
+            _reserved_flash_attn_state(True, ["--fit", "off"], tensor_parallel=True, env={}) is True
         )
         assert (
-            _reserved_flash_attn_state(True, ["--fit", "off", "--split-mode", "tensor"], env = {})
+            _reserved_flash_attn_state(True, ["--fit", "off", "--split-mode", "tensor"], env={})
             is True
         )
 
@@ -473,8 +473,8 @@ class TestTheReserveWhenTheFitterIsOff:
         """This only holds a reading DOWN; an off is already the conservative one."""
         from core.inference.llama_cpp import _reserved_flash_attn_state
 
-        assert _reserved_flash_attn_state(False, ["--fit", "off"], env = {}) is False
-        assert _reserved_flash_attn_state(False, None, env = {}) is False
+        assert _reserved_flash_attn_state(False, ["--fit", "off"], env={}) is False
+        assert _reserved_flash_attn_state(False, None, env={}) is False
 
     def test_the_load_reserves_through_it(self):
         import inspect
@@ -539,6 +539,6 @@ class TestTheReplanIsAuthoritative:
         inherited = {"LLAMA_ARG_SPLIT_MODE": "tensor"}
         # The state the re-plan used to resolve: a downgraded toggle, a tensor environment.
         assert (
-            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel = False, env = inherited) is True
+            _planned_flash_attn_state(["-fa", "auto"], tensor_parallel=False, env=inherited) is True
         )
-        assert _planned_flash_attn_state(["-fa", "auto"], tensor_parallel = False, env = {}) is False
+        assert _planned_flash_attn_state(["-fa", "auto"], tensor_parallel=False, env={}) is False

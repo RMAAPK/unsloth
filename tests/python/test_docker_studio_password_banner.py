@@ -34,13 +34,13 @@ LAUNCH = DOCKER / "studio_launch.sh"
 SUPERVISORD = DOCKER / "supervisord.conf"
 DOCKERFILE = DOCKER / "Dockerfile.studio"
 
-behavioural = pytest.mark.skipif(shutil.which("bash") is None, reason = "needs bash")
+behavioural = pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
 
 
 def _stub(bin_dir: Path, name: str, body: str) -> None:
-    bin_dir.mkdir(exist_ok = True)
+    bin_dir.mkdir(exist_ok=True)
     path = bin_dir / name
-    path.write_text("#!/usr/bin/env bash\n" + body, encoding = "utf-8")
+    path.write_text("#!/usr/bin/env bash\n" + body, encoding="utf-8")
     path.chmod(0o755)
 
 
@@ -59,7 +59,7 @@ def _auth_db(
     """auth.db as the backend creates it; None = the file exists but no admin row;
     legacy = the schema from before must_change_password existed."""
     auth = home / "auth"
-    auth.mkdir(exist_ok = True)
+    auth.mkdir(exist_ok=True)
     conn = sqlite3.connect(auth / "auth.db")
     conn.execute(
         "CREATE TABLE IF NOT EXISTS auth_user (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, "
@@ -102,16 +102,16 @@ def _run(
     )
     e = _clean_env(bin_dir)
     e.update(
-        UNSLOTH_STUDIO_HOME = str(home),
-        UNSLOTH_STUDIO_PASSWORD_WAIT = wait,
-        UNSLOTH_STUDIO_READY_WAIT = "2",
+        UNSLOTH_STUDIO_HOME=str(home),
+        UNSLOTH_STUDIO_PASSWORD_WAIT=wait,
+        UNSLOTH_STUDIO_READY_WAIT="2",
         # The summary is coloured, which splits the lines these tests match on.
         # Assert the text here and the colour in its own test below, so a change
         # to either one fails for the right reason.
-        NO_COLOR = "1",
+        NO_COLOR="1",
     )
     e.update(env or {})
-    return subprocess.run(["bash", str(SCRIPT)], capture_output = True, text = True, env = e, timeout = 60)
+    return subprocess.run(["bash", str(SCRIPT)], capture_output=True, text=True, env=e, timeout=60)
 
 
 @behavioural
@@ -123,8 +123,8 @@ def test_the_generated_password_is_printed_once_studio_writes_it(tmp_path: Path)
         time.sleep(1.0)
         (auth / ".bootstrap_password").write_bytes(b"s3cret pass\n")
 
-    threading.Thread(target = _studio_writes_it_later).start()
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD_STATE": "generated"})
+    threading.Thread(target=_studio_writes_it_later).start()
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD_STATE": "generated"})
     assert res.returncode == 0, res.stderr
     assert "username: unsloth" in res.stdout
     assert "password: s3cret pass" in res.stdout, res.stdout
@@ -151,8 +151,8 @@ def test_a_stale_file_from_an_interrupted_launch_is_not_printed(tmp_path: Path):
         (auth / ".bootstrap_password").write_bytes(b"fresh one\n")
         (tmp_path / "not-initialized").unlink()
 
-    threading.Thread(target = _next_launch_replaces_it).start()
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD_STATE": "generated"}, wait = "10")
+    threading.Thread(target=_next_launch_replaces_it).start()
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD_STATE": "generated"}, wait="10")
     assert "password: fresh one" in res.stdout, res.stdout
     assert "stale one" not in res.stdout
 
@@ -161,7 +161,7 @@ def test_a_stale_file_from_an_interrupted_launch_is_not_printed(tmp_path: Path):
 def test_the_summary_carries_the_jupyter_note_and_port(tmp_path: Path):
     res = _run(
         tmp_path,
-        env = {
+        env={
             "UNSLOTH_STUDIO_PASSWORD_STATE": "initial",
             "JUPYTER_PORT": "9999",
             "UNSLOTH_JUPYTER_NOTE": "generated password: abc123",
@@ -175,7 +175,7 @@ def test_the_summary_carries_the_jupyter_note_and_port(tmp_path: Path):
 
 @behavioural
 def test_services_that_never_answer_are_reported_not_hidden(tmp_path: Path):
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD_STATE": "initial"}, services_up = False)
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD_STATE": "initial"}, services_up=False)
     assert res.returncode == 0
     assert "startup incomplete" in res.stdout, res.stdout
     assert res.stdout.count("not answering") == 2
@@ -186,8 +186,8 @@ def test_the_ready_probes_bypass_a_container_wide_proxy(tmp_path: Path):
     log = tmp_path / "curl.log"
     res = _run(
         tmp_path,
-        env = {"UNSLOTH_STUDIO_PASSWORD_STATE": "stored", "STUB_LOG": str(log)},
-        curl = 'echo "$*" >> "$STUB_LOG"\nexit 0\n',
+        env={"UNSLOTH_STUDIO_PASSWORD_STATE": "stored", "STUB_LOG": str(log)},
+        curl='echo "$*" >> "$STUB_LOG"\nexit 0\n',
     )
     assert res.returncode == 0, res.stderr
     calls = log.read_text().splitlines()
@@ -203,13 +203,13 @@ def test_the_jupyter_tunnel_probe_bypasses_a_container_wide_proxy(tmp_path: Path
     # the script's first candidate, so a real /usr/local/bin/cloudflared is never run
     _stub(tmp_path / "bin", "cloudflared", 'echo "STUB-CLOUDFLARED $*"\n')
     e = _clean_env(bin_dir)
-    e.update(UNSLOTH_JUPYTER_CLOUDFLARE = "1", UNSLOTH_STUDIO_HOME = str(tmp_path), STUB_LOG = str(log))
+    e.update(UNSLOTH_JUPYTER_CLOUDFLARE="1", UNSLOTH_STUDIO_HOME=str(tmp_path), STUB_LOG=str(log))
     res = subprocess.run(
         ["bash", str(DOCKER / "unsloth_jupyter_tunnel.sh")],
-        capture_output = True,
-        text = True,
-        env = e,
-        timeout = 60,
+        capture_output=True,
+        text=True,
+        env=e,
+        timeout=60,
     )
     assert res.returncode == 0, res.stderr
     assert "STUB-CLOUDFLARED tunnel" in res.stdout, res.stdout
@@ -233,7 +233,7 @@ def test_a_disabled_timeout_drops_the_shutdown_note(tmp_path: Path, value: str):
     auth = tmp_path / "auth"
     auth.mkdir()
     (auth / ".bootstrap_password").write_bytes(b"abc\n")
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
     assert "Unsloth Studio login -> username: unsloth   password: abc\n" in res.stdout, repr(
         res.stdout
     )
@@ -249,7 +249,7 @@ def test_a_malformed_timeout_keeps_the_note_like_the_backend_does(tmp_path: Path
     auth = tmp_path / "auth"
     auth.mkdir()
     (auth / ".bootstrap_password").write_bytes(b"abc\n")
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
     assert "60 minutes" in res.stdout, repr(res.stdout)
 
 
@@ -268,7 +268,7 @@ def test_the_timeout_is_reported_like_the_backend_formats_it(tmp_path: Path, val
     auth = tmp_path / "auth"
     auth.mkdir()
     (auth / ".bootstrap_password").write_bytes(b"abc\n")
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_BOOTSTRAP_TIMEOUT": value})
     assert f"stops after {text} with" in res.stdout, repr(res.stdout)
 
 
@@ -276,7 +276,7 @@ def test_the_timeout_is_reported_like_the_backend_formats_it(tmp_path: Path, val
 def test_an_initial_password_is_never_echoed(tmp_path: Path):
     res = _run(
         tmp_path,
-        env = {
+        env={
             "UNSLOTH_STUDIO_PASSWORD_STATE": "initial",
             "UNSLOTH_STUDIO_PASSWORD": "hunter22hunter",
         },
@@ -289,7 +289,7 @@ def test_an_initial_password_is_never_echoed(tmp_path: Path):
 @behavioural
 def test_a_stored_password_is_reported_at_once(tmp_path: Path):
     started = time.monotonic()
-    res = _run(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD_STATE": "stored"}, wait = "600")
+    res = _run(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD_STATE": "stored"}, wait="600")
     assert time.monotonic() - started < 20
     assert "already set on an earlier boot" in res.stdout, res.stdout
     assert "reset-password" in res.stdout
@@ -308,12 +308,12 @@ def _run_wrapper(
     # what supervisord would spawn: prints what the CLI would have been handed
     _stub(bin_dir, "unsloth", 'printf "%s|%s\\n" "${UNSLOTH_STUDIO_PASSWORD:-<unset>}" "$*"\n')
     e = _clean_env(home / "stub-bin")
-    (home / "stub-bin").mkdir(exist_ok = True)
+    (home / "stub-bin").mkdir(exist_ok=True)
     e["UNSLOTH_STUDIO_HOME"] = str(home)
     e["UNSLOTH_STUDIO_INITIAL_PASSWORD_FILE"] = str(home / "initial")
     e.update(env or {})
     return subprocess.run(
-        ["bash", str(RUN), *args], capture_output = True, text = True, env = e, timeout = 60
+        ["bash", str(RUN), *args], capture_output=True, text=True, env=e, timeout=60
     )
 
 
@@ -329,15 +329,15 @@ def test_stored_means_an_admin_row_whose_password_was_changed(
     changed, still accepts an initial password; only must_change_password=0 is
     "stored"."""
     if db == "empty":
-        _auth_db(tmp_path, must_change = None)
+        _auth_db(tmp_path, must_change=None)
     elif db == "seeded":
-        _auth_db(tmp_path, must_change = 1)
+        _auth_db(tmp_path, must_change=1)
     elif db == "changed":
-        _auth_db(tmp_path, must_change = 0)
+        _auth_db(tmp_path, must_change=0)
     elif db == "legacy":
         # the CLI migrates this row with default 0 and then rejects an initial password
-        _auth_db(tmp_path, must_change = None, legacy = True)
-    res = _run_wrapper(tmp_path, args = ["--stored"])
+        _auth_db(tmp_path, must_change=None, legacy=True)
+    res = _run_wrapper(tmp_path, args=["--stored"])
     assert (res.returncode == 0) is stored, res.stderr
 
 
@@ -348,14 +348,14 @@ def test_stored_means_an_admin_row_whose_password_was_changed(
 )
 def test_initialized_means_the_admin_row_is_committed(tmp_path: Path, db: str, initialized: bool):
     if db == "empty":
-        _auth_db(tmp_path, must_change = None)
+        _auth_db(tmp_path, must_change=None)
     elif db == "seeded":
-        _auth_db(tmp_path, must_change = 1)
+        _auth_db(tmp_path, must_change=1)
     elif db == "changed":
-        _auth_db(tmp_path, must_change = 0)
+        _auth_db(tmp_path, must_change=0)
     elif db == "legacy":
-        _auth_db(tmp_path, must_change = None, legacy = True)
-    res = _run_wrapper(tmp_path, args = ["--initialized"])
+        _auth_db(tmp_path, must_change=None, legacy=True)
+    res = _run_wrapper(tmp_path, args=["--initialized"])
     assert (res.returncode == 0) is initialized, res.stderr
 
 
@@ -365,14 +365,14 @@ def test_a_home_with_uri_characters_still_finds_the_database(tmp_path: Path):
     in the path ends the filename early and both checks then see no database."""
     home = tmp_path / "studio?x#y"
     home.mkdir()
-    _auth_db(home, must_change = 0)
-    assert _run_wrapper(home, args = ["--stored"]).returncode == 0
-    assert _run_wrapper(home, args = ["--initialized"]).returncode == 0
+    _auth_db(home, must_change=0)
+    assert _run_wrapper(home, args=["--stored"]).returncode == 0
+    assert _run_wrapper(home, args=["--initialized"]).returncode == 0
 
 
 @behavioural
 def test_the_first_spawn_applies_the_initial_password(tmp_path: Path):
-    (tmp_path / "initial").write_text("hunter22hunter", encoding = "utf-8")
+    (tmp_path / "initial").write_text("hunter22hunter", encoding="utf-8")
     res = _run_wrapper(tmp_path)
     assert res.stdout.strip() == "hunter22hunter|studio -H 0.0.0.0 -p 8000", res.stdout + res.stderr
 
@@ -381,16 +381,16 @@ def test_the_first_spawn_applies_the_initial_password(tmp_path: Path):
 def test_a_respawn_after_the_password_is_stored_gets_no_initial_password(tmp_path: Path):
     """The file is still there (the launcher writes it once per boot) and even a
     stray UNSLOTH_STUDIO_PASSWORD in the environment must not reach the CLI."""
-    (tmp_path / "initial").write_text("hunter22hunter", encoding = "utf-8")
-    _auth_db(tmp_path, must_change = 0)
-    res = _run_wrapper(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD": "hunter22hunter"})
+    (tmp_path / "initial").write_text("hunter22hunter", encoding="utf-8")
+    _auth_db(tmp_path, must_change=0)
+    res = _run_wrapper(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD": "hunter22hunter"})
     assert res.stdout.strip() == "<unset>|studio -H 0.0.0.0 -p 8000", res.stdout + res.stderr
 
 
 @behavioural
 def test_a_respawn_while_the_seeded_password_is_still_active_retries_it(tmp_path: Path):
-    (tmp_path / "initial").write_text("hunter22hunter", encoding = "utf-8")
-    _auth_db(tmp_path, must_change = 1)
+    (tmp_path / "initial").write_text("hunter22hunter", encoding="utf-8")
+    _auth_db(tmp_path, must_change=1)
     res = _run_wrapper(tmp_path)
     assert res.stdout.startswith("hunter22hunter|"), res.stdout + res.stderr
 
@@ -399,14 +399,14 @@ def test_a_respawn_while_the_seeded_password_is_still_active_retries_it(tmp_path
 def test_the_staged_password_reaches_the_cli_byte_for_byte(tmp_path: Path):
     """A secret injector may append a newline; the CLI, not the wrapper, decides what
     to make of it."""
-    (tmp_path / "initial").write_text("hunter22\n", encoding = "utf-8")
+    (tmp_path / "initial").write_text("hunter22\n", encoding="utf-8")
     res = _run_wrapper(tmp_path)
     assert res.stdout == "hunter22\n|studio -H 0.0.0.0 -p 8000\n", repr(res.stdout)
 
 
 @behavioural
 def test_no_file_means_no_initial_password(tmp_path: Path):
-    res = _run_wrapper(tmp_path, env = {"UNSLOTH_STUDIO_PASSWORD": "hunter22hunter"})
+    res = _run_wrapper(tmp_path, env={"UNSLOTH_STUDIO_PASSWORD": "hunter22hunter"})
     assert res.stdout.startswith("<unset>|"), res.stdout + res.stderr
 
 
@@ -415,7 +415,7 @@ def test_no_file_means_no_initial_password(tmp_path: Path):
 
 def _launcher_banner_block() -> str:
     """The banner decision, verbatim from studio_launch.sh."""
-    source = LAUNCH.read_text(encoding = "utf-8")
+    source = LAUNCH.read_text(encoding="utf-8")
     start = source.index("INITIAL_FILE=")
     end = source.index('echo "Unsloth Studio  ->', start)
     return source[start:end]
@@ -440,7 +440,7 @@ def _banner(tmp_path: Path, *, env_password: str | None, stored: bool) -> dict:
     if env_password is not None:
         env["UNSLOTH_STUDIO_PASSWORD"] = env_password
     res = subprocess.run(
-        ["bash", "-c", script], capture_output = True, text = True, env = env, timeout = 30
+        ["bash", "-c", script], capture_output=True, text=True, env=env, timeout=30
     )
     assert res.returncode == 0, res.stderr
     note, inherited, state = res.stdout.rstrip("\n").split("\n")
@@ -448,7 +448,7 @@ def _banner(tmp_path: Path, *, env_password: str | None, stored: bool) -> dict:
         "note": note,
         "inherited": inherited,
         "state": state,
-        "file": initial.read_text(encoding = "utf-8") if initial.exists() else None,
+        "file": initial.read_text(encoding="utf-8") if initial.exists() else None,
         "mode": (initial.stat().st_mode & 0o777) if initial.exists() else None,
     }
 
@@ -458,7 +458,7 @@ def test_the_initial_password_goes_to_a_private_file_not_supervisord(tmp_path: P
     """supervisord keeps its environment for every respawn of the studio program,
     and `unsloth studio` exits 1 when handed an initial password after one is
     stored; a crash or unsloth-studio-update restart then parked Studio in FATAL."""
-    got = _banner(tmp_path, env_password = "hunter22hunter", stored = False)
+    got = _banner(tmp_path, env_password="hunter22hunter", stored=False)
     assert got["inherited"] == "<unset>"
     assert got["file"] == "hunter22hunter"
     assert got["mode"] == 0o600
@@ -468,7 +468,7 @@ def test_the_initial_password_goes_to_a_private_file_not_supervisord(tmp_path: P
 
 @behavioural
 def test_a_stored_password_wins_over_the_env(tmp_path: Path):
-    got = _banner(tmp_path, env_password = "hunter22hunter", stored = True)
+    got = _banner(tmp_path, env_password="hunter22hunter", stored=True)
     assert got["inherited"] == "<unset>"
     assert got["file"] is None
     assert got["state"] == "stored"
@@ -477,7 +477,7 @@ def test_a_stored_password_wins_over_the_env(tmp_path: Path):
 
 @behavioural
 def test_a_fresh_home_without_the_env_generates(tmp_path: Path):
-    got = _banner(tmp_path, env_password = None, stored = False)
+    got = _banner(tmp_path, env_password=None, stored=False)
     assert got["inherited"] == "<unset>"
     assert got["file"] is None
     assert got["state"] == "generated"
@@ -485,7 +485,7 @@ def test_a_fresh_home_without_the_env_generates(tmp_path: Path):
 
 
 def test_the_image_wires_the_scripts_in():
-    conf = SUPERVISORD.read_text(encoding = "utf-8")
+    conf = SUPERVISORD.read_text(encoding="utf-8")
     assert "[program:studio-password]" in conf
     block = conf.split("[program:studio-password]", 1)[1].split("[program:", 1)[0]
     assert "autorestart=false" in block and "stdout_logfile=/dev/stdout" in block
@@ -494,9 +494,9 @@ def test_the_image_wires_the_scripts_in():
     # the bootstrap timeout ends Studio with exit 0; autorestart=true would bring it
     # straight back with the same default credential and a fresh timer
     assert "autorestart=unexpected" in studio and "exitcodes=0" in studio
-    dockerfile = DOCKERFILE.read_text(encoding = "utf-8")
+    dockerfile = DOCKERFILE.read_text(encoding="utf-8")
     # the Studio build uses context ./docker behind a deny-all .dockerignore
-    allow = (DOCKER / ".dockerignore").read_text(encoding = "utf-8").splitlines()
+    allow = (DOCKER / ".dockerignore").read_text(encoding="utf-8").splitlines()
     for script, target in (
         ("studio_password.sh", "unsloth-studio-password"),
         ("studio_run.sh", "unsloth-studio-run"),
@@ -506,7 +506,7 @@ def test_the_image_wires_the_scripts_in():
             f"/usr/local/bin/{target}" in dockerfile.split("RUN chmod +x", 1)[1].split("\n\n", 1)[0]
         )
         assert f"!{script}" in allow, f"COPY {script} has no source in the build context"
-    launch = LAUNCH.read_text(encoding = "utf-8")
+    launch = LAUNCH.read_text(encoding="utf-8")
     assert (
         "first-boot password below" not in launch
     ), "the banner promises what Studio no longer prints"
@@ -521,7 +521,7 @@ def test_the_summary_is_coloured_unless_no_color_is_set(tmp_path: Path):
     a, b = tmp_path / "a", tmp_path / "b"
     a.mkdir()
     b.mkdir()
-    coloured = _run(a, env = {**env, "NO_COLOR": ""})
-    plain = _run(b, env = env)
+    coloured = _run(a, env={**env, "NO_COLOR": ""})
+    plain = _run(b, env=env)
     assert "\033[1;32m" in coloured.stdout.replace("\x1b", "\033"), coloured.stdout
     assert "\x1b[" not in plain.stdout, plain.stdout

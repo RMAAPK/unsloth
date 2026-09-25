@@ -145,7 +145,7 @@ def adapter_update(before, after) -> dict:
     }
 
 
-def update_verdict(metrics, adapter = None) -> dict:
+def update_verdict(metrics, adapter=None) -> dict:
     """Was an optimizer update applied? ``applied`` / ``not_applied`` /
     ``non_finite`` / ``unverifiable``.
 

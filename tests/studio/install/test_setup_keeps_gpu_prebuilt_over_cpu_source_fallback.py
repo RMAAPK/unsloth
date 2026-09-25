@@ -24,10 +24,10 @@ import pytest
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 SETUP_SH = PACKAGE_ROOT / "studio" / "setup.sh"
-SETUP_TEXT = SETUP_SH.read_text(encoding = "utf-8")
+SETUP_TEXT = SETUP_SH.read_text(encoding="utf-8")
 
 BASH = shutil.which("bash")
-requires_bash = pytest.mark.skipif(BASH is None, reason = "a working bash is required")
+requires_bash = pytest.mark.skipif(BASH is None, reason="a working bash is required")
 
 _FUNCTIONS = (
     "_has_local_llama_server() {",
@@ -58,7 +58,7 @@ def _sliced_functions(tmp_path):
         end = SETUP_TEXT.index("\n}\n", start) + len("\n}\n")
         body += SETUP_TEXT[start:end] + "\n"
     path = tmp_path / "keep_fns.sh"
-    path.write_text(body, encoding = "utf-8")
+    path.write_text(body, encoding="utf-8")
     return path
 
 
@@ -66,25 +66,25 @@ def _install(
     tmp_path,
     marker,
     *,
-    server = True,
+    server=True,
 ):
     install_dir = tmp_path / "llama.cpp"
-    install_dir.mkdir(exist_ok = True)
+    install_dir.mkdir(exist_ok=True)
     if server:
         exe = install_dir / "llama-server"
-        exe.write_text("#!/bin/sh\n", encoding = "utf-8")
+        exe.write_text("#!/bin/sh\n", encoding="utf-8")
         exe.chmod(0o755)
     if marker is not None:
         text = marker if isinstance(marker, str) else json.dumps(marker)
-        (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text(text, encoding = "utf-8")
+        (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text(text, encoding="utf-8")
     return install_dir
 
 
 def _decide(tmp_path, install_dir, **env):
     stub_bin = tmp_path / "bin"
-    stub_bin.mkdir(exist_ok = True)
+    stub_bin.mkdir(exist_ok=True)
     shim = stub_bin / "python"
-    shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n', encoding = "utf-8")
+    shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n', encoding="utf-8")
     shim.chmod(0o755)
     run_env = {
         **os.environ,
@@ -99,11 +99,11 @@ def _decide(tmp_path, install_dir, **env):
     run_env.update(env)
     result = subprocess.run(
         [BASH, "-c", _HARNESS, "harness", str(_sliced_functions(tmp_path)), str(install_dir)],
-        env = run_env,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True,
-        timeout = 120,
+        env=run_env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr
     return result.stdout
@@ -116,52 +116,52 @@ def _decide(tmp_path, install_dir, **env):
 class TestTheKeepDecision:
     def test_a_cuda_prebuilt_on_an_nvidia_host_is_kept(self, tmp_path):
         install_dir = _install(tmp_path, {"backend": "cuda"})
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "KEEP cuda"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "KEEP cuda"
 
     @pytest.mark.parametrize("backend", ["rocm", "vulkan"])
     def test_an_amd_prebuilt_on_an_amd_host_is_kept(self, tmp_path, backend):
         install_dir = _install(tmp_path, {"backend": backend})
-        assert _decide(tmp_path, install_dir, _setup_amd_detected = "true") == f"KEEP {backend}"
+        assert _decide(tmp_path, install_dir, _setup_amd_detected="true") == f"KEEP {backend}"
 
     def test_a_rocm_prebuilt_needs_the_amd_gpu_not_just_any_gpu(self, tmp_path):
         # An AMD-to-NVIDIA swap: the ROCm binary cannot run here, so the CPU build wins.
         install_dir = _install(tmp_path, {"backend": "rocm"})
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
 
     def test_a_vulkan_prebuilt_is_kept_for_every_vendor(self, tmp_path):
         # The Intel-only host is the one the Vulkan route exists for.
         install_dir = _install(tmp_path, {"backend": "vulkan"})
-        assert _decide(tmp_path, install_dir, _setup_intel_gpu = "true") == "KEEP vulkan"
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "KEEP vulkan"
+        assert _decide(tmp_path, install_dir, _setup_intel_gpu="true") == "KEEP vulkan"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "KEEP vulkan"
         assert _decide(tmp_path, install_dir) == "REPLACE"
 
     def test_the_marker_backend_is_read_case_insensitively(self, tmp_path):
         install_dir = _install(tmp_path, {"backend": " CUDA "})
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "KEEP cuda"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "KEEP cuda"
 
     def test_a_cuda_prebuilt_is_replaced_once_the_gpu_is_gone(self, tmp_path):
         # The GPU the marker names left the machine: a CPU build is the honest install now.
         install_dir = _install(tmp_path, {"backend": "cuda"})
         assert _decide(tmp_path, install_dir) == "REPLACE"
-        assert _decide(tmp_path, install_dir, _setup_amd_detected = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_amd_detected="true") == "REPLACE"
 
     def test_an_explicit_version_pin_is_not_satisfied_by_the_old_install(self, tmp_path):
         install_dir = _install(tmp_path, {"backend": "cuda"})
         nvidia = {"_setup_nvidia_physical": "true"}
-        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "b7000", **nvidia) == "REPLACE"
+        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="b7000", **nvidia) == "REPLACE"
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG = "b7000-mix", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG="b7000-mix", **nvidia)
             == "REPLACE"
         )
-        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "latest", **nvidia) == "KEEP cuda"
+        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="latest", **nvidia) == "KEEP cuda"
 
     def test_a_version_pin_the_old_install_already_satisfies_keeps_it(self, tmp_path):
         install_dir = _install(
             tmp_path, {"backend": "cuda", "tag": "b8508", "release_tag": "b8508-mix"}
         )
         nvidia = {"_setup_nvidia_physical": "true"}
-        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "b8508", **nvidia) == "KEEP cuda"
-        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "b8509", **nvidia) == "REPLACE"
+        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="b8508", **nvidia) == "KEEP cuda"
+        assert _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="b8509", **nvidia) == "REPLACE"
         # The installer's own matching: a short commit pin names the recorded full commit.
         install_dir = _install(
             tmp_path,
@@ -172,11 +172,11 @@ class TestTheKeepDecision:
             },
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "0123456789ab", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="0123456789ab", **nvidia)
             == "KEEP cuda"
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "fedcba987654", **nvidia) == "REPLACE"
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="fedcba987654", **nvidia) == "REPLACE"
         )
         # The marker writer records a commit pin in source_commit beside the upstream build tag.
         install_dir = _install(
@@ -191,18 +191,18 @@ class TestTheKeepDecision:
             },
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "0123456789ab", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="0123456789ab", **nvidia)
             == "KEEP cuda"
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG = "fedcba987654", **nvidia) == "REPLACE"
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_TAG="fedcba987654", **nvidia) == "REPLACE"
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG = "b8508-mix", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG="b8508-mix", **nvidia)
             == "KEEP cuda"
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG = "b8509-mix", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG="b8509-mix", **nvidia)
             == "REPLACE"
         )
         # A published release tag is a name: a hex-looking prefix of the recorded one is not it.
@@ -210,22 +210,22 @@ class TestTheKeepDecision:
             tmp_path, {"backend": "cuda", "release_tag": "0123456789abcdef0123456789abcdef01234567"}
         )
         assert (
-            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG = "0123456789ab", **nvidia)
+            _decide(tmp_path, install_dir, UNSLOTH_LLAMA_RELEASE_TAG="0123456789ab", **nvidia)
             == "REPLACE"
         )
 
     def test_a_cpu_prebuilt_is_not_worth_keeping(self, tmp_path):
         install_dir = _install(tmp_path, {"backend": "cpu"})
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
 
     @pytest.mark.parametrize(
         "marker",
         [None, "{not json", "[1, 2]", {"asset": "x"}, {"backend": None}, {"backend": 3}],
-        ids = ["absent", "malformed", "not-a-dict", "no-backend", "null", "non-string"],
+        ids=["absent", "malformed", "not-a-dict", "no-backend", "null", "non-string"],
     )
     def test_an_unreadable_marker_does_not_keep(self, tmp_path, marker):
         install_dir = _install(tmp_path, marker)
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
 
     @pytest.mark.parametrize(
         ("marker", "backend"),
@@ -239,7 +239,7 @@ class TestTheKeepDecision:
             ({"asset": "app-b9001-linux-x64-rocm-gfx110X.tar.gz"}, "rocm"),
             ({"llama_backend": "auto", "asset": "app-b1-linux-x64-cuda13-newer.tar.gz"}, "cuda"),
         ],
-        ids = ["llama_backend", "hip-spelling", "asset-cuda", "asset-rocm", "auto-request"],
+        ids=["llama_backend", "hip-spelling", "asset-cuda", "asset-rocm", "auto-request"],
     )
     def test_a_legacy_marker_names_its_backend_elsewhere(self, tmp_path, marker, backend):
         # Shapes from before #8520 (tests/studio/install/test_keep_install_backcompat_9979.py).
@@ -249,31 +249,31 @@ class TestTheKeepDecision:
 
     def test_a_legacy_cpu_marker_is_replaced(self, tmp_path):
         install_dir = _install(tmp_path, {"asset": "llama-b6099-bin-ubuntu-x64.tar.gz"})
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
         install_dir = _install(
             tmp_path, {"backend": "sycl", "asset": "app-b1-linux-x64-cuda12.tar.gz"}
         )
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
 
     def test_a_prebuilt_that_no_longer_runs_is_replaced(self, tmp_path):
         # A quarantined library leaves the marker and the executable behind.
         install_dir = _install(tmp_path, {"backend": "cuda"})
         assert (
             _decide(
-                tmp_path, install_dir, _setup_nvidia_physical = "true", _setup_prebuilt_runs = "false"
+                tmp_path, install_dir, _setup_nvidia_physical="true", _setup_prebuilt_runs="false"
             )
             == "REPLACE"
         )
 
     def test_a_tree_without_a_server_is_not_worth_keeping(self, tmp_path):
-        install_dir = _install(tmp_path, {"backend": "cuda"}, server = False)
-        assert _decide(tmp_path, install_dir, _setup_nvidia_physical = "true") == "REPLACE"
+        install_dir = _install(tmp_path, {"backend": "cuda"}, server=False)
+        assert _decide(tmp_path, install_dir, _setup_nvidia_physical="true") == "REPLACE"
 
     def test_a_build_asked_for_by_hand_still_runs(self, tmp_path):
         install_dir = _install(tmp_path, {"backend": "cuda"})
         nvidia = {"_setup_nvidia_physical": "true"}
-        assert _decide(tmp_path, install_dir, _LLAMA_FORCE_COMPILE = "1", **nvidia) == "REPLACE"
-        assert _decide(tmp_path, install_dir, _LLAMA_PR = "12345", **nvidia) == "REPLACE"
+        assert _decide(tmp_path, install_dir, _LLAMA_FORCE_COMPILE="1", **nvidia) == "REPLACE"
+        assert _decide(tmp_path, install_dir, _LLAMA_PR="12345", **nvidia) == "REPLACE"
 
 
 # ── part two: the wiring ──
@@ -314,13 +314,13 @@ def test_a_failed_update_keeps_the_gpu_prebuilt_before_any_source_build():
 def test_the_failure_reason_is_a_few_words(tmp_path, log, reason):
     fn = _between("_llama_update_fail_reason() {", "\n}\n") + "\n}\n"
     path = tmp_path / "prebuilt.log"
-    path.write_text(log, encoding = "utf-8")
+    path.write_text(log, encoding="utf-8")
     result = subprocess.run(
         [BASH, "-c", fn + '\n_llama_update_fail_reason "$1"', "reason", str(path)],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True,
-        timeout = 60,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=60,
     )
     assert result.stdout.strip() == reason, result.stderr
 
@@ -368,19 +368,19 @@ def _load_ilp():
 
 def _linux_host(ilp, **fields):
     base = dict(
-        system = "Linux",
-        machine = "x86_64",
-        is_windows = False,
-        is_linux = True,
-        is_macos = False,
-        is_x86_64 = True,
-        is_arm64 = False,
-        nvidia_smi = None,
-        driver_cuda_version = None,
-        compute_caps = [],
-        visible_cuda_devices = None,
-        has_physical_nvidia = False,
-        has_usable_nvidia = False,
+        system="Linux",
+        machine="x86_64",
+        is_windows=False,
+        is_linux=True,
+        is_macos=False,
+        is_x86_64=True,
+        is_arm64=False,
+        nvidia_smi=None,
+        driver_cuda_version=None,
+        compute_caps=[],
+        visible_cuda_devices=None,
+        has_physical_nvidia=False,
+        has_usable_nvidia=False,
     )
     base.update(fields)
     return ilp.HostInfo(**base)
@@ -392,26 +392,26 @@ class TestTheKeptBundleMustStillCoverTheCard:
     def test_a_cuda_bundle_is_kept_only_for_the_sms_it_was_built_for(self):
         ilp = _load_ilp()
         marker = {"backend": "cuda", "supported_sms": ["7.5", "8.6", "8.9"]}
-        assert ilp._kept_install_covers_host(marker, _linux_host(ilp, compute_caps = ["8.9"]))
-        assert not ilp._kept_install_covers_host(marker, _linux_host(ilp, compute_caps = ["12.0"]))
+        assert ilp._kept_install_covers_host(marker, _linux_host(ilp, compute_caps=["8.9"]))
+        assert not ilp._kept_install_covers_host(marker, _linux_host(ilp, compute_caps=["12.0"]))
         # Two cards: every one must be covered.
         assert not ilp._kept_install_covers_host(
-            marker, _linux_host(ilp, compute_caps = ["8.9", "12.0"])
+            marker, _linux_host(ilp, compute_caps=["8.9", "12.0"])
         )
 
     def test_a_masked_card_is_checked_by_its_physical_sms(self):
         ilp = _load_ilp()
         marker = {"backend": "cuda", "supported_sms": ["8.9"]}
-        masked = _linux_host(ilp, compute_caps = [], physical_compute_caps = ["12.0"])
+        masked = _linux_host(ilp, compute_caps=[], physical_compute_caps=["12.0"])
         assert not ilp._kept_install_covers_host(marker, masked)
         assert ilp._kept_install_covers_host(
-            marker, _linux_host(ilp, compute_caps = [], physical_compute_caps = ["8.9"])
+            marker, _linux_host(ilp, compute_caps=[], physical_compute_caps=["8.9"])
         )
 
     def test_a_cuda_bundle_is_kept_only_while_the_driver_runs_its_runtime(self):
         ilp = _load_ilp()
         marker = {"backend": "cuda", "runtime_line": "cuda13", "supported_sms": ["8.9"]}
-        host = lambda v: _linux_host(ilp, compute_caps = ["8.9"], driver_cuda_version = v)
+        host = lambda v: _linux_host(ilp, compute_caps=["8.9"], driver_cuda_version=v)
         assert ilp._kept_install_covers_host(marker, host((13, 1)))
         assert not ilp._kept_install_covers_host(marker, host((12, 8)))
         # cuda12 runs on a 13 driver; an unknown driver cannot tell.
@@ -426,14 +426,14 @@ class TestTheKeptBundleMustStillCoverTheCard:
             "mapped_targets": ["gfx1100", "gfx1101", "gfx1102"],
         }
         for gfx in ("gfx1100", "GFX1101", "gfx110X"):
-            assert ilp._kept_install_covers_host(marker, _linux_host(ilp, rocm_gfx_target = gfx))
+            assert ilp._kept_install_covers_host(marker, _linux_host(ilp, rocm_gfx_target=gfx))
         assert not ilp._kept_install_covers_host(
-            marker, _linux_host(ilp, rocm_gfx_target = "gfx1201")
+            marker, _linux_host(ilp, rocm_gfx_target="gfx1201")
         )
 
     def test_a_marker_without_coverage_cannot_tell_and_passes(self):
         ilp = _load_ilp()
-        host = _linux_host(ilp, compute_caps = ["12.0"], rocm_gfx_target = "gfx1201")
+        host = _linux_host(ilp, compute_caps=["12.0"], rocm_gfx_target="gfx1201")
         for marker in (
             None,
             {"backend": "cuda"},
@@ -451,7 +451,7 @@ class TestTheKeptBundleMustStillCoverTheCard:
         self, tmp_path, monkeypatch
     ):
         ilp = _load_ilp()
-        monkeypatch.setattr(ilp, "detect_host", lambda **k: _linux_host(ilp, compute_caps = ["12.0"]))
+        monkeypatch.setattr(ilp, "detect_host", lambda **k: _linux_host(ilp, compute_caps=["12.0"]))
         monkeypatch.setattr(ilp, "_existing_install_runs", lambda d, h: True)
         monkeypatch.setattr(
             ilp,
@@ -547,21 +547,21 @@ def test_the_source_build_reads_capabilities_from_the_driver_library_too():
 def test_the_probe_capabilities_are_all_or_nothing(tmp_path, listing, expected):
     start = SETUP_TEXT.index("_probe_compute_caps() {")
     body = SETUP_TEXT[start : SETUP_TEXT.index("\n}\n", start) + 3]
-    (tmp_path / "python3").write_text(f"#!/bin/sh\nprintf '%b' {listing!r}\n", encoding = "utf-8")
+    (tmp_path / "python3").write_text(f"#!/bin/sh\nprintf '%b' {listing!r}\n", encoding="utf-8")
     (tmp_path / "python3").chmod(0o755)
-    (tmp_path / "nvidia_probe.py").write_text("", encoding = "utf-8")
+    (tmp_path / "nvidia_probe.py").write_text("", encoding="utf-8")
     script = '_setup_run_smi() { "$@"; }\n' + body + "\n_probe_compute_caps\n"
     result = subprocess.run(
         [BASH, "-c", script],
-        env = {
+        env={
             **os.environ,
             "PATH": f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}",
             "SCRIPT_DIR": str(tmp_path),
         },
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True,
-        timeout = 60,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=60,
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout == expected

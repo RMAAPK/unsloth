@@ -29,7 +29,7 @@ def read_install_marker(
     *,
     marker_name: str,
     cache: dict[str, Optional[dict]],
-    log_message: str,
+    log_message: str
 ) -> Optional[dict]:
     """Walk up from binary_path to find the install marker JSON. None = no marker (source build / custom path) or unusable JSON. "Unusable" includes JSON that parses but is not an object: a marker holding ``[]`` or ``123`` reaches every caller as something without ``.get``, and the update planner, the backend picker and crash recovery then raise AttributeError on what is only a corrupt file."""
     if not binary_path:
@@ -44,16 +44,16 @@ def read_install_marker(
         candidate = parent / marker_name
         if candidate.is_file():
             try:
-                marker = json.loads(candidate.read_text(encoding = "utf-8"))
+                marker = json.loads(candidate.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
-                logger.debug(log_message, path = str(candidate), error = str(exc))
+                logger.debug(log_message, path=str(candidate), error=str(exc))
                 marker = None
             else:
                 if not isinstance(marker, dict):
                     logger.debug(
                         log_message,
-                        path = str(candidate),
-                        error = f"marker is {type(marker).__name__}, not an object",
+                        path=str(candidate),
+                        error=f"marker is {type(marker).__name__}, not an object",
                     )
                     marker = None
             break
@@ -69,7 +69,7 @@ def cache_path_for(repo: str, cache_dir: Path) -> Path:
 def load_disk_cache(repo: str, cache_dir: Path) -> Optional[tuple[float, Optional[str]]]:
     path = cache_path_for(repo, cache_dir)
     try:
-        payload = json.loads(path.read_text(encoding = "utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
     ts = payload.get("fetched_at")
@@ -84,15 +84,15 @@ def save_disk_cache(
 ) -> None:
     path = cache_path_for(repo, cache_dir)
     try:
-        path.parent.mkdir(parents = True, exist_ok = True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
         tmp.write_text(
             json.dumps({"fetched_at": time.time(), "latest_tag": latest_tag}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         tmp.replace(path)
     except OSError as exc:
-        logger.debug(log_message, repo = repo, error = str(exc))
+        logger.debug(log_message, repo=repo, error=str(exc))
 
 
 def _fetch_newest_published_release(
@@ -100,16 +100,17 @@ def _fetch_newest_published_release(
 ) -> Optional[dict]:
     """Newest published release object for `repo`, bounded by a wall-clock deadline. Not redundant with `timeout`: urllib applies that per address, so a host whose leading addresses blackhole pays it once for each, and /api/inference/status reads this, so that multiplication becomes the route's response time."""
     from utils.utils import call_with_deadline
+
     try:
         return call_with_deadline(
             lambda: _fetch_newest_published_release_blocking(
-                repo, timeout, log_message = log_message
+                repo, timeout, log_message=log_message
             ),
             timeout + 1,
-            name = "prebuilt-freshness-fetch",
+            name="prebuilt-freshness-fetch",
         )
     except TimeoutError as exc:
-        logger.debug(log_message, repo = repo, error = str(exc))
+        logger.debug(log_message, repo=repo, error=str(exc))
         return None
 
 
@@ -129,9 +130,9 @@ def _fetch_newest_published_release_blocking(
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(url, headers = headers)
+    req = urllib.request.Request(url, headers=headers)
     try:
-        with auth_safe_open(req, timeout = timeout) as resp:
+        with auth_safe_open(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (
         urllib.error.URLError,
@@ -139,7 +140,7 @@ def _fetch_newest_published_release_blocking(
         OSError,
         json.JSONDecodeError,
     ) as exc:
-        logger.debug(log_message, repo = repo, error = str(exc))
+        logger.debug(log_message, repo=repo, error=str(exc))
         return None
     if not isinstance(data, list):
         return None
@@ -154,7 +155,7 @@ def _fetch_newest_published_release_blocking(
     ]
     if not published:
         return None
-    return max(published, key = lambda r: r.get("published_at") or "")
+    return max(published, key=lambda r: r.get("published_at") or "")
 
 
 def fetch_latest_release_tag(
@@ -164,7 +165,7 @@ def fetch_latest_release_tag(
     log_message: str,
 ) -> Optional[str]:
     """Newest published release tag for `repo`, by publish time. None on failure."""
-    newest = _fetch_newest_published_release(repo, timeout, log_message = log_message)
+    newest = _fetch_newest_published_release(repo, timeout, log_message=log_message)
     return newest["tag_name"] if newest else None
 
 
@@ -175,7 +176,7 @@ def fetch_latest_release_assets(
     log_message: str,
 ) -> Optional[dict[str, int]]:
     """Asset name -> size (bytes) for the newest published release of `repo`, selected exactly like fetch_latest_release_tag. None on any failure."""
-    newest = _fetch_newest_published_release(repo, timeout, log_message = log_message)
+    newest = _fetch_newest_published_release(repo, timeout, log_message=log_message)
     if newest is None:
         return None
     assets: dict[str, int] = {}
@@ -241,7 +242,7 @@ def latest_release_assets(
     *,
     force_refresh: bool,
     memo: dict[str, tuple[float, dict[str, int]]],
-    fetch: Callable[[str], Optional[dict[str, int]]],
+    fetch: Callable[[str], Optional[dict[str, int]]]
 ) -> Optional[dict[str, int]]:
     """Newest-release asset sizes for `repo`, memoized (24h TTL). None when offline and never fetched. In-memory only, so a restart re-fetches."""
     if not repo:
@@ -268,7 +269,7 @@ def parse_installed_at(value: object) -> Optional[datetime]:
     except ValueError:
         return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo = timezone.utc)
+        dt = dt.replace(tzinfo=timezone.utc)
     return dt
 
 
@@ -281,7 +282,7 @@ def check_freshness(
     latest_release: Callable[[str], Optional[str]],
     behind: Callable[[Optional[str], Optional[str]], bool],
     display_tag: Callable[[dict], Any],
-    compare_tag: Callable[[dict], Any],
+    compare_tag: Callable[[dict], Any]
 ) -> dict:
     """Freshness report skeleton shared by both components; the component's marker-tag choice and is_behind policy come in as callables. Fails open on missing data (behind/stale stay False)."""
     out: dict = {
@@ -316,7 +317,7 @@ def check_freshness(
     installed_at = parse_installed_at(out["installed_at_utc"])
     if installed_at is None:
         return out
-    now = now or datetime.now(tz = timezone.utc)
+    now = now or datetime.now(tz=timezone.utc)
     age_seconds = (now - installed_at).total_seconds()
     out["age_days"] = max(0, int(age_seconds // 86400))
     if age_seconds >= threshold_days * 86400:
@@ -347,4 +348,4 @@ def reset_caches(
         import shutil
 
         # cache_dir() is a freshness-only subdir re-created on the next save_disk_cache, and ignore_errors so a missing or locked dir cannot break an otherwise successful install.
-        shutil.rmtree(cache_dir(), ignore_errors = True)
+        shutil.rmtree(cache_dir(), ignore_errors=True)

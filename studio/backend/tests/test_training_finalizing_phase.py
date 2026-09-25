@@ -35,7 +35,7 @@ _MODELS_TRAINING = _BACKEND_DIR / "models" / "training.py"
 
 def _load_is_finalizing():
     """Exec just the helper: routes/training.py pulls in the whole app otherwise."""
-    src = _ROUTES_TRAINING.read_text(encoding = "utf-8")
+    src = _ROUTES_TRAINING.read_text(encoding="utf-8")
     tree = ast.parse(src)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "_is_finalizing":
@@ -45,8 +45,8 @@ def _load_is_finalizing():
     raise AssertionError("routes/training.py does not define _is_finalizing")
 
 
-def _progress(step = 0, total_steps = 0):
-    return SimpleNamespace(step = step, total_steps = total_steps)
+def _progress(step=0, total_steps=0):
+    return SimpleNamespace(step=step, total_steps=total_steps)
 
 
 # _is_finalizing
@@ -76,14 +76,14 @@ def test_is_finalizing_tolerates_missing_attributes():
     fn = _load_is_finalizing()
     assert fn(None, "training") is False
     assert fn(SimpleNamespace(), "training") is False
-    assert fn(SimpleNamespace(step = None, total_steps = None), "training") is False
+    assert fn(SimpleNamespace(step=None, total_steps=None), "training") is False
 
 
 # Contract guards
 
 
 def _phase_literals() -> set[str]:
-    src = _MODELS_TRAINING.read_text(encoding = "utf-8")
+    src = _MODELS_TRAINING.read_text(encoding="utf-8")
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if not (isinstance(node, ast.ClassDef) and node.name == "TrainingStatus"):
@@ -108,7 +108,7 @@ def _phase_literals() -> set[str]:
 
 def test_every_emitted_phase_is_in_the_response_literal():
     """A phase missing from the Literal makes /api/train/status 500, not degrade."""
-    src = _ROUTES_TRAINING.read_text(encoding = "utf-8")
+    src = _ROUTES_TRAINING.read_text(encoding="utf-8")
     tree = ast.parse(src)
     # The phase derivation moved into _build_training_status, so scan both, not just inline.
     fns = [
@@ -138,7 +138,7 @@ def test_finalizing_is_declared():
 
 def test_completion_still_comes_only_from_is_completed():
     """100% must not be promoted to a terminal state."""
-    src = _ROUTES_TRAINING.read_text(encoding = "utf-8")
+    src = _ROUTES_TRAINING.read_text(encoding="utf-8")
     # Follow the phase derivation wherever it lives: it moved into _build_training_status.
     fn_src = next(
         seg
@@ -169,6 +169,6 @@ def test_frontend_phase_union_covers_the_backend_literal():
     )
     if not runtime_ts.is_file():
         pytest.skip("frontend sources not present")
-    union = set(re.findall(r'\|\s*"([a-z_]+)"', runtime_ts.read_text(encoding = "utf-8")))
+    union = set(re.findall(r'\|\s*"([a-z_]+)"', runtime_ts.read_text(encoding="utf-8")))
     missing = _phase_literals() - union
     assert not missing, f"TrainingPhase is missing backend phases: {sorted(missing)}"

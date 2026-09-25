@@ -215,13 +215,13 @@ def max_train_rows_for_config(
     the user configured, and a stale one carried across a spawn would size the
     subset for the wrong machine.
     """
-    if effective_packing(config, branch_never_packs = branch_never_packs):
+    if effective_packing(config, branch_never_packs=branch_never_packs):
         return None
     return max_steps_dataset_rows(
         config.get("max_steps", 0) or 0,
         config.get("batch_size", 2),
         config.get("gradient_accumulation_steps", 4),
-        world_size = world_size,
+        world_size=world_size,
     )
 
 
@@ -277,8 +277,8 @@ def record_row_bound(
                 "seed": _seed_int(seed, 3407),
             }
         )
-        handle, tmp_path = tempfile.mkstemp(dir = run_dir, prefix = ".row_bound_", suffix = ".tmp")
-        with os.fdopen(handle, "w", encoding = "utf-8") as tmp_file:
+        handle, tmp_path = tempfile.mkstemp(dir=run_dir, prefix=".row_bound_", suffix=".tmp")
+        with os.fdopen(handle, "w", encoding="utf-8") as tmp_file:
             tmp_file.write(payload)
             tmp_file.flush()
             os.fsync(tmp_file.fileno())
@@ -320,7 +320,7 @@ def row_bound_for_resume(
     if not run_dir:
         return max_train_rows, fallback_seed
     try:
-        with open(os.path.join(run_dir, ROW_BOUND_MARKER_FILE), encoding = "utf-8") as handle:
+        with open(os.path.join(run_dir, ROW_BOUND_MARKER_FILE), encoding="utf-8") as handle:
             marker = json.load(handle)
         recorded = marker["max_train_rows"]
     except (OSError, UnicodeDecodeError, ValueError, TypeError, KeyError):
@@ -333,7 +333,7 @@ def bound_dataset_rows(
     max_train_rows: Optional[int],
     seed: Any = 3407,
     *,
-    on_bound = None,
+    on_bound=None,
 ):
     """Cut a map-style dataset to max_train_rows rows, or return it untouched.
 
@@ -356,7 +356,7 @@ def bound_dataset_rows(
         return dataset
     if total_rows <= max_train_rows:
         return dataset
-    bounded = dataset.shuffle(seed = _seed_int(seed, 3407)).select(range(max_train_rows))
+    bounded = dataset.shuffle(seed=_seed_int(seed, 3407)).select(range(max_train_rows))
     if on_bound is not None:
         on_bound(max_train_rows, total_rows)
     return bounded

@@ -21,7 +21,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SETUP_PS1 = (ROOT / "studio" / "setup.ps1").read_text(encoding = "utf-8")
+SETUP_PS1 = (ROOT / "studio" / "setup.ps1").read_text(encoding="utf-8")
 
 
 def _denial_reporter() -> str:
@@ -147,7 +147,7 @@ def test_no_bare_test_path_probes_inside_the_llama_install_tree():
     # A comment naming a probe is not a probe.
     offenders = [
         f"{index}: {line.strip()}"
-        for index, line in enumerate(SETUP_PS1.splitlines(), start = 1)
+        for index, line in enumerate(SETUP_PS1.splitlines(), start=1)
         if inside_tree.search(line.split("#", 1)[0])
     ]
     assert not offenders, offenders
@@ -158,7 +158,7 @@ def test_metadata_reads_are_literal_like_the_probes_that_gate_them():
     [ or ], so the probe passes and the read throws into the catch."""
     offenders = [
         f"{index}: {line.strip()}"
-        for index, line in enumerate(SETUP_PS1.splitlines(), start = 1)
+        for index, line in enumerate(SETUP_PS1.splitlines(), start=1)
         if re.search(r"Get-Content\b[^\n]*(\$metadataPath|\$existingMetaPath|\$llamaMarker)", line)
         and "-LiteralPath" not in line
     ]

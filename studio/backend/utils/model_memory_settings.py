@@ -65,6 +65,7 @@ def _cached_setting(key: str) -> Any:
             generation = _generation.get(cache_key, 0)
         try:
             from storage.studio_db import get_app_setting
+
             stored = run_as(OWNER, get_app_setting, key, None)
         except Exception:
             # An unreadable DB must not fail a load; fall back to the default.
@@ -180,6 +181,7 @@ def set_model_memory_settings(
 
     if updates:
         from storage.studio_db import upsert_app_settings
+
         upsert_app_settings(updates)
         _invalidate(*updates)
 

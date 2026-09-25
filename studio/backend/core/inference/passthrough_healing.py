@@ -160,12 +160,12 @@ def _coerce_promoted_arguments(
         except (json.JSONDecodeError, ValueError):
             parsed = raw_args
     if isinstance(parsed, Mapping):
-        return coerce_arguments_by_schema(parsed, properties, repair = True)
+        return coerce_arguments_by_schema(parsed, properties, repair=True)
     if isinstance(raw_args, str):
         if tool_schemas is not None:
             key = _string_arg_key_from_schema(tool_schemas.get(tool_name))
             return {key: raw_args} if key else None
-    coerced = coerce_tool_arguments(raw_args, heal = True, tool_name = tool_name)
+    coerced = coerce_tool_arguments(raw_args, heal=True, tool_name=tool_name)
     return coerced.arguments
 
 
@@ -196,7 +196,7 @@ def _promote(
                 "type": "function",
                 "function": {
                     "name": name,
-                    "arguments": json.dumps(arguments, ensure_ascii = False),
+                    "arguments": json.dumps(arguments, ensure_ascii=False),
                 },
             }
         )
@@ -224,13 +224,13 @@ def heal_openai_message_events(
     content = msg.get("content")
     if not isinstance(content, str) or not _has_heal_signal(content):
         return None
-    parsed, spans = parse_tool_calls_from_text(content, allow_incomplete = True, with_spans = True)
+    parsed, spans = parse_tool_calls_from_text(content, allow_incomplete=True, with_spans=True)
     tool_schemas = _tool_schemas_by_name(tools) if tools is not None else None
     events: list = []
     pos = 0
     call_count = 0
     for call, (start, end) in zip(parsed, spans):
-        promoted = _promote([call], allowed_tools, id_offset = call_count, tool_schemas = tool_schemas)
+        promoted = _promote([call], allowed_tools, id_offset=call_count, tool_schemas=tool_schemas)
         if promoted:
             if content[pos:start]:
                 events.append(("text", content[pos:start]))
@@ -292,7 +292,7 @@ def _closed_signal_span(buffer: str) -> Optional[tuple[int, int]]:
         end = buffer.find(close_tag, start)
         if end >= 0:
             spans.append((start, end + len(close_tag)))
-    return min(spans, key = lambda span: span[0]) if spans else None
+    return min(spans, key=lambda span: span[0]) if spans else None
 
 
 def _partial_signal_suffix(buffer: str) -> int:
@@ -379,9 +379,9 @@ class StreamToolCallHealer:
                     return events
             parsed, spans = parse_tool_calls_from_text(
                 self._buffer,
-                id_offset = self._id_offset,
-                allow_incomplete = False,
-                with_spans = True,
+                id_offset=self._id_offset,
+                allow_incomplete=False,
+                with_spans=True,
             )
             if not parsed:
                 closed_span = _closed_signal_span(self._buffer)
@@ -407,8 +407,8 @@ class StreamToolCallHealer:
                 promoted = _promote(
                     [call],
                     self._allowed,
-                    id_offset = self._id_offset,
-                    tool_schemas = self._tool_schemas,
+                    id_offset=self._id_offset,
+                    tool_schemas=self._tool_schemas,
                 )
                 if promoted:
                     # Flush any leading text, then drop the promoted markup span.
@@ -440,9 +440,9 @@ class StreamToolCallHealer:
             return [("text", residue)]
         parsed, spans = parse_tool_calls_from_text(
             residue,
-            id_offset = self._id_offset,
-            allow_incomplete = True,
-            with_spans = True,
+            id_offset=self._id_offset,
+            allow_incomplete=True,
+            with_spans=True,
         )
         events: list = []
         pos = 0
@@ -451,8 +451,8 @@ class StreamToolCallHealer:
             promoted = _promote(
                 [call],
                 self._allowed,
-                id_offset = self._id_offset,
-                tool_schemas = self._tool_schemas,
+                id_offset=self._id_offset,
+                tool_schemas=self._tool_schemas,
             )
             if promoted:
                 if residue[pos:start]:
@@ -498,9 +498,9 @@ def _heal_would_promote(
     tools: Optional[list] = None,
 ) -> bool:
     """Whether ``heal_openai_message`` would promote at least one call."""
-    parsed = parse_tool_calls_from_text(text, allow_incomplete = True)
+    parsed = parse_tool_calls_from_text(text, allow_incomplete=True)
     tool_schemas = _tool_schemas_by_name(tools) if tools is not None else None
-    return bool(_promote(parsed, allowed_tools, tool_schemas = tool_schemas))
+    return bool(_promote(parsed, allowed_tools, tool_schemas=tool_schemas))
 
 
 def response_has_promotable_calls(

@@ -77,12 +77,12 @@ def get_physical_gpu_count() -> Optional[int]:
     try:
         result = subprocess.run(
             ["nvidia-smi", "-L"],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 5,
-            env = child_env_without_native_path_secret(),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            env=child_env_without_native_path_secret(),
             **_windows_hidden_subprocess_kwargs(),
         )
         if result.returncode == 0 and result.stdout.strip():
@@ -105,12 +105,12 @@ def get_primary_gpu_utilization() -> dict[str, Any]:
                 "memory.used,memory.total,power.draw,power.limit",
                 "--format=csv,noheader,nounits",
             ],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 5,
-            env = child_env_without_native_path_secret(),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            env=child_env_without_native_path_secret(),
             **_windows_hidden_subprocess_kwargs(),
         )
     except (OSError, subprocess.TimeoutExpired) as e:
@@ -125,13 +125,13 @@ def get_primary_gpu_utilization() -> dict[str, Any]:
         return {"available": False}
 
     return _build_gpu_metrics(
-        vram_used_mb = _parse_smi_value(parts[2]),
-        vram_total_mb = _parse_smi_value(parts[3]),
-        power_draw = _parse_smi_value(parts[4]),
-        power_limit = _parse_smi_value(parts[5]),
-        available = True,
-        gpu_utilization_pct = _parse_smi_value(parts[0]),
-        temperature_c = _parse_smi_value(parts[1]),
+        vram_used_mb=_parse_smi_value(parts[2]),
+        vram_total_mb=_parse_smi_value(parts[3]),
+        power_draw=_parse_smi_value(parts[4]),
+        power_limit=_parse_smi_value(parts[5]),
+        available=True,
+        gpu_utilization_pct=_parse_smi_value(parts[0]),
+        temperature_c=_parse_smi_value(parts[1]),
     )
 
 
@@ -153,12 +153,12 @@ def get_visible_gpu_utilization(
                 f"--query-gpu={query_fields}",
                 "--format=csv,noheader,nounits",
             ],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 5,
-            env = child_env_without_native_path_secret(),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            env=child_env_without_native_path_secret(),
             **_windows_hidden_subprocess_kwargs(),
         )
     except (OSError, subprocess.TimeoutExpired) as e:
@@ -214,20 +214,20 @@ def get_visible_gpu_utilization(
         visible_ordinal = visible_ordinals[idx] if visible_ordinals is not None else len(devices)
         devices.append(
             _build_gpu_metrics(
-                vram_used_mb = _parse_smi_value(parts[3 + field_offset]),
-                vram_total_mb = _parse_smi_value(parts[4 + field_offset]),
-                power_draw = _parse_smi_value(parts[5 + field_offset]),
-                power_limit = _parse_smi_value(parts[6 + field_offset]),
-                index = visible_ordinal if includes_uuid else idx,
-                index_kind = "relative" if includes_uuid else "physical",
-                visible_ordinal = visible_ordinal,
-                gpu_utilization_pct = _parse_smi_value(parts[1 + field_offset]),
-                temperature_c = _parse_smi_value(parts[2 + field_offset]),
+                vram_used_mb=_parse_smi_value(parts[3 + field_offset]),
+                vram_total_mb=_parse_smi_value(parts[4 + field_offset]),
+                power_draw=_parse_smi_value(parts[5 + field_offset]),
+                power_limit=_parse_smi_value(parts[6 + field_offset]),
+                index=visible_ordinal if includes_uuid else idx,
+                index_kind="relative" if includes_uuid else "physical",
+                visible_ordinal=visible_ordinal,
+                gpu_utilization_pct=_parse_smi_value(parts[1 + field_offset]),
+                temperature_c=_parse_smi_value(parts[2 + field_offset]),
             )
         )
 
     # nvidia-smi emits physical row order, so a reordering mask would hand back devices whose position contradicts their own visible_ordinal.
-    devices.sort(key = lambda d: d["visible_ordinal"])
+    devices.sort(key=lambda d: d["visible_ordinal"])
 
     return {
         "available": len(devices) > 0,
@@ -275,12 +275,12 @@ def _query_gpu_inventory(caller: str) -> Any:
                 "--query-gpu=index,name,memory.total",
                 "--format=csv,noheader,nounits",
             ],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            timeout = 10,
-            env = child_env_without_native_path_secret(),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            env=child_env_without_native_path_secret(),
             **_windows_hidden_subprocess_kwargs(),
         )
     except FileNotFoundError as e:

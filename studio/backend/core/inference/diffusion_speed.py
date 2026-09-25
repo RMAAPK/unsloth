@@ -139,6 +139,7 @@ def _inductor_config() -> Any:
     submodule import) so a stubbed/partial torch reports None instead of a stale sys.modules hit."""
     try:
         import torch
+
         return getattr(getattr(torch, "_inductor", None), "config", None)
     except Exception:  # noqa: BLE001 - no inductor -> nothing to snapshot/set
         return None
@@ -176,7 +177,7 @@ def resolve_speed_mode(
     return normalize_speed_mode(value)
 
 
-@lru_cache(maxsize = 1)
+@lru_cache(maxsize=1)
 def torch_compile_runtime_available() -> bool:
     """Whether THIS process can actually run an inductor compile.
 
@@ -198,6 +199,7 @@ def torch_compile_runtime_available() -> bool:
         return False
     try:
         from .._msvc_env import crt_headers_reachable  # noqa: PLC0415
+
         return crt_headers_reachable()
     except Exception:  # noqa: BLE001 -- this runs during load; never fail it over a probe
         return True
@@ -222,6 +224,7 @@ def compile_eligible(target: Any, *, is_gguf: bool, family: Any) -> bool:
 def _is_bfloat16(dtype: Any) -> bool:
     try:
         import torch
+
         return dtype is torch.bfloat16
     except Exception:
         return str(dtype).endswith("bfloat16")
@@ -279,7 +282,7 @@ def apply_speed_optims(
 
     if on_cuda:
         applied["fp16_accum"] = _enable_fp16_accumulation(
-            family, logger, dtype = getattr(target, "dtype", None), speed_mode = mode
+            family, logger, dtype=getattr(target, "dtype", None), speed_mode=mode
         )
 
     # The compile lever, per tier. default = LIGHT: GGUF compiles ONLY the dequant op chain (cheap, VRAM-free,
@@ -289,7 +292,7 @@ def apply_speed_optims(
         # Asked directly: this arm never reaches compile_eligible(), unlike the dense arm below.
         if is_gguf and on_cuda and family_allows_compile and torch_compile_runtime_available():
             applied["compiled_dequant"] = gguf_compile.install_compiled_dequant(logger)
-        elif compile_eligible(target, is_gguf = is_gguf, family = family):
+        elif compile_eligible(target, is_gguf=is_gguf, family=family):
             # A U-Net (SDXL) fuses QKV BEFORE its whole-module compile: 36.3 vs 39.3 ms/step (LPIPS 0.033). DiTs were
             # neutral, so they keep the fuse on max only.
             if _denoiser_unet(pipe) is not None:
@@ -297,17 +300,17 @@ def apply_speed_optims(
             applied["compiled"] = _compile_repeated_blocks(
                 pipe,
                 logger,
-                max_autotune = False,
-                cache_active = cache_active,
-                offload_active = offload_active,
+                max_autotune=False,
+                cache_active=cache_active,
+                offload_active=offload_active,
             )
-    elif mode == SPEED_MAX and compile_eligible(target, is_gguf = is_gguf, family = family):
+    elif mode == SPEED_MAX and compile_eligible(target, is_gguf=is_gguf, family=family):
         applied["compiled"] = _compile_repeated_blocks(
             pipe,
             logger,
-            max_autotune = True,
-            cache_active = cache_active,
-            offload_active = offload_active,
+            max_autotune=True,
+            cache_active=cache_active,
+            offload_active=offload_active,
         )
 
     # A compiled U-Net family also compiles the VAE decode (4.98 to 4.25 s over 4 images, LPIPS unchanged). DiTs skip
@@ -326,15 +329,16 @@ def apply_speed_optims(
         ok, reason = False, "cuda graph layer unavailable"
         try:
             from . import diffusion_cuda_graph as cuda_graph  # noqa: PLC0415 - import cycle
+
             ok, reason = cuda_graph.graph_eligible(
                 target,
-                family = family,
-                pipe = pipe,
-                offload_active = offload_active,
-                cache_active = cache_active if cache_engaged is None else bool(cache_engaged),
-                speed_mode = mode,
-                family_default = cuda_graph_default,
-                logger = logger,
+                family=family,
+                pipe=pipe,
+                offload_active=offload_active,
+                cache_active=cache_active if cache_engaged is None else bool(cache_engaged),
+                speed_mode=mode,
+                family_default=cuda_graph_default,
+                logger=logger,
             )
         except Exception as exc:  # noqa: BLE001 - an unimportable graph layer means eager, never a failed load
             _warn(logger, "cuda graph eligibility", exc)
@@ -345,7 +349,7 @@ def apply_speed_optims(
             pass
         if ok and cuda_graph is not None:
             try:
-                applied["cuda_graph"] = bool(cuda_graph.install_cuda_graphs(pipe, logger = logger))
+                applied["cuda_graph"] = bool(cuda_graph.install_cuda_graphs(pipe, logger=logger))
             except Exception as exc:  # noqa: BLE001 - the load proceeds eager
                 _warn(logger, "cuda graph capture", exc)
 
@@ -358,7 +362,8 @@ def _vae_channels_last(pipe: Any, logger: Any) -> bool:
         return False
     try:
         import torch
-        vae.to(memory_format = torch.channels_last)
+
+        vae.to(memory_format=torch.channels_last)
         return True
     except Exception as exc:  # noqa: BLE001 - optimisation only
         _warn(logger, "channels_last", exc)
@@ -493,6 +498,7 @@ def _compile_repeated_blocks(
         # wrappers (no-op without them).
         try:
             from .diffusion_cache import _compile_hooked_block_inners
+
             _compile_hooked_block_inners(transformer, logger)
         except Exception as exc:  # noqa: BLE001 - optimisation only
             _warn(logger, "cache-hook inner compile", exc)
@@ -556,6 +562,7 @@ def is_compile_failure(exc: BaseException) -> bool:
         from torch._inductor.exc import (
             InductorError,
         )  # torch 2.7+; older torch wraps it in BackendCompilerFailed
+
         kinds.append(InductorError)
     except Exception:  # noqa: BLE001
         pass
@@ -695,6 +702,7 @@ def dynamo_graph_count() -> int:
     """Graphs dynamo has compiled in this process (0 when unavailable); a delta across a render means it compiled."""
     try:
         from torch._dynamo.utils import counters
+
         return int(counters["stats"]["unique_graphs"])
     except Exception:  # noqa: BLE001
         return 0
@@ -718,7 +726,8 @@ def _compile_vae_decode(pipe: Any, logger: Any) -> bool:
         return False
     try:
         import torch
-        vae.decode = torch.compile(decode, fullgraph = False, dynamic = True)
+
+        vae.decode = torch.compile(decode, fullgraph=False, dynamic=True)
         return True
     except Exception as exc:  # noqa: BLE001 - optimisation only
         _warn(logger, "vae decode compile", exc)

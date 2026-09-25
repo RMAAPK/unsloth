@@ -49,11 +49,11 @@ REPEATS = int(os.environ.get("PM_REPEATS", "3"))
 LABEL = os.environ.get("PM_LABEL", "reflow")
 GROW_PX = int(os.environ.get("PM_GROW_PX", "600"))
 OUT = Path(os.environ.get("PW_ART_DIR", "logs/pm_probe"))
-OUT.mkdir(parents = True, exist_ok = True)
+OUT.mkdir(parents=True, exist_ok=True)
 
 
 def info(m: str) -> None:
-    print(f"[pm-reflow] {m}", flush = True)
+    print(f"[pm-reflow] {m}", flush=True)
 
 
 # Re-open, scroll the reader up, grow one row ABOVE them by a known amount while the window is still open, and watch the
@@ -121,19 +121,19 @@ def main() -> int:
     vite = start_vite(PORT)
     out = {"label": LABEL, "tree": str(TREE), "growPx": GROW_PX, "reps": []}
     try:
-        wait_for_smoke_page(PAGE, "smoke-heavy-thread-main.tsx", proc = vite, info = info)
+        wait_for_smoke_page(PAGE, "smoke-heavy-thread-main.tsx", proc=vite, info=info)
         with sync_playwright() as p:
-            b = p.chromium.launch(headless = True, args = chromium_launch_args())
-            ctx = b.new_context(viewport = {"width": 1280, "height": 900})
+            b = p.chromium.launch(headless=True, args=chromium_launch_args())
+            ctx = b.new_context(viewport={"width": 1280, "height": 900})
             ctx.add_init_script(RECORDER_INIT)
             pg = ctx.new_page()
-            pg.goto(PAGE, wait_until = "domcontentloaded")
-            pg.wait_for_function("() => Boolean(window.__heavyThread)", timeout = 120_000)
+            pg.goto(PAGE, wait_until="domcontentloaded")
+            pg.wait_for_function("() => Boolean(window.__heavyThread)", timeout=120_000)
             plan = pg.evaluate("(n) => window.__heavyThread.seed(n)", CHARS)
             pg.wait_for_function(
                 "(n) => window.__heavyThread.messageCount() >= n",
-                arg = plan["messages"],
-                timeout = 300_000,
+                arg=plan["messages"],
+                timeout=300_000,
             )
             pg.evaluate("() => window.__heavyThread.expandTools()")
             for i in range(REPEATS):
@@ -147,7 +147,7 @@ def main() -> int:
                     """() => { const el = window.__heavyThread.viewport();
                         const settled = window.__rfTop === el.scrollTop;
                         window.__rfTop = el.scrollTop; return settled; }""",
-                    timeout = 15_000,
+                    timeout=15_000,
                 )
                 r = pg.evaluate(GROW_JS, [GROW_PX, 2500, opened["before"]])
                 r["mountedAtFirstPaint"] = opened["mountedAtFirstPaint"]
@@ -156,7 +156,7 @@ def main() -> int:
     finally:
         stop_process(vite)
         info("vite stopped")
-    (OUT / f"{LABEL}.json").write_text(json.dumps(out, indent = 2), encoding = "utf-8")
+    (OUT / f"{LABEL}.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     print()
     print(
         f"{'rep':>4} {'windowOpen':>11} {'mounted':>16} {'grewBy':>7} {'drift 2f':>9} {'drift end':>10} {'distBottom':>11}"

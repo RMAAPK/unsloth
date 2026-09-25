@@ -24,7 +24,7 @@ def _write_ollama_store(root: Path, *, extra_layers: tuple[str, ...] = ()) -> Pa
     """A minimal Ollama layout whose optional extra layers resolve to real blobs."""
     digest_value = "a" * 64
     blob = root / "blobs" / f"sha256-{digest_value}"
-    blob.parent.mkdir(parents = True)
+    blob.parent.mkdir(parents=True)
     blob.write_bytes(b"GGUF-not-really")
 
     layers = [
@@ -33,9 +33,9 @@ def _write_ollama_store(root: Path, *, extra_layers: tuple[str, ...] = ()) -> Pa
             "digest": f"sha256:{digest_value}",
         }
     ]
-    for index, media_type in enumerate(extra_layers, start = 1):
+    for index, media_type in enumerate(extra_layers, start=1):
         layer_digest = f"{index:064x}"
-        (root / "blobs" / f"sha256-{layer_digest}").write_text("{}", encoding = "utf-8")
+        (root / "blobs" / f"sha256-{layer_digest}").write_text("{}", encoding="utf-8")
         layers.append(
             {
                 "mediaType": media_type,
@@ -44,7 +44,7 @@ def _write_ollama_store(root: Path, *, extra_layers: tuple[str, ...] = ()) -> Pa
         )
 
     tag_file = root / "manifests" / "registry.ollama.ai" / "library" / "llama3" / "latest"
-    tag_file.parent.mkdir(parents = True)
+    tag_file.parent.mkdir(parents=True)
     tag_file.write_text(
         json.dumps(
             {
@@ -52,7 +52,7 @@ def _write_ollama_store(root: Path, *, extra_layers: tuple[str, ...] = ()) -> Pa
                 "layers": layers,
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     return tag_file
 
@@ -107,7 +107,7 @@ def test_load_resolves_a_manifest_ref_to_a_gguf_link(tmp_path, monkeypatch):
 
     ref = _manifest_ref(tmp_path, monkeypatch)
     identifier, label, native_grant_backed = _resolve_model_identifier_for_request(
-        LoadRequest(model_path = ref), operation = "load-model"
+        LoadRequest(model_path=ref), operation="load-model"
     )
 
     assert identifier.endswith(".gguf")
@@ -164,15 +164,15 @@ def test_retagged_manifest_replaces_one_hardlink_and_invalidates_loaded_identity
     replacement_digest = "b" * 64
     replacement_blob = root / "blobs" / f"sha256-{replacement_digest}"
     replacement_blob.write_bytes(b"GGUF-replacement")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"][0]["digest"] = f"sha256:{replacement_digest}"
 
     replacement_config_digest = "c" * 64
     (root / "blobs" / f"sha256-{replacement_config_digest}").write_text(
-        json.dumps({"file_type": "Q8_0"}), encoding = "utf-8"
+        json.dumps({"file_type": "Q8_0"}), encoding="utf-8"
     )
     manifest["config"] = {"digest": f"sha256:{replacement_config_digest}"}
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     second_path = ollama.materialize_ollama_model_ref(ref)
 
@@ -181,12 +181,12 @@ def test_retagged_manifest_replaces_one_hardlink_and_invalidates_loaded_identity
     assert list((root / ".studio_links").rglob("*.gguf")) == [Path(second_path)]
 
     resident = SimpleNamespace(
-        is_loaded = True,
-        _model_identifier = ref,
-        _gguf_path = first_path,
-        _gguf_load_identity = first_identity,
+        is_loaded=True,
+        _model_identifier=ref,
+        _gguf_path=first_path,
+        _gguf_load_identity=first_identity,
     )
-    replacement_intent = GgufLoadIntent(model_identifier = ref, gguf_path = second_path)
+    replacement_intent = GgufLoadIntent(model_identifier=ref, gguf_path=second_path)
     assert not LlamaCppBackend.matches_load_source(resident, replacement_intent)
 
 
@@ -196,7 +196,7 @@ def test_missing_projector_retag_is_rejected_before_main_link_changes(tmp_path, 
     root = tmp_path / "ollama-missing-projector"
     tag_file = _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.projector",),
+        extra_layers=("application/vnd.ollama.image.projector",),
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
@@ -206,12 +206,12 @@ def test_missing_projector_retag_is_rejected_before_main_link_changes(tmp_path, 
 
     replacement_digest = "b" * 64
     (root / "blobs" / f"sha256-{replacement_digest}").write_bytes(b"GGUF-replacement")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"][0]["digest"] = f"sha256:{replacement_digest}"
     manifest["layers"][1]["digest"] = f"sha256:{'c' * 64}"
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
-    with pytest.raises(ValueError, match = "projector"):
+    with pytest.raises(ValueError, match="projector"):
         ollama.materialize_ollama_model_ref(ref)
 
     assert Path(model_path).read_bytes() == b"GGUF-not-really"
@@ -227,21 +227,21 @@ def test_dangling_projector_link_can_be_replaced_or_removed(
     root = tmp_path / "ollama-dangling-projector"
     tag_file = _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.projector",),
+        extra_layers=("application/vnd.ollama.image.projector",),
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
     model_path = ollama.materialize_ollama_model_ref(ref)
     projector_path = next(Path(model_path).parent.glob("*-mmproj.gguf"))
 
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     if remove_projector:
         manifest["layers"] = manifest["layers"][:1]
     else:
         projector_digest = "c" * 64
         (root / "blobs" / f"sha256-{projector_digest}").write_bytes(b"GGUF-projector-replacement")
         manifest["layers"][1]["digest"] = f"sha256:{projector_digest}"
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     real_is_symlink = Path.is_symlink
     real_resolve = Path.resolve
@@ -270,7 +270,7 @@ def test_failed_main_retag_restores_the_previous_projector(tmp_path, monkeypatch
     root = tmp_path / "ollama-pair-rollback"
     tag_file = _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.projector",),
+        extra_layers=("application/vnd.ollama.image.projector",),
     )
 
     def deny_symlink(*_args, **_kwargs):
@@ -288,10 +288,10 @@ def test_failed_main_retag_restores_the_previous_projector(tmp_path, monkeypatch
     projector_blob = root / "blobs" / f"sha256-{projector_digest}"
     model_blob.write_bytes(b"GGUF-replacement")
     projector_blob.write_bytes(b"GGUF-projector-replacement")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"][0]["digest"] = f"sha256:{model_digest}"
     manifest["layers"][1]["digest"] = f"sha256:{projector_digest}"
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     make_link = ollama._make_ollama_blob_link
 
@@ -301,7 +301,7 @@ def test_failed_main_retag_restores_the_previous_projector(tmp_path, monkeypatch
         return make_link(link_dir, link_name, target)
 
     monkeypatch.setattr(ollama, "_make_ollama_blob_link", fail_replacement_model)
-    with pytest.raises(ValueError, match = "model blob"):
+    with pytest.raises(ValueError, match="model blob"):
         ollama.materialize_ollama_model_ref(ref)
 
     assert Path(model_path).read_bytes() == b"GGUF-not-really"
@@ -324,9 +324,9 @@ def test_materialization_lease_blocks_a_concurrent_retag(tmp_path, monkeypatch):
 
     replacement_digest = "b" * 64
     (root / "blobs" / f"sha256-{replacement_digest}").write_bytes(b"GGUF-replacement")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"][0]["digest"] = f"sha256:{replacement_digest}"
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     started = threading.Event()
     finished = threading.Event()
@@ -336,12 +336,12 @@ def test_materialization_lease_blocks_a_concurrent_retag(tmp_path, monkeypatch):
         ollama.materialize_ollama_model_ref(alternate_ref)
         finished.set()
 
-    worker = threading.Thread(target = retag)
+    worker = threading.Thread(target=retag)
     worker.start()
     assert started.wait(1)
     assert not finished.wait(0.1)
     lease.release()
-    worker.join(timeout = 1)
+    worker.join(timeout=1)
 
     assert finished.is_set()
     assert Path(lease.path).read_bytes() == b"GGUF-replacement"
@@ -362,7 +362,7 @@ def test_waiting_route_lease_does_not_starve_the_default_executor(tmp_path, monk
     tag_file = _write_ollama_store(root)
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
-    request = ValidateModelRequest(model_path = ref)
+    request = ValidateModelRequest(model_path=ref)
 
     real_acquire = inference.acquire_ollama_model_ref
     waiter_started = threading.Event()
@@ -381,15 +381,15 @@ def test_waiting_route_lease_does_not_starve_the_default_executor(tmp_path, monk
     monkeypatch.setattr(inference, "acquire_ollama_model_ref", observed_acquire)
 
     async def scenario():
-        asyncio.get_running_loop().set_default_executor(ThreadPoolExecutor(max_workers = 1))
+        asyncio.get_running_loop().set_default_executor(ThreadPoolExecutor(max_workers=1))
         first_stack = ExitStack()
         second_stack = ExitStack()
         await inference._lease_ollama_model_ref(
-            request, operation = "validate-model", stack = first_stack
+            request, operation="validate-model", stack=first_stack
         )
         waiter = asyncio.create_task(
             inference._lease_ollama_model_ref(
-                request, operation = "validate-model", stack = second_stack
+                request, operation="validate-model", stack=second_stack
             )
         )
         for _ in range(100):
@@ -398,12 +398,12 @@ def test_waiting_route_lease_does_not_starve_the_default_executor(tmp_path, monk
             await asyncio.sleep(0.01)
         assert waiter_started.is_set()
         try:
-            progressed = await asyncio.wait_for(asyncio.to_thread(lambda: True), timeout = 1)
+            progressed = await asyncio.wait_for(asyncio.to_thread(lambda: True), timeout=1)
         except TimeoutError:
             progressed = False
         finally:
             first_stack.close()
-        await asyncio.wait_for(waiter, timeout = 1)
+        await asyncio.wait_for(waiter, timeout=1)
         second_stack.close()
         return progressed
 
@@ -416,16 +416,16 @@ def test_projector_removal_deletes_the_stale_link(tmp_path, monkeypatch):
     root = tmp_path / "ollama-projector-removed"
     tag_file = _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.projector",),
+        extra_layers=("application/vnd.ollama.image.projector",),
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
 
     model_path = ollama.materialize_ollama_model_ref(ref)
     projector_path = next(Path(model_path).parent.glob("*-mmproj.gguf"))
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"] = manifest["layers"][:1]
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     assert ollama.materialize_ollama_model_ref(ref) == model_path
     assert not projector_path.exists()
@@ -440,7 +440,7 @@ def test_projector_only_retag_invalidates_loaded_identity(tmp_path, monkeypatch)
     root = tmp_path / "ollama-projector-retagged"
     tag_file = _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.projector",),
+        extra_layers=("application/vnd.ollama.image.projector",),
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
@@ -452,23 +452,23 @@ def test_projector_only_retag_invalidates_loaded_identity(tmp_path, monkeypatch)
     replacement_digest = "c" * 64
     replacement_blob = root / "blobs" / f"sha256-{replacement_digest}"
     replacement_blob.write_bytes(b"GGUF-projector-replacement")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["layers"][1]["digest"] = f"sha256:{replacement_digest}"
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
 
     assert ollama.materialize_ollama_model_ref(ref) == model_path
     assert Path(projector_path).read_bytes() == b"GGUF-projector-replacement"
 
     resident = SimpleNamespace(
-        is_loaded = True,
-        _model_identifier = ref,
-        _gguf_path = model_path,
-        _gguf_load_identity = first_identity,
+        is_loaded=True,
+        _model_identifier=ref,
+        _gguf_path=model_path,
+        _gguf_load_identity=first_identity,
     )
     replacement_intent = GgufLoadIntent(
-        model_identifier = ref,
-        gguf_path = model_path,
-        mmproj_path = str(projector_path),
+        model_identifier=ref,
+        gguf_path=model_path,
+        mmproj_path=str(projector_path),
     )
     assert not LlamaCppBackend.matches_load_source(resident, replacement_intent)
 
@@ -488,56 +488,56 @@ def test_ollama_intent_loads_the_link_but_keeps_the_manifest_identity(tmp_path, 
 
     ref = _manifest_ref(tmp_path, monkeypatch)
     resolved, _, _ = _resolve_model_identifier_for_request(
-        LoadRequest(model_path = ref), operation = "load-model"
+        LoadRequest(model_path=ref), operation="load-model"
     )
     config = SimpleNamespace(
-        identifier = resolved,
-        gguf_hf_repo = None,
-        gguf_file = resolved,
-        gguf_mmproj_file = None,
-        gguf_mtp_file = None,
-        gguf_dspark_file = None,
-        gguf_dflash_file = None,
-        gguf_variant = None,
-        is_vision = False,
+        identifier=resolved,
+        gguf_hf_repo=None,
+        gguf_file=resolved,
+        gguf_mmproj_file=None,
+        gguf_mtp_file=None,
+        gguf_dspark_file=None,
+        gguf_dflash_file=None,
+        gguf_variant=None,
+        is_vision=False,
     )
 
     intent = _resolve_gguf_load_intent(
         config,
-        LoadRequest(model_path = ref),
-        native_grant_backed = False,
-        chat_template_override = None,
-        extra_args = None,
-        placement = _LoadPlacement(None, None, False, None),
-        n_parallel = 1,
+        LoadRequest(model_path=ref),
+        native_grant_backed=False,
+        chat_template_override=None,
+        extra_args=None,
+        placement=_LoadPlacement(None, None, False, None),
+        n_parallel=1,
     )
 
     assert intent.gguf_path == resolved
     assert intent.model_identifier == ref
 
     backend = SimpleNamespace(
-        model_identifier = intent.model_identifier,
-        _native_grant_backed = False,
-        _native_display_label = None,
-        _openai_advertised_id = None,
+        model_identifier=intent.model_identifier,
+        _native_grant_backed=False,
+        _native_display_label=None,
+        _openai_advertised_id=None,
     )
     assert _llama_status_model_ids(backend) == (ref, ref)
 
     active_backend = SimpleNamespace(
-        extra_args = None,
-        last_load_intent = intent,
-        hf_repo = None,
-        gguf_path = resolved,
-        hf_variant = None,
-        layer_preserves_tensor_intent = False,
+        extra_args=None,
+        last_load_intent=intent,
+        hf_repo=None,
+        gguf_path=resolved,
+        hf_variant=None,
+        layer_preserves_tensor_intent=False,
     )
     active_intent = _active_gguf_intent(
-        LoadRequest(model_path = ref),
+        LoadRequest(model_path=ref),
         active_backend,
-        model_identifier = ref,
-        chat_template_override = None,
-        n_parallel = 1,
-        native_grant_backed = False,
+        model_identifier=ref,
+        chat_template_override=None,
+        n_parallel=1,
+        native_grant_backed=False,
     )
     assert active_intent.model_identifier == ref
     assert active_intent.gguf_path == resolved
@@ -569,7 +569,7 @@ def _rich_manifest_ref(tmp_path: Path, monkeypatch) -> tuple[Path, str]:
 
     root = tmp_path / "ollama-rich"
     tag_file = _write_ollama_store(
-        root, extra_layers = _METADATA_LAYERS + _UNSUPPORTED_RUNTIME_LAYERS
+        root, extra_layers=_METADATA_LAYERS + _UNSUPPORTED_RUNTIME_LAYERS
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
@@ -578,6 +578,7 @@ def _rich_manifest_ref(tmp_path: Path, monkeypatch) -> tuple[Path, str]:
 
 def test_rich_manifest_is_withheld_from_inventory(tmp_path, monkeypatch):
     from hub.services.models import ollama
+
     root, _ = _rich_manifest_ref(tmp_path, monkeypatch)
 
     assert ollama.scan_ollama_dir(root) == []
@@ -587,7 +588,7 @@ def test_a_normally_pulled_model_is_listed(tmp_path, monkeypatch):
     from hub.services.models import ollama
 
     root = tmp_path / "ollama-pulled"
-    _write_ollama_store(root, extra_layers = _METADATA_LAYERS)
+    _write_ollama_store(root, extra_layers=_METADATA_LAYERS)
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
 
     rows = ollama.scan_ollama_dir(root)
@@ -601,12 +602,12 @@ def test_a_normally_pulled_model_resolves_for_a_load(tmp_path, monkeypatch):
     from routes.inference import _resolve_model_identifier_for_request
 
     root = tmp_path / "ollama-pulled-load"
-    tag_file = _write_ollama_store(root, extra_layers = _METADATA_LAYERS)
+    tag_file = _write_ollama_store(root, extra_layers=_METADATA_LAYERS)
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
 
     resolved, _link_name, _is_dir = _resolve_model_identifier_for_request(
-        LoadRequest(model_path = ref), operation = "load-model"
+        LoadRequest(model_path=ref), operation="load-model"
     )
     assert resolved.endswith(".gguf")
 
@@ -620,7 +621,7 @@ def test_an_ignorable_layer_does_not_hide_the_primary_model(tmp_path, monkeypatc
     from hub.services.models import ollama
 
     root = tmp_path / f"ollama-{ignorable.rpartition('.')[2]}"
-    _write_ollama_store(root, extra_layers = _METADATA_LAYERS + (ignorable,))
+    _write_ollama_store(root, extra_layers=_METADATA_LAYERS + (ignorable,))
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
 
     rows = ollama.scan_ollama_dir(root)
@@ -638,7 +639,7 @@ def test_one_unsupported_layer_still_withholds_beside_the_metadata(
     from hub.services.models import ollama
 
     root = tmp_path / f"ollama-{unsupported.rpartition('.')[2]}"
-    _write_ollama_store(root, extra_layers = _METADATA_LAYERS + (unsupported,))
+    _write_ollama_store(root, extra_layers=_METADATA_LAYERS + (unsupported,))
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
 
     assert ollama.scan_ollama_dir(root) == []
@@ -651,7 +652,7 @@ def test_rich_manifest_ref_is_rejected_without_creating_links(tmp_path, monkeypa
     root, ref = _rich_manifest_ref(tmp_path, monkeypatch)
 
     with pytest.raises(HTTPException) as excinfo:
-        _resolve_model_identifier_for_request(LoadRequest(model_path = ref), operation = "load-model")
+        _resolve_model_identifier_for_request(LoadRequest(model_path=ref), operation="load-model")
 
     assert excinfo.value.status_code == 400
     assert "unsupported runtime layers" in str(excinfo.value.detail).lower()
@@ -667,7 +668,7 @@ def test_license_metadata_does_not_hide_a_plain_manifest(tmp_path, monkeypatch):
     root = tmp_path / "ollama-licensed"
     _write_ollama_store(
         root,
-        extra_layers = ("application/vnd.ollama.image.license",),
+        extra_layers=("application/vnd.ollama.image.license",),
     )
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
 
@@ -683,13 +684,13 @@ def test_non_object_manifest_ref_is_a_400(tmp_path, monkeypatch):
 
     root = tmp_path / "ollama-non-object-manifest"
     tag_file = _write_ollama_store(root)
-    tag_file.write_text("[]", encoding = "utf-8")
+    tag_file.write_text("[]", encoding="utf-8")
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
 
     assert ollama.scan_ollama_dir(root) == []
     with pytest.raises(HTTPException) as excinfo:
-        _resolve_model_identifier_for_request(LoadRequest(model_path = ref), operation = "load-model")
+        _resolve_model_identifier_for_request(LoadRequest(model_path=ref), operation="load-model")
     assert excinfo.value.status_code == 400
     assert "manifest" in str(excinfo.value.detail).lower()
 
@@ -702,16 +703,16 @@ def test_non_object_config_blob_ref_is_a_400(tmp_path, monkeypatch):
     root = tmp_path / "ollama-non-object-config"
     tag_file = _write_ollama_store(root)
     config_digest = "b" * 64
-    (root / "blobs" / f"sha256-{config_digest}").write_text("[]", encoding = "utf-8")
-    manifest = json.loads(tag_file.read_text(encoding = "utf-8"))
+    (root / "blobs" / f"sha256-{config_digest}").write_text("[]", encoding="utf-8")
+    manifest = json.loads(tag_file.read_text(encoding="utf-8"))
     manifest["config"] = {"digest": f"sha256:{config_digest}"}
-    tag_file.write_text(json.dumps(manifest), encoding = "utf-8")
+    tag_file.write_text(json.dumps(manifest), encoding="utf-8")
     monkeypatch.setattr(ollama, "ollama_model_dirs", lambda: [root])
     ref = f"ollama-manifest:{quote(str(tag_file), safe = '')}"
 
     assert ollama.scan_ollama_dir(root) == []
     with pytest.raises(HTTPException) as excinfo:
-        _resolve_model_identifier_for_request(LoadRequest(model_path = ref), operation = "load-model")
+        _resolve_model_identifier_for_request(LoadRequest(model_path=ref), operation="load-model")
     assert excinfo.value.status_code == 400
     assert "config blob" in str(excinfo.value.detail).lower()
 
@@ -726,7 +727,7 @@ def test_a_ref_outside_known_ollama_dirs_is_a_400(tmp_path, monkeypatch):
     outside = tmp_path / "not-ollama" / "manifests" / "x" / "y" / "latest"
     ref = f"ollama-manifest:{outside}"
     with pytest.raises(HTTPException) as excinfo:
-        _resolve_model_identifier_for_request(LoadRequest(model_path = ref), operation = "load-model")
+        _resolve_model_identifier_for_request(LoadRequest(model_path=ref), operation="load-model")
     assert excinfo.value.status_code == 400
 
 
@@ -735,7 +736,7 @@ def test_non_ollama_paths_take_the_existing_path(tmp_path):
     from routes.inference import _resolve_model_identifier_for_request
 
     identifier, label, native_grant_backed = _resolve_model_identifier_for_request(
-        LoadRequest(model_path = "unsloth/model-GGUF"), operation = "load-model"
+        LoadRequest(model_path="unsloth/model-GGUF"), operation="load-model"
     )
     assert (identifier, label, native_grant_backed) == (
         "unsloth/model-GGUF",

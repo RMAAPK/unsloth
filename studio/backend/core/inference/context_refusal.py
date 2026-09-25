@@ -26,7 +26,7 @@ __all__ = [
 
 # A one-key box, not the refusal itself: `.set()` in a context copy is invisible to the original, where
 # `_friendly_error` runs, but copies share VALUES. See `open_slot`.
-_REFUSAL_SLOT: ContextVar[Optional[dict]] = ContextVar("unsloth_context_refusal", default = None)
+_REFUSAL_SLOT: ContextVar[Optional[dict]] = ContextVar("unsloth_context_refusal", default=None)
 
 # Share of the irreducible prompt the latest turn must reach before the turn, not the conversation, is blamed. Never all
 # of it: the system prompt and template wrapper are in the floor too. Dominating is NOT the same as not fitting, so it
@@ -65,7 +65,7 @@ def record_fit(truncation) -> None:
     """
     if not isinstance(truncation, dict):
         return
-    slot = _slot(create = True)
+    slot = _slot(create=True)
     slot["refusal"] = None if truncation.get("fits") else dict(truncation)
 
 

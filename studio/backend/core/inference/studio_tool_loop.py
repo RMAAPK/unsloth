@@ -354,7 +354,7 @@ class ToolLoopTransport(Protocol):
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None,
         tool_choice: Any,
-        cancel_event: threading.Event,
+        cancel_event: threading.Event
     ) -> AsyncIterator[str]: ...
 
 
@@ -854,7 +854,7 @@ class _Turn:
         name_before: str,
         incoming_name: str,
         extra_before: dict[str, Any] | None,
-        incoming_extra: dict[str, Any] | None,
+        incoming_extra: dict[str, Any] | None
     ) -> None:
         """Give every call after the first in one slot a call of its own."""
         complete, tail = self._scan(key, current["function"]["arguments"])
@@ -1211,7 +1211,7 @@ async def stream_with_studio_tools(
     *,
     run: ToolLoopRun,
     policy: ToolLoopPolicy,
-    cancel_event: threading.Event,
+    cancel_event: threading.Event
 ) -> AsyncIterator[str]:
     """Stream a provider, execute requested Unsloth tools, continue to a final answer."""
     conversation = [dict(message) for message in run.messages]

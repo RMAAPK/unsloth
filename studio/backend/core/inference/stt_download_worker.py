@@ -68,10 +68,10 @@ def spawn_download(
 
     process = subprocess.Popen(
         [sys.executable, "-m", "core.inference.stt_download_worker", *args],
-        env = env,
-        cwd = str(cwd),
-        stdout = subprocess.DEVNULL,
-        stderr = subprocess.PIPE,
+        env=env,
+        cwd=str(cwd),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
         # Die with Unsloth: a detached worker would keep pulling gigabytes after
         # the app closed, with nothing left able to stop it.
         **child_popen_kwargs(),
@@ -100,7 +100,7 @@ def terminate_download(process: subprocess.Popen) -> None:
         except Exception:  # noqa: BLE001
             pass
 
-    threading.Thread(target = escalate, daemon = True).start()
+    threading.Thread(target=escalate, daemon=True).start()
 
 
 def reap_download(process: subprocess.Popen) -> bytes:
@@ -122,10 +122,10 @@ def reap_download(process: subprocess.Popen) -> bytes:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description = "Download one dictation model.")
-    parser.add_argument("--repo-id", required = True)
+    parser = argparse.ArgumentParser(description="Download one dictation model.")
+    parser.add_argument("--repo-id", required=True)
     # Explicit filenames prevent repository patterns from widening the download.
-    parser.add_argument("--filename", action = "append", required = True)
+    parser.add_argument("--filename", action="append", required=True)
     parser.add_argument("--revision")
     args = parser.parse_args(argv)
 
@@ -134,10 +134,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     for filename in args.filename:
         hf_hub_download(
-            repo_id = args.repo_id,
-            filename = filename,
-            revision = args.revision,
-            token = token,
+            repo_id=args.repo_id,
+            filename=filename,
+            revision=args.revision,
+            token=token,
         )
     return 0
 

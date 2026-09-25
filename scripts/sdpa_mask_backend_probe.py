@@ -15,10 +15,10 @@ dev, dt = "cuda:0", torch.bfloat16
 
 
 def mk():
-    return torch.randn(B, H, N, D, device = dev, dtype = dt)
+    return torch.randn(B, H, N, D, device=dev, dtype=dt)
 
 
-def timed(fn, iters = 20):
+def timed(fn, iters=20):
     try:
         torch.cuda.synchronize()
         for _ in range(3):
@@ -56,7 +56,7 @@ def _identity(run, reference):
 
 
 q, k, v = mk(), mk(), mk()
-dense = torch.ones(B, 1, N, N, dtype = torch.bool, device = dev)
+dense = torch.ones(B, 1, N, N, dtype=torch.bool, device=dev)
 
 backends = {
     "default(dispatch)": None,
@@ -71,7 +71,7 @@ backends = {
 # different kernels can land at similar times. Bitwise identity can: the forced backend that reproduces this tensor
 # exactly is the one the dispatcher chose.
 try:
-    reference = F.scaled_dot_product_attention(q, k, v, attn_mask = dense)
+    reference = F.scaled_dot_product_attention(q, k, v, attn_mask=dense)
 except Exception:  # noqa: BLE001 -- no reference: the identity column just reports n/a
     reference = None
 
@@ -81,15 +81,15 @@ for name, bk in backends.items():
 
     def run_dense():
         if bk is None:
-            return F.scaled_dot_product_attention(q, k, v, attn_mask = dense)
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=dense)
         with sdpa_kernel(bk):
-            return F.scaled_dot_product_attention(q, k, v, attn_mask = dense)
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=dense)
 
     def run_none():
         if bk is None:
-            return F.scaled_dot_product_attention(q, k, v, attn_mask = None)
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=None)
         with sdpa_kernel(bk):
-            return F.scaled_dot_product_attention(q, k, v, attn_mask = None)
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=None)
 
     dms = timed(run_dense)
     nms = timed(run_none)

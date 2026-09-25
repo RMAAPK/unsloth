@@ -75,7 +75,7 @@ ART_DIR = os.environ.get("PW_ART_DIR", "logs/playwright_modelcfg")
 # all identical before and after), so this is a bounded wait rather than a condition.
 CONFIG_SETTLE_MS = int(os.environ.get("STUDIO_CONFIG_SETTLE_MS", "1000"))
 ART = Path(ART_DIR)
-ART.mkdir(parents = True, exist_ok = True)
+ART.mkdir(parents=True, exist_ok=True)
 STRICT = os.environ.get("STUDIO_UI_STRICT", "0") == "1"
 PLAYWRIGHT_BROWSER = os.environ.get("STUDIO_PLAYWRIGHT_BROWSER", "chromium").lower()
 PLAYWRIGHT_CHANNEL = os.environ.get("STUDIO_PLAYWRIGHT_CHANNEL") or None
@@ -127,15 +127,15 @@ def _normalize_model_identity(model_id: str) -> str:
 
 
 def step(s: str) -> None:
-    print(f"[ui-modelcfg] STEP {s}", flush = True)
+    print(f"[ui-modelcfg] STEP {s}", flush=True)
 
 
 def info(s: str) -> None:
-    print(f"[ui-modelcfg] {s}", flush = True)
+    print(f"[ui-modelcfg] {s}", flush=True)
 
 
 def fail(m: str) -> None:
-    print(f"[ui-modelcfg] FAIL: {m}", flush = True)
+    print(f"[ui-modelcfg] FAIL: {m}", flush=True)
     _failed.append(m)
 
 
@@ -184,22 +184,22 @@ def _login_token_via_api(base: str, user: str, pw: str) -> str:
 
     req = urllib.request.Request(
         f"{base}/api/auth/login",
-        data = json.dumps({"username": user, "password": pw}).encode(),
-        headers = {"Content-Type": "application/json"},
-        method = "POST",
+        data=json.dumps({"username": user, "password": pw}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
     )
-    with urllib.request.urlopen(req, timeout = 15) as r:
+    with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode())["access_token"]
 
 
 with sync_playwright() as p:
     _watchdog = install_wall_clock_watchdog(
         WALL_TIMEOUT_S,
-        label = "ui-modelcfg",
-        info = info,
+        label="ui-modelcfg",
+        info=info,
     )
     # Health pre-flight: bash-side health wait can pass before the auth DB migrates.
-    wait_for_health(BASE, timeout = 30.0, info = info)
+    wait_for_health(BASE, timeout=30.0, info=info)
     if PLAYWRIGHT_BROWSER not in ("chromium", "firefox", "webkit"):
         fail(f"unsupported STUDIO_PLAYWRIGHT_BROWSER={PLAYWRIGHT_BROWSER!r}")
         sys.exit(1)
@@ -214,8 +214,8 @@ with sync_playwright() as p:
         sys.exit(1)
     browser = browser_type.launch(**launch_kwargs)
     ctx = browser.new_context(
-        viewport = {"width": 1280, "height": 900},
-        reduced_motion = "reduce",
+        viewport={"width": 1280, "height": 900},
+        reduced_motion="reduce",
     )
     install_view_transition_killer(ctx)
     page = ctx.new_page()
@@ -247,10 +247,10 @@ with sync_playwright() as p:
         _n[0] += 1
         try:
             page.screenshot(
-                path = str(ART / f"{_n[0]:02d}-{name}.png"),
-                full_page = True,
-                timeout = 90_000,
-                animations = "disabled",
+                path=str(ART / f"{_n[0]:02d}-{name}.png"),
+                full_page=True,
+                timeout=90_000,
+                animations="disabled",
             )
         except Exception as _shoot_err:
             info(f"WARN: screenshot {name} failed: {_shoot_err}")
@@ -322,7 +322,7 @@ with sync_playwright() as p:
             f"try{{localStorage.setItem('unsloth_auth_token', {json.dumps(_tok)});}}"
             f"catch(e){{}}"
         )
-        page.goto(BASE, wait_until = "domcontentloaded", timeout = 60_000)
+        page.goto(BASE, wait_until="domcontentloaded", timeout=60_000)
     else:
         step("setup: change-password")
         # 3-attempt retry: the form can re-render mid-fill on slow runners and detach the password fields; each retry
@@ -330,22 +330,22 @@ with sync_playwright() as p:
         form_err: Exception | None = None
         for _form_attempt in range(3):
             try:
-                page.goto(f"{BASE}/change-password", wait_until = "domcontentloaded", timeout = 60_000)
+                page.goto(f"{BASE}/change-password", wait_until="domcontentloaded", timeout=60_000)
                 try:
-                    page.wait_for_load_state("networkidle", timeout = 30_000)
+                    page.wait_for_load_state("networkidle", timeout=30_000)
                 except Exception:
                     pass
                 pw_field = page.locator("#new-password")
-                pw_field.wait_for(state = "visible", timeout = 60_000)
-                pw_field.fill(NEW, timeout = 60_000)
-                page.fill("#confirm-password", NEW, timeout = 60_000)
+                pw_field.wait_for(state="visible", timeout=60_000)
+                pw_field.fill(NEW, timeout=60_000)
+                page.fill("#confirm-password", NEW, timeout=60_000)
                 status, _ = click_and_wait_for_response(
                     page,
-                    url_substr = "/api/auth/change-password",
-                    method = "POST",
-                    do_click = lambda: page.locator('button[type="submit"]').click(),
-                    timeout_ms = 30_000,
-                    info = lambda m: print(f"[ui-modelcfg]   {m}", flush = True),
+                    url_substr="/api/auth/change-password",
+                    method="POST",
+                    do_click=lambda: page.locator('button[type="submit"]').click(),
+                    timeout_ms=30_000,
+                    info=lambda m: print(f"[ui-modelcfg]   {m}", flush=True),
                 )
                 if status is not None and status >= 400:
                     raise AssertionError(
@@ -363,7 +363,7 @@ with sync_playwright() as p:
                     f"[ui-modelcfg]   change-password attempt {_form_attempt + 1} failed: "
                     f"{type(e).__name__}: {str(e)[:200]}; page.url={cur_url}; "
                     f"page_errors={len(page_errors)}",
-                    flush = True,
+                    flush=True,
                 )
                 if _form_attempt < 2:
                     if "ERR_NO_BUFFER_SPACE" in str(e):
@@ -372,22 +372,22 @@ with sync_playwright() as p:
                     page = recover_or_replace_page(
                         page,
                         ctx,
-                        default_timeout_ms = 60_000,
-                        info = lambda m: print(f"[ui-modelcfg]   recovery: {m}", flush = True),
+                        default_timeout_ms=60_000,
+                        info=lambda m: print(f"[ui-modelcfg]   recovery: {m}", flush=True),
                     )
                     page.on("request", _on_request)
         if form_err is not None:
             raise form_err
 
     try:
-        page.wait_for_load_state("networkidle", timeout = 30_000)
+        page.wait_for_load_state("networkidle", timeout=30_000)
     except Exception:
         pass
     composer = page.locator('textarea[aria-label="Message input"]')
     last_err: Exception | None = None
     for _attempt in range(2):
         try:
-            composer.wait_for(state = "visible", timeout = 60_000)
+            composer.wait_for(state="visible", timeout=60_000)
             last_err = None
             break
         except Exception as e:
@@ -400,10 +400,10 @@ with sync_playwright() as p:
                 page = recover_or_replace_page(
                     page,
                     ctx,
-                    default_timeout_ms = 60_000,
-                    goto_url = BASE,
-                    settle_networkidle = True,
-                    info = lambda m: print(f"[ui-modelcfg]   recovery: {m}", flush = True),
+                    default_timeout_ms=60_000,
+                    goto_url=BASE,
+                    settle_networkidle=True,
+                    info=lambda m: print(f"[ui-modelcfg]   recovery: {m}", flush=True),
                 )
                 page.on("request", _on_request)
                 composer = page.locator('textarea[aria-label="Message input"]')
@@ -419,18 +419,18 @@ with sync_playwright() as p:
     load_resp = evaluate_fetch(
         page,
         f"{BASE}/api/inference/load",
-        method = "POST",
-        headers = {
+        method="POST",
+        headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         },
-        body = {
+        body={
             "model_path": GGUF_REPO,
             "gguf_variant": GGUF_VARIANT,
             "is_lora": False,
             "max_seq_length": 2048,
         },
-        timeout_ms = LOAD_FETCH_TIMEOUT_MS,
+        timeout_ms=LOAD_FETCH_TIMEOUT_MS,
     )
     if load_resp.get("error"):
         fail(f"/api/inference/load wedged: {load_resp['error']!r}")
@@ -441,7 +441,7 @@ with sync_playwright() as p:
     info(f"loaded model: {(load_resp['body'] or {}).get('display_name')}")
     page.reload()
     composer = page.locator('textarea[aria-label="Message input"]')
-    composer.wait_for(state = "visible", timeout = 60_000)
+    composer.wait_for(state="visible", timeout=60_000)
     load_posts.clear()  # drop the setup load; keep only UI-driven loads below.
 
     # ─────────────────────────────────────────────────────
@@ -479,8 +479,8 @@ with sync_playwright() as p:
             page,
             ART,
             name,
-            info = info,
-            extra = {"missed_selector": selector, "option_rows": rows, "gear_labels": gears},
+            info=info,
+            extra={"missed_selector": selector, "option_rows": rows, "gear_labels": gears},
         )
         info(f"DIAG {name}: {len(rows)} option row(s), {len(gears)} gear(s); see {name}.json")
 
@@ -490,7 +490,7 @@ with sync_playwright() as p:
             page.locator(TRIGGER).first.click()
             page.wait_for_timeout(900)
             popover = page.locator(POPOVER).first
-        popover.wait_for(state = "visible", timeout = 30_000)
+        popover.wait_for(state="visible", timeout=30_000)
         return popover
 
     def close_picker():
@@ -507,18 +507,18 @@ with sync_playwright() as p:
         click and the picker closes, so selecting first would dismiss the gear
         this is about to press.
         """
-        od = page.get_by_role("tab", name = "On Device").first
+        od = page.get_by_role("tab", name="On Device").first
         if _count(od):
             od.click()
             page.wait_for_timeout(700)
-        row = popover.locator("[data-model-picker-option]", has_text = hint).first
+        row = popover.locator("[data-model-picker-option]", has_text=hint).first
         if _count(row) == 0:
             search = popover.locator("[data-model-picker-search-input]").first
             if _count(search):
                 search.click()
                 search.fill(hint)
                 page.wait_for_timeout(700)
-                row = popover.locator("[data-model-picker-option]", has_text = hint).first
+                row = popover.locator("[data-model-picker-option]", has_text=hint).first
         return row if _count(row) else None
 
     def select_on_device_row(popover, hint):
@@ -531,7 +531,7 @@ with sync_playwright() as p:
 
     def config_is_open(popover):
         """Back is unique to the config page and always rendered inside the picker."""
-        return _count(popover.get_by_role("button", name = "Back to model list")) > 0
+        return _count(popover.get_by_role("button", name="Back to model list")) > 0
 
     # The collapsed sole-quant row appears only after an async probe lands, so an absent gear means either a multi-quant
     # repo or a probe in flight, with no DOM state to tell them apart.
@@ -545,8 +545,8 @@ with sync_playwright() as p:
     def row_gear(
         popover,
         hint,
-        quant = None,
-        timeout_ms = SOLE_QUANT_SETTLE_MS,
+        quant=None,
+        timeout_ms=SOLE_QUANT_SETTLE_MS,
     ):
         # The gear is a sibling of the row, not inside [data-model-picker-option], so scope it by repo id;
         # case-insensitive to match the has_text row lookup.
@@ -561,10 +561,10 @@ with sync_playwright() as p:
             pattern += f".* {re.escape(quant)}$"
         gear = popover.get_by_role(
             "button",
-            name = re.compile(pattern, re.IGNORECASE),
+            name=re.compile(pattern, re.IGNORECASE),
         ).first
         try:
-            gear.wait_for(state = "visible", timeout = timeout_ms)
+            gear.wait_for(state="visible", timeout=timeout_ms)
         except Exception:
             return None
         return gear
@@ -581,7 +581,7 @@ with sync_playwright() as p:
         # never reaches the expansion branch -- and which one it finds is then
         # arbitrary. Repo-only stays as the fallback, for the collapsed single-quant
         # row whose label carries its own quant and need not carry this one.
-        gear = row_gear(popover, hint, quant = GGUF_VARIANT, timeout_ms = QUANT_GEAR_MS)
+        gear = row_gear(popover, hint, quant=GGUF_VARIANT, timeout_ms=QUANT_GEAR_MS)
         if gear is None:
             gear = row_gear(popover, hint)
         if gear is None:
@@ -592,7 +592,7 @@ with sync_playwright() as p:
                 popover = open_picker()
                 if reveal_on_device_row(popover, hint) is None:
                     return None
-            gear = row_gear(popover, hint, quant = GGUF_VARIANT, timeout_ms = QUANT_GEAR_MS) or (
+            gear = row_gear(popover, hint, quant=GGUF_VARIANT, timeout_ms=QUANT_GEAR_MS) or (
                 row_gear(popover, hint)
             )
         if gear is None:
@@ -610,7 +610,7 @@ with sync_playwright() as p:
 
     def context_input(popover):
         for role in ("textbox", "spinbutton"):
-            loc = popover.get_by_role(role, name = "Context Length").first
+            loc = popover.get_by_role(role, name="Context Length").first
             if _count(loc):
                 return loc
         loc = popover.locator('input[aria-label="Context Length"]').first
@@ -622,7 +622,7 @@ with sync_playwright() as p:
         # reload case would be found under the wrong name. The panel shows exactly one
         # of these four.
         for name in ("Load model", "Reload model", "Save settings", "Forget settings"):
-            b = popover.get_by_role("button", name = name, exact = True).first
+            b = popover.get_by_role("button", name=name, exact=True).first
             if _count(b):
                 return b
         return None
@@ -638,7 +638,7 @@ with sync_playwright() as p:
     hidden_ok = True
     # This step asserts an absence, so it passes for free if the picker renders no rows at all -- which is exactly the
     # state a broken picker is in. Prove it is populated first, or "hidden" means nothing.
-    od_tab = page.get_by_role("tab", name = "On Device").first
+    od_tab = page.get_by_role("tab", name="On Device").first
     if _count(od_tab):
         od_tab.click()
         page.wait_for_timeout(400)
@@ -647,7 +647,7 @@ with sync_playwright() as p:
     # one, so this returns immediately in the normal case and only spends the timeout when there is genuinely nothing.
     try:
         popover.locator("[data-model-picker-option]").first.wait_for(
-            state = "attached", timeout = 20_000
+            state="attached", timeout=20_000
         )
     except Exception:
         pass
@@ -659,7 +659,7 @@ with sync_playwright() as p:
         info(f"picker populated: {populated} option row(s) before the hidden check")
     for needle in needles:
         for tab_name in tabs:
-            tab = page.get_by_role("tab", name = tab_name).first
+            tab = page.get_by_role("tab", name=tab_name).first
             if _count(tab) == 0:
                 continue
             try:
@@ -674,7 +674,7 @@ with sync_playwright() as p:
                 page.wait_for_timeout(600)
             hit = popover.locator(
                 "[data-model-picker-option]",
-                has_text = re.compile(re.escape(needle), re.I),
+                has_text=re.compile(re.escape(needle), re.I),
             )
             c = _count(hit)
             if c > 0:
@@ -757,7 +757,7 @@ with sync_playwright() as p:
     close_picker()
     page.reload()
     composer = page.locator('textarea[aria-label="Message input"]')
-    composer.wait_for(state = "visible", timeout = 60_000)
+    composer.wait_for(state="visible", timeout=60_000)
     popover = open_picker()
     if open_config(popover, MODEL_HINT) is None:
         fail("could not reopen run-settings after reload")
@@ -796,7 +796,7 @@ with sync_playwright() as p:
     # 3. Reset clears the override (never pins context) (HARD).
     # ─────────────────────────────────────────────────────
     step("reset clears the per-model override")
-    reset_btn = popover.get_by_role("button", name = "Reset").first
+    reset_btn = popover.get_by_role("button", name="Reset").first
     if _count(reset_btn) == 0:
         fail("Reset button not found in run-settings")
     else:
@@ -924,7 +924,7 @@ with sync_playwright() as p:
     try:
         popover = open_picker()
         if open_config(popover, MODEL_HINT) is not None:
-            adv = popover.get_by_role("switch", name = re.compile("advanced settings", re.I)).first
+            adv = popover.get_by_role("switch", name=re.compile("advanced settings", re.I)).first
             if _count(adv):
                 try:
                     adv.check()
@@ -1073,7 +1073,7 @@ with sync_playwright() as p:
             resp = evaluate_fetch(
                 page,
                 f"{BASE}/api/settings/openai-auto-switch/overrides",
-                headers = {"Authorization": f"Bearer {token}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
             if not resp.get("status") or resp.get("error") is not None:
                 return None
@@ -1087,12 +1087,12 @@ with sync_playwright() as p:
                 evaluate_fetch(
                     page,
                     f"{BASE}/api/settings/openai-auto-switch/overrides",
-                    method = "PUT",
-                    headers = {
+                    method="PUT",
+                    headers={
                         "Authorization": f"Bearer {token}",
                         "Content-Type": "application/json",
                     },
-                    body = {"model_id": key, "remove": True},
+                    body={"model_id": key, "remove": True},
                 )
 
         stale = rows_for_model()
@@ -1175,10 +1175,10 @@ with sync_playwright() as p:
                 "disableVision": True,
             }
         }
-        seed_legacy_for_next_document(legacy, wipe_migrated = True)
+        seed_legacy_for_next_document(legacy, wipe_migrated=True)
         page.reload()
         composer = page.locator('textarea[aria-label="Message input"]')
-        composer.wait_for(state = "visible", timeout = 60_000)
+        composer.wait_for(state="visible", timeout=60_000)
         # Opening the picker config forces the store to read (which migrates).
         popover = open_picker()
         open_config(popover, MODEL_HINT)
@@ -1229,10 +1229,10 @@ with sync_playwright() as p:
             # below compare key-for-key.
             seed_legacy_for_next_document(
                 {probe_key: {"contextLength": DISTINCT_CTX + 2048, "tensorParallel": True}},
-                wipe_migrated = False,
+                wipe_migrated=False,
             )
             page.reload()
-            composer.wait_for(state = "visible", timeout = 60_000)
+            composer.wait_for(state="visible", timeout=60_000)
             popover = open_picker()
             open_config(popover, MODEL_HINT)
             # The flag is already "1" here, so this waits on the store having been read
@@ -1275,9 +1275,9 @@ with sync_playwright() as p:
     browser.close()
 
 if _failed:
-    print(f"[ui-modelcfg] RESULT: FAIL ({len(_failed)} issue(s))", flush = True)
+    print(f"[ui-modelcfg] RESULT: FAIL ({len(_failed)} issue(s))", flush=True)
     for m in _failed:
-        print(f"[ui-modelcfg]   - {m}", flush = True)
+        print(f"[ui-modelcfg]   - {m}", flush=True)
     sys.exit(1)
-print("[ui-modelcfg] RESULT: PASS", flush = True)
+print("[ui-modelcfg] RESULT: PASS", flush=True)
 sys.exit(0)

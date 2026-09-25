@@ -141,7 +141,7 @@ def _open_verified(path: str) -> tuple[IO[bytes], int]:
     to that directory can already hard-link a file into it, which no platform
     here refuses.
     """
-    before = os.stat(path, follow_symlinks = False)
+    before = os.stat(path, follow_symlinks=False)
     if not stat.S_ISREG(before.st_mode):
         raise OSError(errno.ELOOP, "not a regular file")
     # O_NONBLOCK because O_NOFOLLOW refuses a symlink but NOT a FIFO, and
@@ -180,7 +180,7 @@ def _redact_record(raw: bytes) -> str:
     if b"\x00" in raw:
         return UNREADABLE_MARKER
     try:
-        text = raw.decode("utf-8", errors = "strict")
+        text = raw.decode("utf-8", errors="strict")
     except UnicodeDecodeError:
         return UNREADABLE_MARKER
     return redact_log_text(text.rstrip("\r"))
@@ -321,7 +321,7 @@ def _newest_first_across_families(
     for source in sources:
         by_family.setdefault(source.family, []).append(source)
     ordered: list[debug_log_sources.LogSource] = []
-    for rank in range(max((len(group) for group in by_family.values()), default = 0)):
+    for rank in range(max((len(group) for group in by_family.values()), default=0)):
         for group in by_family.values():
             if rank < len(group):
                 ordered.append(group[rank])
@@ -345,7 +345,7 @@ def build_log_archive() -> tempfile.SpooledTemporaryFile:
 
     The caller owns the returned file and must close it.
     """
-    output = tempfile.SpooledTemporaryFile(max_size = SPOOL_MAX_BYTES, mode = "w+b")
+    output = tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_BYTES, mode="w+b")
     try:
         warnings: list[str] = []
         used: set[str] = set()
@@ -421,7 +421,7 @@ def build_log_archive() -> tempfile.SpooledTemporaryFile:
                 archive.writestr(
                     zipfile.ZipInfo(WARNINGS_MEMBER),
                     "\n".join(warnings) + "\n",
-                    compress_type = zipfile.ZIP_DEFLATED,
+                    compress_type=zipfile.ZIP_DEFLATED,
                 )
     except BaseException:
         output.close()

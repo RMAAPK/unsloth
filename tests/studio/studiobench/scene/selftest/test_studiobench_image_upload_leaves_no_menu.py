@@ -37,7 +37,7 @@ class _Button:
     def __init__(self, page: "_Page") -> None:
         self._page = page
 
-    def click(self, timeout = None) -> None:
+    def click(self, timeout=None) -> None:
         page = self._page
         if page.click_dismisses_open_menu:
             page.menus.clear()  # a non-modal menu lets the outside pointerdown through and closes
@@ -54,7 +54,7 @@ class _Locator:
     def first(self) -> "_Locator":
         return self
 
-    def element_handle(self, timeout = None) -> _Button:
+    def element_handle(self, timeout=None) -> _Button:
         return _Button(self._page)
 
 
@@ -85,7 +85,7 @@ class _Page:
     def evaluate(
         self,
         script,
-        arg = None,
+        arg=None,
     ):
         if "__sbMenusBefore = " in script:
             self._before = set(self.menus)
@@ -105,20 +105,20 @@ def _upload(page: _Page):
     from studiobench.scene.actions import image_upload
 
     ctx = ActionContext(
-        page = page,
-        cdp = None,
-        cell = None,
-        window = None,
-        args = {"image_path": "probe.png"},
-        budget_ms = 12_000,
-        dom = None,
-        log = lambda _m: None,
+        page=page,
+        cdp=None,
+        cell=None,
+        window=None,
+        args={"image_path": "probe.png"},
+        budget_ms=12_000,
+        dom=None,
+        log=lambda _m: None,
     )
     return image_upload(ctx)
 
 
 def test_a_click_that_opened_the_menu_and_timed_out_closes_it():
-    page = _Page(click_opens_menu = True)
+    page = _Page(click_opens_menu=True)
     result = _upload(page)
 
     assert result.ran is False
@@ -130,7 +130,7 @@ def test_a_click_that_opened_the_menu_and_timed_out_closes_it():
 
 def test_a_click_that_opened_nothing_touches_nothing():
     """No stray Escape: with nothing open it could close something the page legitimately shows."""
-    page = _Page(click_opens_menu = False)
+    page = _Page(click_opens_menu=False)
     result = _upload(page)
 
     assert result.ran is False
@@ -139,7 +139,7 @@ def test_a_click_that_opened_nothing_touches_nothing():
 
 
 def test_a_menu_that_will_not_close_is_reported_and_bounded():
-    page = _Page(click_opens_menu = True, menu_closes_on_escape = False)
+    page = _Page(click_opens_menu=True, menu_closes_on_escape=False)
     result = _upload(page)
 
     assert result.ran is False
@@ -149,7 +149,7 @@ def test_a_menu_that_will_not_close_is_reported_and_bounded():
 
 def test_a_menu_that_was_already_open_is_left_alone():
     """Not this action's to close: it can be what blocked the click, and it belongs to its opener."""
-    page = _Page(click_opens_menu = False, already_open = ("model-picker",))
+    page = _Page(click_opens_menu=False, already_open=("model-picker",))
     result = _upload(page)
 
     assert result.ran is False
@@ -162,9 +162,9 @@ def test_a_menu_that_replaced_an_open_one_is_still_closed():
     """A non-modal menu lets the click through and closes, and the attachments menu opens in its
     place: something was open before and something is open after, and they are not the same menu."""
     page = _Page(
-        click_opens_menu = True,
-        already_open = ("model-picker",),
-        click_dismisses_open_menu = True,
+        click_opens_menu=True,
+        already_open=("model-picker",),
+        click_dismisses_open_menu=True,
     )
     result = _upload(page)
 
@@ -175,7 +175,7 @@ def test_a_menu_that_replaced_an_open_one_is_still_closed():
 
 def test_only_the_menu_this_attempt_opened_is_closed():
     """Escape takes the top layer, which is the new one, and stops before an older one below it."""
-    page = _Page(click_opens_menu = True, already_open = ("model-picker",))
+    page = _Page(click_opens_menu=True, already_open=("model-picker",))
     result = _upload(page)
 
     assert result.ran is False

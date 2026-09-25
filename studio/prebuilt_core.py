@@ -2282,7 +2282,7 @@ def compute_install_fingerprint(
     asset_sha256: str,
     backend: str,
     runtime_line: str | None,
-    coverage: dict[str, Any],
+    coverage: dict[str, Any]
 ) -> str:
     payload = {
         "published_repo": published_repo,
@@ -2437,7 +2437,7 @@ def selection_from_artifact(
     manifest: dict[str, Any],
     artifact: dict[str, Any],
     backend: str,
-    asset_sha256: str,
+    asset_sha256: str
 ) -> InstallSelection:
     return InstallSelection(
         published_repo = published_repo,
@@ -2807,7 +2807,7 @@ def plan_selection(
     *,
     published_repo: str,
     backend: str,
-    checksums: dict[str, str],
+    checksums: dict[str, str]
 ) -> InstallSelection:
     """Choose an artifact (with the component's fallback policy) and resolve its
     trusted sha256 from the release checksum index."""
@@ -2879,7 +2879,7 @@ def install_selected_prebuilt(
     host: Any,
     bundle: ReleaseBundle,
     selection: InstallSelection,
-    force: bool,
+    force: bool
 ) -> int:
     """Validate and activate an already selected release plan.
 
@@ -2961,7 +2961,7 @@ def resolve_prebuilt(
     published_repo: str,
     published_release_tag: str | None,
     backend: str | None,
-    cpu_fallback: bool,
+    cpu_fallback: bool
 ) -> dict[str, Any]:
     """Host-aware "is a prebuilt available" probe. No archive download."""
     effective_backend = ops.resolve_backend(host, backend, cpu_fallback = cpu_fallback)

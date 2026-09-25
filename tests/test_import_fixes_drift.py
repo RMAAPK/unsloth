@@ -469,7 +469,7 @@ def test_patch_loss_functions_covers_conditional_generation():
 
     saved = dict(lu.LOSS_MAPPING)
     try:
-        cel.patch_loss_functions(torch_compile = False)
+        cel.patch_loss_functions(torch_compile=False)
 
         unsloth_loss = lu.LOSS_MAPPING.get("ForCausalLM")
         assert unsloth_loss is not None
@@ -498,7 +498,7 @@ def test_patch_loss_functions_does_not_touch_other_loss_types():
 
     saved = dict(lu.LOSS_MAPPING)
     try:
-        cel.patch_loss_functions(torch_compile = False)
+        cel.patch_loss_functions(torch_compile=False)
 
         unsloth_loss = lu.LOSS_MAPPING.get("ForCausalLM")
         for key in non_causal_keys:
@@ -535,7 +535,7 @@ def test_accelerate_recursively_apply_empty_logits_patch():
     e = EmptyLogits()
     patch_accelerate_recursively_apply()
 
-    res = acc_ops.recursively_apply(lambda x: x, e, error_on_other_type = True)
+    res = acc_ops.recursively_apply(lambda x: x, e, error_on_other_type=True)
     assert res is e
 
 
@@ -571,9 +571,9 @@ def test_accelerate_gather_empty_logits_debug_mode_patch():
         def _gather_one(t):
             if t.ndim == 0:
                 t = t.clone()[None]
-            return torch.cat([t] * state.num_processes, dim = 0)
+            return torch.cat([t] * state.num_processes, dim=0)
 
-        return acc_ops.recursively_apply(_gather_one, tensor, error_on_other_type = True)
+        return acc_ops.recursively_apply(_gather_one, tensor, error_on_other_type=True)
 
     def mock_gpu_broadcast(data, *args, **kwargs):
         return data
@@ -582,12 +582,12 @@ def test_accelerate_gather_empty_logits_debug_mode_patch():
         with (
             mock.patch(
                 "accelerate.utils.operations.gather_object",
-                side_effect = mock_gather_object,
+                side_effect=mock_gather_object,
             ),
-            mock.patch("accelerate.utils.operations._gpu_gather", side_effect = mock_gpu_gather),
+            mock.patch("accelerate.utils.operations._gpu_gather", side_effect=mock_gpu_gather),
             mock.patch(
                 "accelerate.utils.operations._gpu_broadcast",
-                side_effect = mock_gpu_broadcast,
+                side_effect=mock_gpu_broadcast,
             ),
         ):
             state.device = torch.device("cpu")
@@ -600,14 +600,14 @@ def test_accelerate_gather_empty_logits_debug_mode_patch():
 
             # Mixed payload: real tensor gets gathered, EmptyLogits passes through.
             # Tensor must live on state.device or debug-mode device check fails on GPUs.
-            real_tensor = torch.tensor([42], device = state.device)
+            real_tensor = torch.tensor([42], device=state.device)
             payload = {"labels": real_tensor, "logits": e}
             res_mixed = acc_ops.gather(payload)
 
             assert isinstance(res_mixed, dict)
             assert res_mixed["logits"] is e
             # num_processes = 2 -> gathered to [42, 42]
-            assert torch.equal(res_mixed["labels"], torch.tensor([42, 42], device = state.device))
+            assert torch.equal(res_mixed["labels"], torch.tensor([42, 42], device=state.device))
 
             res_broadcast = acc_ops.broadcast(e)
             assert res_broadcast is e
@@ -664,7 +664,7 @@ def test_accelerate_find_device_skips_empty_logits():
 def test_accelerate_patch_wired_into_gpu_init():
     """The patch must be installed at startup, not only importable."""
     source = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    source = source.read_text(encoding = "utf-8")
+    source = source.read_text(encoding="utf-8")
     assert "patch_accelerate_recursively_apply()" in source, (
         "DRIFT DETECTED: patch_accelerate_recursively_apply is defined but "
         "never called in _gpu_init.py, so real imports never install it."
@@ -693,7 +693,7 @@ def test_bitsandbytes_rocm_detection_helpers_recognizable():
 
     import ast
 
-    with open(cuda_specs_path, "r", encoding = "utf-8") as f:
+    with open(cuda_specs_path, "r", encoding="utf-8") as f:
         source = f.read()
     helpers = [
         node
@@ -760,7 +760,7 @@ def test_psutil_cpu_freq_shape_and_wiring():
     )
 
     source = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    assert "patch_psutil_cpu_freq()" in source.read_text(encoding = "utf-8"), (
+    assert "patch_psutil_cpu_freq()" in source.read_text(encoding="utf-8"), (
         "DRIFT DETECTED: patch_psutil_cpu_freq is defined but never called in "
         "_gpu_init.py, so real imports never install it."
     )
@@ -768,6 +768,7 @@ def test_psutil_cpu_freq_shape_and_wiring():
 
 def _import_torchao_intmm_home():
     from unsloth.import_fixes import _TORCHAO_INTMM_MODULES
+
     for name in _TORCHAO_INTMM_MODULES:
         try:
             module = importlib.import_module(name)
@@ -848,7 +849,7 @@ def test_torchao_intmm_patch_is_bit_identical_on_cpu():
     generator = torch.Generator().manual_seed(0)
 
     def randint8(*shape):
-        return torch.randint(-127, 127, shape, dtype = torch.int8, generator = generator)
+        return torch.randint(-127, 127, shape, dtype=torch.int8, generator=generator)
 
     cases = [
         (randint8(64, 64), randint8(64, 64)),
@@ -936,10 +937,10 @@ def test_torchao_intmm_patch_covers_a_later_import():
     env.pop("UNSLOTH_TORCHAO_INT_MM_FIX", None)
     result = subprocess.run(
         [sys.executable, "-c", program],
-        capture_output = True,
-        text = True,
-        timeout = 600,
-        env = env,
+        capture_output=True,
+        text=True,
+        timeout=600,
+        env=env,
     )
     assert result.returncode == 0, f"child failed:\n{result.stdout}\n{result.stderr}"
     assert "PATCHED=True" in result.stdout, (
@@ -1008,27 +1009,27 @@ def test_torchao_intmm_installer_patches_the_new_home_when_already_imported(monk
 
     # Hide every real torchao home so only the stand-in is visible, and drop any finder.
     for name in _TORCHAO_INTMM_MODULES:
-        monkeypatch.delitem(sys.modules, name, raising = False)
+        monkeypatch.delitem(sys.modules, name, raising=False)
     monkeypatch.setitem(sys.modules, module.__name__, module)
     monkeypatch.setattr(
         sys,
         "meta_path",
         [f for f in sys.meta_path if not getattr(f, _TORCHAO_INTMM_SENTINEL, False)],
     )
-    monkeypatch.delenv("UNSLOTH_TORCHAO_INT_MM_FIX", raising = False)
+    monkeypatch.delenv("UNSLOTH_TORCHAO_INT_MM_FIX", raising=False)
 
     assert fix_torchao_safe_int_mm_repr_probe() is True
     assert getattr(
         module.safe_int_mm, "__unsloth_patched__", False
     ), "the installer ignored a safe_int_mm registered under torchao's new module name"
-    a = torch.randint(-128, 127, (16, 32), dtype = torch.int8)
-    b = torch.randint(-128, 127, (32, 24), dtype = torch.int8)
+    a = torch.randint(-128, 127, (16, 32), dtype=torch.int8)
+    b = torch.randint(-128, 127, (32, 24), dtype=torch.int8)
     assert torch.equal(module.safe_int_mm(a, b), module.safe_int_mm.__unsloth_original__(a, b))
 
 
 def test_torchao_intmm_patch_wired_into_gpu_init():
     source = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    source = source.read_text(encoding = "utf-8")
+    source = source.read_text(encoding="utf-8")
     assert "fix_torchao_safe_int_mm_repr_probe()" in source, (
         "DRIFT DETECTED: fix_torchao_safe_int_mm_repr_probe is defined but never called in "
         "_gpu_init.py, so real imports never install it."
@@ -1129,15 +1130,15 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
 
     # 1. The new parameters name their own base: write nothing at all.
     parameters = {"rope_type": "linear", "factor": 4.0, "rope_theta": 1000000.0}
-    config = SimpleNamespace(rope_parameters = parameters)
+    config = SimpleNamespace(rope_parameters=parameters)
     assert carry(config, 500000.0) == 1000000.0
     assert not hasattr(config, "rope_theta")
     assert parameters == {"rope_type": "linear", "factor": 4.0, "rope_theta": 1000000.0}
 
     # 2. An attribute that is already there is kept in step, never left stale.
     config = SimpleNamespace(
-        rope_parameters = {"rope_type": "linear", "factor": 4.0, "rope_theta": 1000000.0},
-        rope_theta = 500000.0,
+        rope_parameters={"rope_type": "linear", "factor": 4.0, "rope_theta": 1000000.0},
+        rope_theta=500000.0,
     )
     assert carry(config, 500000.0) == 1000000.0
     assert config.rope_theta == 1000000.0
@@ -1145,7 +1146,7 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
     # 3. The base would be lost: restore it inside rope_parameters, through a COPY, and
     #    leave the config without a top-level attribute it never had.
     parameters = {"rope_type": "linear", "factor": 4.0}
-    config = SimpleNamespace(rope_parameters = parameters)
+    config = SimpleNamespace(rope_parameters=parameters)
     assert carry(config, 500000.0) == 500000.0
     assert config.rope_parameters["rope_theta"] == 500000.0
     assert parameters == {"rope_type": "linear", "factor": 4.0}
@@ -1153,13 +1154,13 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
 
     # 4. Object-style replacement, #2405's own shape: no dict to write into, so the
     #    attribute is the only thing that carries the base to the retry.
-    config = SimpleNamespace(rope_parameters = object())
+    config = SimpleNamespace(rope_parameters=object())
     assert carry(config, 500000.0) == 500000.0
     assert config.rope_theta == 500000.0
 
     # 5. The retry: a dict again, and the base case 4 wrote lands back inside it.
     parameters = {"rope_type": "linear", "factor": 4.0}
-    config = SimpleNamespace(rope_parameters = parameters, rope_theta = 500000.0)
+    config = SimpleNamespace(rope_parameters=parameters, rope_theta=500000.0)
     assert carry(config, None) == 500000.0
     assert config.rope_parameters["rope_theta"] == 500000.0
     assert parameters == {"rope_type": "linear", "factor": 4.0}
@@ -1168,17 +1169,17 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
     #    one scaling dict reused across two configs would carry the first base into the
     #    second, silently wrong rather than an error.
     shared = {"rope_type": "linear", "factor": 4.0}
-    first = SimpleNamespace(rope_parameters = shared)
+    first = SimpleNamespace(rope_parameters=shared)
     assert carry(first, 500000.0) == 500000.0
     assert shared == {"rope_type": "linear", "factor": 4.0}, shared
-    second = SimpleNamespace(rope_parameters = shared, rope_theta = 10000.0)
+    second = SimpleNamespace(rope_parameters=shared, rope_theta=10000.0)
     assert carry(second, None) == 10000.0
     assert second.rope_parameters["rope_theta"] == 10000.0
     assert first.rope_parameters["rope_theta"] == 500000.0
 
     # 7. Nothing to carry and nothing stated: untouched.
     parameters = {"rope_type": "linear", "factor": 4.0}
-    config = SimpleNamespace(rope_parameters = parameters)
+    config = SimpleNamespace(rope_parameters=parameters)
     assert carry(config, None) is None
     assert not hasattr(config, "rope_theta")
     assert "rope_theta" not in parameters
@@ -1190,8 +1191,8 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
         "sliding_attention": {"rope_type": "default"},
     }
     config = SimpleNamespace(
-        rope_parameters = parameters,
-        layer_types = ["full_attention", "sliding_attention"],
+        rope_parameters=parameters,
+        layer_types=["full_attention", "sliding_attention"],
     )
     assert carry(config, 500000.0) == 500000.0
     assert set(parameters) == {"full_attention", "sliding_attention"}
@@ -1204,7 +1205,7 @@ def test_rope_theta_carry_only_writes_when_the_base_would_be_lost():
     #    LOCAL base on purpose, then the scaling is replaced. Carrying the global base
     #    over it would give the local rotary the wrong base.
     parameters = {"rope_type": "default"}
-    config = SimpleNamespace(rope_parameters = parameters, rope_theta = 10000.0)
+    config = SimpleNamespace(rope_parameters=parameters, rope_theta=10000.0)
     assert carry(config, 1000000.0) == 10000.0
     assert (
         config.rope_theta == 10000.0
@@ -1236,8 +1237,8 @@ def test_rope_theta_carry_never_puts_a_per_label_mapping_in_the_scalar_slot():
 
     parameters = {k: dict(v) for k, v in T5GEMMA2_ROPE.items()}
     config = SimpleNamespace(
-        rope_parameters = parameters,
-        layer_types = list(T5GEMMA2_LAYER_TYPES),
+        rope_parameters=parameters,
+        layer_types=list(T5GEMMA2_LAYER_TYPES),
     )
     carried = {"sliding_attention": 10000.0, "full_attention": 1000000.0}
 
@@ -1265,7 +1266,7 @@ def test_rope_theta_carry_never_puts_a_per_label_mapping_in_the_scalar_slot():
                 raise AttributeError("read-only")
             super().__setattr__(name, value)
 
-    frozen = _Frozen(rope_parameters = stubborn, layer_types = list(T5GEMMA2_LAYER_TYPES))
+    frozen = _Frozen(rope_parameters=stubborn, layer_types=list(T5GEMMA2_LAYER_TYPES))
     frozen._locked = True
     assert carry(frozen, carried) is None
     assert not isinstance(
@@ -1287,10 +1288,10 @@ def test_rope_theta_carry_follows_rope_type_labels_not_only_layer_types():
 
     parameters = {k: dict(v) for k, v in DEEPSEEK_V4_ROPE.items()}
     config = SimpleNamespace(
-        _rope_type_labels = DEEPSEEK_V4_LABELS,
-        layer_types = ["heavily_compressed_attention", "compressed_sparse_attention"],
-        rope_theta = 10000.0,
-        rope_parameters = parameters,
+        _rope_type_labels=DEEPSEEK_V4_LABELS,
+        layer_types=["heavily_compressed_attention", "compressed_sparse_attention"],
+        rope_theta=10000.0,
+        rope_parameters=parameters,
     )
 
     assert _rope_parameters_are_per_layer(
@@ -1324,9 +1325,9 @@ def test_rope_theta_carry_follows_rope_type_labels_not_only_layer_types():
 
     # Flat replacement, same config: the two bases disagree, so the config's own base is used.
     flat = SimpleNamespace(
-        _rope_type_labels = DEEPSEEK_V4_LABELS,
-        rope_theta = 10000.0,
-        rope_parameters = {"rope_type": "linear", "factor": 4.0},
+        _rope_type_labels=DEEPSEEK_V4_LABELS,
+        rope_theta=10000.0,
+        rope_parameters={"rope_type": "linear", "factor": 4.0},
     )
     assert carry(flat, {"main": 10000.0, "compress": 160000.0}) == 10000.0
     assert flat.rope_parameters["rope_theta"] == 10000.0
@@ -1348,7 +1349,7 @@ def test_rope_carry_handles_rope_labels_not_all_present_in_layer_types():
         "full_attention": {"rope_type": "default", "rope_theta": 500000.0},
         "sliding_attention": {"rope_type": "default", "rope_theta": 10000.0},
     }
-    config = SimpleNamespace(rope_parameters = parameters, layer_types = ["full_attention"])
+    config = SimpleNamespace(rope_parameters=parameters, layer_types=["full_attention"])
 
     assert _rope_parameters_are_per_layer(config, parameters), (
         "a nested rope dict was read as flat because one of its labels is absent from "
@@ -1511,7 +1512,7 @@ def test_rope_carry_leaves_the_zoo_gemma_local_base_alone_on_a_real_config():
     except Exception as exc:
         pytest.skip(f"Gemma2Config unavailable: {exc!r}")
 
-    config = Gemma2Config(num_hidden_layers = 2)
+    config = Gemma2Config(num_hidden_layers=2)
     config.rope_theta = 10000.0
     config.rope_scaling = {"rope_type": "default"}
 
@@ -1530,7 +1531,7 @@ def test_rope_carry_leaves_the_zoo_gemma_local_base_alone_on_a_real_config():
 
 def test_rope_scaling_patch_wired_into_gpu_init():
     source = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    source = source.read_text(encoding = "utf-8")
+    source = source.read_text(encoding="utf-8")
     assert "fix_transformers_rope_scaling_drops_theta()" in source, (
         "DRIFT DETECTED: fix_transformers_rope_scaling_drops_theta is defined but never "
         "called in _gpu_init.py, so real imports never install it."
@@ -1598,11 +1599,11 @@ def test_rope_theta_carry_restores_each_layer_types_own_base():
     )
 
     before = SimpleNamespace(
-        rope_parameters = {
+        rope_parameters={
             "sliding_attention": {"rope_type": "default", "rope_theta": 10000.0},
             "full_attention": {"rope_type": "default", "rope_theta": 1000000.0},
         },
-        layer_types = ["sliding_attention", "full_attention"],
+        layer_types=["sliding_attention", "full_attention"],
     )
     carried = _rope_theta_snapshot(before)
     assert carried == {"sliding_attention": 10000.0, "full_attention": 1000000.0}
@@ -1613,8 +1614,8 @@ def test_rope_theta_carry_restores_each_layer_types_own_base():
         "full_attention": {"rope_type": "linear", "factor": 4.0},
     }
     config = SimpleNamespace(
-        rope_parameters = replacement,
-        layer_types = ["sliding_attention", "full_attention"],
+        rope_parameters=replacement,
+        layer_types=["sliding_attention", "full_attention"],
     )
     assert carry(config, carried) == carried
 
@@ -1636,11 +1637,11 @@ def test_rope_theta_carry_leaves_a_per_layer_base_the_caller_stated():
     from unsloth.import_fixes import _carry_rope_theta_across_assignment as carry
 
     config = SimpleNamespace(
-        rope_parameters = {
+        rope_parameters={
             "sliding_attention": {"rope_type": "linear", "rope_theta": 50.0},
             "full_attention": {"rope_type": "linear"},
         },
-        layer_types = ["sliding_attention", "full_attention"],
+        layer_types=["sliding_attention", "full_attention"],
     )
     carry(config, {"sliding_attention": 10000.0, "full_attention": 1000000.0})
 
@@ -1657,20 +1658,20 @@ def test_rope_theta_snapshot_still_reads_a_flat_base():
 
     assert (
         _rope_theta_snapshot(
-            SimpleNamespace(rope_parameters = {"rope_type": "linear", "rope_theta": 500000.0})
+            SimpleNamespace(rope_parameters={"rope_type": "linear", "rope_theta": 500000.0})
         )
         == 500000.0
     )
-    assert _rope_theta_snapshot(SimpleNamespace(rope_parameters = {"rope_type": "linear"})) is None
-    assert _rope_theta_snapshot(SimpleNamespace(rope_parameters = object())) is None
+    assert _rope_theta_snapshot(SimpleNamespace(rope_parameters={"rope_type": "linear"})) is None
+    assert _rope_theta_snapshot(SimpleNamespace(rope_parameters=object())) is None
     assert _rope_theta_snapshot(SimpleNamespace()) is None
     # Per-layer with no bases anywhere is None, not an empty dict, so the global
     # attribute path below it still runs.
     assert (
         _rope_theta_snapshot(
             SimpleNamespace(
-                rope_parameters = {"full_attention": {"rope_type": "linear"}},
-                layer_types = ["full_attention"],
+                rope_parameters={"full_attention": {"rope_type": "linear"}},
+                layer_types=["full_attention"],
             )
         )
         is None
@@ -1691,13 +1692,13 @@ def test_a_per_layer_snapshot_never_becomes_a_scalar_rope_theta():
 
     # Disagreeing bases: there is no scalar that is true, so nothing is carried.
     flat = {"rope_type": "linear", "factor": 4.0}
-    config = SimpleNamespace(rope_parameters = flat)
+    config = SimpleNamespace(rope_parameters=flat)
     assert carry(config, {"sliding_attention": 10000.0, "full_attention": 1000000.0}) is None
     assert config.rope_parameters == {"rope_type": "linear", "factor": 4.0}
     assert not hasattr(config, "rope_theta")
 
     # Agreeing bases: the one they agree on is a true answer, so it is carried as a number.
-    config = SimpleNamespace(rope_parameters = {"rope_type": "linear", "factor": 4.0})
+    config = SimpleNamespace(rope_parameters={"rope_type": "linear", "factor": 4.0})
     assert carry(config, {"sliding_attention": 10000.0, "full_attention": 10000.0}) == 10000.0
     assert config.rope_parameters["rope_theta"] == 10000.0
 
@@ -1707,7 +1708,7 @@ def test_a_per_layer_snapshot_never_becomes_a_scalar_rope_theta():
         {"a": 10000.0, "b": 10000.0},
         {},
     ):
-        config = SimpleNamespace(rope_parameters = {"rope_type": "linear"})
+        config = SimpleNamespace(rope_parameters={"rope_type": "linear"})
         carry(config, snapshot)
         written = config.rope_parameters.get("rope_theta", None)
         assert not isinstance(written, dict), written
@@ -1736,12 +1737,12 @@ def test_the_torchvision_backend_still_breaks_the_4x_numpy_contract():
     siglip2 = pytest.importorskip("transformers.models.siglip2.image_processing_siglip2")
 
     processor = siglip2.Siglip2ImageProcessor()
-    image = np.arange(4 * 4 * 3, dtype = np.uint8).reshape(4, 4, 3)
+    image = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
 
     rescaled = processor.rescale(
-        image = image,
-        scale = 1 / 255.0,
-        input_data_format = "channels_last",
+        image=image,
+        scale=1 / 255.0,
+        input_data_format="channels_last",
     )
     assert rescaled.dtype == np.float64, (
         "DRIFT DETECTED: BaseImageProcessor.rescale no longer returns float64 on numpy, so "
@@ -1751,10 +1752,10 @@ def test_the_torchvision_backend_still_breaks_the_4x_numpy_contract():
 
     with pytest.raises(TypeError):
         processor.normalize(
-            image = rescaled,
-            mean = [0.5, 0.5, 0.5],
-            std = [0.5, 0.5, 0.5],
-            input_data_format = "channels_last",
+            image=rescaled,
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+            input_data_format="channels_last",
         )
 
 
@@ -1768,7 +1769,7 @@ def test_the_4x_numpy_helpers_the_method_shim_forwards_to_still_exist():
     np = pytest.importorskip("numpy")
     from transformers import image_transforms
 
-    image = np.arange(4 * 4 * 3, dtype = np.uint8).reshape(4, 4, 3)
+    image = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
     for name in ("rescale", "normalize"):
         assert callable(getattr(image_transforms, name, None)), (
             f"DRIFT DETECTED: transformers.image_transforms.{name} is gone, so the numpy "
@@ -1777,8 +1778,8 @@ def test_the_4x_numpy_helpers_the_method_shim_forwards_to_still_exist():
 
     rescaled = image_transforms.rescale(
         image,
-        scale = 1 / 255.0,
-        input_data_format = "channels_last",
+        scale=1 / 255.0,
+        input_data_format="channels_last",
     )
     assert rescaled.dtype == np.float32, (
         "DRIFT DETECTED: image_transforms.rescale stopped defaulting to float32, which is "
@@ -1786,9 +1787,9 @@ def test_the_4x_numpy_helpers_the_method_shim_forwards_to_still_exist():
     )
     normalized = image_transforms.normalize(
         rescaled,
-        mean = [0.5, 0.5, 0.5],
-        std = [0.5, 0.5, 0.5],
-        input_data_format = "channels_last",
+        mean=[0.5, 0.5, 0.5],
+        std=[0.5, 0.5, 0.5],
+        input_data_format="channels_last",
     )
     assert normalized.dtype == np.float32
     assert normalized.shape == image.shape
@@ -1797,7 +1798,7 @@ def test_the_4x_numpy_helpers_the_method_shim_forwards_to_still_exist():
 def test_the_numpy_image_method_shim_is_wired_into_the_remote_code_hook():
     """The installer must be reachable from the hook, or real loads never see it."""
     source = Path(__file__).resolve().parent.parent / "unsloth" / "import_fixes.py"
-    source = source.read_text(encoding = "utf-8")
+    source = source.read_text(encoding="utf-8")
     assert "_install_legacy_numpy_image_methods_now(loaded)" in source, (
         "DRIFT DETECTED: the numpy image method shim is defined but never called from the "
         "get_class_in_module wrapper, so a checkpoint's own image processor is never patched."
@@ -1904,8 +1905,8 @@ def test_composite_renaming_probe_agrees_with_the_real_mapping():
         if nxt is None:
             break
         mapping = nxt
-    keys = {name for name, _ in model.named_parameters(remove_duplicate = False)}
-    keys |= {name for name, _ in model.named_buffers(remove_duplicate = False)}
+    keys = {name for name, _ in model.named_parameters(remove_duplicate=False)}
+    keys |= {name for name, _ in model.named_buffers(remove_duplicate=False)}
     leaks = []
     for conversion in mapping(model):
         if not isinstance(conversion, WeightRenaming):
@@ -1927,7 +1928,7 @@ def test_composite_renaming_probe_agrees_with_the_real_mapping():
 def test_composite_renaming_patch_wired_into_gpu_init():
     """The patch must be installed at startup, not only importable."""
     source = Path(__file__).resolve().parent.parent / "unsloth" / "_gpu_init.py"
-    source = source.read_text(encoding = "utf-8")
+    source = source.read_text(encoding="utf-8")
     assert "fix_transformers_composite_prefix_renaming()" in source, (
         "DRIFT DETECTED: fix_transformers_composite_prefix_renaming is defined but "
         "never called in _gpu_init.py, so real imports never install it."
@@ -1946,7 +1947,7 @@ def test_no_top_level_definition_is_shadowed_by_a_later_one():
     from collections import Counter
 
     source = (Path(__file__).resolve().parent.parent / "unsloth" / "import_fixes.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     counts = Counter(
         node.name

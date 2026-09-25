@@ -66,7 +66,7 @@ def audio_trainer(monkeypatch):
 
 
 def _rows(path: Path, text: str) -> str:
-    path.write_text(json.dumps({"audio": text, "text": text}) + "\n", encoding = "utf-8")
+    path.write_text(json.dumps({"audio": text, "text": text}) + "\n", encoding="utf-8")
     return str(path)
 
 
@@ -78,19 +78,19 @@ def test_codec_branches_return_the_uploaded_eval_split(
     monkeypatch.setattr(tmod, "ensure_audio_decoding", lambda: True)
     seen = []
 
-    def fake_preprocess(dataset, custom_format_mapping = None):
+    def fake_preprocess(dataset, custom_format_mapping=None):
         seen.append(len(dataset))
         return dataset
 
     monkeypatch.setattr(
-        audio_trainer, f"_preprocess_{audio_type}_dataset", fake_preprocess, raising = True
+        audio_trainer, f"_preprocess_{audio_type}_dataset", fake_preprocess, raising=True
     )
 
     result = audio_trainer.load_and_format_dataset(
         None,
-        local_datasets = [_rows(tmp_path / "train.jsonl", "train")],
-        local_eval_datasets = [_rows(tmp_path / "eval.jsonl", "eval")],
-        eval_steps = 0.1,
+        local_datasets=[_rows(tmp_path / "train.jsonl", "train")],
+        local_eval_datasets=[_rows(tmp_path / "eval.jsonl", "eval")],
+        eval_steps=0.1,
     )
 
     assert result is not None
@@ -106,20 +106,20 @@ def test_no_eval_upload_still_returns_no_eval_split(
     audio_trainer._audio_type = audio_type
     monkeypatch.setattr(tmod, "ensure_audio_decoding", lambda: True)
     monkeypatch.setattr(
-        audio_trainer, f"_preprocess_{audio_type}_dataset", lambda ds, m = None: ds, raising = True
+        audio_trainer, f"_preprocess_{audio_type}_dataset", lambda ds, m=None: ds, raising=True
     )
 
     _train, eval_dataset = audio_trainer.load_and_format_dataset(
         None,
-        local_datasets = [_rows(tmp_path / "train.jsonl", "train")],
-        eval_steps = 0.1,
+        local_datasets=[_rows(tmp_path / "train.jsonl", "train")],
+        eval_steps=0.1,
     )
 
     assert eval_dataset is None
 
 
 def test_an_unpreparable_eval_split_warns_instead_of_failing_the_run(audio_trainer):
-    def explode(dataset, custom_format_mapping = None):
+    def explode(dataset, custom_format_mapping=None):
         raise ValueError("no audio column found in dataset")
 
     assert audio_trainer._preprocess_audio_eval_split(object(), explode, None) is None
@@ -161,6 +161,7 @@ def test_hostile_eval_steps_disable_evaluation(audio_trainer, eval_steps):
 
 def test_audio_eval_config_agrees_with_the_shared_validator(audio_trainer):
     from core.training.eval_dataset import evaluation_enabled
+
     for value in (0.1, 0.25, 1, 2, 0, 0.0, -1, None, True, False, float("inf"), float("nan")):
         _args, eval_dataset = audio_trainer._audio_eval_config(
             {"eval_dataset": ["a"], "eval_steps": value, "batch_size": 2}
@@ -187,7 +188,7 @@ def test_a_stop_during_eval_preprocessing_is_not_reported_as_a_bad_eval_file(aud
     """A stop is reported as "no valid examples"; that is the cancel, not the user's upload."""
     audio_trainer.should_stop = True
 
-    def stopped(dataset, custom_format_mapping = None):
+    def stopped(dataset, custom_format_mapping=None):
         raise ValueError("No valid examples after CSM preprocessing (skipped 4)")
 
     assert audio_trainer._preprocess_audio_eval_split(object(), stopped, None) is None
@@ -195,7 +196,7 @@ def test_a_stop_during_eval_preprocessing_is_not_reported_as_a_bad_eval_file(aud
 
 
 def test_a_real_failure_still_warns_when_not_stopping(audio_trainer):
-    def explode(dataset, custom_format_mapping = None):
+    def explode(dataset, custom_format_mapping=None):
         raise ValueError("no audio column found in dataset")
 
     assert audio_trainer._preprocess_audio_eval_split(object(), explode, None) is None
@@ -247,9 +248,9 @@ def test_transformers_accepts_the_produced_config(audio_trainer, tmp_path, eval_
     eval_args, eval_dataset = audio_trainer._audio_eval_config(training_args)
     assert eval_dataset is not None
     config = audio_trainer._build_audio_training_args(
-        training_args, str(tmp_path), extra_args = {"remove_unused_columns": False, **eval_args}
+        training_args, str(tmp_path), extra_args={"remove_unused_columns": False, **eval_args}
     )
-    config.update(bf16 = False, fp16 = False, use_cpu = True, report_to = [])
+    config.update(bf16=False, fp16=False, use_cpu=True, report_to=[])
     args = transformers.TrainingArguments(**config)
     assert args.eval_strategy == "steps"
     assert args.eval_steps == expected
@@ -261,7 +262,7 @@ def test_a_stop_skips_the_eval_preprocessor_entirely(audio_trainer):
     audio_trainer.should_stop = True
     calls = []
 
-    def preprocess(dataset, custom_format_mapping = None):
+    def preprocess(dataset, custom_format_mapping=None):
         calls.append(dataset)
         return dataset
 
@@ -282,15 +283,15 @@ def test_an_invalid_cadence_never_preprocesses_the_eval_split(
     monkeypatch.setattr(
         audio_trainer,
         f"_preprocess_{audio_type}_dataset",
-        lambda ds, m = None: (seen.append(len(ds)), ds)[1],
-        raising = True,
+        lambda ds, m=None: (seen.append(len(ds)), ds)[1],
+        raising=True,
     )
 
     _train, evaluation = audio_trainer.load_and_format_dataset(
         None,
-        local_datasets = [_rows(tmp_path / "train.jsonl", "train")],
-        local_eval_datasets = [_rows(tmp_path / "eval.jsonl", "eval")],
-        eval_steps = eval_steps,
+        local_datasets=[_rows(tmp_path / "train.jsonl", "train")],
+        local_eval_datasets=[_rows(tmp_path / "eval.jsonl", "eval")],
+        eval_steps=eval_steps,
     )
 
     assert evaluation is None
@@ -321,16 +322,16 @@ def test_the_generic_sft_path_uses_the_same_cadence_gate(
         def train(self, **kwargs):
             pass
 
-    monkeypatch.setattr(tmod, "SFTConfig", _FakeSFTConfig, raising = False)
-    monkeypatch.setattr(tmod, "SFTTrainer", _FakeSFTTrainer, raising = False)
-    monkeypatch.setattr(tmod, "resolve_output_dir", lambda p: tmp_path, raising = True)
-    monkeypatch.setattr(tmod, "ensure_dir", lambda p: p, raising = True)
-    monkeypatch.setattr(tmod, "_drop_hf_stdout_callbacks", lambda trainer: None, raising = True)
+    monkeypatch.setattr(tmod, "SFTConfig", _FakeSFTConfig, raising=False)
+    monkeypatch.setattr(tmod, "SFTTrainer", _FakeSFTTrainer, raising=False)
+    monkeypatch.setattr(tmod, "resolve_output_dir", lambda p: tmp_path, raising=True)
+    monkeypatch.setattr(tmod, "ensure_dir", lambda p: p, raising=True)
+    monkeypatch.setattr(tmod, "_drop_hf_stdout_callbacks", lambda trainer: None, raising=True)
     monkeypatch.setattr(
-        tmod.UnslothTrainer, "_finalize_training", lambda self, *a, **k: None, raising = True
+        tmod.UnslothTrainer, "_finalize_training", lambda self, *a, **k: None, raising=True
     )
     monkeypatch.setattr(
-        tmod.UnslothTrainer, "_preflight_first_batch", lambda self: None, raising = True
+        tmod.UnslothTrainer, "_preflight_first_batch", lambda self: None, raising=True
     )
 
     audio_trainer._audio_type = "bicodec"
@@ -342,13 +343,13 @@ def test_the_generic_sft_path_uses_the_same_cadence_gate(
     try:
         audio_trainer._train_worker(
             {"dataset": rows, "final_format": "audio_bicodec"},
-            eval_dataset = rows,
-            eval_steps = eval_steps,
-            batch_size = 2,
-            gradient_accumulation_steps = 1,
-            max_steps = 8,
-            warmup_steps = 0,
-            output_dir = str(tmp_path),
+            eval_dataset=rows,
+            eval_steps=eval_steps,
+            batch_size=2,
+            gradient_accumulation_steps=1,
+            max_steps=8,
+            warmup_steps=0,
+            output_dir=str(tmp_path),
         )
     except Exception:
         # The generic path needs a real model; the eval decision happens before that, so only

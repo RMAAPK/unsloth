@@ -27,13 +27,13 @@ def _run_to_extras(
     platform,
     skip_base,
     no_torch,
-    shared_base = False,
-    mlx_error = None,
-    mlx_installable = True,
+    shared_base=False,
+    mlx_error=None,
+    mlx_installable=True,
 ):
     monkeypatch.setenv("SKIP_STUDIO_BASE", "1" if skip_base else "0")
     for name in ("STUDIO_LOCAL_REPO", "STUDIO_PACKAGE_NAME", "UNSLOTH_CI_SOURCE_OVERLAY"):
-        monkeypatch.delenv(name, raising = False)
+        monkeypatch.delenv(name, raising=False)
     for name, value in {
         "IS_WINDOWS": platform == "windows",
         "IS_LINUX": platform == "linux",
@@ -59,15 +59,15 @@ def _run_to_extras(
         # Off macOS the floor would skip every case; it has its own tests.
         "_mlx_pins_are_installable": mlx_installable,
     }.items():
-        monkeypatch.setattr(stack, name, Mock(return_value = value))
-    monkeypatch.setattr(stack.install_manifest, "remove_manifest", Mock(return_value = True))
+        monkeypatch.setattr(stack, name, Mock(return_value=value))
+    monkeypatch.setattr(stack.install_manifest, "remove_manifest", Mock(return_value=True))
     monkeypatch.setattr(stack.install_manifest, "set_no_torch_marker", Mock())
 
     def record_install(label, *args, **kwargs):
         if label.startswith("Installing MLX") and mlx_error is not None:
             raise mlx_error
 
-    install = Mock(side_effect = record_install)
+    install = Mock(side_effect=record_install)
     monkeypatch.setattr(stack, "pip_install", install)
     progress = stack._progress
 
@@ -89,7 +89,7 @@ def _run_to_extras(
 
 def _repair_specs():
     path = Path(stack.SCRIPT_DIR) / "backend" / "utils" / "mlx_repair.py"
-    tree = ast.parse(path.read_text(encoding = "utf-8"))
+    tree = ast.parse(path.read_text(encoding="utf-8"))
     return next(
         ast.literal_eval(node.value)
         for node in tree.body
@@ -102,9 +102,9 @@ def _repair_specs():
 
 
 @pytest.mark.parametrize("platform", ["macos_arm", "macos_intel", "linux", "windows"])
-@pytest.mark.parametrize("skip_base", [True, False], ids = ["fresh", "update"])
-@pytest.mark.parametrize("no_torch", [False, True], ids = ["training", "gguf_only"])
-@pytest.mark.parametrize("shared_base", [False, True], ids = ["empty_base", "shared_base"])
+@pytest.mark.parametrize("skip_base", [True, False], ids=["fresh", "update"])
+@pytest.mark.parametrize("no_torch", [False, True], ids=["training", "gguf_only"])
+@pytest.mark.parametrize("shared_base", [False, True], ids=["empty_base", "shared_base"])
 def test_mlx_install_respects_platform_mode_and_pins(
     monkeypatch, platform, skip_base, no_torch, shared_base
 ):
@@ -113,10 +113,10 @@ def test_mlx_install_respects_platform_mode_and_pins(
     monkeypatch.setattr(stack, "_mlx_vlm_spec_for_installed_zoo", lambda: stack._MLX_VLM_SPEC)
     calls = _run_to_extras(
         monkeypatch,
-        platform = platform,
-        skip_base = skip_base,
-        no_torch = no_torch,
-        shared_base = shared_base,
+        platform=platform,
+        skip_base=skip_base,
+        no_torch=no_torch,
+        shared_base=shared_base,
     )
     enabled = platform == "macos_arm" and not no_torch
     assert len(calls) == int(enabled)
@@ -147,26 +147,26 @@ def test_mlx_install_respects_platform_mode_and_pins(
         }
 
 
-@pytest.mark.parametrize("skip_base", [True, False], ids = ["fresh", "update"])
+@pytest.mark.parametrize("skip_base", [True, False], ids=["fresh", "update"])
 @pytest.mark.parametrize(
-    "error", [SystemExit(7), KeyboardInterrupt()], ids = ["failed", "interrupted"]
+    "error", [SystemExit(7), KeyboardInterrupt()], ids=["failed", "interrupted"]
 )
 def test_failed_mlx_install_stops_before_extras(monkeypatch, skip_base, error):
     write_manifest = Mock()
     monkeypatch.setattr(stack.install_manifest, "write_manifest", write_manifest)
     with pytest.raises(type(error)):
         _run_to_extras(
-            monkeypatch, platform = "macos_arm", skip_base = skip_base, no_torch = False, mlx_error = error
+            monkeypatch, platform="macos_arm", skip_base=skip_base, no_torch=False, mlx_error=error
         )
     write_manifest.assert_not_called()
 
 
 @pytest.mark.parametrize(
-    "returncodes", [(0,), (1, 0), (1, 7)], ids = ["uv", "pip_fallback", "both_fail"]
+    "returncodes", [(0,), (1, 0), (1, 7)], ids=["uv", "pip_fallback", "both_fail"]
 )
 def test_mlx_command_preserves_pins_and_interpreter_on_fallback(monkeypatch, returncodes):
     with monkeypatch.context() as phase:
-        call = _run_to_extras(phase, platform = "macos_arm", skip_base = True, no_torch = False)[0]
+        call = _run_to_extras(phase, platform="macos_arm", skip_base=True, no_torch=False)[0]
     monkeypatch.setattr(stack, "USE_UV", True)
     monkeypatch.setattr(stack, "UV_NEEDS_SYSTEM", False)
     monkeypatch.setattr(stack, "IS_WINDOWS", False)
@@ -235,7 +235,7 @@ def test_mlx_pin_floor_matches_the_published_wheels(
 ):
     """0.32.2 ships macosx_14_0_arm64 wheels, no sdist, and the pinned set starts at cp310."""
     monkeypatch.setattr(stack.sys, "version_info", python_version)
-    monkeypatch.setattr(stack, "_macos_release_major", Mock(return_value = macos_major))
+    monkeypatch.setattr(stack, "_macos_release_major", Mock(return_value=macos_major))
     assert stack._mlx_pins_are_installable() is installable
 
 
@@ -249,8 +249,8 @@ def test_pin_floor_is_revisited_whenever_the_pins_move():
     assert (stack._MLX_MIN_PYTHON, stack._MLX_MIN_MACOS_MAJOR) == ((3, 10), 14)
 
 
-@pytest.mark.parametrize("skip_base", [True, False], ids = ["fresh", "update"])
-@pytest.mark.parametrize("shared_base", [False, True], ids = ["empty_base", "shared_base"])
+@pytest.mark.parametrize("skip_base", [True, False], ids=["fresh", "update"])
+@pytest.mark.parametrize("shared_base", [False, True], ids=["empty_base", "shared_base"])
 def test_unsupported_apple_silicon_skips_mlx_without_failing_the_install(
     monkeypatch, skip_base, shared_base
 ):
@@ -260,11 +260,11 @@ def test_unsupported_apple_silicon_skips_mlx_without_failing_the_install(
     """
     calls = _run_to_extras(
         monkeypatch,
-        platform = "macos_arm",
-        skip_base = skip_base,
-        no_torch = False,
-        shared_base = shared_base,
-        mlx_installable = False,
+        platform="macos_arm",
+        skip_base=skip_base,
+        no_torch=False,
+        shared_base=shared_base,
+        mlx_installable=False,
     )
     assert calls == []
     steps = _run_to_extras.steps
@@ -280,18 +280,18 @@ def test_supported_and_unsupported_hosts_share_one_progress_budget(monkeypatch):
     """Same total either way, so the bar cannot end short of its own total on an old Mac."""
     _run_to_extras(
         monkeypatch,
-        platform = "macos_arm",
-        skip_base = True,
-        no_torch = False,
-        mlx_installable = True,
+        platform="macos_arm",
+        skip_base=True,
+        no_torch=False,
+        mlx_installable=True,
     )
     supported = stack._TOTAL
     _run_to_extras(
         monkeypatch,
-        platform = "macos_arm",
-        skip_base = True,
-        no_torch = False,
-        mlx_installable = False,
+        platform="macos_arm",
+        skip_base=True,
+        no_torch=False,
+        mlx_installable=False,
     )
     assert stack._TOTAL == supported
 
@@ -358,7 +358,7 @@ def test_the_core_phase_upgrading_the_zoo_re_resolves_mlx(monkeypatch):
     narrow = f"{stack._MLX_VLM_SPEC},<0.7.0"
     # Twice for the install step, then the widened answer after the core phase.
     _zoo_spec_sequence(monkeypatch, [narrow, narrow, stack._MLX_VLM_SPEC])
-    calls = _run_to_extras(monkeypatch, platform = "macos_arm", skip_base = False, no_torch = False)
+    calls = _run_to_extras(monkeypatch, platform="macos_arm", skip_base=False, no_torch=False)
     assert len(calls) == 2
     assert "MLX stack (re-resolved for the new zoo)" in _run_to_extras.steps
     assert narrow in list(calls[0].args[1:])
@@ -367,6 +367,6 @@ def test_the_core_phase_upgrading_the_zoo_re_resolves_mlx(monkeypatch):
 
 def test_an_unchanged_zoo_does_not_re_resolve_mlx(monkeypatch):
     _zoo_spec_sequence(monkeypatch, [stack._MLX_VLM_SPEC])
-    calls = _run_to_extras(monkeypatch, platform = "macos_arm", skip_base = False, no_torch = False)
+    calls = _run_to_extras(monkeypatch, platform="macos_arm", skip_base=False, no_torch=False)
     assert len(calls) == 1
     assert "MLX stack (zoo unchanged, skipped)" in _run_to_extras.steps

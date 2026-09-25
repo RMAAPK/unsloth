@@ -43,7 +43,7 @@ ISOLATED = [
 
 
 def _jobs() -> dict:
-    return yaml.safe_load(WORKFLOW.read_text(encoding = "utf-8"))["jobs"]
+    return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
 
 
 def _selections(job_name: str) -> list[str]:
@@ -401,7 +401,7 @@ def _fragile_timing_asserts(path: Path) -> list:
     parse and the walks are shared. The stored list is copied out, so no caller can
     mutate another's result, and the tree never leaves this function.
     """
-    source = path.read_text(encoding = "utf-8", errors = "replace")
+    source = path.read_text(encoding="utf-8", errors="replace")
     key = (str(path.resolve()), source)
     cached = _FRAGILE_CACHE.get(key)
     if cached is not None:
@@ -453,7 +453,7 @@ def _fragile_timing_asserts(path: Path) -> list:
     return list(found)
 
 
-@pytest.mark.parametrize("path, reason", ISOLATED, ids = [p for p, _ in ISOLATED])
+@pytest.mark.parametrize("path, reason", ISOLATED, ids=[p for p, _ in ISOLATED])
 def test_an_isolated_path_is_ignored_by_every_parallel_pytest_run(path, reason):
     for command in _pytest_commands():
         if " -n " not in f" {command} " or not _over_the_repo_tests(command):
@@ -464,7 +464,7 @@ def test_an_isolated_path_is_ignored_by_every_parallel_pytest_run(path, reason):
         )
 
 
-@pytest.mark.parametrize("path, reason", ISOLATED, ids = [p for p, _ in ISOLATED])
+@pytest.mark.parametrize("path, reason", ISOLATED, ids=[p for p, _ in ISOLATED])
 def test_an_isolated_path_still_runs_in_a_serial_step(path, reason):
     """Ignoring it is half the change. Without this, the tests silently stop running."""
     serial = [
@@ -540,7 +540,7 @@ def test_the_backend_matrix_still_runs_in_parallel():
         )
 
 
-@pytest.mark.parametrize("path, reason", BACKEND_ISOLATED, ids = [p for p, _ in BACKEND_ISOLATED])
+@pytest.mark.parametrize("path, reason", BACKEND_ISOLATED, ids=[p for p, _ in BACKEND_ISOLATED])
 def test_a_backend_isolated_path_is_ignored_by_the_parallel_run(path, reason):
     """Relative timing cannot survive four workers on four vCPUs.
 
@@ -563,7 +563,7 @@ def test_a_backend_isolated_path_is_ignored_by_the_parallel_run(path, reason):
         )
 
 
-@pytest.mark.parametrize("path, reason", BACKEND_ISOLATED, ids = [p for p, _ in BACKEND_ISOLATED])
+@pytest.mark.parametrize("path, reason", BACKEND_ISOLATED, ids=[p for p, _ in BACKEND_ISOLATED])
 def test_a_backend_isolated_path_still_runs_serially(path, reason):
     """Ignoring it is half the change; without this it runs nowhere and the job is green."""
     serial = [
@@ -653,7 +653,7 @@ def test_the_scan_finds_all_three_shapes(tmp_path):
     }
     for label, source in shapes.items():
         sample = tmp_path / f"test_{label.replace(' ', '_').replace(',', '')}.py"
-        sample.write_text(source, encoding = "utf-8")
+        sample.write_text(source, encoding="utf-8")
         assert _fragile_timing_asserts(sample), (
             f"the scan does not recognise the {label} shape, so a test written that way "
             "could carry a 50ms bound into the -n 4 run unnoticed"
@@ -668,7 +668,7 @@ def test_the_scan_finds_all_three_shapes(tmp_path):
         "    work()\n"
         "    elapsed = time.monotonic() - started\n"
         "    assert elapsed < 30.0\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     assert not _fragile_timing_asserts(roomy), _fragile_timing_asserts(roomy)
 
@@ -694,7 +694,7 @@ def test_an_isolated_file_never_shadows_an_installed_library_with_a_stub():
     offenders = {}
     for name, _reason in BACKEND_ISOLATED:
         path = BACKEND_TESTS / Path(name).name
-        tree = ast.parse(path.read_text(encoding = "utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         stubbed = {
             node.args[0].value
             for node in ast.walk(tree)

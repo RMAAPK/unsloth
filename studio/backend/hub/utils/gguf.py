@@ -139,7 +139,7 @@ def _appledouble_subject_key(name: str) -> object:
 
 def drop_shadowed_appledouble_names(files: list[str]) -> list[str]:
     """Shadow pairing keyed by GGUF shard family."""
-    return _drop_shadowed_appledouble_names(files, subject_key = _appledouble_subject_key)
+    return _drop_shadowed_appledouble_names(files, subject_key=_appledouble_subject_key)
 
 
 def drop_shadowed_appledouble_siblings(siblings: Sequence) -> list:
@@ -225,7 +225,7 @@ def iter_gguf_files(directory: Path, recursive: bool = False):
     if recursive:
         seen = 0
         # os.walk skips unreadable subdirs instead of raising (e.g. /proc).
-        for dirpath, dirnames, filenames in os.walk(directory, onerror = lambda _e: None):
+        for dirpath, dirnames, filenames in os.walk(directory, onerror=lambda _e: None):
             for name in filenames:
                 if is_gguf_filename(name):
                     path = Path(dirpath) / name
@@ -367,7 +367,7 @@ def gguf_checkpoint_family(filename: str) -> Optional[str]:
     ]
     quant = quant_token_with_bpw(basename)
     if quant is not None:
-        basename = re.sub(re.escape(quant), "", basename, count = 1, flags = re.IGNORECASE)
+        basename = re.sub(re.escape(quant), "", basename, count=1, flags=re.IGNORECASE)
     family = "/".join((*family_parts, basename))
     return family.strip("-_. /\t\r\n") or None
 
@@ -426,7 +426,7 @@ def suppress_grouped_gguf_file_rows(rows: Sequence[object]) -> list:
         return list(rows)
 
     paths_by_group = {
-        id(row): list(iter_gguf_files(directory, recursive = True)) for row, directory in grouped_rows
+        id(row): list(iter_gguf_files(directory, recursive=True)) for row, directory in grouped_rows
     }
     physical_ancestors_by_group = {
         id(row): {
@@ -579,7 +579,7 @@ def dedupe_custom_gguf_rows(rows: Sequence[object]) -> list:
                     size_bytes += shard.stat().st_size
                 except OSError:
                     pass
-            replacement_rows[id(chosen)] = chosen.model_copy(update = {"size_bytes": size_bytes})
+            replacement_rows[id(chosen)] = chosen.model_copy(update={"size_bytes": size_bytes})
 
     deduped = [replacement_rows.get(id(row), row) for row in deduped if id(row) not in dropped_rows]
 
@@ -642,7 +642,7 @@ def dedupe_custom_gguf_rows(rows: Sequence[object]) -> list:
         nested_identities = set()
         parent_visible_files = {
             local_path_physical_identity(str(file))
-            for file in iter_gguf_files(parent_path, recursive = True)
+            for file in iter_gguf_files(parent_path, recursive=True)
         }
         for nested_path in nested_paths:
             nested_identities.add(local_path_physical_identity(str(nested_path)))
@@ -800,7 +800,7 @@ def group_gguf_variant_files(entries) -> dict[str, tuple[str, int]]:
         ).append((path, int(size or 0)))
     grouped: dict[str, tuple[str, int]] = {}
     for key, by_family in families.items():
-        chosen = min(by_family.values(), key = lambda members: min(path for path, _ in members))
+        chosen = min(by_family.values(), key=lambda members: min(path for path, _ in members))
         grouped[key] = (min(path for path, _ in chosen), sum(size for _, size in chosen))
     return grouped
 
@@ -822,7 +822,7 @@ def iter_hf_cache_snapshots(repo_id: str, root: Optional[Path] = None):
 
     snapshots: list[Path] = []
     repo_dirs = (
-        iter_active_repo_cache_dirs("model", repo_id, root = root)
+        iter_active_repo_cache_dirs("model", repo_id, root=root)
         if root is not None
         else iter_repo_cache_dirs("model", repo_id)
     )
@@ -837,7 +837,7 @@ def iter_hf_cache_snapshots(repo_id: str, root: Optional[Path] = None):
             logger.debug("Skipping unreadable cache snapshots dir %s: %s", snapshots_dir, e)
             continue
 
-    snapshots.sort(key = snapshot_selection_key, reverse = True)
+    snapshots.sort(key=snapshot_selection_key, reverse=True)
     yield from snapshots
 
 
@@ -846,7 +846,7 @@ def list_empty_gguf_variant_dirs(repo_id: str, root: Optional[Path] = None) -> s
     empty: dict[str, str] = {}
     nonempty: set[str] = set()
     snapshots = (
-        iter_hf_cache_snapshots(repo_id, root = root)
+        iter_hf_cache_snapshots(repo_id, root=root)
         if root is not None
         else iter_hf_cache_snapshots(repo_id)
     )
@@ -873,7 +873,7 @@ def list_empty_gguf_variant_dirs(repo_id: str, root: Optional[Path] = None) -> s
 
 
 def _select_gguf_snapshot(
-    snapshots: Iterable[Path],
+    snapshots: Iterable[Path]
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set, Path]]:
     # Local import: inventory_scan imports this module.
     from hub.utils.inventory_scan import complete_snapshot_variants
@@ -897,7 +897,7 @@ def select_gguf_cache_snapshot(
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set, Path]]:
     """``list_gguf_variants_from_hf_cache`` plus the snapshot it answered from. A repo dir holds every revision, so a caller that then reads metadata from wherever this listing came from needs the snapshot, not the dir: the dir includes revisions it skipped."""
     snapshots = (
-        iter_hf_cache_snapshots(repo_id, root = root)
+        iter_hf_cache_snapshots(repo_id, root=root)
         if root is not None
         else iter_hf_cache_snapshots(repo_id)
     )
@@ -905,7 +905,7 @@ def select_gguf_cache_snapshot(
 
 
 def select_gguf_cache_snapshot_for_repo_dir(
-    repo_dir: Path,
+    repo_dir: Path
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set, Path]]:
     """Select only among snapshots belonging to the exact scanned cache directory."""
     from hub.utils.hf_cache_state import snapshot_selection_key
@@ -921,7 +921,7 @@ def select_gguf_cache_snapshot_for_repo_dir(
                 logger.debug("Skipping unreadable cache snapshot %s: %s", snapshot, exc)
     except OSError as exc:
         logger.debug("Stopping at unreadable cache snapshots dir %s: %s", snapshots_dir, exc)
-    snapshots.sort(key = snapshot_selection_key, reverse = True)
+    snapshots.sort(key=snapshot_selection_key, reverse=True)
     return _select_gguf_snapshot(snapshots)
 
 
@@ -944,7 +944,7 @@ def merge_sibling_snapshot_variants(
             held.setdefault(variant.quant.lower(), index)
     merged_vision: dict[str, bool] = {}
     changed = False
-    for other in iter_hf_cache_snapshots(repo_id, root = root):
+    for other in iter_hf_cache_snapshots(repo_id, root=root):
         if other.parent != snapshot.parent:
             continue
         if other == snapshot or same_existing_path(other, snapshot):
@@ -981,13 +981,14 @@ def list_gguf_variants_from_hf_cache(
     repo_id: str, root: Optional[Path] = None
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set]]:
     """``(variants, has_vision, complete)`` for the snapshot a load would read. Everything in that snapshot is listed, so a torn download stays visible to resume or delete; *complete* is the subset whose shards are all present, so the caller marks the rest partial rather than ready, as the snapshot-path form of this call does."""
-    selected = select_gguf_cache_snapshot(repo_id, root = root)
+    selected = select_gguf_cache_snapshot(repo_id, root=root)
     return selected[:3] if selected is not None else None
 
 
 def _is_state_filename_fallback(variant: str, path: Path) -> bool:
     """Whether *variant* was read off *path*'s own name rather than out of it. An unreadable payload leaves the reader the filename, whose fragment for an unspellable variant is a digest. Spelling cannot tell that from a variant genuinely called ``sha256-<32 hex>``, but the file can: a real one is stored under the hash of itself, never under its own name. A recovered digest names nothing, since it cannot be spelled back and a resume would re-key it again."""
     from hub.utils.state_dir import variant_is_hashed_fragment
+
     return variant_is_hashed_fragment(variant) and path.stem.lower().endswith(
         f"--variant--{variant.strip().lower()}"
     )
@@ -1012,12 +1013,12 @@ def list_partial_gguf_variants_from_state(
             download_manifest.iter_variant_manifests(
                 "model",
                 repo_id,
-                hub_cache = hub_cache,
+                hub_cache=hub_cache,
             ),
             download_manifest.iter_variant_markers(
                 "model",
                 repo_id,
-                hub_cache = hub_cache,
+                hub_cache=hub_cache,
             ),
         )
     )
@@ -1042,7 +1043,7 @@ def list_partial_gguf_variants_from_state(
                 "model",
                 repo_id,
                 variant,
-                hub_cache = hub_cache,
+                hub_cache=hub_cache,
             )
         )
         main_filename: Optional[str] = None
@@ -1075,14 +1076,14 @@ def list_partial_gguf_variants_from_state(
             main_filename = f"{variant}.gguf"
         variants.append(
             GgufVariantInfo(
-                filename = main_filename,
-                quant = variant,
-                size_bytes = size_bytes,
-                download_size_bytes = size_bytes + companion_bytes,
+                filename=main_filename,
+                quant=variant,
+                size_bytes=size_bytes,
+                download_size_bytes=size_bytes + companion_bytes,
             )
         )
 
-    variants.sort(key = lambda variant: -variant.size_bytes)
+    variants.sort(key=lambda variant: -variant.size_bytes)
     _apply_gguf_display_labels(variants)
     return variants, has_vision
 
@@ -1090,10 +1091,10 @@ def list_partial_gguf_variants_from_state(
 def iter_snapshots_preferring_whole(
     repo_id: str,
     gguf_variant: Optional[str],
-    root = None,
+    root=None,
 ):
     """Cache snapshots newest first, but ones holding *gguf_variant* whole ahead of ones short a shard. The lister and the load both take the whole copy, so mtime order alone would read metadata out of a newer half download nothing will load."""
-    ordered = list(iter_hf_cache_snapshots(repo_id, root = root))
+    ordered = list(iter_hf_cache_snapshots(repo_id, root=root))
     if not gguf_variant or len(ordered) < 2:
         return ordered
     from hub.utils.inventory_scan import complete_snapshot_variants
@@ -1138,10 +1139,10 @@ def list_gguf_variants(
             return _ready_cached_variants(cached)
 
     try:
-        info = HfApi(token = hf_token).model_info(
+        info = HfApi(token=hf_token).model_info(
             repo_id,
-            files_metadata = True,
-            timeout = _GGUF_MODEL_INFO_TIMEOUT_SECONDS,
+            files_metadata=True,
+            timeout=_GGUF_MODEL_INFO_TIMEOUT_SECONDS,
         )
     except Exception as exc:
         if type(exc).__name__ in (
@@ -1184,11 +1185,11 @@ def list_gguf_variants(
         main_files.append((filename, int(getattr(sibling, "size", 0) or 0)))
 
     variants = [
-        GgufVariantInfo(filename = filename, quant = quant, size_bytes = size)
+        GgufVariantInfo(filename=filename, quant=quant, size_bytes=size)
         for quant, (filename, size) in group_gguf_variant_files(main_files).items()
     ]
 
-    variants.sort(key = lambda variant: -variant.size_bytes)
+    variants.sort(key=lambda variant: -variant.size_bytes)
     _apply_gguf_display_labels(variants)
     return variants, has_vision, list(info.siblings)
 
@@ -1243,7 +1244,7 @@ def list_local_gguf_variants(
         (r for r in _H3_BUNDLE_REPOS if f"models--{r.replace('/', '--')}" in segments), None
     )
 
-    for file in sorted(iter_gguf_files(root, recursive = True)):
+    for file in sorted(iter_gguf_files(root, recursive=True)):
         # Off by default: the Hub lists the dangling link an evicted blob leaves, so a user can see and clean that quant. Only a caller advertising what it loads excludes it.
         if require_existing_files and not _is_existing_file(file):
             continue
@@ -1277,9 +1278,9 @@ def list_local_gguf_variants(
         main_files.append((rel, size))
 
     variants = [
-        GgufVariantInfo(filename = filename, quant = quant, size_bytes = size)
+        GgufVariantInfo(filename=filename, quant=quant, size_bytes=size)
         for quant, (filename, size) in group_gguf_variant_files(main_files).items()
     ]
-    variants.sort(key = lambda variant: -variant.size_bytes)
+    variants.sort(key=lambda variant: -variant.size_bytes)
     _apply_gguf_display_labels(variants)
     return variants, has_vision

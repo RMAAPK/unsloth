@@ -45,10 +45,10 @@ CONSTANT_NAMES = (
 )
 
 
-def load_rl_wrapper(names = WRAPPER_NAMES):
+def load_rl_wrapper(names=WRAPPER_NAMES):
     """Return ``{name: object}`` for the wrapper helpers, exec'd from live source."""
-    text = SOURCE_PATH.read_text(encoding = "utf-8")
-    tree = ast.parse(text, filename = str(SOURCE_PATH))
+    text = SOURCE_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(text, filename=str(SOURCE_PATH))
 
     wanted = []
     for node in tree.body:
@@ -73,5 +73,5 @@ def load_rl_wrapper(names = WRAPPER_NAMES):
         "inspect": inspect,
         "logger": logging.getLogger("unsloth-repro"),
     }
-    exec(compile(ast.Module(body = wanted, type_ignores = []), str(SOURCE_PATH), "exec"), namespace)
+    exec(compile(ast.Module(body=wanted, type_ignores=[]), str(SOURCE_PATH), "exec"), namespace)
     return {name: namespace[name] for name in names}

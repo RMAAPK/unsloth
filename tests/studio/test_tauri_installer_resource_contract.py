@@ -13,7 +13,7 @@ TAURI = REPO / "studio/src-tauri"
 
 
 def _resources(config_name: str) -> dict:
-    config = json.loads((TAURI / config_name).read_text(encoding = "utf-8"))
+    config = json.loads((TAURI / config_name).read_text(encoding="utf-8"))
     return config.get("bundle", {}).get("resources", {})
 
 
@@ -31,7 +31,7 @@ def test_tauri_never_overlays_install_python_stack() -> None:
             "install_python_stack.py" in path for item in resources.items() for path in item
         ), platform
 
-    installer = (REPO / "install.ps1").read_text(encoding = "utf-8")
+    installer = (REPO / "install.ps1").read_text(encoding="utf-8")
     assert "Overlay Tauri-bundled studio fixes" not in installer
     assert (
         '"install_python_stack.py" = "Lib\\site-packages\\studio\\install_python_stack.py"'
@@ -58,7 +58,7 @@ def test_windows_upgrade_removes_the_installer_it_no_longer_ships() -> None:
     # manifest.
     # An in-place upgrade from a release that bundled both installers would therefore keep install.sh on a Windows
     # machine forever, and the non-recursive RMDir "$INSTDIR" would fail at uninstall.
-    hooks = (REPO / "studio/src-tauri/windows/hooks.nsh").read_text(encoding = "utf-8")
+    hooks = (REPO / "studio/src-tauri/windows/hooks.nsh").read_text(encoding="utf-8")
     for macro in ("NSIS_HOOK_PREINSTALL", "NSIS_HOOK_PREUNINSTALL"):
         assert f"!macro {macro}" in hooks, f"hooks.nsh must define {macro}"
         body = hooks.split(f"!macro {macro}", 1)[1].split("!macroend", 1)[0]

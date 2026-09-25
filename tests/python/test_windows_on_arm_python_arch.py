@@ -240,7 +240,7 @@ def test_a_reused_environment_is_re_checked_for_its_interpreter_architecture(
     venv_tag: str,
     selected_arch: str,
     venv_exists: bool,
-    expected: bool,
+    expected: bool
 ):
     """The swap only covers a fresh selection, so reuse has to be re-checked separately."""
     venv_python = tmp_path / "python.exe"

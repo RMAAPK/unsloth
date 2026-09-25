@@ -38,7 +38,7 @@ def _cleanup_explodes(session_id, delete_files):
     raise OSError("disk gone")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def clean_lifecycle_state():
     """Start and finish with the module maps empty, whatever the test did."""
     tools._active_sessions.clear()
@@ -50,7 +50,7 @@ def clean_lifecycle_state():
     tools._removing_sessions.clear()
 
 
-def assert_idle(message = ""):
+def assert_idle(message=""):
     assert dict(tools._active_sessions) == {}, f"_active_sessions leaked {message}"
     assert dict(tools._pending_removals) == {}, f"_pending_removals leaked {message}"
     assert set(tools._removing_sessions) == set(), f"_removing_sessions leaked {message}"
@@ -69,7 +69,7 @@ def removals(monkeypatch):
     return seen
 
 
-def queue_removal(session_id, *, files = True):
+def queue_removal(session_id, *, files=True):
     key = tools._session_key(session_id)
     tools._pending_removals.setdefault(key, {})[session_id] = files
 
@@ -207,7 +207,7 @@ def test_a_failing_cleanup_wakes_a_waiter_for_the_same_chat(monkeypatch):
         except OSError:
             pass
 
-    first = threading.Thread(target = _first, name = "pr9640-first")
+    first = threading.Thread(target=_first, name="pr9640-first")
     first.start()
     assert entered.wait(DEADLINE), "cleanup never started"
 
@@ -217,7 +217,7 @@ def test_a_failing_cleanup_wakes_a_waiter_for_the_same_chat(monkeypatch):
         with tools._session_in_flight("waited-on"):
             waiter_in.set()
 
-    second = threading.Thread(target = _second, name = "pr9640-waiter")
+    second = threading.Thread(target=_second, name="pr9640-waiter")
     second.start()
     # The waiter must be blocked while the removal is in progress.
     assert not waiter_in.wait(0.5), "a call started inside a folder being deleted"
@@ -274,7 +274,7 @@ def test_randomised_schedules_leave_no_lifecycle_state(seed, removals):
     rng = random.Random(seed)
     ids = ["alpha", "Alpha", "beta", "BETA", "gamma"]
     errors: list[BaseException] = []
-    start = threading.Barrier(8, timeout = DEADLINE)
+    start = threading.Barrier(8, timeout=DEADLINE)
 
     def worker(i):
         session = rng.choice(ids)
@@ -294,10 +294,10 @@ def test_randomised_schedules_leave_no_lifecycle_state(seed, removals):
         except BaseException as exc:  # noqa: BLE001
             errors.append(exc)
 
-    faulthandler.dump_traceback_later(DEADLINE, exit = False)
+    faulthandler.dump_traceback_later(DEADLINE, exit=False)
     try:
         threads = [
-            threading.Thread(target = worker, args = (i,), name = f"pr9640-{seed}-{i}") for i in range(8)
+            threading.Thread(target=worker, args=(i,), name=f"pr9640-{seed}-{i}") for i in range(8)
         ]
         for t in threads:
             t.start()

@@ -25,12 +25,12 @@ _SCHEMA_DEFAULTS = {
 }
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _isolate(monkeypatch):
     # The recommended lookup is lru-cached; clear it so a patched config takes effect.
     ic._recommended_sampling.cache_clear()
     for field in SAMPLING_FIELD_NAMES:
-        monkeypatch.delenv(ic._SAMPLING_FIELDS[field][0], raising = False)
+        monkeypatch.delenv(ic._SAMPLING_FIELDS[field][0], raising=False)
     yield
     ic._recommended_sampling.cache_clear()
 
@@ -117,7 +117,7 @@ def test_model_recommended_sampling_values_are_in_range():
     defaults_dir = Path(ic.__file__).resolve().parents[2] / "assets" / "configs" / "model_defaults"
     invalid = []
     for path in sorted(defaults_dir.rglob("*.yaml")):
-        inference = (yaml.safe_load(path.read_text(encoding = "utf-8")) or {}).get(
+        inference = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get(
             "inference", {}
         ) or {}
         for field in ic._UI_RECOMMENDED_FIELDS:
@@ -241,7 +241,7 @@ def test_fill_recommended_sampling_openai_payload(monkeypatch):
 
     # Client sent only temperature; top_k / min_p were omitted.
     payload = ChatCompletionRequest(
-        model = "m", messages = [{"role": "user", "content": "hi"}], temperature = 0.2
+        model="m", messages=[{"role": "user", "content": "hi"}], temperature=0.2
     )
     _fill_recommended_sampling_openai(payload, "some/model")
     assert payload.temperature == 0.2  # explicit client value preserved
@@ -260,7 +260,7 @@ def test_fill_recommended_sampling_openai_operator_pin_overrides_client(monkeypa
     monkeypatch.setenv("UNSLOTH_SAMPLING_TEMPERATURE", "0.9")
 
     payload = ChatCompletionRequest(
-        model = "m", messages = [{"role": "user", "content": "hi"}], temperature = 0.2
+        model="m", messages=[{"role": "user", "content": "hi"}], temperature=0.2
     )
     _fill_recommended_sampling_openai(payload, "some/model")
     assert payload.temperature == 0.9  # operator pin wins even over an explicit client value
@@ -286,20 +286,20 @@ def test_chat_route_lifts_harness_template_kwargs_before_sampling(monkeypatch, t
         return None
 
     llama_backend = SimpleNamespace(
-        is_loaded = True,
-        model_identifier = "unsloth/Qwen3.8-27B-GGUF",
-        _is_audio = False,
+        is_loaded=True,
+        model_identifier="unsloth/Qwen3.8-27B-GGUF",
+        _is_audio=False,
     )
     request = SimpleNamespace(
-        state = SimpleNamespace(skip_api_monitor = True),
-        url = SimpleNamespace(path = "/v1/chat/completions"),
-        method = "POST",
-        scope = {},
+        state=SimpleNamespace(skip_api_monitor=True),
+        url=SimpleNamespace(path="/v1/chat/completions"),
+        method="POST",
+        scope={},
     )
     payload = ChatCompletionRequest(
-        model = "deepseek-harness-model",
-        messages = [{"role": "user", "content": "hi"}],
-        chat_template_kwargs = {"enable_thinking": thinking_mode},
+        model="deepseek-harness-model",
+        messages=[{"role": "user", "content": "hi"}],
+        chat_template_kwargs={"enable_thinking": thinking_mode},
     )
     assert payload.enable_thinking is None
 
@@ -393,20 +393,20 @@ def test_chat_route_normalizes_reasoning_effort_before_generation(
 
     reset_tool_policy()
     llama_backend = SimpleNamespace(
-        is_loaded = True,
-        is_vision = False,
-        supports_tools = False,
-        supports_reasoning = True,
-        reasoning_always_on = False,
-        _is_audio = False,
-        model_identifier = "unsloth/Qwen3.8-27B-GGUF",
-        context_length = 4096,
-        generate_chat_completion = _generate,
+        is_loaded=True,
+        is_vision=False,
+        supports_tools=False,
+        supports_reasoning=True,
+        reasoning_always_on=False,
+        _is_audio=False,
+        model_identifier="unsloth/Qwen3.8-27B-GGUF",
+        context_length=4096,
+        generate_chat_completion=_generate,
     )
 
     class _Request:
-        state = SimpleNamespace(skip_api_monitor = True)
-        url = SimpleNamespace(path = "/v1/chat/completions")
+        state = SimpleNamespace(skip_api_monitor=True)
+        url = SimpleNamespace(path="/v1/chat/completions")
         method = "POST"
         scope = {}
 
@@ -414,8 +414,8 @@ def test_chat_route_normalizes_reasoning_effort_before_generation(
             return False
 
     payload = ChatCompletionRequest(
-        model = "local-model",
-        messages = [{"role": "user", "content": "hi"}],
+        model="local-model",
+        messages=[{"role": "user", "content": "hi"}],
         **request_kwargs,
     )
 
@@ -503,6 +503,7 @@ def test_fill_recommended_sampling_completions_operator_pin(monkeypatch):
 def test_count_tokens_rejects_an_effort_the_chat_endpoint_would_reject(effort):
     from models.inference import ChatCountTokensRequest
     from pydantic import ValidationError
+
     with pytest.raises(ValidationError):
         ChatCountTokensRequest.model_validate(
             {"messages": [{"role": "user", "content": "hi"}], "reasoning_effort": effort}
@@ -560,16 +561,16 @@ def test_contradictory_controls_are_resolved_for_every_family(
     from routes import inference as inference_route
 
     backend = SimpleNamespace(
-        _supports_reasoning = True,
-        _reasoning_always_on = False,
-        _reasoning_style = reasoning_style,
-        _reasoning_effort_levels = ("none", "low", "medium", "high"),
-        _supports_preserve_thinking = False,
-        _architecture = "gpt-oss",
+        _supports_reasoning=True,
+        _reasoning_always_on=False,
+        _reasoning_style=reasoning_style,
+        _reasoning_effort_levels=("none", "low", "medium", "high"),
+        _supports_preserve_thinking=False,
+        _architecture="gpt-oss",
     )
     payload = ChatCompletionRequest(
-        model = "unsloth/gpt-oss-20b-GGUF",
-        messages = [{"role": "user", "content": "hi"}],
+        model="unsloth/gpt-oss-20b-GGUF",
+        messages=[{"role": "user", "content": "hi"}],
         **request_kwargs,
     )
     inference_route._normalize_chat_reasoning_controls(payload)

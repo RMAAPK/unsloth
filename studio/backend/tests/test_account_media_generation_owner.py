@@ -24,7 +24,7 @@ ALICE = AccountContext("a" * 32, "alice")
 BOB = AccountContext("b" * 32, "bob")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def isolated(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
@@ -50,8 +50,8 @@ def client_for(account):
 
     app.dependency_overrides[get_current_subject] = subject
     app.dependency_overrides[allow_ambient_hf_token] = lambda: False
-    app.include_router(inference.studio_router, prefix = "/api/inference")
-    app.include_router(inference.router, prefix = "/v1")
+    app.include_router(inference.studio_router, prefix="/api/inference")
+    app.include_router(inference.router, prefix="/v1")
     return TestClient(app)
 
 
@@ -70,21 +70,21 @@ def shared_resident(monkeypatch):
         raise RuntimeError(DIFFUSION_CANCELLED_MSG)
 
     backend = SimpleNamespace(
-        is_loaded = True,
-        status = lambda: {
+        is_loaded=True,
+        status=lambda: {
             "loaded": True,
             "repo_id": "org/public-model",
             "family": "z-image",
             "base_repo": None,
         },
-        generate = generate,
-        generate_progress = lambda: {"active": True, "step": 3, "total": 10},
-        cancel_generate = lambda **kwargs: (cancelled.set(), True)[1],
+        generate=generate,
+        generate_progress=lambda: {"active": True, "step": 3, "total": 10},
+        cancel_generate=lambda **kwargs: (cancelled.set(), True)[1],
     )
     monkeypatch.setattr(diffusion_engine_router, "get_active_diffusion_engine", lambda: backend)
     monkeypatch.setattr(gpu_arbiter, "_owner", "diffusion")
     monkeypatch.setattr(gpu_arbiter, "_owner_account", BOB.account_id)
-    return SimpleNamespace(running = running, cancelled = cancelled)
+    return SimpleNamespace(running=running, cancelled=cancelled)
 
 
 def _start_alice_generation(shared_resident):
@@ -93,10 +93,10 @@ def _start_alice_generation(shared_resident):
     def run():
         with client_for(ALICE) as client:
             result["response"] = client.post(
-                "/api/inference/images/generate", json = {"prompt": "a sloth"}
+                "/api/inference/images/generate", json={"prompt": "a sloth"}
             )
 
-    thread = threading.Thread(target = run)
+    thread = threading.Thread(target=run)
     thread.start()
     assert shared_resident.running.wait(20)
     return thread, result
@@ -138,9 +138,9 @@ def test_residency_still_governs_progress_and_cancel_with_no_generation_in_fligh
     from core.inference import diffusion_engine_router
 
     backend = SimpleNamespace(
-        status = lambda: {"loaded": True, "repo_id": "org/public-model"},
-        generate_progress = lambda: {"active": False},
-        cancel_generate = lambda **kwargs: False,
+        status=lambda: {"loaded": True, "repo_id": "org/public-model"},
+        generate_progress=lambda: {"active": False},
+        cancel_generate=lambda **kwargs: False,
     )
     monkeypatch.setattr(diffusion_engine_router, "get_active_diffusion_engine", lambda: backend)
     monkeypatch.setattr(gpu_arbiter, "_owner", "diffusion")
@@ -161,14 +161,14 @@ def _start_alice_openai_generation(shared_resident):
         with client_for(ALICE) as client:
             result["response"] = client.post(
                 "/v1/images/generations",
-                json = {
+                json={
                     "prompt": "a sloth",
                     "size": "256x256",
                     "response_format": "b64_json",
                 },
             )
 
-    thread = threading.Thread(target = run)
+    thread = threading.Thread(target=run)
     thread.start()
     assert shared_resident.running.wait(20)
     return thread, result

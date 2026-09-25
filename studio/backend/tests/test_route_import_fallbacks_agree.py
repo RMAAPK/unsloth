@@ -51,14 +51,14 @@ _ROUTES = Path(__file__).resolve().parent.parent / "routes"
 @pytest.mark.parametrize(
     "module_path",
     sorted(p for p in _ROUTES.glob("*.py") if p.name != "__init__.py"),
-    ids = lambda p: p.name,
+    ids=lambda p: p.name,
 )
 def test_the_import_fallback_binds_the_same_names(module_path):
-    source = module_path.read_text(encoding = "utf-8")
+    source = module_path.read_text(encoding="utf-8")
     for block in _try_blocks(source):
-        primary = _import_map(ast.Module(body = block.body, type_ignores = []))
+        primary = _import_map(ast.Module(body=block.body, type_ignores=[]))
         for handler in block.handlers:
-            fallback = _import_map(ast.Module(body = handler.body, type_ignores = []))
+            fallback = _import_map(ast.Module(body=handler.body, type_ignores=[]))
             for module, names in primary.items():
                 if module not in fallback:
                     # Skipping a module is fine; importing the same module with fewer names is not.

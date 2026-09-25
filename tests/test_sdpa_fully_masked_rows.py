@@ -95,7 +95,7 @@ def test_the_bug_this_fix_exists_for_is_really_here(unpatched):
     """
     mask = _call_sdpa_mask(unpatched, _left_padded_probe_mask(torch))
     assert mask is not None and not mask.is_floating_point()
-    fully_masked = int((~mask.bool().any(dim = -1)).sum())
+    fully_masked = int((~mask.bool().any(dim=-1)).sum())
     assert fully_masked == 1, (
         "the unpatched sdpa_mask no longer leaves a left-padded query row "
         "attending to nothing, so unsloth #9708 may be fixed upstream -- "
@@ -110,7 +110,7 @@ def test_the_probe_answers_true_when_the_bug_is_present(unpatched):
 def test_the_patch_leaves_no_row_attending_to_nothing(unpatched):
     fix_transformers_fully_masked_rows()
     mask = _call_sdpa_mask(masking_utils.sdpa_mask, _left_padded_probe_mask(torch))
-    assert int((~mask.bool().any(dim = -1)).sum()) == 0, (
+    assert int((~mask.bool().any(dim=-1)).sum()) == 0, (
         "a query row still attends to nothing, so SDPA can still return NaN "
         "for it and a left-padded batch can still decode to the empty string"
     )
@@ -128,7 +128,7 @@ def test_the_patch_changes_nothing_a_real_row_could_read(unpatched):
     fix_transformers_fully_masked_rows()
     after = _call_sdpa_mask(masking_utils.sdpa_mask, attention_mask).bool()
 
-    attends_to_something = before.any(dim = -1)
+    attends_to_something = before.any(dim=-1)
     assert torch.equal(
         before[attends_to_something], after[attends_to_something]
     ), "the patch altered a row that already attended to something"
@@ -175,7 +175,7 @@ def test_the_probe_says_no_when_the_build_already_corrects_itself(unpatched):
     def already_correct(*args, **kwargs):
         mask = unpatched(*args, **kwargs)
         if mask is not None and not mask.is_floating_point():
-            mask = mask | ~mask.any(dim = -1, keepdim = True)
+            mask = mask | ~mask.any(dim=-1, keepdim=True)
         return mask
 
     already_correct.__signature__ = inspect.signature(unpatched)
@@ -202,7 +202,7 @@ def test_the_probe_is_dtype_honest(unpatched):
 
 def test_a_batch_with_no_padding_is_untouched(unpatched):
     """No pad, no fully-masked row, nothing for the patch to do."""
-    attention_mask = torch.ones((2, 2), dtype = torch.bool)
+    attention_mask = torch.ones((2, 2), dtype=torch.bool)
     before = _call_sdpa_mask(unpatched, attention_mask).bool()
     fix_transformers_fully_masked_rows()
     after = _call_sdpa_mask(masking_utils.sdpa_mask, attention_mask).bool()
@@ -247,7 +247,7 @@ def test_a_reloaded_masking_utils_is_patched_again(unpatched):
     fix_transformers_fully_masked_rows()
     assert _sdpa_mask_is_patched(masking_utils)
     mask = _call_sdpa_mask(masking_utils.sdpa_mask, _left_padded_probe_mask(torch))
-    assert int((~mask.bool().any(dim = -1)).sum()) == 0
+    assert int((~mask.bool().any(dim=-1)).sum()) == 0
 
 
 def test_a_half_installed_patch_is_completed_rather_than_skipped(unpatched):
@@ -281,7 +281,7 @@ def test_the_correction_itself_on_every_dtype_it_can_meet():
     assert _unmask_rows_attending_to_nothing(int_mask).tolist() == [[[[1, 1], [0, 1]]]]
 
     # The eager path: returned untouched, and by identity, not by value.
-    float_mask = torch.zeros((1, 1, 2, 2), dtype = torch.float32)
+    float_mask = torch.zeros((1, 1, 2, 2), dtype=torch.float32)
     assert _unmask_rows_attending_to_nothing(float_mask) is float_mask
 
     # `is_causal` was used instead of a mask.

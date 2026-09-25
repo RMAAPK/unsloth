@@ -54,26 +54,26 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
         route,
         *,
         diffusion_kind,
-        is_gguf = True,
-        reasoning_budget = -1,
-        reasoning_budget_message = "",
-        capability_error = None,
-        extra_args = None,
+        is_gguf=True,
+        reasoning_budget=-1,
+        reasoning_budget_message="",
+        capability_error=None,
+        extra_args=None,
     ):
         # Mirrors the real staged-metadata preflight; also skips the training guard.
         request = ValidateModelRequest(
-            model_path = "someone/repacked-gguf",
-            include_context_length = True,
-            reasoning_budget = reasoning_budget,
-            reasoning_budget_message = reasoning_budget_message,
+            model_path="someone/repacked-gguf",
+            include_context_length=True,
+            reasoning_budget=reasoning_budget,
+            reasoning_budget_message=reasoning_budget_message,
         )
         config = SimpleNamespace(
-            identifier = "someone/repacked-gguf",
-            display_name = "repacked-gguf",
-            is_gguf = is_gguf,
-            is_lora = False,
-            is_vision = False,
-            gguf_file = None,
+            identifier="someone/repacked-gguf",
+            display_name="repacked-gguf",
+            is_gguf=is_gguf,
+            is_lora=False,
+            is_vision=False,
+            gguf_file=None,
         )
 
         def _validate_capabilities(*_args, **_kwargs):
@@ -81,31 +81,31 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
                 raise capability_error
 
         backend = SimpleNamespace(
-            reasoning_budget_settings_requested = (
+            reasoning_budget_settings_requested=(
                 route.LlamaCppBackend.reasoning_budget_settings_requested
             ),
-            _find_llama_server_binary = lambda: "/server",
-            validate_reasoning_budget_capabilities = _validate_capabilities,
+            _find_llama_server_binary=lambda: "/server",
+            validate_reasoning_budget_capabilities=_validate_capabilities,
         )
         with (
             patch.object(
                 route,
                 "_resolve_model_identifier_for_request",
-                return_value = ("someone/repacked-gguf", "someone/repacked-gguf", False),
+                return_value=("someone/repacked-gguf", "someone/repacked-gguf", False),
             ),
-            patch.object(route.ModelConfig, "from_identifier", return_value = config),
-            patch.object(route, "_resolve_inherited_extra_args", return_value = extra_args),
-            patch.object(route, "_classify_diffusion_gguf", return_value = diffusion_kind),
-            patch.object(route, "_resolve_gguf_gpu_ids_for_request", new = _noop_gpu_ids),
-            patch.object(route, "_effective_load_in_4bit", return_value = True),
-            patch.object(route, "get_llama_cpp_backend", return_value = backend),
+            patch.object(route.ModelConfig, "from_identifier", return_value=config),
+            patch.object(route, "_resolve_inherited_extra_args", return_value=extra_args),
+            patch.object(route, "_classify_diffusion_gguf", return_value=diffusion_kind),
+            patch.object(route, "_resolve_gguf_gpu_ids_for_request", new=_noop_gpu_ids),
+            patch.object(route, "_effective_load_in_4bit", return_value=True),
+            patch.object(route, "get_llama_cpp_backend", return_value=backend),
         ):
-            return asyncio.run(route.validate_model(request, current_subject = "test-user"))
+            return asyncio.run(route.validate_model(request, current_subject="test-user"))
 
     def test_unclassifiable_gguf_is_reported_unknown_not_ordinary(self):
         """The bug: None must not look identical to a confirmed ordinary GGUF."""
         route = _ROUTE
-        resp = self._validate(route, diffusion_kind = None)
+        resp = self._validate(route, diffusion_kind=None)
         self.assertFalse(resp.is_diffusion)
         self.assertTrue(
             resp.diffusion_unknown,
@@ -116,20 +116,20 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
 
     def test_confirmed_ordinary_gguf_is_not_unknown(self):
         route = _ROUTE
-        resp = self._validate(route, diffusion_kind = False)
+        resp = self._validate(route, diffusion_kind=False)
         self.assertFalse(resp.is_diffusion)
         self.assertFalse(resp.diffusion_unknown)
 
     def test_confirmed_diffusion_gguf_is_not_unknown(self):
         route = _ROUTE
-        resp = self._validate(route, diffusion_kind = True)
+        resp = self._validate(route, diffusion_kind=True)
         self.assertTrue(resp.is_diffusion)
         self.assertFalse(resp.diffusion_unknown)
 
     def test_non_gguf_is_never_unknown(self):
         """A transformers model is definitively not a diffusion GGUF."""
         route = _ROUTE
-        resp = self._validate(route, diffusion_kind = False, is_gguf = False)
+        resp = self._validate(route, diffusion_kind=False, is_gguf=False)
         self.assertFalse(resp.is_diffusion)
         self.assertFalse(resp.diffusion_unknown)
 
@@ -137,7 +137,7 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
         """Additive field: absent/False keeps the pre-#7575 meaning of is_diffusion."""
         from models.inference import ValidateModelResponse
 
-        resp = ValidateModelResponse(valid = True, message = "ok")
+        resp = ValidateModelResponse(valid=True, message="ok")
         self.assertFalse(resp.diffusion_unknown)
 
     def test_explicit_budget_is_rejected_during_validate_before_unload(self):
@@ -145,9 +145,9 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
         with self.assertRaises(HTTPException) as raised:
             self._validate(
                 route,
-                diffusion_kind = False,
-                reasoning_budget = 2048,
-                capability_error = ValueError("llama-server does not support --reasoning-budget"),
+                diffusion_kind=False,
+                reasoning_budget=2048,
+                capability_error=ValueError("llama-server does not support --reasoning-budget"),
             )
         self.assertEqual(raised.exception.status_code, 400)
         self.assertIn("--reasoning-budget", raised.exception.detail)
@@ -157,8 +157,8 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
         with self.assertRaises(HTTPException) as raised:
             self._validate(
                 route,
-                diffusion_kind = None,
-                reasoning_budget_message = "Conclude now",
+                diffusion_kind=None,
+                reasoning_budget_message="Conclude now",
             )
         self.assertEqual(raised.exception.status_code, 400)
         self.assertIn("cannot be applied until", raised.exception.detail)
@@ -175,24 +175,24 @@ class TestValidateReportsDiffusionUnknown(unittest.TestCase):
             "LLAMA_ARG_THINK_BUDGET": "512",
             "LLAMA_ARG_THINK_BUDGET_MESSAGE": "Wrap up.",
         }
-        with patch.dict(_os.environ, env, clear = False):
+        with patch.dict(_os.environ, env, clear=False):
             self.assertEqual(
                 route.LlamaCppBackend.reasoning_budget_settings_requested(
-                    extra_args = None, reasoning_budget = -1, reasoning_budget_message = ""
+                    extra_args=None, reasoning_budget=-1, reasoning_budget_message=""
                 ),
                 (False, False),
                 "the backend's own gate must stay the reference for 'configured'",
             )
             for kind in (None, True, False):
-                with self.subTest(diffusion_kind = kind):
-                    resp = self._validate(route, diffusion_kind = kind)
+                with self.subTest(diffusion_kind=kind):
+                    resp = self._validate(route, diffusion_kind=kind)
                     self.assertTrue(resp.valid)
 
     def test_extra_args_passthrough_is_still_a_configured_setting(self):
         """Ignoring the environment must not also ignore an explicit passthrough flag."""
         route = _ROUTE
         with self.assertRaises(HTTPException) as raised:
-            self._validate(route, diffusion_kind = True, extra_args = ["--reasoning-budget", "512"])
+            self._validate(route, diffusion_kind=True, extra_args=["--reasoning-budget", "512"])
         self.assertEqual(raised.exception.status_code, 400)
         self.assertIn("DiffusionGemma", raised.exception.detail)
 

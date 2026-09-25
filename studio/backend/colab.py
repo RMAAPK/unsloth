@@ -33,7 +33,7 @@ def get_colab_url(port: int = 8888) -> str:
 
     for attempt in range(3):
         try:
-            url = eval_js(f"google.colab.kernel.proxyPort({port})", timeout_sec = 10)
+            url = eval_js(f"google.colab.kernel.proxyPort({port})", timeout_sec=10)
             # Valid proxy URL is https:// and embeds the port.
             if url and isinstance(url, str) and url.startswith("https://") and str(port) in url:
                 return url.rstrip("/")
@@ -71,6 +71,7 @@ def _is_colab_runtime() -> bool:
     """
     try:
         from main import _IS_COLAB
+
         return bool(_IS_COLAB)
     except Exception:
         return False
@@ -78,6 +79,7 @@ def _is_colab_runtime() -> bool:
 
 def _colab_login_credentials_path() -> Path:
     from auth.storage import DB_PATH
+
     return DB_PATH.parent / ".colab_notebook_login"
 
 
@@ -85,10 +87,11 @@ def _store_colab_login_credentials(username: str, password: str) -> None:
     """Persist Colab admin credentials for notebook re-runs after interrupt."""
     path = _colab_login_credentials_path()
     try:
-        path.parent.mkdir(parents = True, exist_ok = True)
-        path.write_text(f"{username}\n{password}\n", encoding = "utf-8")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{username}\n{password}\n", encoding="utf-8")
         try:
             import os
+
             os.chmod(path, 0o600)
         except OSError:
             pass
@@ -102,7 +105,7 @@ def _load_colab_login_credentials() -> "tuple[str, str] | None":
     try:
         if not path.is_file():
             return None
-        lines = path.read_text(encoding = "utf-8").splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
         if len(lines) >= 2 and lines[0] and lines[1]:
             return lines[0], lines[1]
     except (OSError, UnicodeDecodeError) as e:
@@ -114,7 +117,7 @@ def _clear_colab_login_credentials() -> None:
     """Drop the cached Colab credentials once they no longer authenticate."""
     path = _colab_login_credentials_path()
     try:
-        path.unlink(missing_ok = True)
+        path.unlink(missing_ok=True)
     except OSError as e:
         logger.info(f"Could not clear Colab login credentials ({e}).")
 
@@ -317,8 +320,8 @@ def show_link(
             _ready_card_html(
                 url,
                 port,
-                has_cloudflare_link = has_cloudflare_link,
-                cloudflare_requested = cloudflare_requested,
+                has_cloudflare_link=has_cloudflare_link,
+                cloudflare_requested=cloudflare_requested,
             )
         )
     )
@@ -340,6 +343,7 @@ def _bootstrap_password_pending() -> bool:
     would leak admin access. Fails safe to pending."""
     try:
         from auth.storage import requires_password_change, DEFAULT_ADMIN_USERNAME
+
         return bool(requires_password_change(DEFAULT_ADMIN_USERNAME))
     except Exception as e:
         logger.info(f"Could not check admin password state ({e}); refusing tunnel to be safe.")
@@ -365,7 +369,7 @@ def start_cloudflare_tunnel(port: int) -> "str | None":
         return None
     try:
         set_studio_tunnel_url_callback(_publish_cloudflare_url)
-        url = start_studio_tunnel(port, managed_by = "colab")
+        url = start_studio_tunnel(port, managed_by="colab")
     except Exception as e:
         logger.info(f"Cloudflare tunnel failed to start ({e}); using Colab proxy only.")
         return None
@@ -378,6 +382,7 @@ def start_cloudflare_tunnel(port: int) -> "str | None":
 def _publish_cloudflare_url(cloudflare_url: "str | None") -> None:
     try:
         from main import app as _studio_app
+
         _studio_app.state.cloudflare_url = cloudflare_url
     except Exception as e:
         logger.info(f"Could not publish Cloudflare URL to /api/health ({e}).")
@@ -387,6 +392,7 @@ def _stop_cloudflare_tunnel() -> None:
     """Best-effort teardown of the Cloudflare tunnel started by start_cloudflare_tunnel."""
     try:
         from cloudflare_tunnel import stop_studio_tunnel
+
         stop_studio_tunnel()
     except Exception:
         pass
@@ -396,8 +402,9 @@ def _is_studio_healthy(port: int, timeout: float = 2.0) -> bool:
     """True only if Unsloth Studio (not some other app) answers /api/health on *port*. The
     service-marker check stops the reuse path reusing or tunneling a foreign process."""
     import json, urllib.request
+
     try:
-        with urllib.request.urlopen(f"http://localhost:{port}/api/health", timeout = timeout) as r:
+        with urllib.request.urlopen(f"http://localhost:{port}/api/health", timeout=timeout) as r:
             return json.loads(r.read()).get("service") == "Unsloth UI Backend"
     except Exception:
         return False
@@ -468,8 +475,8 @@ def _embed_kernel_port_iframe(port: int) -> bool:
     try:
         colab_output.serve_kernel_port_as_iframe(
             port,
-            height = _COLAB_IFRAME_HEIGHT,
-            width = "100%",
+            height=_COLAB_IFRAME_HEIGHT,
+            width="100%",
         )
         return True
     except Exception as e:
@@ -528,8 +535,8 @@ def _show_and_embed(
         logger.info(f"🔗 Shareable Cloudflare link: {cloudflare_url}")
 
     _warn_colab_cloudflare_missing(
-        use_cloudflare = cloudflare_requested,
-        cloudflare_url = cloudflare_url,
+        use_cloudflare=cloudflare_requested,
+        cloudflare_url=cloudflare_url,
     )
 
     # Fold the credentials into the link card rather than a second card below it.
@@ -557,9 +564,9 @@ def _show_and_embed(
         try:
             show_link(
                 port,
-                _url = url,
-                has_cloudflare_link = bool(cloudflare_url),
-                cloudflare_requested = cloudflare_requested,
+                _url=url,
+                has_cloudflare_link=bool(cloudflare_url),
+                cloudflare_requested=cloudflare_requested,
             )
         except Exception as e:
             logger.info(f"Could not render Unsloth link card ({e}).")
@@ -596,13 +603,13 @@ def start(port: int = 8888, *, cloudflare: "bool | None" = None):
             cf_url = start_cloudflare_tunnel(port) if use_cloudflare else None
             _show_and_embed(
                 port,
-                cloudflare_url = cf_url,
-                colab_login = colab_login,
-                cloudflare_requested = use_cloudflare,
+                cloudflare_url=cf_url,
+                colab_login=colab_login,
+                cloudflare_requested=use_cloudflare,
             )
             for _ in range(10000):
                 time.sleep(300)
-                print("=", end = "", flush = True)
+                print("=", end="", flush=True)
         except KeyboardInterrupt:
             logger.info("\nUnsloth Studio keepalive stopped.")
         finally:
@@ -623,11 +630,11 @@ def start(port: int = 8888, *, cloudflare: "bool | None" = None):
     try:
         # cloudflare=False: this helper owns the tunnel (via start(cloudflare=...)), so pin it off.
         app = run_server(
-            host = "0.0.0.0",
-            port = port,
-            frontend_path = frontend_path,
-            silent = True,
-            cloudflare = False,
+            host="0.0.0.0",
+            port=port,
+            frontend_path=frontend_path,
+            silent=True,
+            cloudflare=False,
         )
     except SystemExit as exc:
         logger.error(f"❌ Unsloth Studio failed to start: {exc}")
@@ -647,7 +654,7 @@ def start(port: int = 8888, *, cloudflare: "bool | None" = None):
     server_ready = False
     for _ in range(40):
         try:
-            with urllib.request.urlopen(f"http://localhost:{actual_port}/api/health", timeout = 1):
+            with urllib.request.urlopen(f"http://localhost:{actual_port}/api/health", timeout=1):
                 server_ready = True
                 break
         except Exception:
@@ -666,15 +673,15 @@ def start(port: int = 8888, *, cloudflare: "bool | None" = None):
         cf_url = start_cloudflare_tunnel(actual_port) if use_cloudflare else None
         _show_and_embed(
             actual_port,
-            cloudflare_url = cf_url,
-            colab_login = colab_login,
-            cloudflare_requested = use_cloudflare,
+            cloudflare_url=cf_url,
+            colab_login=colab_login,
+            cloudflare_requested=use_cloudflare,
         )
 
         # Keep kernel alive so the daemon server thread runs.
         for _ in range(10000):
             time.sleep(300)
-            print("=", end = "", flush = True)
+            print("=", end="", flush=True)
     except KeyboardInterrupt:
         logger.info("\nUnsloth Studio keepalive stopped.")
     finally:

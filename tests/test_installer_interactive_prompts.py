@@ -264,7 +264,7 @@ def _outside_docstring(line: str, delimiter: str) -> tuple[str, str]:
                 return "", delimiter
             line, delimiter = line[end + 3 :], ""
             continue
-        opener = min((i for i in (line.find('"""'), line.find("'''")) if i != -1), default = -1)
+        opener = min((i for i in (line.find('"""'), line.find("'''")) if i != -1), default=-1)
         if opener == -1:
             return line, ""
         # An f-string field executes, so this one is code, not documentation.
@@ -383,7 +383,7 @@ def _questions_for_read(lines: list[str], index: int) -> list[str]:
     one read can serve a branch each, and validating only the closest lets the other
     branch through. Falls back to the read line so an unlabelled prompt still has to
     be allowlisted rather than ignored."""
-    return _nearby_questions(lines, index, direction = -1) or [
+    return _nearby_questions(lines, index, direction=-1) or [
         f"<unlabelled read: {normalise_question(lines[index])}>"
     ]
 
@@ -403,7 +403,7 @@ def find_prompts(script: str, source: str) -> list[tuple[str, int, str]]:
             if not _MARKER.search(text):
                 continue
             # A bare `[Y/n]` is a hint variable; its question is printed below.
-            forward = _nearby_questions(lines, index, direction = 1)
+            forward = _nearby_questions(lines, index, direction=1)
             question = (
                 normalise_question(text)
                 or (forward[0] if forward else "")
@@ -411,11 +411,11 @@ def find_prompts(script: str, source: str) -> list[tuple[str, int, str]]:
             )
             found.setdefault((script, question), (script, line_number, question))
 
-        if _is_interactive_read(line, script, loop_input = index in redirected):
+        if _is_interactive_read(line, script, loop_input=index in redirected):
             for question in _questions_for_read(lines, index):
                 found.setdefault((script, question), (script, line_number, question))
 
-    return sorted(found.values(), key = lambda item: item[1])
+    return sorted(found.values(), key=lambda item: item[1])
 
 
 def _failure_message(script: str, line_number: int, question: str) -> str:
@@ -451,10 +451,10 @@ def test_no_unapproved_interactive_prompts(script: str):
     assert path.is_file(), f"{script} is missing -- update SCANNED_SCRIPTS if it moved"
 
     for found_script, line_number, question in find_prompts(
-        script, path.read_text(encoding = "utf-8")
+        script, path.read_text(encoding="utf-8")
     ):
         if (found_script, question) not in APPROVED_PROMPTS:
-            pytest.fail(_failure_message(found_script, line_number, question), pytrace = False)
+            pytest.fail(_failure_message(found_script, line_number, question), pytrace=False)
 
 
 def test_approved_prompts_all_still_exist():
@@ -462,7 +462,7 @@ def test_approved_prompts_all_still_exist():
     that happens to reuse the wording."""
     live = set()
     for script in SCANNED_SCRIPTS:
-        source = (REPO_ROOT / script).read_text(encoding = "utf-8")
+        source = (REPO_ROOT / script).read_text(encoding="utf-8")
         live.update(
             (found_script, question) for found_script, _, question in find_prompts(script, source)
         )
@@ -518,7 +518,7 @@ def test_helpers_the_installers_invoke_are_scanned():
     referenced = set()
     for script in SCANNED_SCRIPTS:
         path = REPO_ROOT / script
-        source = blank_comments(path.read_text(encoding = "utf-8"), script)
+        source = blank_comments(path.read_text(encoding="utf-8"), script)
         for match in _HELPER_REF.finditer(source):
             # Below the script that names it, below the repo, or in scripts/, by full path and by name so a URL still
             # resolves to the local copy. What resolves nowhere is a filename in a message, not an invocation.
@@ -550,7 +550,7 @@ def test_the_workflow_runs_for_every_scanned_script():
     registers it. Read the filters back rather than keeping two lists in step by
     hand. Parsed with a regex, not yaml: the parity runner installs pytest only."""
     workflow = (REPO_ROOT / ".github/workflows/cross-platform-parity-ci.yml").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     blocks, collecting = [], None
     for line in workflow.splitlines():

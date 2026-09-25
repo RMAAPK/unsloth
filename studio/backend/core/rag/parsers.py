@@ -22,7 +22,7 @@ from . import config
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class Page:
     """A unit of extracted text. ``page_number`` is 1-based (None if N/A)."""
 
@@ -32,7 +32,7 @@ class Page:
     needs_ocr: bool = False
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class ParsedImage:
     """A raster image embedded in a document (PDF only)."""
 
@@ -45,7 +45,7 @@ class ParsedImage:
 
 
 def _page(text: str, page_number: int | None) -> Page:
-    return Page(text = text, page_number = page_number, char_count = len(text))
+    return Page(text=text, page_number=page_number, char_count=len(text))
 
 
 class _Stripper(HTMLParser):
@@ -120,7 +120,7 @@ def _pdf_markdown(doc, pages: range | None = None) -> list[str] | None:
             kwargs["pages"] = list(pages)
         chunks = pymupdf4llm.to_markdown(doc, **kwargs)
     except Exception:  # noqa: BLE001 - never let Markdown extraction break ingestion
-        logger.warning("pymupdf4llm extraction failed; using plain text", exc_info = True)
+        logger.warning("pymupdf4llm extraction failed; using plain text", exc_info=True)
         return None
     expected_pages = doc.page_count if pages is None else len(pages)
     if not isinstance(chunks, list) or len(chunks) != expected_pages:
@@ -138,7 +138,7 @@ def _pdf(
     pages: list[Page] = []
     images: list[ParsedImage] = []
     doc = (
-        fitz.open(stream = source, filetype = "pdf") if isinstance(source, bytes) else fitz.open(source)
+        fitz.open(stream=source, filetype="pdf") if isinstance(source, bytes) else fitz.open(source)
     )
     try:
         if doc.needs_pass:
@@ -181,14 +181,14 @@ def _pdf(
                     image_rect.x1,
                     image_rect.y1 - image_rect.height * 0.1,
                 )
-                if len(page.get_text("text", clip = body).strip()) < config.OCR_MIN_CHARS:
+                if len(page.get_text("text", clip=body).strip()) < config.OCR_MIN_CHARS:
                     needs_ocr = True
                     break
             if needs_ocr:
                 text = plain
-            pages.append(Page(text, page_number + 1, len(text), needs_ocr = needs_ocr))
+            pages.append(Page(text, page_number + 1, len(text), needs_ocr=needs_ocr))
             if want_images:
-                for img in page.get_images(full = True):
+                for img in page.get_images(full=True):
                     xref = img[0]
                     try:
                         extracted = doc.extract_image(xref)
@@ -199,9 +199,9 @@ def _pdf(
                     if image_bytes:
                         images.append(
                             ParsedImage(
-                                image_bytes = image_bytes,
-                                page_number = page_number + 1,
-                                xref = xref,
+                                image_bytes=image_bytes,
+                                page_number=page_number + 1,
+                                xref=xref,
                             )
                         )
     finally:
@@ -214,7 +214,7 @@ def parse_pdf_bytes(data: bytes, *, max_pages: int | None = None) -> tuple[list[
 
     Returns the (capped) pages plus the document's full page count, so a caller
     that set ``max_pages`` can tell a fully-read short PDF from a truncated one."""
-    pages, _images, total_pages = _pdf(data, want_images = False, max_pages = max_pages)
+    pages, _images, total_pages = _pdf(data, want_images=False, max_pages=max_pages)
     return pages, total_pages
 
 
@@ -225,7 +225,7 @@ def _merge_rects(boxes: list) -> list:
     rects = [pymupdf.Rect(b) for b in boxes]
     rects = [r for r in rects if r.width > 5 and r.height > 5]
     merged: list = []
-    for box in sorted(rects, key = lambda r: -r.get_area()):
+    for box in sorted(rects, key=lambda r: -r.get_area()):
         placed = False
         for m in merged:
             if m.intersects(box):
@@ -294,7 +294,7 @@ def pages_with_figures(
         for i, page in enumerate(doc):
             if (i + 1) in exclude:
                 continue
-            if _figure_boxes(page, min_area_frac = min_area_frac, min_side = min_side):
+            if _figure_boxes(page, min_area_frac=min_area_frac, min_side=min_side):
                 pages.append(i + 1)
                 if len(pages) >= max_pages:
                     break
@@ -352,16 +352,16 @@ def render_pdf_figure_tiles(
                     )
             for index, clip in enumerate(clips):
                 try:
-                    pix = page.get_pixmap(dpi = dpi, clip = clip)
+                    pix = page.get_pixmap(dpi=dpi, clip=clip)
                     is_full_page = fullpage and index == 0
                     out.append(
                         ParsedImage(
-                            image_bytes = pix.tobytes("png"),
-                            page_number = num,
-                            xref = 0,
-                            full_page = is_full_page,
-                            tile_index = None if is_full_page else index - int(fullpage),
-                            tile_count = rows * cols,
+                            image_bytes=pix.tobytes("png"),
+                            page_number=num,
+                            xref=0,
+                            full_page=is_full_page,
+                            tile_index=None if is_full_page else index - int(fullpage),
+                            tile_count=rows * cols,
                         )
                     )
                 except Exception:
@@ -401,7 +401,7 @@ def render_pdf_pages(
             if num not in wanted:
                 continue
             try:
-                pix = page.get_pixmap(dpi = dpi)
+                pix = page.get_pixmap(dpi=dpi)
                 out[num] = pix.tobytes("png")
             except Exception:
                 continue
@@ -495,7 +495,7 @@ def parse(path: str, *, want_images: bool = False):
             if prefix.startswith(bom):
                 encoding = codec
                 break
-        with open(path, encoding = encoding, errors = "replace") as f:
+        with open(path, encoding=encoding, errors="replace") as f:
             raw = f.read()
         pages = _html(raw) if ext in (".html", ".htm") else [_page(raw, None)]
         return (pages, []) if want_images else pages

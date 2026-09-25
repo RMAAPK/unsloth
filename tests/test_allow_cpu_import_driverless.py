@@ -60,7 +60,7 @@ def _asked_a_missing_device(text):
 
 def _run(
     code,
-    extra_path = (),
+    extra_path=(),
     **env,
 ):
     """Fresh interpreter, this checkout on the path, every CUDA device hidden."""
@@ -73,15 +73,15 @@ def _run(
     clean = {k: v for k, v in os.environ.items() if k != "UNSLOTH_ALLOW_CPU"}
     return subprocess.run(
         [sys.executable, "-c", textwrap.dedent(code)],
-        capture_output = True,
-        text = True,
-        env = dict(
+        capture_output=True,
+        text=True,
+        env=dict(
             clean,
-            PYTHONPATH = os.pathsep.join(path),
-            CUDA_VISIBLE_DEVICES = "",
+            PYTHONPATH=os.pathsep.join(path),
+            CUDA_VISIBLE_DEVICES="",
             **env,
         ),
-        timeout = 900,
+        timeout=900,
     )
 
 
@@ -118,7 +118,7 @@ _IMPORT_ATTEMPT_CODE = """
     """
 
 
-@pytest.fixture(scope = "module")
+@pytest.fixture(scope="module")
 def _import_attempt_result():
     """One child interpreter, shared by every case that reads the same attempt.
 
@@ -133,7 +133,7 @@ def _import_attempt_result():
     and a session fixture would keep the CompletedProcess alive for the whole run.
     """
     _needs_the_cuda_branch()
-    return _run(_IMPORT_ATTEMPT_CODE, UNSLOTH_ALLOW_CPU = "1")
+    return _run(_IMPORT_ATTEMPT_CODE, UNSLOTH_ALLOW_CPU="1")
 
 
 _FRAME = re.compile(r'^\s*File "([^"]+)", line \d+', re.MULTILINE)
@@ -188,6 +188,7 @@ def test_the_import_succeeds_on_a_driverless_host(_import_attempt_result):
     out = _import_attempt_result
     if out.returncode != 0 and _asked_a_missing_device(out.stderr):
         import unsloth_zoo
+
         zoo = pathlib.Path(unsloth_zoo.__file__).parent
         if _under(_culprit(out.stderr), zoo):
             pytest.skip(
@@ -257,20 +258,20 @@ def test_a_driverless_import_does_not_try_to_repair_cuda_linkage(tmp_path):
     if found is None:
         pytest.skip("no triton nvidia backend here, so libcuda_dirs is never called")
     probe = tmp_path / "sitecustomize.py"
-    probe.write_text(_NO_LIBCUDA_PROBE, encoding = "utf-8")
+    probe.write_text(_NO_LIBCUDA_PROBE, encoding="utf-8")
     log = tmp_path / "calls.log"
-    log.write_text("", encoding = "utf-8")
+    log.write_text("", encoding="utf-8")
     out = _run(
         "import unsloth\nprint('IMPORT_OK')",
-        extra_path = (tmp_path,),
-        UNSLOTH_ALLOW_CPU = "1",
-        PROBE_LOG = str(log),
+        extra_path=(tmp_path,),
+        UNSLOTH_ALLOW_CPU="1",
+        PROBE_LOG=str(log),
     )
     if out.returncode != 0 and _asked_a_missing_device(out.stderr):
         pytest.skip("the import does not complete here; covered by the cases above")
     assert out.returncode == 0, out.stderr[-3000:]
     # Scoped to the two calls the repair arm makes.
-    calls = log.read_text(encoding = "utf-8")
+    calls = log.read_text(encoding="utf-8")
     assert "ldconfig" not in calls, f"a driverless import ran ldconfig:\n{calls}"
     assert (
         "check_output: ['ls'" not in calls

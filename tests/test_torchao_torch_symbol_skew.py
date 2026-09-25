@@ -143,14 +143,14 @@ def test_calling_it_twice_is_stable():
 def test_it_runs_before_unsloth_zoo_is_imported():
     """unsloth_zoo pulls in transformers and therefore torchao, so calling the
     fix after that import would be pointless."""
-    lines = GPU_INIT.read_text(encoding = "utf-8").splitlines()
+    lines = GPU_INIT.read_text(encoding="utf-8").splitlines()
     call = next(i for i, l in enumerate(lines) if l.strip() == "fix_torchao_torch_symbol_skew()")
     zoo = next(i for i, l in enumerate(lines) if l.strip() == "import unsloth_zoo")
     assert call < zoo, f"called at line {call + 1}, too late for line {zoo + 1}"
 
 
 def test_it_is_imported_and_cleaned_up():
-    src = GPU_INIT.read_text(encoding = "utf-8")
+    src = GPU_INIT.read_text(encoding="utf-8")
     assert "fix_torchao_torch_symbol_skew," in src, "not imported"
     assert (
         "del fix_torchao_torch_symbol_skew" in src
@@ -229,6 +229,7 @@ def test_the_cleanup_in_the_test_above_is_real():
     """Guards the fixture, not the product: a failed delattr above would let
     every later test see a patched torch and pass vacuously."""
     import torch.nn.functional as F
+
     for n in _TORCHAO_TORCH_SYMBOLS:
         obj = getattr(F, n, None)
         assert not getattr(
@@ -245,7 +246,7 @@ def test_the_mlx_path_applies_the_fix_too():
     """The MLX branch imports unsloth_zoo directly and never reaches
     _gpu_init, so without the fix there Apple Silicon hits the same dead
     import."""
-    lines = INIT.read_text(encoding = "utf-8").splitlines()
+    lines = INIT.read_text(encoding="utf-8").splitlines()
     fix = next(i for i, l in enumerate(lines) if "_fix_torchao()" in l)
     zoo = next(i for i, l in enumerate(lines) if l.strip() == "import unsloth_zoo")
     assert fix < zoo, "the fix must precede the MLX unsloth_zoo import"
@@ -258,7 +259,7 @@ def test_the_mlx_call_is_inside_the_mlx_branch():
     """
     import ast as _ast
 
-    tree = _ast.parse(INIT.read_text(encoding = "utf-8"))
+    tree = _ast.parse(INIT.read_text(encoding="utf-8"))
 
     def _mlx_if(nodes):
         for n in nodes:
@@ -287,7 +288,7 @@ def test_the_mlx_call_is_inside_the_mlx_branch():
 def test_the_mlx_call_cannot_break_the_import():
     """On Mac this runs first, so an exception here would replace a torchao
     problem with an unsloth problem."""
-    src = INIT.read_text(encoding = "utf-8")
+    src = INIT.read_text(encoding="utf-8")
     i = src.index("_fix_torchao()")
     window = src[max(0, i - 400) : i + 200]
     assert "except Exception" in window and "pass" in window
@@ -312,6 +313,7 @@ def test_the_version_gate(version, affected):
     """The gate decides whether we touch torch at all, so it must cope with
     local versions and dev builds, not just clean releases."""
     from unsloth.import_fixes import Version
+
     assert (Version(version) >= Version("0.18.0")) is affected
 
 

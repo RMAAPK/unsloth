@@ -1130,7 +1130,7 @@ def _route_script(
     devices: "list[str] | None",
     kfd: "list[str] | None",
     *,
-    tail: str,
+    tail: str
 ) -> str:
     emit = 'printf "%s\\n" ' + " ".join(repr(a) for a in physical) if physical else ":"
     # KFD node order is what the mask ordinals index, and once rocminfo says nothing it is

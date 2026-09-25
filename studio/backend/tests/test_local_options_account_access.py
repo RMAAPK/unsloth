@@ -31,15 +31,15 @@ def shared_cache(monkeypatch, tmp_path):
     cache = tmp_path / "hub-cache"
     for repo in ("public--set", "private--set"):
         snapshot = cache / f"datasets--{repo}" / "snapshots" / "rev"
-        snapshot.mkdir(parents = True)
-        (snapshot / "README.md").write_text(_CARD, encoding = "utf-8")
+        snapshot.mkdir(parents=True)
+        (snapshot / "README.md").write_text(_CARD, encoding="utf-8")
     monkeypatch.setattr(hf_cache_settings, "active_hf_hub_cache", lambda: str(cache))
     monkeypatch.setattr(hf_cache_settings, "known_hf_hub_caches", lambda: [cache])
     monkeypatch.setattr(account_access, "model_grants", lambda: set())
     monkeypatch.setattr(
         account_access,
         "repo_is_public",
-        lambda repo_id, repo_type = "model": not repo_id.startswith("private/"),
+        lambda repo_id, repo_type="model": not repo_id.startswith("private/"),
     )
     return cache
 
@@ -47,8 +47,9 @@ def shared_cache(monkeypatch, tmp_path):
 def _options(dataset_name: str, local_path: str | None = None):
     from hub.schemas.datasets import LocalDatasetOptionsRequest
     from hub.services.datasets import local_options
+
     return local_options.local_dataset_options(
-        LocalDatasetOptionsRequest(dataset_name = dataset_name, local_path = local_path)
+        LocalDatasetOptionsRequest(dataset_name=dataset_name, local_path=local_path)
     )
 
 

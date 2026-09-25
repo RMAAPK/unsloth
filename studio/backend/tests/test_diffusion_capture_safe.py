@@ -106,15 +106,15 @@ def _load_module(
     tmp_path,
     name,
     *,
-    decorator = True,
-    block = _STOCK_BLOCK,
+    decorator=True,
+    block=_STOCK_BLOCK,
 ):
     source = _MODULE_TEMPLATE.format(
-        decorator = '@apply_lora_scale("attention_kwargs")' if decorator else "",
-        inline_lora = "SCALES.append((attention_kwargs or {}).get('scale', 1.0))"
+        decorator='@apply_lora_scale("attention_kwargs")' if decorator else "",
+        inline_lora="SCALES.append((attention_kwargs or {}).get('scale', 1.0))"
         if not decorator
         else "pass",
-        block = block,
+        block=block,
     )
     path = tmp_path / f"{name}.py"
     path.write_text(textwrap.dedent(source))
@@ -128,7 +128,7 @@ def _load_module(
 @pytest.fixture
 def fresh_cache(monkeypatch):
     monkeypatch.setattr(cs, "_CACHE", {})
-    monkeypatch.delenv(cs.CAPTURE_SAFE_ENV, raising = False)
+    monkeypatch.delenv(cs.CAPTURE_SAFE_ENV, raising=False)
     yield
     for name in [n for n in sys.modules if n.startswith("_hyimg_fake_")]:
         sys.modules.pop(name, None)
@@ -137,8 +137,8 @@ def fresh_cache(monkeypatch):
 def _reference_merge(e1, m1, e2, m2):
     states, masks = [], []
     for text, tm, text2, tm2 in zip(e1, m1, e2, m2):
-        states.append(torch.cat([text2[tm2], text[tm], text2[~tm2], text[~tm]], dim = 0))
-        masks.append(torch.cat([tm2[tm2], tm[tm], tm2[~tm2], tm[~tm]], dim = 0))
+        states.append(torch.cat([text2[tm2], text[tm], text2[~tm2], text[~tm]], dim=0))
+        masks.append(torch.cat([tm2[tm2], tm[tm], tm2[~tm2], tm[~tm]], dim=0))
     return torch.stack(states), torch.stack(masks)
 
 
@@ -160,8 +160,8 @@ def test_merge_text_streams_is_the_stock_permutation_bit_for_bit(m1, m2, dtypes)
     m1 = torch.tensor(m1).bool()
     m2 = torch.tensor(m2).bool()
     batch = m1.shape[0]
-    e1 = torch.randn(batch, m1.shape[1], 6, generator = gen).to(dtypes[0])
-    e2 = torch.randn(batch, m2.shape[1], 6, generator = gen).to(dtypes[1])
+    e1 = torch.randn(batch, m1.shape[1], 6, generator=gen).to(dtypes[0])
+    e2 = torch.randn(batch, m2.shape[1], 6, generator=gen).to(dtypes[1])
 
     want_states, want_mask = _reference_merge(e1, m1, e2, m2)
     got_states, got_mask = cs.merge_text_streams(e1, m1, e2, m2)
@@ -184,8 +184,8 @@ def _aten_ops(fn):
             self,
             func,
             types,
-            args = (),
-            kwargs = None,
+            args=(),
+            kwargs=None,
         ):
             self.ops.add(str(func))
             return func(*args, **(kwargs or {}))
@@ -218,11 +218,11 @@ def test_merge_text_streams_has_no_data_dependent_op_where_the_stock_loop_does()
     assert not any(op.startswith(_DATA_DEPENDENT) for op in ours), ours
 
 
-@pytest.mark.parametrize("decorator", [True, False], ids = ["decorator-lora", "inline-lora"])
+@pytest.mark.parametrize("decorator", [True, False], ids=["decorator-lora", "inline-lora"])
 def test_rewrite_matches_the_stock_forward_and_keeps_lora_handling(
     tmp_path, fresh_cache, decorator
 ):
-    mod = _load_module(tmp_path, f"_hyimg_fake_{int(decorator)}", decorator = decorator)
+    mod = _load_module(tmp_path, f"_hyimg_fake_{int(decorator)}", decorator=decorator)
     cls = mod.HunyuanImageTransformer2DModel
     safe, why = cs.resolve(cls)
     assert why is None
@@ -232,11 +232,11 @@ def test_rewrite_matches_the_stock_forward_and_keeps_lora_handling(
     m1 = torch.tensor([[1, 0, 1, 1, 0, 0, 1], [1, 1, 0, 0, 0, 0, 0]])
     m2 = torch.tensor([[0, 1, 0, 1, 1], [1, 1, 1, 0, 0]])
     kw = dict(
-        encoder_hidden_states = torch.randn(2, 7, 4, generator = gen),
-        encoder_attention_mask = m1,
-        encoder_hidden_states_2 = torch.randn(2, 5, 4, generator = gen),
-        encoder_attention_mask_2 = m2,
-        attention_kwargs = {"scale": 0.5},
+        encoder_hidden_states=torch.randn(2, 7, 4, generator=gen),
+        encoder_attention_mask=m1,
+        encoder_hidden_states_2=torch.randn(2, 5, 4, generator=gen),
+        encoder_attention_mask_2=m2,
+        attention_kwargs={"scale": 0.5},
     )
     obj = cls()
     want = cls.forward(obj, **kw)
@@ -246,7 +246,7 @@ def test_rewrite_matches_the_stock_forward_and_keeps_lora_handling(
     # LoRA scaling ran on both paths: the decorator re-applied, or the inline code kept.
     assert mod.SCALES == [0.5, 0.5]
     # The byt5-free call skips the block on both paths.
-    kw2 = dict(encoder_hidden_states = kw["encoder_hidden_states"], encoder_attention_mask = m1)
+    kw2 = dict(encoder_hidden_states=kw["encoder_hidden_states"], encoder_attention_mask=m1)
     assert torch.equal(cls.forward(obj, **kw2)[0], safe(obj, **kw2)[0])
 
 
@@ -273,7 +273,7 @@ def test_drifted_block_is_not_rewritten_and_names_the_reason(tmp_path, fresh_cac
         "text[~text_mask],  # invalid mllm\n                            text_2[~text_mask_2],  # invalid byt5",
     )
     assert drifted != _STOCK_BLOCK
-    mod = _load_module(tmp_path, "_hyimg_fake_drift", block = drifted)
+    mod = _load_module(tmp_path, "_hyimg_fake_drift", block=drifted)
     safe, why = cs.resolve(mod.HunyuanImageTransformer2DModel)
     assert safe is None
     assert "HunyuanImageTransformer2DModel forward is not capture-safe" in why
@@ -324,7 +324,7 @@ def test_graphed_forward_records_the_capture_safe_forward(tmp_path, fresh_cache)
 
 def test_graphed_forward_keeps_the_class_forward_otherwise(tmp_path, fresh_cache):
     mod = _load_module(
-        tmp_path, "_hyimg_fake_gf_drift", block = _STOCK_BLOCK.replace("dim=0,", "dim = 0,", 1)
+        tmp_path, "_hyimg_fake_gf_drift", block=_STOCK_BLOCK.replace("dim=0,", "dim = 0,", 1)
     )
     handle = cg.GraphedForward(mod.HunyuanImageTransformer2DModel())
     try:
@@ -336,20 +336,20 @@ def test_graphed_forward_keeps_the_class_forward_otherwise(tmp_path, fresh_cache
 
 def _eligible_for(transformer):
     return cg.graph_eligible(
-        types.SimpleNamespace(device = "cuda", backend = "cuda"),
-        family = types.SimpleNamespace(),
-        pipe = types.SimpleNamespace(transformer = transformer),
-        offload_active = False,
-        cache_active = False,
-        speed_mode = "default",
+        types.SimpleNamespace(device="cuda", backend="cuda"),
+        family=types.SimpleNamespace(),
+        pipe=types.SimpleNamespace(transformer=transformer),
+        offload_active=False,
+        cache_active=False,
+        speed_mode="default",
     )
 
 
 def test_graph_eligible_declines_an_unrewritable_hunyuanimage(tmp_path, fresh_cache, monkeypatch):
-    monkeypatch.delenv(cg.CUDA_GRAPH_DISABLE_ENV, raising = False)
+    monkeypatch.delenv(cg.CUDA_GRAPH_DISABLE_ENV, raising=False)
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
     mod = _load_module(
-        tmp_path, "_hyimg_fake_elig_drift", block = _STOCK_BLOCK.replace("dim=0,", "dim = 0,", 1)
+        tmp_path, "_hyimg_fake_elig_drift", block=_STOCK_BLOCK.replace("dim=0,", "dim = 0,", 1)
     )
     ok, reason = _eligible_for(mod.HunyuanImageTransformer2DModel())
     assert ok is False
@@ -369,24 +369,24 @@ def test_real_diffusers_hunyuanimage_rewrite_is_bit_identical(fresh_cache):
 
     torch.manual_seed(0)
     model = cls(
-        in_channels = 4,
-        out_channels = 4,
-        num_attention_heads = 2,
-        attention_head_dim = 16,
-        num_layers = 1,
-        num_single_layers = 1,
-        num_refiner_layers = 1,
-        patch_size = (1, 1),
-        text_embed_dim = 32,
-        text_embed_2_dim = 24,
-        rope_axes_dim = (8, 8),
+        in_channels=4,
+        out_channels=4,
+        num_attention_heads=2,
+        attention_head_dim=16,
+        num_layers=1,
+        num_single_layers=1,
+        num_refiner_layers=1,
+        patch_size=(1, 1),
+        text_embed_dim=32,
+        text_embed_2_dim=24,
+        rope_axes_dim=(8, 8),
     ).eval()
     kw = dict(
-        encoder_hidden_states = torch.randn(2, 7, 32),
-        encoder_attention_mask = torch.tensor([[1, 1, 1, 0, 0, 0, 0], [1, 0, 1, 1, 1, 0, 1]]),
-        encoder_hidden_states_2 = torch.randn(2, 5, 24),
-        encoder_attention_mask_2 = torch.tensor([[1, 1, 0, 0, 0], [0, 0, 0, 0, 0]]),
-        return_dict = False,
+        encoder_hidden_states=torch.randn(2, 7, 32),
+        encoder_attention_mask=torch.tensor([[1, 1, 1, 0, 0, 0, 0], [1, 0, 1, 1, 1, 0, 1]]),
+        encoder_hidden_states_2=torch.randn(2, 5, 24),
+        encoder_attention_mask_2=torch.tensor([[1, 1, 0, 0, 0], [0, 0, 0, 0, 0]]),
+        return_dict=False,
     )
     latents = torch.randn(2, 4, 4, 4)
     timestep = torch.tensor([500.0, 500.0])

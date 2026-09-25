@@ -22,7 +22,7 @@ from core.inference.presence_penalty import (
 def test_seen_token_gets_exactly_minus_penalty_unseen_unchanged():
     input_ids = torch.tensor([[0, 1, 3]])  # prompt [0, 1], completion [3]
     scores = torch.zeros(1, 5)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.5, prompt_len = 2)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.5, prompt_len=2)
     assert out[0, 3].item() == pytest.approx(-1.5)
     for tok in (0, 1, 2, 4):
         assert out[0, tok].item() == pytest.approx(0.0)
@@ -32,14 +32,14 @@ def test_multiplicity_ignored_presence_not_frequency():
     # Token 3 emitted three times -> still a single -penalty (presence, not freq).
     input_ids = torch.tensor([[0, 3, 3, 3]])
     scores = torch.zeros(1, 5)
-    out = apply_presence_penalty(input_ids, scores, penalty = 2.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=2.0, prompt_len=1)
     assert out[0, 3].item() == pytest.approx(-2.0)
 
 
 def test_negative_penalty_raises_seen_logits():
     input_ids = torch.tensor([[0, 2]])
     scores = torch.zeros(1, 4)
-    out = apply_presence_penalty(input_ids, scores, penalty = -0.5, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=-0.5, prompt_len=1)
     assert out[0, 2].item() == pytest.approx(0.5)
 
 
@@ -47,7 +47,7 @@ def test_prompt_tokens_excluded():
     # Token 7 is prompt-only (untouched); token 4 in the completion is penalized.
     input_ids = torch.tensor([[7, 4, 4]])
     scores = torch.zeros(1, 8)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     assert out[0, 7].item() == pytest.approx(0.0)
     assert out[0, 4].item() == pytest.approx(-1.0)
 
@@ -55,7 +55,7 @@ def test_prompt_tokens_excluded():
 def test_batch_rows_isolated():
     input_ids = torch.tensor([[0, 1], [0, 2]])  # row completions [1] and [2]
     scores = torch.zeros(2, 4)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     assert out[0, 1].item() == pytest.approx(-1.0)
     assert out[0, 2].item() == pytest.approx(0.0)
     assert out[1, 2].item() == pytest.approx(-1.0)
@@ -66,7 +66,7 @@ def test_zero_penalty_is_noop():
     input_ids = torch.tensor([[0, 1, 2]])
     scores = torch.randn(1, 5)
     original = scores.clone()
-    out = apply_presence_penalty(input_ids, scores, penalty = 0.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=0.0, prompt_len=1)
     assert torch.equal(out, original)
 
 
@@ -75,7 +75,7 @@ def test_empty_completion_is_noop():
     input_ids = torch.tensor([[0, 1, 2]])
     scores = torch.randn(1, 5)
     original = scores.clone()
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.5, prompt_len = 3)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.5, prompt_len=3)
     assert torch.equal(out, original)
 
 
@@ -83,7 +83,7 @@ def test_out_of_vocab_id_ignored():
     # A generated id >= vocab_size (defensive) must not index out of bounds.
     input_ids = torch.tensor([[0, 9]])
     scores = torch.zeros(1, 5)  # vocab 5, token 9 is out of range
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     assert torch.equal(out, torch.zeros(1, 5))
 
 
@@ -91,7 +91,7 @@ def test_negative_generated_id_ignored():
     # A negative generated id (defensive) must be dropped, not wrap to scores[-1].
     input_ids = torch.tensor([[0, -1]])
     scores = torch.zeros(1, 5)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     # Nothing penalized; in particular the last row (the numpy/torch wrap target
     # for id -1) is untouched.
     assert torch.equal(out, torch.zeros(1, 5))
@@ -105,7 +105,7 @@ def test_mixed_oob_negative_and_valid_ids_only_in_range_penalized():
     # passes only with the both-ends bound.
     input_ids = torch.tensor([[0, 1, 9, -1, 1]])  # prompt [0], completion [1, 9, -1, 1]
     scores = torch.zeros(1, 5)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     expected = torch.zeros(1, 5)
     expected[0, 1] = -1.0  # once per distinct in-range id (multiplicity ignored)
     assert torch.equal(out, expected)
@@ -114,18 +114,18 @@ def test_mixed_oob_negative_and_valid_ids_only_in_range_penalized():
 
 def test_dtype_and_device_preserved():
     input_ids = torch.tensor([[0, 1]])
-    scores = torch.zeros(1, 4, dtype = torch.float16)
-    out = apply_presence_penalty(input_ids, scores, penalty = 1.0, prompt_len = 1)
+    scores = torch.zeros(1, 4, dtype=torch.float16)
+    out = apply_presence_penalty(input_ids, scores, penalty=1.0, prompt_len=1)
     assert out.dtype == torch.float16
     assert out.device == scores.device
 
 
 def test_processor_none_when_zero():
-    assert _make_presence_penalty_processor(0.0, prompt_len = 0) is None
+    assert _make_presence_penalty_processor(0.0, prompt_len=0) is None
 
 
 def test_processor_applies_penalty():
-    proc = _make_presence_penalty_processor(1.5, prompt_len = 2)
+    proc = _make_presence_penalty_processor(1.5, prompt_len=2)
     assert proc is not None
     input_ids = torch.tensor([[0, 1, 3]])
     scores = torch.zeros(1, 5)
@@ -142,7 +142,7 @@ def test_processor_composes_with_other_processors():
             scores[:, 0] = scores[:, 0] + 100.0
             return scores
 
-    presence = _make_presence_penalty_processor(1.0, prompt_len = 1)
+    presence = _make_presence_penalty_processor(1.0, prompt_len=1)
     combined = LogitsProcessorList([_AddToTokenZero(), *presence])
     input_ids = torch.tensor([[5, 2]])  # completion = [2]
     scores = torch.zeros(1, 6)
@@ -152,7 +152,7 @@ def test_processor_composes_with_other_processors():
 
 
 def test_mlx_presence_penalty_callable():
-    mx = pytest.importorskip("mlx.core", reason = "MLX only ships on arm64 macOS")
+    mx = pytest.importorskip("mlx.core", reason="MLX only ships on arm64 macOS")
     from core.inference.mlx_inference import _make_mlx_presence_penalty_processor
 
     proc = _make_mlx_presence_penalty_processor(1.5)
@@ -176,7 +176,7 @@ def test_mlx_presence_penalty_bounds_out_of_range_ids():
     # corruption), so the processor routes stray ids to a discarded scratch slot
     # and penalizes only in-range distinct ids -- matching the torch filter
     # seen[(seen >= 0) & (seen < vocab)]. Skips off arm64 macOS where MLX is absent.
-    mx = pytest.importorskip("mlx.core", reason = "MLX only ships on arm64 macOS")
+    mx = pytest.importorskip("mlx.core", reason="MLX only ships on arm64 macOS")
     from core.inference.mlx_inference import _make_mlx_presence_penalty_processor
 
     proc = _make_mlx_presence_penalty_processor(1.0)
@@ -209,8 +209,8 @@ def test_orchestrator_cmd_carries_all_sampling_params():
     cmd = o._build_generate_cmd(
         "req1",
         None,
-        messages = [{"role": "user", "content": "hi"}],
-        max_new_tokens = 128,
+        messages=[{"role": "user", "content": "hi"}],
+        max_new_tokens=128,
         **_SAMPLING,
     )
     for key, val in _SAMPLING.items():
@@ -259,9 +259,9 @@ def test_orchestrator_cmd_carries_the_tool_protocol_flag():
     from core.inference.orchestrator import InferenceOrchestrator
 
     o = InferenceOrchestrator.__new__(InferenceOrchestrator)
-    base = dict(messages = [{"role": "user", "content": "hi"}], tools = [])
+    base = dict(messages=[{"role": "user", "content": "hi"}], tools=[])
     assert (
-        o._build_generate_cmd("r", None, tool_protocol_active = True, **base)["tool_protocol_active"]
+        o._build_generate_cmd("r", None, tool_protocol_active=True, **base)["tool_protocol_active"]
         is True
     )
     # Omitted when unset, so an older worker keeps its bool(tools) default.
@@ -364,9 +364,9 @@ def test_a_video_clip_crosses_the_worker_boundary_only_to_a_backend_that_takes_i
     from core.inference.worker import _handle_generate
 
     o = InferenceOrchestrator.__new__(InferenceOrchestrator)
-    assert "video_base64" not in o._build_generate_cmd("r", None, messages = [])
+    assert "video_base64" not in o._build_generate_cmd("r", None, messages=[])
     cmd = o._build_generate_cmd(
-        "r", None, messages = [{"role": "user", "content": "hi"}], video_b64 = "AAAA"
+        "r", None, messages=[{"role": "user", "content": "hi"}], video_b64="AAAA"
     )
     assert cmd["video_base64"] == "AAAA"
 
@@ -383,7 +383,7 @@ def test_a_video_clip_crosses_the_worker_boundary_only_to_a_backend_that_takes_i
 
         def generate_chat_response(
             self,
-            video = None,
+            video=None,
             **kwargs,
         ):
             self.received = video
@@ -410,7 +410,7 @@ def test_a_video_clip_crosses_the_worker_boundary_only_to_a_backend_that_takes_i
     assert _mirrored_model_entry({}, "m")["has_video_input"] is False
     worker_source = (
         Path(__file__).resolve().parents[1] / "core" / "inference" / "worker.py"
-    ).read_text(encoding = "utf-8")
+    ).read_text(encoding="utf-8")
     assert '("is_audio", "audio_type", "has_audio_input", "has_video_input")' in worker_source
 
 
@@ -438,7 +438,7 @@ def test_both_orchestrator_entry_points_forward_the_clip_into_the_command():
     o._build_generate_cmd = _build
     turn = [{"role": "user", "content": "hi"}]
     with pytest.raises(_Built):
-        list(o.generate_chat_response(messages = turn, video = "AAAA"))
+        list(o.generate_chat_response(messages=turn, video="AAAA"))
     with pytest.raises(_Built):
-        list(o.generate_with_adapter_control(use_adapter = True, messages = turn, video = "AAAA"))
+        list(o.generate_with_adapter_control(use_adapter=True, messages=turn, video="AAAA"))
     assert [kw["video_b64"] for kw in built] == ["AAAA", "AAAA"]

@@ -55,11 +55,11 @@ def _usable_bash():
     try:
         probe = subprocess.run(
             [exe, "-c", "printf ok"],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.DEVNULL,
-            text = True,
-            errors = "replace",
-            timeout = 60,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            errors="replace",
+            timeout=60,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -67,7 +67,7 @@ def _usable_bash():
 
 
 BASH = _usable_bash()
-requires_bash = pytest.mark.skipif(BASH is None, reason = "a working bash is required")
+requires_bash = pytest.mark.skipif(BASH is None, reason="a working bash is required")
 
 
 # ── part one: why the CUDA bundle is replaced, on both arches ──
@@ -75,33 +75,33 @@ requires_bash = pytest.mark.skipif(BASH is None, reason = "a working bash is req
 
 def _host(machine):
     return HostInfo(
-        system = "Linux",
-        machine = machine,
-        is_windows = False,
-        is_linux = True,
-        is_macos = False,
-        is_x86_64 = machine == "x86_64",
-        is_arm64 = machine == "aarch64",
-        nvidia_smi = None,
-        driver_cuda_version = None,
-        compute_caps = [],
-        visible_cuda_devices = None,
-        has_physical_nvidia = False,
-        has_usable_nvidia = False,
+        system="Linux",
+        machine=machine,
+        is_windows=False,
+        is_linux=True,
+        is_macos=False,
+        is_x86_64=machine == "x86_64",
+        is_arm64=machine == "aarch64",
+        nvidia_smi=None,
+        driver_cuda_version=None,
+        compute_caps=[],
+        visible_cuda_devices=None,
+        has_physical_nvidia=False,
+        has_usable_nvidia=False,
     )
 
 
 def _artifact(asset_name, install_kind, **overrides):
     defaults = dict(
-        asset_name = asset_name,
-        install_kind = install_kind,
-        runtime_line = None,
-        coverage_class = None,
-        supported_sms = [],
-        min_sm = None,
-        max_sm = None,
-        bundle_profile = None,
-        rank = 100,
+        asset_name=asset_name,
+        install_kind=install_kind,
+        runtime_line=None,
+        coverage_class=None,
+        supported_sms=[],
+        min_sm=None,
+        max_sm=None,
+        bundle_profile=None,
+        rank=100,
     )
     defaults.update(overrides)
     return PublishedLlamaArtifact(**defaults)
@@ -109,11 +109,11 @@ def _artifact(asset_name, install_kind, **overrides):
 
 def _release(artifacts):
     return PublishedReleaseBundle(
-        repo = FORK,
-        release_tag = RELEASE_TAG,
-        upstream_tag = RELEASE_TAG,
-        assets = {a.asset_name: f"https://example.invalid/{a.asset_name}" for a in artifacts},
-        artifacts = artifacts,
+        repo=FORK,
+        release_tag=RELEASE_TAG,
+        upstream_tag=RELEASE_TAG,
+        assets={a.asset_name: f"https://example.invalid/{a.asset_name}" for a in artifacts},
+        artifacts=artifacts,
     )
 
 
@@ -124,13 +124,13 @@ _ARCH_CASES = [
         _artifact(
             f"app-{RELEASE_TAG}-linux-arm64-cuda13-portable.tar.gz",
             "linux-arm64-cuda",
-            runtime_line = "cuda13",
-            coverage_class = "portable",
-            bundle_profile = "cuda13-portable",
-            supported_sms = ["90", "100", "103", "120", "121"],
-            min_sm = 90,
-            max_sm = 121,
-            rank = 60,
+            runtime_line="cuda13",
+            coverage_class="portable",
+            bundle_profile="cuda13-portable",
+            supported_sms=["90", "100", "103", "120", "121"],
+            min_sm=90,
+            max_sm=121,
+            rank=60,
         ),
         _artifact(f"app-{RELEASE_TAG}-linux-arm64-cpu.tar.gz", "linux-arm64"),
     ),
@@ -139,13 +139,13 @@ _ARCH_CASES = [
         _artifact(
             f"app-{RELEASE_TAG}-linux-x64-cuda12-portable.tar.gz",
             "linux-cuda",
-            runtime_line = "cuda12",
-            coverage_class = "portable",
-            bundle_profile = "cuda12-portable",
-            supported_sms = ["70", "75", "80", "86", "89", "90", "100", "103", "120"],
-            min_sm = 70,
-            max_sm = 120,
-            rank = 60,
+            runtime_line="cuda12",
+            coverage_class="portable",
+            bundle_profile="cuda12-portable",
+            supported_sms=["70", "75", "80", "86", "89", "90", "100", "103", "120"],
+            min_sm=70,
+            max_sm=120,
+            rank=60,
         ),
         _artifact(f"app-{RELEASE_TAG}-linux-x64-cpu.tar.gz", "linux-cpu"),
     ),
@@ -153,7 +153,7 @@ _ARCH_CASES = [
 
 
 @pytest.mark.parametrize(
-    ("machine", "cuda_artifact", "cpu_artifact"), _ARCH_CASES, ids = ["arm64", "amd64"]
+    ("machine", "cuda_artifact", "cpu_artifact"), _ARCH_CASES, ids=["arm64", "amd64"]
 )
 def test_a_gpuless_build_host_resolves_the_cpu_bundle(machine, cuda_artifact, cpu_artifact):
     """The defect: with no GPU visible the selector picks CPU even though CUDA is published.
@@ -232,7 +232,7 @@ def _sliced_sh_functions(tmp_path):
 
     setup.sh runs install steps at load, so the functions are sliced rather than sourced.
     """
-    text = SETUP_SH.read_text(encoding = "utf-8")
+    text = SETUP_SH.read_text(encoding="utf-8")
     body = ""
     for name in ("_has_local_llama_server() {", "_keep_installed_gpu_prebuilt() {"):
         start = text.index(name)
@@ -241,24 +241,24 @@ def _sliced_sh_functions(tmp_path):
     assert "UNSLOTH_LLAMA_KEEP_PREBUILT" in body, "sliced the wrong block out of setup.sh"
     assert body.count("<<'PY'") == 1, "expected exactly one heredoc in the sliced block"
     path = tmp_path / "keep_prebuilt_fn.sh"
-    path.write_text(body, encoding = "utf-8")
+    path.write_text(body, encoding="utf-8")
     return path
 
 
 def _stub_bin(tmp_path):
     """A GPU-less aarch64 build host: uname says aarch64 and nvidia-smi cannot answer."""
     stub_dir = tmp_path / "stubbin"
-    stub_dir.mkdir(exist_ok = True)
+    stub_dir.mkdir(exist_ok=True)
     python_shim = stub_dir / "python"
-    python_shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n', encoding = "utf-8")
+    python_shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n', encoding="utf-8")
     (stub_dir / "uname").write_text(
         '#!/bin/sh\nif [ "$1" = "-m" ]; then echo aarch64; else echo Linux; fi\n',
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     (stub_dir / "nvidia-smi").write_text(
         '#!/bin/sh\necho "NVIDIA-SMI has failed because no NVIDIA driver is running." >&2\n'
         "exit 9\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     for entry in stub_dir.iterdir():
         entry.chmod(0o755)
@@ -271,23 +271,23 @@ def _run_keep_decision(
     marker,
     server,
     requested_tag,
-    repo = FORK,
-    env = None,
-    damage = None,
+    repo=FORK,
+    env=None,
+    damage=None,
 ):
     install_dir = tmp_path / "llama.cpp"
-    (install_dir / "build" / "bin").mkdir(parents = True, exist_ok = True)
+    (install_dir / "build" / "bin").mkdir(parents=True, exist_ok=True)
     if marker is not None:
         (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text(
-            json.dumps(marker), encoding = "utf-8"
+            json.dumps(marker), encoding="utf-8"
         )
     if server:
         for path in (install_dir / "llama-server", install_dir / "build" / "bin" / "llama-server"):
-            path.write_text("#!/bin/sh\nexit 0\n", encoding = "utf-8")
+            path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
             path.chmod(0o755)
     runtime_dir = install_dir / "build" / "bin"
     quantize = runtime_dir / "llama-quantize"
-    quantize.write_text("#!/bin/sh\nexit 0\n", encoding = "utf-8")
+    quantize.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     quantize.chmod(0o755)
     for name in (
         "libllama-common.so.0",
@@ -305,7 +305,7 @@ def _run_keep_decision(
     if damage is not None:
         (runtime_dir / damage).unlink()
     script = tmp_path / "drive.sh"
-    script.write_text(_SH_HARNESS, encoding = "utf-8")
+    script.write_text(_SH_HARNESS, encoding="utf-8")
     stub_dir = _stub_bin(tmp_path)
     run_env = dict(os.environ)
     run_env.pop("UNSLOTH_LLAMA_KEEP_PREBUILT", None)
@@ -322,13 +322,13 @@ def _run_keep_decision(
             requested_tag,
             repo,
         ],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True,
-        encoding = "utf-8",
-        errors = "replace",
-        env = run_env,
-        timeout = 120,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=run_env,
+        timeout=120,
     )
     assert proc.returncode == 0, proc.stderr
     return proc.stdout
@@ -350,13 +350,13 @@ _KEEP_CASES = [
         {"UNSLOTH_LLAMA_KEEP_PREBUILT": "true"},
         "KEEP",
     ),
-    ("rocm_bundle", _marker(platform = "linux-rocm"), True, RELEASE_TAG, ON, "KEEP"),
+    ("rocm_bundle", _marker(platform="linux-rocm"), True, RELEASE_TAG, ON, "KEEP"),
     # a full mix pin names one bundle: only that exact mix may be kept
     ("full_mix_pin_exact_match", _BASE_IMAGE_MARKER, True, RELEASE_TAG, ON, "KEEP"),
     ("full_mix_pin_other_mix_same_base", _BASE_IMAGE_MARKER, True, OTHER_MIX, ON, "REPLACE"),
     (
         "full_mix_pin_marker_holds_other_mix",
-        _marker(release_tag = OTHER_MIX, upstream_tag = OTHER_MIX),
+        _marker(release_tag=OTHER_MIX, upstream_tag=OTHER_MIX),
         True,
         RELEASE_TAG,
         ON,
@@ -365,7 +365,7 @@ _KEEP_CASES = [
     # a bare base build pin still accepts any mix cut from that build
     (
         "bare_base_pin_accepts_any_mix",
-        _marker(release_tag = OTHER_MIX, upstream_tag = OTHER_MIX),
+        _marker(release_tag=OTHER_MIX, upstream_tag=OTHER_MIX),
         True,
         LLAMA_TAG,
         ON,
@@ -390,7 +390,7 @@ _KEEP_CASES = [
     ),
     (
         "release_tag_pin_but_marker_records_none",
-        _marker(release_tag = None),
+        _marker(release_tag=None),
         True,
         LLAMA_TAG,
         {**ON, "UNSLOTH_LLAMA_RELEASE_TAG": RELEASE_TAG},
@@ -400,17 +400,17 @@ _KEEP_CASES = [
     ("shipped_cpu_marker", _SHIPPED_CPU_MARKER, True, RELEASE_TAG, ON, "REPLACE"),
     (
         "cpu_platform_no_backend_key",
-        _marker(platform = "linux-arm64"),
+        _marker(platform="linux-arm64"),
         True,
         RELEASE_TAG,
         ON,
         "REPLACE",
     ),
-    ("deliberate_force_cpu", _marker(force_cpu = True), True, RELEASE_TAG, ON, "REPLACE"),
+    ("deliberate_force_cpu", _marker(force_cpu=True), True, RELEASE_TAG, ON, "REPLACE"),
     # stale trees must still be replaced
     (
         "stale_release_tag",
-        _marker(tag = "b10700", release_tag = "b10700-mix-aaaaaaa", upstream_tag = "b10700-mix-aaaaaaa"),
+        _marker(tag="b10700", release_tag="b10700-mix-aaaaaaa", upstream_tag="b10700-mix-aaaaaaa"),
         True,
         RELEASE_TAG,
         ON,
@@ -418,7 +418,7 @@ _KEEP_CASES = [
     ),
     (
         "other_fork",
-        _marker(published_repo = "someone-else/llama.cpp"),
+        _marker(published_repo="someone-else/llama.cpp"),
         True,
         RELEASE_TAG,
         ON,
@@ -452,16 +452,16 @@ _KEEP_CASES = [
 @pytest.mark.parametrize(
     ("marker", "server", "requested_tag", "env", "expected"),
     [case[1:] for case in _KEEP_CASES],
-    ids = [case[0] for case in _KEEP_CASES],
+    ids=[case[0] for case in _KEEP_CASES],
 )
 def test_keep_decision(tmp_path, marker, server, requested_tag, env, expected):
     if marker == "not json":
         install_dir = tmp_path / "llama.cpp"
-        install_dir.mkdir(parents = True, exist_ok = True)
-        (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text("{ broken", encoding = "utf-8")
+        install_dir.mkdir(parents=True, exist_ok=True)
+        (install_dir / "UNSLOTH_PREBUILT_INFO.json").write_text("{ broken", encoding="utf-8")
         marker = None
     verdict = _run_keep_decision(
-        tmp_path, marker = marker, server = server, requested_tag = requested_tag, env = env
+        tmp_path, marker=marker, server=server, requested_tag=requested_tag, env=env
     )
     assert verdict == expected
 
@@ -470,7 +470,7 @@ def test_keep_decision(tmp_path, marker, server, requested_tag, env, expected):
 
 
 def test_setup_sh_keeps_the_bundle_instead_of_installing_a_prebuilt():
-    text = SETUP_SH.read_text(encoding = "utf-8")
+    text = SETUP_SH.read_text(encoding="utf-8")
     skip = text.index('elif [ "${_SKIP_PREBUILT_INSTALL:-false}" = true ]; then')
     keep = text.index('elif _keep_installed_gpu_prebuilt "$LLAMA_CPP_DIR"')
     install = text.index('    substep "installing prebuilt llama.cpp..."')
@@ -486,7 +486,7 @@ def test_setup_sh_keeps_the_bundle_instead_of_installing_a_prebuilt():
 
 
 def test_the_arm64_cpu_last_resort_cannot_undo_a_kept_bundle():
-    text = SETUP_SH.read_text(encoding = "utf-8")
+    text = SETUP_SH.read_text(encoding="utf-8")
     start = text.index("# ── arm64 Linux GPU: CPU prebuilt as a last resort ──")
     block = text[start : text.index("_ARM64_CPU_CMD=(", start)]
     assert '[ "$_LLAMA_KEEP_PREBUILT_ACTIVE" != true ]' in block, (
@@ -496,7 +496,7 @@ def test_the_arm64_cpu_last_resort_cannot_undo_a_kept_bundle():
 
 
 def test_dockerfile_studio_sets_the_knob_and_asserts_the_cuda_backend():
-    text = DOCKERFILE_STUDIO.read_text(encoding = "utf-8")
+    text = DOCKERFILE_STUDIO.read_text(encoding="utf-8")
     knob = text.index("UNSLOTH_LLAMA_KEEP_PREBUILT=1 \\")
     install = text.index("bash install.sh --local")
     assert knob < install, "the knob must be in install.sh's environment"
@@ -516,11 +516,11 @@ def test_docker_keep_does_not_preserve_a_runtime_preflight_rejects(tmp_path, mar
     assert (
         _run_keep_decision(
             tmp_path,
-            marker = marker,
-            server = True,
-            requested_tag = RELEASE_TAG,
-            env = ON,
-            damage = damage,
+            marker=marker,
+            server=True,
+            requested_tag=RELEASE_TAG,
+            env=ON,
+            damage=damage,
         )
         == "REPLACE"
     )

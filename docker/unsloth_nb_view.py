@@ -42,6 +42,7 @@ def _load_makedirs_as_host():
         sys.path.insert(0, here)
     try:
         from unsloth_run import _makedirs_as_host
+
         return _makedirs_as_host
     except Exception:
         return None
@@ -60,7 +61,7 @@ def _makedirs(path):
     if _MAKEDIRS_AS_HOST is not None:
         _MAKEDIRS_AS_HOST(path)
     else:
-        os.makedirs(path, exist_ok = True)
+        os.makedirs(path, exist_ok=True)
 
 
 def clean_section(title):
@@ -75,7 +76,7 @@ def parse_readme(readme_path):
     """Ordered (section_label, filename) pairs, filename urldecoded. Dedup is per
     (section, file), not global: the README deliberately cross-lists a notebook so
     every header becomes a populated folder."""
-    with open(readme_path, "r", encoding = "utf-8") as f:
+    with open(readme_path, "r", encoding="utf-8") as f:
         text = f.read()
 
     rows = []
@@ -111,7 +112,7 @@ def _ordered_sections(rows):
 def build_view(
     dest,
     view,
-    amd = False,
+    amd=False,
 ):
     nb_dir = os.path.join(dest, "nb")
     readme = os.path.join(dest, "README.md")
@@ -157,7 +158,7 @@ def build_view(
     _makedirs(view)
 
     n_links = 0
-    for i, section in enumerate(order, start = 1):
+    for i, section in enumerate(order, start=1):
         folder = os.path.join(view, f"{i:02d} {section}")
         _makedirs(folder)
         for fname in by_section[section]:
@@ -168,12 +169,12 @@ def build_view(
                 if os.path.islink(link) and _points_into(link, nb_real):
                     os.remove(link)
                 elif os.path.islink(link) or os.path.exists(link):
-                    print(f"[unsloth-nb] view: keep user file, skip link {fname}", file = sys.stderr)
+                    print(f"[unsloth-nb] view: keep user file, skip link {fname}", file=sys.stderr)
                     continue
                 os.symlink(rel, link)
                 n_links += 1
             except OSError as e:
-                print(f"[unsloth-nb] view: skip {fname}: {e}", file = sys.stderr)
+                print(f"[unsloth-nb] view: skip {fname}: {e}", file=sys.stderr)
     return len(order), n_links
 
 
@@ -193,7 +194,7 @@ def _clear_view(path, nb_real):
     # only emptied folders; the VIEW root is never removed
     if os.path.islink(path) or not os.path.isdir(path):
         return
-    for root, dirs, files in os.walk(path, topdown = False):
+    for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
             p = os.path.join(root, name)
             if os.path.islink(p) and _points_into(p, nb_real):
@@ -214,15 +215,15 @@ def _clear_view(path, nb_real):
 
 
 def main(argv):
-    ap = argparse.ArgumentParser(description = "Build the categorized notebook view.")
-    ap.add_argument("dest", help = "notebooks dir (contains README.md and nb/)")
-    ap.add_argument("view", nargs = "?", help = "output view dir (omit with --print)")
-    ap.add_argument("--amd", action = "store_true", help = "include AMD-* notebooks")
+    ap = argparse.ArgumentParser(description="Build the categorized notebook view.")
+    ap.add_argument("dest", help="notebooks dir (contains README.md and nb/)")
+    ap.add_argument("view", nargs="?", help="output view dir (omit with --print)")
+    ap.add_argument("--amd", action="store_true", help="include AMD-* notebooks")
     ap.add_argument(
         "--print",
-        dest = "do_print",
-        action = "store_true",
-        help = "print section<TAB>file rows instead of building",
+        dest="do_print",
+        action="store_true",
+        help="print section<TAB>file rows instead of building",
     )
     args = ap.parse_args(argv)
 
@@ -234,7 +235,7 @@ def main(argv):
 
     if not args.view:
         ap.error("view dir is required unless --print is given")
-    n_sections, n_links = build_view(args.dest, args.view, amd = args.amd)
+    n_sections, n_links = build_view(args.dest, args.view, amd=args.amd)
     print(f"[unsloth-nb] view: {n_links} notebooks in {n_sections} folders -> {args.view}")
     return 0
 

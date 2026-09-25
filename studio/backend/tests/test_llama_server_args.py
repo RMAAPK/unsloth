@@ -124,21 +124,21 @@ def test_the_attached_value_form_is_refused():
     # Measured on b10342 and b10360: "error: invalid argument: --top-k=20", and the
     # same for --ctx-size=4096 and --flash-attn=on. Accepting it here meant the
     # switch tore down the resident model and the child then refused to start.
-    with pytest.raises(ValueError, match = "two separate arguments"):
+    with pytest.raises(ValueError, match="two separate arguments"):
         validate_extra_args(["--top-k=20"])
     # The detached spelling is what it takes, and the underscore one still folds.
     assert validate_extra_args(["--top-k", "20"]) == ["--top-k", "20"]
     assert validate_extra_args(["--ctx_size", "4096"]) == ["--ctx_size", "4096"]
     # A managed name is still named as managed: that message says which control
     # owns it, which is the more useful of the two.
-    with pytest.raises(ValueError, match = "managed by Unsloth Studio"):
+    with pytest.raises(ValueError, match="managed by Unsloth Studio"):
         validate_extra_args(["--parallel=8"])
     # An "=" inside a VALUE is untouched: it is the value's own syntax.
     assert validate_extra_args(["--override-kv", "a=int:2"]) == ["--override-kv", "a=int:2"]
 
 
 def test_managed_long_flag_underscore_alias_is_rejected():
-    with pytest.raises(ValueError, match = "slot-save-path"):
+    with pytest.raises(ValueError, match="slot-save-path"):
         validate_extra_args(["--slot_save_path", "/tmp/slots"])
 
 
@@ -148,7 +148,7 @@ def test_a_bare_positional_is_rejected():
     # request. Refused here now that a textbox can produce one, because a build that
     # DID accept a positional would read it as the model path, which is exactly what
     # denying -m / --model prevents.
-    with pytest.raises(ValueError, match = "bare value"):
+    with pytest.raises(ValueError, match="bare value"):
         validate_extra_args(["foo"])
     # A value that follows its flag is untouched.
     assert validate_extra_args(["--numa", "distribute"]) == ["--numa", "distribute"]
@@ -262,7 +262,7 @@ def test_a_bare_positional_is_rejected():
     ],
 )
 def test_denylist_rejects_all_aliases(denied):
-    with pytest.raises(ValueError, match = denied):
+    with pytest.raises(ValueError, match=denied):
         validate_extra_args([denied, "value"])
 
 
@@ -290,18 +290,18 @@ def test_denylist_rejects_all_aliases(denied):
     ],
 )
 def test_parallel_flags_are_managed(args, offending):
-    with pytest.raises(ValueError, match = re.escape(offending)):
+    with pytest.raises(ValueError, match=re.escape(offending)):
         validate_extra_args(args)
 
 
 def test_denylist_rejects_equals_form():
-    with pytest.raises(ValueError, match = "--port"):
+    with pytest.raises(ValueError, match="--port"):
         validate_extra_args(["--port=9000"])
 
 
 def test_slot_save_path_is_managed_in_all_forms():
     for args in (["--slot-save-path", "/tmp/x"], ["--slot-save-path=/tmp/x"], ["--slot-save-path"]):
-        with pytest.raises(ValueError, match = "--slot-save-path"):
+        with pytest.raises(ValueError, match="--slot-save-path"):
             validate_extra_args(args)
     assert is_managed_flag("--slot-save-path") is True
     assert is_managed_flag("--slot-save-path=/tmp/x") is True
@@ -319,7 +319,7 @@ def test_slot_save_path_is_managed_in_all_forms():
 def test_denylist_rejects_whitespace_padded_forms(padded):
     # `_flag_name` trims whitespace before lookup; else a trailing space
     # could slip a managed flag past the boundary.
-    with pytest.raises(ValueError, match = "parallel|np"):
+    with pytest.raises(ValueError, match="parallel|np"):
         validate_extra_args([padded, "8"])
 
 
@@ -330,14 +330,14 @@ def test_denylist_rejects_whitespace_padded_forms(padded):
 def test_denylist_rejects_np_with_digit_prefix_and_junk(attached):
     # Backend `_flag_name` must classify the same forms the CLI rewriter
     # expands, else HTTP /load could smuggle `-np8x` through.
-    with pytest.raises(ValueError, match = "np"):
+    with pytest.raises(ValueError, match="np"):
         validate_extra_args([attached])
 
 
 def test_denylist_rejects_short_form_when_long_is_denied():
     # `-m` is the short form of --model; rejecting only the long form
     # would leave a trivial bypass.
-    with pytest.raises(ValueError, match = "-m"):
+    with pytest.raises(ValueError, match="-m"):
         validate_extra_args(["-m", "/some/other/path.gguf"])
 
 
@@ -349,7 +349,7 @@ def test_denylist_message_names_offending_flag():
 
 def test_first_denied_flag_short_circuits():
     # Validation stops at the first denied flag; the message names it.
-    with pytest.raises(ValueError, match = "--port"):
+    with pytest.raises(ValueError, match="--port"):
         validate_extra_args(["--port", "1", "--host", "x"])
 
 
@@ -402,10 +402,10 @@ def test_is_managed_flag_false_for_pass_through():
 def test_strip_shadowing_flags_drops_context_when_requested():
     out = strip_shadowing_flags(
         ["-c", "4096", "--top-k", "20"],
-        strip_context = True,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
+        strip_context=True,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
     )
     assert out == ["--top-k", "20"]
 
@@ -413,10 +413,10 @@ def test_strip_shadowing_flags_drops_context_when_requested():
 def test_strip_shadowing_flags_keeps_context_when_not_requested():
     out = strip_shadowing_flags(
         ["-c", "4096", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
     )
     assert out == ["-c", "4096", "--top-k", "20"]
 
@@ -426,10 +426,10 @@ def test_strip_shadowing_flags_keeps_chat_template_when_template_disabled():
     # --chat-template-file must survive.
     out = strip_shadowing_flags(
         ["--chat-template-file", "/tmp/custom.jinja", "--top-k", "20"],
-        strip_context = True,
-        strip_cache = True,
-        strip_spec = True,
-        strip_template = False,
+        strip_context=True,
+        strip_cache=True,
+        strip_spec=True,
+        strip_template=False,
     )
     assert out == ["--chat-template-file", "/tmp/custom.jinja", "--top-k", "20"]
 
@@ -437,7 +437,7 @@ def test_strip_shadowing_flags_keeps_chat_template_when_template_disabled():
 def test_strip_shadowing_flags_drops_template_when_requested():
     out = strip_shadowing_flags(
         ["--chat-template-file", "/tmp/custom.jinja", "--top-k", "20"],
-        strip_template = True,
+        strip_template=True,
     )
     assert out == ["--top-k", "20"]
 
@@ -445,7 +445,7 @@ def test_strip_shadowing_flags_drops_template_when_requested():
 def test_strip_shadowing_flags_keeps_cache_when_cache_disabled():
     out = strip_shadowing_flags(
         ["--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--top-k", "20"],
-        strip_cache = False,
+        strip_cache=False,
     )
     assert out == ["--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--top-k", "20"]
 
@@ -453,7 +453,7 @@ def test_strip_shadowing_flags_keeps_cache_when_cache_disabled():
 def test_strip_shadowing_flags_keeps_spec_when_spec_disabled():
     out = strip_shadowing_flags(
         ["--spec-type", "ngram-mod", "--draft-min", "48", "--top-k", "20"],
-        strip_spec = False,
+        strip_spec=False,
     )
     assert out == ["--spec-type", "ngram-mod", "--draft-min", "48", "--top-k", "20"]
 
@@ -462,11 +462,11 @@ def test_strip_shadowing_flags_keeps_device_by_default():
     # --device is pass-through by default (users may pin when Unsloth auto-selects).
     out = strip_shadowing_flags(
         ["--device", "Vulkan1", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
     )
     assert out == ["--device", "Vulkan1", "--top-k", "20"]
 
@@ -476,12 +476,12 @@ def test_strip_shadowing_flags_drops_device_when_requested():
     for flag in ("--device", "-dev", "--main-gpu", "-mg"):
         out = strip_shadowing_flags(
             [flag, "Vulkan1", "--top-k", "20"],
-            strip_context = False,
-            strip_cache = False,
-            strip_spec = False,
-            strip_template = False,
-            strip_split_mode = False,
-            strip_device = True,
+            strip_context=False,
+            strip_cache=False,
+            strip_spec=False,
+            strip_template=False,
+            strip_split_mode=False,
+            strip_device=True,
         )
         assert out == ["--top-k", "20"], flag
 
@@ -503,7 +503,7 @@ def test_strip_shadowing_flags_drops_mtp_flags_when_requested():
             "--top-k",
             "20",
         ],
-        strip_spec = True,
+        strip_spec=True,
     )
     assert out == ["--top-k", "20"]
 
@@ -546,12 +546,12 @@ def test_parse_ctx_override(args, expected):
     ],
 )
 def test_parse_ctx_override_rejects_malformed_values(args):
-    with pytest.raises(ValueError, match = "ctx-size|'-c'"):
+    with pytest.raises(ValueError, match="ctx-size|'-c'"):
         parse_ctx_override(args)
 
 
 def test_validate_extra_args_rejects_malformed_ctx_override():
-    with pytest.raises(ValueError, match = "ctx-size"):
+    with pytest.raises(ValueError, match="ctx-size"):
         validate_extra_args(["--ctx-size", "abc"])
 
 
@@ -585,12 +585,12 @@ def test_parse_gpu_layers_override(args, expected):
     ],
 )
 def test_parse_gpu_layers_override_rejects_malformed_values(args):
-    with pytest.raises(ValueError, match = "gpu-layers|GPU layers"):
+    with pytest.raises(ValueError, match="gpu-layers|GPU layers"):
         parse_gpu_layers_override(args)
 
 
 def test_validate_extra_args_rejects_malformed_gpu_layers_override():
-    with pytest.raises(ValueError, match = "GPU layers"):
+    with pytest.raises(ValueError, match="GPU layers"):
         validate_extra_args(["-ngl", "abc"])
 
 
@@ -627,7 +627,7 @@ def test_parse_tensor_split_override(args, expected):
     ],
 )
 def test_parse_tensor_split_override_rejects_malformed_values(args):
-    with pytest.raises(ValueError, match = "tensor-split"):
+    with pytest.raises(ValueError, match="tensor-split"):
         parse_tensor_split_override(args)
 
 
@@ -651,7 +651,7 @@ def test_parse_tensor_split_override_reads_python_float_syntax(value, expected):
 def test_parse_tensor_split_override_rejects_non_float_syntax(value):
     # JavaScript's Number() reads the 0x/0b/0o forms, so a mirror built on it would call these
     # loadable and the load would answer 400.
-    with pytest.raises(ValueError, match = "tensor-split"):
+    with pytest.raises(ValueError, match="tensor-split"):
         parse_tensor_split_override(["-ts", value])
 
 
@@ -659,7 +659,7 @@ def test_parse_tensor_split_override_rejects_a_share_float32_cannot_hold():
     # std::stof throws std::out_of_range above FLT_MAX (measured: stof("1e+39") raises), and the
     # manual emitter would have written --tensor-split 1e+39,1, so llama-server died at startup
     # where base had simply discarded the flag.
-    with pytest.raises(ValueError, match = "32-bit float"):
+    with pytest.raises(ValueError, match="32-bit float"):
         parse_tensor_split_override(["-ts", "1e39,1"])
     assert parse_tensor_split_override(["-ts", "3.4e38,1"]) == [3.4e38, 1.0]
 
@@ -669,7 +669,7 @@ def test_parse_tensor_split_override_rejects_a_share_that_underflows_stof(value)
     # libstdc++ reports every subnormal result as ERANGE, so std::stof throws out_of_range on the
     # way DOWN as well: measured here, stof("1e-38") and stof("1e-45") both raise, stof("0") does
     # not. Rejecting only what rounds to zero would still have let 1e-40 kill the server.
-    with pytest.raises(ValueError, match = "at least"):
+    with pytest.raises(ValueError, match="at least"):
         parse_tensor_split_override(["-ts", value])
 
 
@@ -688,8 +688,8 @@ def test_parse_tensor_split_override_only_rounds_what_gets_reserialized():
     # split that runs exactly as typed, so the rounding is scoped to the manual promotion that
     # actually rewrites the ratio.
     assert parse_tensor_split_override(["-ts", "1.1754943508222874e-38,1"]) is not None
-    with pytest.raises(ValueError, match = "at least"):
-        parse_tensor_split_override(["-ts", "1.1754943508222874e-38,1"], reserialized = True)
+    with pytest.raises(ValueError, match="at least"):
+        parse_tensor_split_override(["-ts", "1.1754943508222874e-38,1"], reserialized=True)
 
 
 def test_parse_tensor_split_override_rounds_each_share_before_adding():
@@ -697,9 +697,9 @@ def test_parse_tensor_split_override_rounds_each_share_before_adding():
     # total. Compiled and run here, "3.17817e38,1.54601e37,7.00525e36" reaches inf that way while
     # accumulating the doubles and rounding afterwards lands on FLT_MAX and looked fine.
     for reserialized in (False, True):
-        with pytest.raises(ValueError, match = "adds up past"):
+        with pytest.raises(ValueError, match="adds up past"):
             parse_tensor_split_override(
-                ["-ts", "3.17817e38,1.54601e37,7.00525e36"], reserialized = reserialized
+                ["-ts", "3.17817e38,1.54601e37,7.00525e36"], reserialized=reserialized
             )
 
 
@@ -708,9 +708,9 @@ def test_parse_tensor_split_override_judges_the_share_it_will_emit():
     # UP to FLT_MIN as a float and so passed a full-precision check, but it is emitted as
     # "1.17549e-38" and std::stof refuses THAT as subnormal (measured on this host), so /validate
     # approved a command the server then died on.
-    with pytest.raises(ValueError, match = "at least"):
-        parse_tensor_split_override(["-ts", "1.1754943508222874e-38,1"], reserialized = True)
-    assert parse_tensor_split_override(["-ts", "1.2e-38,1"], reserialized = True) == [1.2e-38, 1.0]
+    with pytest.raises(ValueError, match="at least"):
+        parse_tensor_split_override(["-ts", "1.1754943508222874e-38,1"], reserialized=True)
+    assert parse_tensor_split_override(["-ts", "1.2e-38,1"], reserialized=True) == [1.2e-38, 1.0]
 
 
 def test_parse_tensor_split_override_totals_the_emitted_shares():
@@ -720,22 +720,22 @@ def test_parse_tensor_split_override_totals_the_emitted_shares():
     assert (
         parse_tensor_split_override(
             ["-ts", "2.0829609943909916e38,7.170581961838338e37,6.028042758104631e37"],
-            reserialized = True,
+            reserialized=True,
         )
         is not None
     )
-    with pytest.raises(ValueError, match = "adds up past"):
+    with pytest.raises(ValueError, match="adds up past"):
         parse_tensor_split_override(["-ts", "3e38,3e38"])
 
 
 def test_parse_tensor_split_override_rejects_a_total_float32_cannot_hold():
     # llama.cpp prefix-sums the shares into the same float array (llama-model.cpp).
-    with pytest.raises(ValueError, match = "adds up past"):
+    with pytest.raises(ValueError, match="adds up past"):
         parse_tensor_split_override(["-ts", "3e38,3e38"])
 
 
 def test_validate_extra_args_rejects_malformed_tensor_split_override():
-    with pytest.raises(ValueError, match = "tensor-split"):
+    with pytest.raises(ValueError, match="tensor-split"):
         validate_extra_args(["-ts", "abc"])
 
 
@@ -792,7 +792,7 @@ def test_reasoning_budget_defaults_inherit_env_but_passthrough_still_wins():
     [("😀" * 2_049, "reasoning-budget-message"), ("bad\0message", "control characters")],
 )
 def test_reasoning_budget_message_validates_every_occurrence(unsafe, message):
-    with pytest.raises(ValueError, match = message):
+    with pytest.raises(ValueError, match=message):
         validate_extra_args(
             [
                 "--reasoning-budget-message",
@@ -817,7 +817,7 @@ def test_reasoning_budget_message_validates_every_occurrence(unsafe, message):
 )
 def test_validate_extra_args_rejects_malformed_reasoning_overrides(args):
     # A NUL is caught by the list-wide control-character check before the flag parser runs.
-    with pytest.raises(ValueError, match = "reasoning-budget|control characters"):
+    with pytest.raises(ValueError, match="reasoning-budget|control characters"):
         validate_extra_args(args)
 
 
@@ -832,21 +832,21 @@ def test_strip_reasoning_shadows_is_granular():
     ]
     assert strip_shadowing_flags(
         args,
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
-        strip_reasoning_budget = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
+        strip_reasoning_budget=True,
     ) == ["--reasoning-budget-message", "limit reached", "--top-k", "20"]
     assert strip_shadowing_flags(
         args,
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
-        strip_reasoning_budget_message = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
+        strip_reasoning_budget_message=True,
     ) == ["--reasoning-budget", "64", "--top-k", "20"]
 
 
@@ -878,7 +878,7 @@ def test_parse_cache_override(args, expected):
     ],
 )
 def test_parse_cache_override_rejects_malformed_values(args):
-    with pytest.raises(ValueError, match = "cache-type|'-ctk'"):
+    with pytest.raises(ValueError, match="cache-type|'-ctk'"):
         parse_cache_override(args)
 
 
@@ -911,22 +911,22 @@ def test_resolve_cache_type_kv_uses_fallback_without_override():
 
 def test_strip_shadowing_flags_boolean_does_not_consume_next_token():
     # `--spec-default` is boolean; drop just the flag, keep the next token.
-    out = strip_shadowing_flags(["--spec-default", "ngram-mod"], strip_spec = True)
+    out = strip_shadowing_flags(["--spec-default", "ngram-mod"], strip_spec=True)
     assert out == ["ngram-mod"]
 
 
 def test_strip_shadowing_flags_jinja_boolean_preserves_positional():
-    out = strip_shadowing_flags(["--jinja", "trailing-positional"], strip_template = True)
+    out = strip_shadowing_flags(["--jinja", "trailing-positional"], strip_template=True)
     assert out == ["trailing-positional"]
 
 
 def test_strip_shadowing_flags_no_jinja_boolean_preserves_positional():
-    out = strip_shadowing_flags(["--no-jinja", "trailing-positional"], strip_template = True)
+    out = strip_shadowing_flags(["--no-jinja", "trailing-positional"], strip_template=True)
     assert out == ["trailing-positional"]
 
 
 def test_strip_shadowing_flags_equals_form_drops_only_the_flag():
-    out = strip_shadowing_flags(["--ctx-size=4096", "--seed", "-1"], strip_context = True)
+    out = strip_shadowing_flags(["--ctx-size=4096", "--seed", "-1"], strip_context=True)
     assert out == ["--seed", "-1"]
 
 
@@ -974,7 +974,7 @@ def test_the_attached_split_mode_spelling_is_refused(args):
     # The parsers below still read the attached form, since they also run over
     # Unsloth's own emitted flags; the boundary is where the user's spelling of it
     # is turned back, while the message can still reach them.
-    with pytest.raises(ValueError, match = "two separate arguments"):
+    with pytest.raises(ValueError, match="two separate arguments"):
         validate_extra_args(args)
 
 
@@ -1011,14 +1011,14 @@ def test_parse_split_mode_override(args, expected):
     ],
 )
 def test_parse_split_mode_override_rejects_malformed_values(args):
-    with pytest.raises(ValueError, match = "split-mode|'-sm'"):
+    with pytest.raises(ValueError, match="split-mode|'-sm'"):
         parse_split_mode_override(args)
 
 
 def test_validate_extra_args_rejects_malformed_split_mode():
     # Validation catches a value-less --split-mode at the boundary,
     # mirroring the early --ctx-size / --cache-type checks.
-    with pytest.raises(ValueError, match = "split-mode"):
+    with pytest.raises(ValueError, match="split-mode"):
         validate_extra_args(["--split-mode"])
 
 
@@ -1051,11 +1051,11 @@ def test_resolve_tensor_parallel(args, fallback, expected):
 def test_strip_shadowing_flags_drops_split_mode_when_requested():
     out = strip_shadowing_flags(
         ["--split-mode", "row", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=True,
     )
     assert out == ["--top-k", "20"]
 
@@ -1082,10 +1082,10 @@ def test_strip_shadowing_flags_drops_model_draft_with_spec():
     # the auto-detected drafter.
     out = strip_shadowing_flags(
         ["--model-draft", "/old/mtp.gguf", "-md", "/old2.gguf", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = True,
-        strip_template = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=True,
+        strip_template=False,
     )
     assert out == ["--top-k", "20"]
 
@@ -1105,10 +1105,10 @@ def test_strip_shadowing_flags_drops_hf_drafter_selectors_with_spec(selector):
     # stale inherited HF drafter last-wins over Unsloth's re-derived spec choice.
     out = strip_shadowing_flags(
         selector + ["--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = True,
-        strip_template = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=True,
+        strip_template=False,
     )
     assert out == ["--top-k", "20"]
 
@@ -1129,10 +1129,10 @@ def test_strip_shadowing_flags_keeps_draft_tuning_with_spec():
     ]
     out = strip_shadowing_flags(
         list(keep),
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = True,
-        strip_template = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=True,
+        strip_template=False,
     )
     assert out == keep
 
@@ -1142,21 +1142,21 @@ def test_strip_shadowing_flags_keeps_split_mode_when_not_requested():
     # --split-mode survives (mirrors the chat-template keep behavior).
     out = strip_shadowing_flags(
         ["--split-mode", "row", "--top-k", "20"],
-        strip_context = True,
-        strip_cache = True,
-        strip_spec = True,
-        strip_template = True,
-        strip_split_mode = False,
+        strip_context=True,
+        strip_cache=True,
+        strip_spec=True,
+        strip_template=True,
+        strip_split_mode=False,
     )
     assert out == ["--split-mode", "row", "--top-k", "20"]
 
 
 def test_strip_shadowing_flags_drops_split_mode_short_alias_and_equals():
-    assert strip_shadowing_flags(["-sm", "tensor", "--top-k", "20"], strip_split_mode = True) == [
+    assert strip_shadowing_flags(["-sm", "tensor", "--top-k", "20"], strip_split_mode=True) == [
         "--top-k",
         "20",
     ]
-    assert strip_shadowing_flags(["--split-mode=row", "--seed", "-1"], strip_split_mode = True) == [
+    assert strip_shadowing_flags(["--split-mode=row", "--seed", "-1"], strip_split_mode=True) == [
         "--seed",
         "-1",
     ]
@@ -1170,11 +1170,11 @@ def test_strip_shadowing_flags_defaults_strip_split_mode_too():
 
 def test_strip_offload_is_opt_in_and_covers_moe():
     base = dict(
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
     )
     # Default: offload (incl. MoE) flags are NOT stripped.
     assert strip_shadowing_flags(["--n-cpu-moe", "8", "--top-k", "20"], **base) == [
@@ -1187,10 +1187,10 @@ def test_strip_offload_is_opt_in_and_covers_moe():
     assert strip_shadowing_flags(
         ["--n-cpu-moe", "8", "--gpu-layers", "33", "--fit", "off", "--top-k", "20"],
         **base,
-        strip_offload = True,
+        strip_offload=True,
     ) == ["--top-k", "20"]
     # Boolean --cpu-moe drops the flag only, not the following value.
-    assert strip_shadowing_flags(["--cpu-moe", "--seed", "-1"], **base, strip_offload = True) == [
+    assert strip_shadowing_flags(["--cpu-moe", "--seed", "-1"], **base, strip_offload=True) == [
         "--seed",
         "-1",
     ]
@@ -1251,11 +1251,11 @@ def test_strip_shadowing_flags_drops_tensor_split_with_split_mode():
     # ratio can't override Unsloth's computed tensor split. Other flags survive.
     out = strip_shadowing_flags(
         ["--split-mode", "row", "--tensor-split", "1,1", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=True,
     )
     assert out == ["--top-k", "20"]
 
@@ -1263,7 +1263,7 @@ def test_strip_shadowing_flags_drops_tensor_split_with_split_mode():
 def test_strip_shadowing_flags_keeps_tensor_split_when_not_requested():
     # strip_split_mode=False keeps the whole split group (mode + ratios).
     assert strip_shadowing_flags(
-        ["--tensor-split", "1,1", "--top-k", "20"], strip_split_mode = False
+        ["--tensor-split", "1,1", "--top-k", "20"], strip_split_mode=False
     ) == ["--tensor-split", "1,1", "--top-k", "20"]
 
 
@@ -1282,12 +1282,12 @@ def test_strip_tensor_split_alone_preserves_split_mode():
     # the ratio, unlike strip_split_mode which removes the whole group.
     out = strip_shadowing_flags(
         ["--split-mode", "row", "--tensor-split", "1,1", "--top-k", "20"],
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
-        strip_tensor_split = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
+        strip_tensor_split=True,
     )
     assert out == ["--split-mode", "row", "--top-k", "20"]
 
@@ -1295,10 +1295,10 @@ def test_strip_tensor_split_alone_preserves_split_mode():
 def test_strip_shadowing_flags_keeps_model_draft_without_spec():
     out = strip_shadowing_flags(
         ["--model-draft", "/custom/mtp.gguf"],
-        strip_context = True,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
+        strip_context=True,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
     )
     assert out == ["--model-draft", "/custom/mtp.gguf"]
 
@@ -1309,7 +1309,7 @@ def test_strip_shadowing_flags_keeps_model_draft_without_spec():
 
 
 def test_token_count_is_capped():
-    with pytest.raises(ValueError, match = "too many"):
+    with pytest.raises(ValueError, match="too many"):
         validate_extra_args(["--verbose"] * (_lsa.MAX_EXTRA_ARG_TOKENS + 1))
     # The cap itself still passes, so the limit is inclusive as stated.
     assert len(validate_extra_args(["--verbose"] * _lsa.MAX_EXTRA_ARG_TOKENS)) == (
@@ -1318,7 +1318,7 @@ def test_token_count_is_capped():
 
 
 def test_total_size_is_capped():
-    with pytest.raises(ValueError, match = "too large"):
+    with pytest.raises(ValueError, match="too large"):
         validate_extra_args(["--grammar", "x" * (_lsa.MAX_EXTRA_ARGS_BYTES + 1)])
 
 
@@ -1333,13 +1333,13 @@ def test_the_size_cap_counts_bytes_not_characters():
     # Astral-plane characters are 4 bytes each; a character-counted cap would let
     # through four times the argv this claims to bound.
     big = "\U0001f600" * (_lsa.MAX_EXTRA_ARGS_BYTES // 4)
-    with pytest.raises(ValueError, match = "too large"):
+    with pytest.raises(ValueError, match="too large"):
         validate_extra_args(["--grammar", big])
 
 
 @pytest.mark.parametrize("token", ["a\x00b", "a\x07b", "\x1b[31m"])
 def test_control_characters_are_rejected(token):
-    with pytest.raises(ValueError, match = "control characters"):
+    with pytest.raises(ValueError, match="control characters"):
         validate_extra_args([token])
 
 
@@ -1525,7 +1525,7 @@ def test_matching_ctx_override_is_total_over_stored_junk():
 # oversized mapping into the RAM the override exists to keep pageable.
 
 
-def _rewritten_state(argv, env = None):
+def _rewritten_state(argv, env=None):
     """``((mlock, reserves_ram), argv, env)`` after the pageable rewrite."""
     env = dict(env or {})
     out, overridden = _lsa.force_pageable_load(list(argv), env)
@@ -1547,7 +1547,7 @@ def _rewritten_state(argv, env = None):
         ["--load-mode=mmap+mlock", "--no-mmap"],
         ["--load-mode", "mmap+mlock", "--no-direct-io"],
     ],
-    ids = [
+    ids=[
         "no-mmap",
         "no-dio",
         "load-mode-none",
@@ -1576,7 +1576,7 @@ def test_a_shadowed_lock_is_not_resurrected_by_the_pageable_rewrite(argv):
         (["--load-mode", "mlock"], ["--load-mode", "mmap+mlock"]),
         (["--load-mode=mlock"], ["--load-mode", "mmap+mlock"]),
     ],
-    ids = ["no-mmap-then-mlock", "load-mode-mlock", "load-mode-mlock-equals"],
+    ids=["no-mmap-then-mlock", "load-mode-mlock", "load-mode-mlock-equals"],
 )
 def test_an_effective_lock_survives_the_pageable_rewrite(argv, expect_tokens):
     """The control. "Keep this in RAM" is a real request when nothing shadowed it, so

@@ -227,7 +227,7 @@ def comparability_key(run_meta: dict) -> str:
     # COMPUTED OVER `comparability_fields`, not a second copy of the same dict. The two were written
     # out separately and kept in step by hand, and a field added to one and forgotten in the other
     # would make the key and its own explanation disagree about what the key covers.
-    blob = json.dumps(comparability_fields(run_meta), sort_keys = True, default = str).encode()
+    blob = json.dumps(comparability_fields(run_meta), sort_keys=True, default=str).encode()
     return "cmp:" + hashlib.sha256(blob).hexdigest()[:10]
 
 

@@ -87,7 +87,7 @@ FAKE_HOME = (
 
 def _native_path_value(template: str) -> str:
     """Fill in the fake home and speak the host's separator, entries and expectations alike."""
-    return template.format(home = FAKE_HOME).replace("/", os.sep)
+    return template.format(home=FAKE_HOME).replace("/", os.sep)
 
 
 def _load_manifest_module():
@@ -145,9 +145,9 @@ class TestWriteSide:
     def test_only_a_credential_free_nvidia_channel_is_recorded(
         self, tmp_path: pathlib.Path, url, allowed: bool, why: str
     ):
-        path = im.write_manifest(root = tmp_path, req_root = tmp_path, woa_torch_index = url)
+        path = im.write_manifest(root=tmp_path, req_root=tmp_path, woa_torch_index=url)
         assert path is not None
-        payload = json.loads(pathlib.Path(path).read_text(encoding = "utf-8"))
+        payload = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
         recorded = "woa_torch_index" in payload
         assert recorded is allowed, (
             f"{url!r} ({why}) was {'dropped' if allowed else 'persisted'}; "
@@ -166,22 +166,22 @@ class TestWriteSide:
     )
     def test_scheme_and_host_case_is_normalised_and_the_path_kept(self, tmp_path, url, persisted):
         """RFC 3986: scheme and host compare case-insensitively; a path does not."""
-        path = im.write_manifest(root = tmp_path, req_root = tmp_path, woa_torch_index = url)
-        payload = json.loads(pathlib.Path(path).read_text(encoding = "utf-8"))
+        path = im.write_manifest(root=tmp_path, req_root=tmp_path, woa_torch_index=url)
+        payload = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
         assert payload["woa_torch_index"] == persisted
 
     def test_the_key_is_absent_when_no_index_was_chosen(self, tmp_path: pathlib.Path):
         """Every other host, and every WoA host that stayed on the x64 stack."""
-        im.write_manifest(root = tmp_path, req_root = tmp_path)
-        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding = "utf-8"))
+        im.write_manifest(root=tmp_path, req_root=tmp_path)
+        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding="utf-8"))
         assert "woa_torch_index" not in payload
 
     def test_the_addition_is_backwards_compatible(self, tmp_path: pathlib.Path):
         """An additive optional key: older readers see the schema they already parse."""
-        im.write_manifest(root = tmp_path, req_root = tmp_path, woa_torch_index = NV_GA)
-        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding = "utf-8"))
+        im.write_manifest(root=tmp_path, req_root=tmp_path, woa_torch_index=NV_GA)
+        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding="utf-8"))
         assert payload["schema"] == 1, "the key is additive; bumping the schema is not"
-        state = im.verify_install(root = tmp_path, req_root = tmp_path)
+        state = im.verify_install(root=tmp_path, req_root=tmp_path)
         assert state["manifest_ok"] is True, state["reason"]
 
     def test_the_installer_passes_the_handover_variable_through(self):
@@ -204,7 +204,7 @@ class TestReadSide:
         anything can put a line in it."""
         (tmp_path / "unsloth_install_manifest.json").write_text(
             json.dumps({"schema": 1, "woa_torch_index": url}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         got = self._invoke(tmp_path)
         assert got == (
@@ -216,11 +216,11 @@ class TestReadSide:
         """Older installs have no such key, and a truncated file must not throw."""
         assert self._invoke(tmp_path) == "", "no manifest at all"
         path = tmp_path / "unsloth_install_manifest.json"
-        path.write_text('{"schema": 1, "torch_flavor": "cu130"}', encoding = "utf-8")
+        path.write_text('{"schema": 1, "torch_flavor": "cu130"}', encoding="utf-8")
         assert self._invoke(tmp_path) == "", "an older manifest without the key"
-        path.write_text('{"schema": 1, "woa_torch_ind', encoding = "utf-8")
+        path.write_text('{"schema": 1, "woa_torch_ind', encoding="utf-8")
         assert self._invoke(tmp_path) == "", "a manifest truncated by a killed installer"
-        path.write_text("", encoding = "utf-8")
+        path.write_text("", encoding="utf-8")
         assert self._invoke(tmp_path) == "", "an empty manifest"
 
     @staticmethod
@@ -263,24 +263,24 @@ class TestResolverEnvironmentRestore:
         # The function assigns real environment variables; keep them out of the parent.
         done = _ps_ok(
             script,
-            env = {**os.environ, "UV_OVERRIDE": "", "UV_FIND_LINKS": "", "PIP_FIND_LINKS": ""},
+            env={**os.environ, "UV_OVERRIDE": "", "UV_FIND_LINKS": "", "PIP_FIND_LINKS": ""},
         )
         return json.loads(done.stdout.strip().splitlines()[-1])
 
     @staticmethod
     def _stage(tmp_path: pathlib.Path, *, wheels: bool = True) -> pathlib.Path:
         woa = tmp_path / "woa"
-        woa.mkdir(parents = True, exist_ok = True)
+        woa.mkdir(parents=True, exist_ok=True)
         overrides = woa / "overrides.txt"
         overrides.write_text(
             "# Generated by install.ps1 for Windows on ARM (win_arm64).\n"
             'brotli ; platform_machine == "AMD64"\n'
             'brotlicffi ; platform_machine == "AMD64"\n'
             "torch>=2.4\n",
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         if wheels:
-            (woa / "wheels").mkdir(exist_ok = True)
+            (woa / "wheels").mkdir(exist_ok=True)
         return overrides
 
     @requires_pwsh
@@ -294,7 +294,7 @@ class TestResolverEnvironmentRestore:
     @requires_pwsh
     def test_no_wheelhouse_still_restores_the_overrides(self, tmp_path: pathlib.Path):
         """The drops are what stop the brotli sdist; the wheelhouse is a separate favour."""
-        overrides = self._stage(tmp_path, wheels = False)
+        overrides = self._stage(tmp_path, wheels=False)
         got = self._invoke(tmp_path)
         assert got["ov"] == str(overrides)
         assert not got["uvfl"] and not got["pipfl"]
@@ -303,7 +303,7 @@ class TestResolverEnvironmentRestore:
     def test_every_other_host_is_untouched(self, tmp_path: pathlib.Path):
         """An x64 venv resolves brotli from a win_amd64 wheel, as it always has."""
         self._stage(tmp_path)
-        got = self._invoke(tmp_path, is_woa = False)
+        got = self._invoke(tmp_path, is_woa=False)
         assert not got["ov"] and not got["uvfl"] and not got["pipfl"]
         assert not got["warned"], "and it says nothing about a platform it is not on"
 
@@ -311,7 +311,7 @@ class TestResolverEnvironmentRestore:
     def test_a_caller_that_already_set_them_keeps_their_file(self, tmp_path: pathlib.Path):
         """The caller's own override file is never dropped."""
         overrides = self._stage(tmp_path)
-        got = self._invoke(tmp_path, preset = "$env:UV_OVERRIDE = 'C:\\caller\\ov.txt'")
+        got = self._invoke(tmp_path, preset="$env:UV_OVERRIDE = 'C:\\caller\\ov.txt'")
         assert "C:\\caller\\ov.txt" in got["ov"], "the caller's file survives"
         assert str(overrides) in got["ov"], "and ours is there too"
 
@@ -322,7 +322,7 @@ class TestResolverEnvironmentRestore:
     ):
         """The three are restored independently."""
         overrides = self._stage(tmp_path)
-        got = self._invoke(tmp_path, preset = f"$env:{held} = 'https://mirror.example/whl'")
+        got = self._invoke(tmp_path, preset=f"$env:{held} = 'https://mirror.example/whl'")
         assert got["ov"] == str(overrides), f"{held} is unrelated to the overrides"
         # Ours is PREPENDED rather than skipped, and the caller's entry still has to survive.
         value = got[{"UV_FIND_LINKS": "uvfl", "PIP_FIND_LINKS": "pipfl"}[held]]
@@ -356,7 +356,7 @@ class TestResolverEnvironmentRestore:
     def test_the_dependency_that_makes_this_necessary_is_still_there(self):
         """If studio.txt ever drops ddgs, this restore stops being load-bearing for brotli."""
         studio_txt = PACKAGE_ROOT / "studio" / "backend" / "requirements" / "studio.txt"
-        assert "ddgs" in studio_txt.read_text(encoding = "utf-8")
+        assert "ddgs" in studio_txt.read_text(encoding="utf-8")
 
     def test_the_restore_runs_before_the_dependency_pass(self):
         """After it, the brotli resolve has already been attempted."""
@@ -636,7 +636,7 @@ OPT_OUT_KINDS = slice_between(
     SETUP_SRC,
     "$_arm64CudaOptOut =",
     '} else { @("windows-cuda", "windows-vulkan") }',
-    include_end = True,
+    include_end=True,
 ).strip()
 
 CUDA = "windows-arm64-cuda,windows-arm64,windows-vulkan"
@@ -658,7 +658,7 @@ class TestTheOptOutBundleSurvivesTheKindCheck:
             OPT_OUT_KINDS,
             f"Write-Output ($_nvidiaKinds -join '{separator}')",
         )
-        return _ps_last(script, env = {**os.environ, "UNSLOTH_LLAMA_ARM64_CUDA": value})
+        return _ps_last(script, env={**os.environ, "UNSLOTH_LLAMA_ARM64_CUDA": value})
 
     @requires_pwsh
     @pytest.mark.parametrize(
@@ -683,16 +683,16 @@ class TestTheOptOutBundleSurvivesTheKindCheck:
     def test_an_x64_venv_is_unaffected_by_the_flag(self):
         """The flag is ARM64-only; an emulated x64 venv installs windows-cuda regardless."""
         for value in ("", "0"):
-            assert self._kinds(value, arm64 = False) == "windows-cuda,windows-vulkan"
+            assert self._kinds(value, arm64=False) == "windows-cuda,windows-vulkan"
 
     @requires_pwsh
     def test_the_opt_out_arm_stays_exclusive(self):
         """A CUDA bundle installed before the flag was set must still be replaced by the one the
         flag asks for, so the opt-out arm expects the CPU kind INSTEAD of the CUDA kind."""
         assert (
-            self._kinds("0", separator = " ") == "windows-arm64 windows-vulkan"
+            self._kinds("0", separator=" ") == "windows-arm64 windows-vulkan"
         ), "opted out: CUDA is no longer valid"
-        assert self._kinds("", separator = " ") == "windows-arm64-cuda windows-arm64 windows-vulkan"
+        assert self._kinds("", separator=" ") == "windows-arm64-cuda windows-arm64 windows-vulkan"
 
     def test_the_cpu_fallback_is_a_real_selector_outcome(self):
         """The premise of widening: resolve_asset_choice falls through to the published
@@ -784,9 +784,9 @@ class TestTheCudaWheelProbeIsNotFooled:
 
     @requires_pwsh
     def test_the_interpreter_tag_still_has_to_match(self):
-        body = _torch_links("2.14.0%2Bcu134", py = "cp311", abi = "cp311")
-        assert self._probe(body, minor = "3.13") == ""
-        assert self._probe(body, minor = "3.11") == "2.14.0+cu134"
+        body = _torch_links("2.14.0%2Bcu134", py="cp311", abi="cp311")
+        assert self._probe(body, minor="3.13") == ""
+        assert self._probe(body, minor="3.11") == "2.14.0+cu134"
 
     @requires_pwsh
     def test_the_platform_still_has_to_match(self):
@@ -856,7 +856,7 @@ class TestTorchaudioIsOnlyTakenAsAMatchedPair:
 
 # The live `if` that builds the resolver flags for the WoA torch install.
 INDEX_ARGS_BLOCK = slice_between(
-    SETUP_SRC, "$WinArm64IndexArgs = if (", "} else { @() }", include_end = True
+    SETUP_SRC, "$WinArm64IndexArgs = if (", "} else { @() }", include_end=True
 )
 
 
@@ -907,7 +907,7 @@ class TestPrereleasesAreOnlyForTheNightlyChannel:
     def test_both_scripts_gate_on_the_same_thing(self):
         """One rule; two files. Drift here is invisible until a resolve goes wrong."""
         for path in (INSTALL_PS1, SETUP_PS1):
-            text = path.read_text(encoding = "utf-8")
+            text = path.read_text(encoding="utf-8")
             assert re.search(r"-match 'nightly'", text), f"{path.name} lost the gate"
             for line in text.splitlines():
                 if "--prerelease=allow" not in line or "#" in line.split("--prerelease")[0]:
@@ -927,15 +927,15 @@ class TestManifestWriterAndReaderAcceptTheSameSet:
     PORTED = "https://pypi.nvidia.com:443/nvtorch_oot"
 
     def test_the_writer_refuses_a_url_the_reader_cannot_read(self, tmp_path: pathlib.Path):
-        im.write_manifest(root = tmp_path, req_root = tmp_path, woa_torch_index = self.PORTED)
-        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding = "utf-8"))
+        im.write_manifest(root=tmp_path, req_root=tmp_path, woa_torch_index=self.PORTED)
+        payload = json.loads((tmp_path / im.MANIFEST_NAME).read_text(encoding="utf-8"))
         assert "woa_torch_index" not in payload
 
     @requires_pwsh
     def test_and_the_reader_still_refuses_it(self, tmp_path: pathlib.Path):
         (tmp_path / "unsloth_install_manifest.json").write_text(
             json.dumps({"schema": 1, "woa_torch_index": self.PORTED}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         assert TestReadSide._invoke(tmp_path) == ""
 
@@ -945,8 +945,8 @@ class TestManifestWriterAndReaderAcceptTheSameSet:
         """The pair that matters: written, then read back unchanged."""
         written = tmp_path / "w"
         written.mkdir()
-        im.write_manifest(root = written, req_root = written, woa_torch_index = url)
-        payload = json.loads((written / im.MANIFEST_NAME).read_text(encoding = "utf-8"))
+        im.write_manifest(root=written, req_root=written, woa_torch_index=url)
+        payload = json.loads((written / im.MANIFEST_NAME).read_text(encoding="utf-8"))
         assert payload["woa_torch_index"] == url
         assert TestReadSide._invoke(written) == url
 
@@ -962,6 +962,7 @@ class TestTheSuppliedPyarrowWheelIsValidated:
     def _write(path: pathlib.Path, content) -> None:
         if content == "zip":
             import zipfile
+
             with zipfile.ZipFile(path, "w") as zf:
                 zf.writestr("pyarrow/__init__.py", "")
         else:
@@ -1001,8 +1002,8 @@ class TestTheSuppliedPyarrowWheelIsValidated:
         """Get-WoaPyarrowSource with its network branches stubbed out."""
         return _ps_last(
             pyarrow_source_script(
-                wheelhouse = "'https://example.test/wheels'",
-                preamble = (f"$env:UNSLOTH_PYARROW_WHEEL = '{wheel}'",),
+                wheelhouse="'https://example.test/wheels'",
+                preamble=(f"$env:UNSLOTH_PYARROW_WHEEL = '{wheel}'",),
             )
         )[1:-1]
 
@@ -1100,7 +1101,7 @@ class TestTheProbeAsksForTheInterpretersAbi:
     def test_only_wheels_of_that_abi_are_found(self, abi: str, wheel_abi: str, found: bool):
         script = _script(
             JOIN_URL_PATH,
-            invoke_restmethod(_torch_links("2.14.0%2Bcu134", abi = wheel_abi)),
+            invoke_restmethod(_torch_links("2.14.0%2Bcu134", abi=wheel_abi)),
             CUDA_PROBE_FUNCS,
             "$v = Get-WoaCudaWheelVersion -IndexUrl 'https://x.test/i' -PythonMinor '3.13'"
             f" -AbiTag '{abi}'",
@@ -1233,7 +1234,7 @@ class TestAnExplicitPinOutranksThePersistedIndex:
                 SETUP_SRC,
                 "$_cudaIndexUrl = if ($PinnedTorchIndexUrl)",
                 "else { $TorchInstallIndexUrl }",
-                include_end = True,
+                include_end=True,
             ).strip(),
             "Write-Output $_cudaIndexUrl",
         )
@@ -1364,15 +1365,15 @@ class TestAMalformedHandoffUrlDoesNotCostTheManifest:
     )
     def test_the_manifest_is_still_written(self, tmp_path, bad):
         module = _load_manifest_module()
-        written = module.write_manifest(tmp_path, woa_torch_index = bad)
+        written = module.write_manifest(tmp_path, woa_torch_index=bad)
         assert written is not None, "a bad URL must not take the manifest with it"
-        payload = json.loads(pathlib.Path(written).read_text(encoding = "utf-8"))
+        payload = json.loads(pathlib.Path(written).read_text(encoding="utf-8"))
         assert "woa_torch_index" not in payload, "and it is certainly not persisted"
 
     def test_a_good_url_is_still_persisted(self, tmp_path):
         module = _load_manifest_module()
-        written = module.write_manifest(tmp_path, woa_torch_index = NV_GA + "/")
-        payload = json.loads(pathlib.Path(written).read_text(encoding = "utf-8"))
+        written = module.write_manifest(tmp_path, woa_torch_index=NV_GA + "/")
+        payload = json.loads(pathlib.Path(written).read_text(encoding="utf-8"))
         assert payload["woa_torch_index"] == NV_GA
 
 
@@ -1520,7 +1521,7 @@ class TestAHostedDropCandidateMustMeetItsFloor:
 
     def test_the_floor_still_matches_the_metadata(self):
         """The one duplicated constant, pinned to its source so it cannot drift."""
-        pyproject = (PACKAGE_ROOT / "pyproject.toml").read_text(encoding = "utf-8")
+        pyproject = (PACKAGE_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         assert (
             "xformers>=0.0.22.post7 ; (sys_platform == 'win32')" in pyproject
         ), "if this floor moves, $WoaDropFloors in install.ps1 moves with it"
@@ -1759,9 +1760,9 @@ class TestACallerOverrideFileKeepsItsOwnDirectory:
         end = INSTALL_SRC.index("\n", end)
         caller_dir = tmp_path / "corp"
         caller_dir.mkdir()
-        (caller_dir / "nested.txt").write_text("idna==3.10\n", encoding = "utf-8")
+        (caller_dir / "nested.txt").write_text("idna==3.10\n", encoding="utf-8")
         caller = caller_dir / "ov.txt"
-        caller.write_text("\n".join(caller_lines) + "\n", encoding = "utf-8")
+        caller.write_text("\n".join(caller_lines) + "\n", encoding="utf-8")
         managed = tmp_path / "woa.txt"
         script = _script(
             # PowerShell does not hoist, so the scanner the block calls has to be here too.
@@ -1777,13 +1778,13 @@ class TestACallerOverrideFileKeepsItsOwnDirectory:
         value = [line for line in done.stdout.splitlines() if line.startswith("OVERRIDE=")][-1][
             len("OVERRIDE=") :
         ].split()
-        written = managed.read_text(encoding = "utf-8")
+        written = managed.read_text(encoding="utf-8")
         session = tmp_path / "overrides.session.txt"
         if folded:
             assert value == [str(managed), str(session)], why
             # The include is FLATTENED as it folds, rebased against its own directory: the only
             # way a conflict one level down can be removed. It lands in the per-run file.
-            folded_text = session.read_text(encoding = "utf-8")
+            folded_text = session.read_text(encoding="utf-8")
             assert (
                 "idna==3.10" in folded_text
             ), "the include's own lines did not come across, so folding dropped them"
@@ -1928,7 +1929,7 @@ class TestAWheelhouseThatIsTheStagingDirectory:
     def test_a_self_copy_would_otherwise_be_fatal(self, tmp_path):
         """The behaviour this guards, executed, so the reason cannot go stale."""
         wheel = tmp_path / "a.whl"
-        wheel.write_text("x", encoding = "utf-8")
+        wheel.write_text("x", encoding="utf-8")
         done = _ps(
             '$ErrorActionPreference = "Stop"; '
             f"try {{ Copy-Item -LiteralPath '{wheel}' -Destination '{wheel}' -Force; "
@@ -1984,7 +1985,7 @@ class TestTheSuppliedWheelIsOpenedNotSniffed:
 
 # The live chain that decides which index a WoA venv installs torch from.
 WOA_INDEX_CHAIN = slice_between(
-    SETUP_SRC, "$WinArm64TorchIndexUrl = if ($WinArm64Venv", '} else { "" }', include_end = True
+    SETUP_SRC, "$WinArm64TorchIndexUrl = if ($WinArm64Venv", '} else { "" }', include_end=True
 )
 CORP_WOA = "https://mirror.corp/woa"
 NV_OOT = "https://pypi.nvidia.com/oot"
@@ -2042,8 +2043,8 @@ class TestAConfiguredWoaMirrorSurvivesAFreshShell:
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            written = module.write_manifest(pathlib.Path(tmp), woa_torch_index = CORP_WOA)
-            payload = json.loads(pathlib.Path(written).read_text(encoding = "utf-8"))
+            written = module.write_manifest(pathlib.Path(tmp), woa_torch_index=CORP_WOA)
+            payload = json.loads(pathlib.Path(written).read_text(encoding="utf-8"))
         assert "woa_torch_index" not in payload
 
 
@@ -2235,13 +2236,13 @@ class TestAnOverrideConflictCanHideInAnInclude:
         return [line for line in _ps_ok(script).stdout.strip().splitlines() if line]
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     def test_an_included_file_is_read(self, tmp_path, install):
         nested = tmp_path / "managed"
         nested.mkdir()
-        (nested / "nested.txt").write_text("torch<2.9\n", encoding = "utf-8")
+        (nested / "nested.txt").write_text("torch<2.9\n", encoding="utf-8")
         (tmp_path / "top.txt").write_text(
-            "# a comment\nrich>=13\n-r managed/nested.txt\n", encoding = "utf-8"
+            "# a comment\nrich>=13\n-r managed/nested.txt\n", encoding="utf-8"
         )
         lines = self._names(tmp_path, install)
         assert any(
@@ -2253,18 +2254,18 @@ class TestAnOverrideConflictCanHideInAnInclude:
         ), "the include line survived as a line"
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     def test_a_cycle_terminates(self, tmp_path, install):
-        (tmp_path / "top.txt").write_text("-r other.txt\nrich>=13\n", encoding = "utf-8")
-        (tmp_path / "other.txt").write_text("-r top.txt\ntorch<2.9\n", encoding = "utf-8")
+        (tmp_path / "top.txt").write_text("-r other.txt\nrich>=13\n", encoding="utf-8")
+        (tmp_path / "other.txt").write_text("-r top.txt\ntorch<2.9\n", encoding="utf-8")
         lines = self._names(tmp_path, install)
         assert any(line.startswith("torch<2.9|") for line in lines)
         assert any(line.startswith("rich>=13|") for line in lines)
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     def test_a_missing_include_is_not_fatal(self, tmp_path, install):
-        (tmp_path / "top.txt").write_text("-r gone.txt\nrich>=13\n", encoding = "utf-8")
+        (tmp_path / "top.txt").write_text("-r gone.txt\nrich>=13\n", encoding="utf-8")
         lines = self._names(tmp_path, install)
         assert [line.split("|")[0] for line in lines] == ["rich>=13"]
 
@@ -2299,7 +2300,7 @@ class TestAFloorIsPep440AboutPrereleases:
 
     @requires_pwsh
     @pytest.mark.parametrize(
-        "version, floor, expected, why", CASES, ids = [f"{v}_vs_{f}" for v, f, _, _ in CASES]
+        "version, floor, expected, why", CASES, ids=[f"{v}_vs_{f}" for v, f, _, _ in CASES]
     )
     def test_the_ordering(self, version, floor, expected, why):
         script = _script(
@@ -2315,7 +2316,7 @@ class TestAFloorIsPep440AboutPrereleases:
         for version, floor, expected, why in self.CASES:
             try:
                 reference = specifiers.SpecifierSet(f">={floor}").contains(
-                    version, prereleases = True
+                    version, prereleases=True
                 )
             except Exception:
                 continue  # "nonsense" is not a version; the PowerShell rule stands alone
@@ -2329,7 +2330,7 @@ class TestAFloorIsPep440AboutPrereleases:
         """Free-threaded CPython has no stable ABI (CPython #111506), so abi3 is not an option
         there. Accepting usable tags must not have loosened this."""
         got = TestAWheelhousePyarrowMustClearTheFloor._usable(
-            "pyarrow-26.0.0-cp311-abi3-win_arm64.whl", abi = "cp313t"
+            "pyarrow-26.0.0-cp311-abi3-win_arm64.whl", abi="cp313t"
         )
         assert (
             got == "False"
@@ -2383,7 +2384,7 @@ class TestAFindLinksPathWithASpaceSurvivesThePurge:
             PURGE_BLOCK,
             f"Write-Output ('[' + [Environment]::GetEnvironmentVariable('{var}') + ']')",
         )
-        assert _ps_last(script)[1:-1] == expected.format(owned = owned), why
+        assert _ps_last(script)[1:-1] == expected.format(owned=owned), why
 
 
 class TestThePipFallbackKeepsTheIndexArguments:
@@ -2414,7 +2415,7 @@ class TestThePipFallbackKeepsTheIndexArguments:
     def test_pip_receives_a_translated_list(self, tmp_path, use_uv, pre, expect_pre, wheels):
         """Executed end to end: build the list, then run it through the pip translation."""
         if wheels:
-            (tmp_path / "woa" / "wheels").mkdir(parents = True)
+            (tmp_path / "woa" / "wheels").mkdir(parents=True)
         script = _script(
             _function_source(SETUP_SRC, "Remove-UvOnlyResolverFlags"),
             # The dependency index follows the resolver policy; with none configured it is PyPI.
@@ -2478,7 +2479,7 @@ class TestThePipFallbackKeepsTheIndexArguments:
                 ["--pre", "numpy"],
             ),
         ],
-        ids = lambda v: " ".join(v),
+        ids=lambda v: " ".join(v),
     )
     def test_every_spelling_of_the_uv_only_flags(self, argv, expected):
         quoted = ", ".join("'" + a + "'" for a in argv)
@@ -2541,7 +2542,7 @@ class TestTheWoaIndexOutlivesTheManifest:
         """Checked on read as well as on write, exactly as the manifest is."""
         woa = tmp_path / "woa"
         woa.mkdir()
-        (woa / "torch-index.txt").write_text("https://evil.test/whl", encoding = "utf-8")
+        (woa / "torch-index.txt").write_text("https://evil.test/whl", encoding="utf-8")
         script = _script(
             f"$StudioHome = '{tmp_path}'",
             MARKER_FUNCS,
@@ -2580,7 +2581,7 @@ class TestTheWoaIndexOutlivesTheManifest:
         )
         _ps_ok(script)
         marker = tmp_path / "woa" / "torch-index.txt"
-        written = marker.read_text(encoding = "utf-8") if marker.exists() else ""
+        written = marker.read_text(encoding="utf-8") if marker.exists() else ""
         assert "s3cret" not in written, f"the marker file holds a credential: {written!r}"
         assert written == "", "nothing unpersistable should be written at all"
 
@@ -2599,14 +2600,14 @@ class TestTheTorchMergeRebasesWhatItFolds:
             fake_py = tmp_path / "fakepython.cmd"
             fake_py.write_text(
                 "@echo off\r\necho torch==2.11.0+cu130\r\necho torchvision==0.26.0+cu130\r\n",
-                encoding = "ascii",
+                encoding="ascii",
             )
         else:
             fake_py = tmp_path / "fakepython"
             fake_py.write_text(
                 "#!/usr/bin/env bash\n"
                 "printf 'torch==2.11.0+cu130\\ntorchvision==0.26.0+cu130\\n'\n",
-                encoding = "ascii",
+                encoding="ascii",
             )
             fake_py.chmod(0o755)
         script = _script(
@@ -2621,7 +2622,7 @@ class TestTheTorchMergeRebasesWhatItFolds:
             f"$m = New-UnslothTorchOverridesFile -PythonExe '{fake_py}'",
             "Write-Output ('<<<' + [System.IO.File]::ReadAllText($m) + '>>>')",
         )
-        out = _ps_ok(script, timeout = 180).stdout
+        out = _ps_ok(script, timeout=180).stdout
         return out[out.index("<<<") + 3 : out.rindex(">>>")]
 
     @requires_pwsh
@@ -2630,9 +2631,9 @@ class TestTheTorchMergeRebasesWhatItFolds:
         second = tmp_path / "corp"
         for directory in (first, second):
             directory.mkdir()
-        (first / "nested.txt").write_text("idna==3.6\n", encoding = "utf-8")
-        (first / "a.txt").write_text("-r nested.txt\nrich>=13\n", encoding = "utf-8")
-        (second / "b.txt").write_text("./local.whl\nplainpkg==2.0\n", encoding = "utf-8")
+        (first / "nested.txt").write_text("idna==3.6\n", encoding="utf-8")
+        (first / "a.txt").write_text("-r nested.txt\nrich>=13\n", encoding="utf-8")
+        (second / "b.txt").write_text("./local.whl\nplainpkg==2.0\n", encoding="utf-8")
 
         merged = self._merge(tmp_path, [first / "a.txt", second / "b.txt"])
         assert "idna==3.6" in merged, "the include one directory down was not followed"
@@ -2647,7 +2648,7 @@ class TestTheTorchMergeRebasesWhatItFolds:
         """Rebasing must not disturb what the merge is FOR: pinning the installed trio."""
         caller = tmp_path / "corp"
         caller.mkdir()
-        (caller / "a.txt").write_text("torch==1.0\ntorchvision==0.1\nrich>=13\n", encoding = "utf-8")
+        (caller / "a.txt").write_text("torch==1.0\ntorchvision==0.1\nrich>=13\n", encoding="utf-8")
         merged = self._merge(tmp_path, [caller / "a.txt"])
         assert merged.lstrip().startswith("torch==2.11.0+cu130")
         assert "torch==1.0" not in merged and "torchvision==0.1" not in merged
@@ -2703,13 +2704,13 @@ class TestThePipFallbackIsRefusedOnTheNativeStack:
                 continue
             path = tmp_path / f"{kind}.txt"
             if kind != "missing":
-                path.write_text(texts[kind], encoding = "utf-8")
+                path.write_text(texts[kind], encoding="utf-8")
             paths.append(str(path))
         monkeypatch.setattr(ips, "_is_win_arm64_interpreter", lambda: arm64)
         if paths:
             monkeypatch.setenv("UV_OVERRIDE", " ".join(paths))
         else:
-            monkeypatch.delenv("UV_OVERRIDE", raising = False)
+            monkeypatch.delenv("UV_OVERRIDE", raising=False)
         assert ips._woa_overrides_are_load_bearing() is expected, why
 
     def test_the_header_is_the_one_install_ps1_writes(self):
@@ -2750,15 +2751,15 @@ class TestAnAnnotatedIncludeStillOpens:
             ("-r a#b.txt", True, "a hash with no space before it belongs to the filename"),
         ],
     )
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     def test_the_target_is_read_without_its_comment(
         self, tmp_path, install, include_line, hashed_name, why
     ):
         source = INSTALL_PS1 if install else SETUP_PS1
         name = "Get-WoaRequirementEntries" if install else "Get-RequirementEntries"
         target = "a#b.txt" if hashed_name else "nested.txt"
-        (tmp_path / target).write_text("idna==3.10\n", encoding = "utf-8")
-        (tmp_path / "top.txt").write_text(f"{include_line}\nrich>=13\n", encoding = "utf-8")
+        (tmp_path / target).write_text("idna==3.10\n", encoding="utf-8")
+        (tmp_path / "top.txt").write_text(f"{include_line}\nrich>=13\n", encoding="utf-8")
         script = _script(
             _ps_function(source, name),
             f"$e = @({name} -Path '{(tmp_path / 'top.txt').as_posix()}')",
@@ -2823,10 +2824,10 @@ class TestWheelsAnEarlierWheelhouseLeftArePruned:
         cls,
         tmp_path,
         wheelhouse,
-        extra_stubs = (),
+        extra_stubs=(),
     ):
         managed = tmp_path / "woa" / "wheels"
-        managed.mkdir(parents = True)
+        managed.mkdir(parents=True)
         (managed / cls.STALE).write_text("")
         (managed / cls.PYARROW).write_text("")
         script = _script(
@@ -2960,8 +2961,8 @@ class TestTheMandatoryPyarrowWheelIsOpened:
         else:
             wheel.write_bytes(b"")
 
-        script = pyarrow_source_script(wheelhouse = f"'{tmp_path}'", local = "$true")
-        assert _ps_last(script, timeout = 180)[1:-1] == expected, why
+        script = pyarrow_source_script(wheelhouse=f"'{tmp_path}'", local="$true")
+        assert _ps_last(script, timeout=180)[1:-1] == expected, why
 
 
 class TestARebasedOptionPathKeepsItsQuoting:
@@ -2982,7 +2983,7 @@ class TestARebasedOptionPathKeepsItsQuoting:
         return _ps_last(script)[1:-1]
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     @pytest.mark.parametrize(
         "line, base, quoted, why",
         [
@@ -3021,14 +3022,14 @@ class TestARebasedOptionPathKeepsItsQuoting:
             ), f"the closing quote has to end the value: {got!r}"
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     def test_a_rebased_line_still_names_one_file(self, install, tmp_path):
         """Read back the way a resolver reads it: split the option's argument on spaces and the
         path must still exist."""
         source = INSTALL_PS1 if install else SETUP_PS1
         base = tmp_path / "my corp"
         base.mkdir()
-        (base / "constraints.txt").write_text("idna==3.10\n", encoding = "utf-8")
+        (base / "constraints.txt").write_text("idna==3.10\n", encoding="utf-8")
         got = self._rebase(source, "-c constraints.txt", base.as_posix())
         argument = got.split(None, 1)[1].strip()
         assert argument.startswith('"') and argument.endswith('"'), got
@@ -3050,7 +3051,7 @@ class TestALocalDirectoryRequirementIsRebasedToo:
     regression reached hosts this feature never touches."""
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     @pytest.mark.parametrize(
         "line, expected_suffix, why",
         [
@@ -3077,7 +3078,7 @@ class TestALocalDirectoryRequirementIsRebasedToo:
         assert got.rstrip().replace(os.sep, "/").endswith(expected_suffix), f"{why}: {got!r}"
 
     @requires_pwsh
-    @pytest.mark.parametrize("install", [True, False], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("install", [True, False], ids=["install.ps1", "setup.ps1"])
     @pytest.mark.parametrize(
         "line",
         [
@@ -3216,10 +3217,10 @@ class TestThePypiPyarrowWheelIsPinnedToo:
     )
     def test_the_recorded_name_yields_the_pin(self, body, expected_pin, why):
         script = pyarrow_source_script(
-            wheelhouse = "''",
-            rest_method = invoke_restmethod(body),
-            reaches_pypi = "$true",
-            tail = (
+            wheelhouse="''",
+            rest_method=invoke_restmethod(body),
+            reaches_pypi="$true",
+            tail=(
                 "$null = Get-WoaPyarrowSource -PythonMinor '3.13'",
                 # The emission, verbatim from the override block.
                 "$pin = ''",
@@ -3229,7 +3230,7 @@ class TestThePypiPyarrowWheelIsPinnedToo:
                 "Write-Output ('[' + $pin + ']')",
             ),
         )
-        assert _ps_last(script, timeout = 180)[1:-1] == expected_pin, why
+        assert _ps_last(script, timeout=180)[1:-1] == expected_pin, why
 
     def test_the_override_is_emitted_for_every_source(self):
         """The pin is keyed on the recorded name, which all three routes now set."""
@@ -3325,7 +3326,7 @@ class TestEveryPyarrowRouteOpensWhatItKeeps:
             branch + "\n                }",
             "Write-Output ('[' + [bool]$script:WoaNativeCudaTorch + ']')",
         )
-        assert _ps_last(script, timeout = 180)[1:-1] == expect_native, why
+        assert _ps_last(script, timeout=180)[1:-1] == expect_native, why
         staged = list(wheel_dir.glob("*.whl"))
         assert (
             bool(staged) is readable
@@ -3665,7 +3666,7 @@ class TestTheOverrideFileDoesNotOutrankTheTorchPin:
     )
     def test_what_survives_the_filter(self, tmp_path, lines, expect_kept, why):
         src = tmp_path / "ovr.txt"
-        src.write_text("\n".join(lines) + "\n", encoding = "utf-8")
+        src.write_text("\n".join(lines) + "\n", encoding="utf-8")
         script = _script(
             UV_SAFE_PATH,
             functions(
@@ -3756,7 +3757,7 @@ class TestStableCompanionsPairByReleaseLine:
             (INSTALL_PS1, "Test-WoaWheelPairsWithTorch"),
             (SETUP_PS1, "Test-WoaPairsWithTorchParity"),
         ):
-            text = path.read_text(encoding = "utf-8")
+            text = path.read_text(encoding="utf-8")
             assert (
                 f"{fn} -TorchVersion $PairWith -OtherVersion $version -Project $Project" in text
             ), path.name
@@ -3771,7 +3772,7 @@ class TestTheFilteredOverrideIsUvSafeAndShortLived:
     @requires_pwsh
     def test_the_copy_lands_in_the_given_directory_and_is_reported(self, tmp_path):
         src = tmp_path / "ovr.txt"
-        src.write_text('torch>=2.4\nhf-transfer ; platform_machine == "AMD64"\n', encoding = "utf-8")
+        src.write_text('torch>=2.4\nhf-transfer ; platform_machine == "AMD64"\n', encoding="utf-8")
         woa = tmp_path / "woa"
         woa.mkdir()
         script = _script(
@@ -3834,7 +3835,7 @@ class TestSetupSwapsTheOverrideAroundItsOwnTorchInstall:
     @requires_pwsh
     def test_the_parity_helper_drops_the_trio(self, tmp_path):
         src = tmp_path / "ovr.txt"
-        src.write_text("torch>=2.4\ntorchvision>=0.19\npyarrow==21.0.0\n", encoding = "utf-8")
+        src.write_text("torch>=2.4\ntorchvision>=0.19\npyarrow==21.0.0\n", encoding="utf-8")
         script = _script(
             UV_SAFE_PATH,
             functions(
@@ -3902,8 +3903,8 @@ class TestThePyPIProbeHonoursUvConfiguration:
     @staticmethod
     def _reaches(tmp_path, files: dict, env: dict) -> str:
         for name, body in files.items():
-            (tmp_path / name).parent.mkdir(parents = True, exist_ok = True)
-            (tmp_path / name).write_text(body, encoding = "utf-8")
+            (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+            (tmp_path / name).write_text(body, encoding="utf-8")
         script = _script(
             clear_env(UV_POLICY_ENV),
             f"$env:APPDATA = '{tmp_path / 'appdata'}'",
@@ -3924,7 +3925,7 @@ class TestThePyPIProbeHonoursUvConfiguration:
             ),
             "Write-Output (Test-WoaResolveReachesPyPI)",
         )
-        (tmp_path / "proj").mkdir(exist_ok = True)
+        (tmp_path / "proj").mkdir(exist_ok=True)
         return _ps_last(script)
 
     @requires_pwsh
@@ -4224,7 +4225,7 @@ class TestARedundantWheelLeavesTheManagedDirectoryToo:
             "Write-Output ('MANAGED=' + (Test-Path -LiteralPath"
             f" '{managed / 'tiktoken-0.9.0-cp313-cp313-win_arm64.whl'}'))",
         )
-        done = _ps_ok(script, timeout = 60)
+        done = _ps_ok(script, timeout=60)
         assert "SRC=True" in done.stdout and "MANAGED=False" in done.stdout, done.stdout
 
 
@@ -4258,10 +4259,10 @@ class TestTheEarlyNvidiaProbesAreBounded:
         """
         if os.name == "nt":
             path = directory / "nvidia-smi.cmd"
-            path.write_text("@echo off\n" + cmd_body, encoding = "utf-8")
+            path.write_text("@echo off\n" + cmd_body, encoding="utf-8")
             return
         path = directory / "nvidia-smi"
-        path.write_text("#!/bin/sh\n" + sh_body, encoding = "utf-8")
+        path.write_text("#!/bin/sh\n" + sh_body, encoding="utf-8")
         path.chmod(0o755)
 
     @requires_pwsh
@@ -4302,7 +4303,7 @@ class TestTheEarlyNvidiaProbesAreBounded:
             "$v = Get-WoaDriverCudaVersion",
             "Write-Output ('[' + ($v -join '.') + ']')",
         )
-        assert _ps_last(script, timeout = 60) == "[]"
+        assert _ps_last(script, timeout=60) == "[]"
 
 
 class TestTheAvProbeHonoursResolverPolicy:
@@ -4392,7 +4393,7 @@ class TestTheManagedScanReadsThePlatformTag:
         ],
     )
     def test_the_scan_executed(self, tmp_path, name, listed):
-        (tmp_path / name).write_text("", encoding = "utf-8")
+        (tmp_path / name).write_text("", encoding="utf-8")
         # Anchored on the code that follows rather than on its comment.
         scan = slice_between(
             INSTALL_SRC,
@@ -4515,11 +4516,11 @@ class TestTheWheelsCudaMajorMustNotExceedTheDrivers:
     not run on a CUDA 12 driver on Windows."""
 
     @staticmethod
-    def _native(driver, wheel = "2.14.0+cu134"):
+    def _native(driver, wheel="2.14.0+cu134"):
         script = native_probe_script(
-            driver = "$null" if driver is None else "@(" + ", ".join(str(d) for d in driver) + ")",
-            driver_leaf = "'cu128'",
-            stubs = (
+            driver="$null" if driver is None else "@(" + ", ".join(str(d) for d in driver) + ")",
+            driver_leaf="'cu128'",
+            stubs=(
                 f"$script:WoaNvidiaTorchIndexUrls = @('{NV_GA}')",
                 "function Test-WoaCudaWheel { param($IndexUrl, $PythonMinor, $AbiTag, $Project)"
                 " $IndexUrl -like '*nvidia*' }",
@@ -4625,7 +4626,7 @@ class TestARebasedFileReferenceIsAUri:
     @pytest.mark.parametrize("src", ["INSTALL", "SETUP"])
     def test_a_space_in_the_base_survives(self, tmp_path, src):
         base = tmp_path / "First Last" / "woa"
-        base.mkdir(parents = True)
+        base.mkdir(parents=True)
         text = INSTALL_SRC if src == "INSTALL" else SETUP_SRC
         script = _script(
             _function_source(text, "Resolve-WoaOverrideLine"),
@@ -4659,7 +4660,7 @@ class TestARebasedFileReferenceIsAUri:
         """The marker was captured with the target and handed to GetFullPath and System.Uri, so it
         was either encoded into the URL or made the fallback rebase against the wrong base."""
         base = tmp_path / "woa"
-        base.mkdir(parents = True)
+        base.mkdir(parents=True)
         text = INSTALL_SRC if src == "INSTALL" else SETUP_SRC
         script = _script(
             _function_source(text, "Resolve-WoaOverrideLine"),
@@ -4708,7 +4709,7 @@ class TestTheMergedOverrideFileDoesNotOutliveTheRun:
     @requires_pwsh
     def test_the_removal(self, tmp_path):
         merged = tmp_path / "overrides.merged.txt"
-        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding = "utf-8")
+        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding="utf-8")
         script = _script(
             _function_source(SETUP_SRC, "Remove-WoaMergedOverrides"),
             f"$script:WoaMergedOverrides = '{merged}'",
@@ -4723,7 +4724,7 @@ class TestTheMergedOverrideFileDoesNotOutliveTheRun:
         statement before it turns `param` into a command and the function into a crash), so the
         desktop app still gets its [TAURI:ERROR] line and the file is gone."""
         merged = tmp_path / "overrides.merged.txt"
-        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding = "utf-8")
+        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding="utf-8")
         done = _ps(
             _script(
                 functions(SETUP_SRC, "Remove-WoaMergedOverrides", "Exit-SetupFailure"),
@@ -4754,8 +4755,8 @@ class TestNativeNeedsAPairedTorchvision:
             return "@{ " + "; ".join(f"'{k}' = '{v}'" for k, v in d.items()) + " }"
 
         script = native_probe_script(
-            driver = "@(13, 4)",
-            stubs = (
+            driver="@(13, 4)",
+            stubs=(
                 f"$script:WoaNvidiaTorchIndexUrls = @('{cls.GA}', '{cls.NIGHTLY}')",
                 f"$script:Torch = {table(torch_by_index)}",
                 f"$script:Vision = {table(vision_by_index)}",
@@ -4768,7 +4769,7 @@ class TestNativeNeedsAPairedTorchvision:
                 "  if ($Project -eq 'torchaudio') { return '' }",
                 "  return $script:Torch[$IndexUrl] }",
             ),
-            outputs = (
+            outputs=(
                 "Write-Output ('INDEX=' + $script:WoaTorchIndexUrl)",
                 "Write-Output ('TORCH=' + $script:WoaTorchWheelVersion)",
                 "Write-Output ('VISION=' + $script:WoaVisionWheelVersion)",
@@ -4852,21 +4853,21 @@ class TestAnUpdateKeepsTheInstalledPairWhenTheIndexLags:
         venv = tmp_path / "venv"
         subprocess.run(
             [sys.executable, "-m", "venv", "--without-pip", str(venv)],
-            check = True,
-            capture_output = True,
-            timeout = 300,
+            check=True,
+            capture_output=True,
+            timeout=300,
         )
         sites = list(venv.glob("Lib/site-packages")) + list(venv.glob("lib/*/site-packages"))
         assert sites, f"no site-packages under {venv}"
         for name, version in installed.items():
             info = sites[0] / f"{name}-{version}.dist-info"
-            info.mkdir(parents = True)
+            info.mkdir(parents=True)
             (info / "METADATA").write_text(
-                f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n", encoding = "utf-8"
+                f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n", encoding="utf-8"
             )
         if os.name != "nt":
             scripts = venv / "Scripts"
-            scripts.mkdir(exist_ok = True)
+            scripts.mkdir(exist_ok=True)
             (scripts / "python.exe").symlink_to(venv / "bin" / "python")
         return venv
 
@@ -4921,6 +4922,7 @@ class TestASuppliedWheelUnderAnotherNameIsReadFromItsArchive:
     @staticmethod
     def _archive(path, dist_info, tag):
         import zipfile
+
         with zipfile.ZipFile(path, "w") as zf:
             zf.writestr(
                 f"{dist_info}.dist-info/WHEEL",
@@ -4933,10 +4935,10 @@ class TestASuppliedWheelUnderAnotherNameIsReadFromItsArchive:
     def _probe(wheel):
         return _ps_last(
             pyarrow_source_script(
-                wheelhouse = "'https://example.test/wheels'",
-                reaches_pypi = "$false",
-                lifts = ("Get-WheelFileNameFromArchive",),
-                preamble = (f"$env:UNSLOTH_PYARROW_WHEEL = '{wheel}'",),
+                wheelhouse="'https://example.test/wheels'",
+                reaches_pypi="$false",
+                lifts=("Get-WheelFileNameFromArchive",),
+                preamble=(f"$env:UNSLOTH_PYARROW_WHEEL = '{wheel}'",),
             )
         )[1:-1]
 
@@ -5117,14 +5119,14 @@ class TestTheDependencyIndexFollowsTheResolverPolicy:
         tmp_path,
         files,
         env,
-        source = None,
-        resolver = "uv",
+        source=None,
+        resolver="uv",
     ):
         src = INSTALL_SRC if source is None else source
         for name, body in files.items():
-            (tmp_path / name).parent.mkdir(parents = True, exist_ok = True)
-            (tmp_path / name).write_text(body, encoding = "utf-8")
-        (tmp_path / "proj").mkdir(exist_ok = True)
+            (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+            (tmp_path / name).write_text(body, encoding="utf-8")
+        (tmp_path / "proj").mkdir(exist_ok=True)
         script = _script(
             clear_env(UV_POLICY_ENV),
             f"$env:APPDATA = '{tmp_path / 'appdata'}'",
@@ -5279,14 +5281,14 @@ class TestTheDependencyIndexFollowsTheResolverPolicy:
         ],
     )
     def test_the_pip_fallback_reads_pips_policy(self, tmp_path, files, env, expected, why):
-        assert self._args(tmp_path, files, env, resolver = "pip") == expected, why
+        assert self._args(tmp_path, files, env, resolver="pip") == expected, why
 
     @requires_pwsh
     def test_setup_answers_the_same(self, tmp_path):
         files = _uv_toml(f'default-index = "{CORP_INDEX}"\nextra-index-url = ["{PYPI_URL}"]\n')
         assert self._args(tmp_path, files, {}, SETUP_SRC) == self.CORP + "|" + self.PYPI
         assert self._args(tmp_path, {}, {"UV_NO_INDEX": "1"}, SETUP_SRC) == ""
-        assert self._args(tmp_path, {}, {"PIP_NO_INDEX": "1"}, SETUP_SRC, resolver = "pip") == ""
+        assert self._args(tmp_path, {}, {"PIP_NO_INDEX": "1"}, SETUP_SRC, resolver="pip") == ""
 
     @pytest.mark.parametrize(
         "name",
@@ -5328,7 +5330,7 @@ class TestTheArmJobRunsForEveryRequirementsInput:
     workflow, so a marker or pin regression merged without the ARM checks."""
 
     def test_both_filters_name_the_requirements_tree_and_pyproject(self):
-        text = WORKFLOW.read_text(encoding = "utf-8")
+        text = WORKFLOW.read_text(encoding="utf-8")
         head = text[: text.index("workflow_dispatch:")]
         push = head[head.index("  push:") : head.index("  pull_request:")]
         pull = head[head.index("  pull_request:") :]
@@ -5349,7 +5351,7 @@ class TestATerminatingErrorStillRemovesTheMergedOverrides:
     @requires_pwsh
     def test_a_throw_after_the_restore_removes_the_file_and_still_fails(self, tmp_path):
         merged = tmp_path / "overrides.merged.txt"
-        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding = "utf-8")
+        merged.write_text("secret @ https://user:token@x.test/w.whl\n", encoding="utf-8")
         done = _ps(
             _script(
                 _function_source(SETUP_SRC, "Remove-WoaMergedOverrides"),
@@ -5391,7 +5393,7 @@ class TestAnUnwritableWheelDirectoryIsAStop:
 
     @requires_pwsh
     def test_a_file_in_the_way_stops_the_install(self, tmp_path):
-        (tmp_path / "woa").write_text("not a directory", encoding = "utf-8")
+        (tmp_path / "woa").write_text("not a directory", encoding="utf-8")
         script = _script(
             "$script:Lines = @()",
             "function Write-StudioLine { param($m, $ForegroundColor) $script:Lines += $m }",
@@ -5507,7 +5509,7 @@ class TestANoIndexNativeTrioStillSeesItsSourcesInSetup:
 
     @staticmethod
     def _index_args(tmp_path, env):
-        (tmp_path / "woa" / "wheels").mkdir(parents = True)
+        (tmp_path / "woa" / "wheels").mkdir(parents=True)
         script = _script(
             clear_env(UV_INDEX_ENV),
             "$env:UV_NO_CONFIG = '1'",
@@ -5618,8 +5620,8 @@ class TestProbeWarningsDoNotPrintIndexCredentials:
 
     def _native(self, driver, vision):
         script = native_probe_script(
-            driver = f"@({driver[0]}, {driver[1]})",
-            stubs = (
+            driver=f"@({driver[0]}, {driver[1]})",
+            stubs=(
                 f"$env:UNSLOTH_TORCH_INDEX_URL = '{self.URL}'",
                 "function Test-WoaCudaWheel"
                 " { param($IndexUrl, $PythonMinor, $AbiTag, $Project) $true }",
@@ -5630,7 +5632,7 @@ class TestProbeWarningsDoNotPrintIndexCredentials:
                 "  if ($Project -eq 'torchaudio') { return '' }",
                 "  return '2.14.0+cu134' }",
             ),
-            lifts = ("Remove-IndexUrlCredentials",),
+            lifts=("Remove-IndexUrlCredentials",),
         )
         return _ps_kv(script)
 
@@ -5726,7 +5728,7 @@ class TestTheArmJobFailsWhenARequiredTestSkips:
     exists for still reported green."""
 
     def test_the_summary_line_is_read_back(self):
-        text = WORKFLOW.read_text(encoding = "utf-8")
+        text = WORKFLOW.read_text(encoding="utf-8")
         start = text.index("- name: WoA installer and wheelhouse tests")
         step = text[start : text.index("- name: Uninstaller tests", start)]
         assert "-q -rs" in step
@@ -5800,7 +5802,7 @@ class TestBothNvidiaSmiProbesSearchTheSameLocations:
             for callee in ("Get-NvidiaSmiCandidatePaths",):
                 if callee in _function_source(INSTALL_SRC, helper) and callee not in needed:
                     needed.append(callee)
-        own = pathlib.Path(__file__).read_text(encoding = "utf-8")
+        own = pathlib.Path(__file__).read_text(encoding="utf-8")
         for name in callers:
             for match in re.finditer(rf'_function_source\(INSTALL_SRC, "{re.escape(name)}"\)', own):
                 # The _script(...) call this appears in, back to its opening paren.
@@ -5830,7 +5832,7 @@ class TestAnExplicitBlockIndexIsNotAGeneralExtra:
     @staticmethod
     def _read(src, tmp_path, body, top):
         cfg = tmp_path / ("pyproject.toml" if top else "uv.toml")
-        cfg.write_text(body, encoding = "utf-8")
+        cfg.write_text(body, encoding="utf-8")
         script = _script(
             functions(
                 src,
@@ -5846,7 +5848,7 @@ class TestAnExplicitBlockIndexIsNotAGeneralExtra:
         return _ps_last(script)
 
     @requires_pwsh
-    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids=["install.ps1", "setup.ps1"])
     @pytest.mark.parametrize(
         "body, top, expected, why",
         [
@@ -5930,11 +5932,11 @@ class TestTheInlineIndexSpellingIsRead:
             ('[{ url = "https://a/simple", explicit = false }]', None, ["https://a/simple"]),
         ],
     )
-    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids=["install.ps1", "setup.ps1"])
     @requires_pwsh
     def test_a_flat_inline_array_is_read(self, tmp_path, src, value, want_default, want_extras):
         cfg = tmp_path / "uv.toml"
-        cfg.write_text(f"index = {value}\n", encoding = "utf-8")
+        cfg.write_text(f"index = {value}\n", encoding="utf-8")
         script = _script(
             self._funcs(src),
             f"$p = Read-WoaUvTomlIndexKeys -Path '{cfg}' -Top ''",
@@ -5957,11 +5959,11 @@ class TestTheInlineIndexSpellingIsRead:
             '[{ url = "https://a/simple" }',  # unbalanced / continues next line
         ],
     )
-    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids = ["install.ps1", "setup.ps1"])
+    @pytest.mark.parametrize("src", [INSTALL_SRC, SETUP_SRC], ids=["install.ps1", "setup.ps1"])
     @requires_pwsh
     def test_anything_ambiguous_stays_unreadable(self, tmp_path, src, value):
         cfg = tmp_path / "uv.toml"
-        cfg.write_text(f"index = {value}\n", encoding = "utf-8")
+        cfg.write_text(f"index = {value}\n", encoding="utf-8")
         script = _script(
             self._funcs(src),
             f"$p = Read-WoaUvTomlIndexKeys -Path '{cfg}' -Top ''",
@@ -6031,7 +6033,7 @@ class TestThePyPIProvidedHandoverIsExported:
                 INSTALL_SRC,
                 "$_woaProvidedPairs = @()",
                 '$env:UNSLOTH_WOA_PYPI_PROVIDED = ($_woaProvidedPairs -join " ")',
-                include_end = True,
+                include_end=True,
             ),
             'Write-Output "[$env:UNSLOTH_WOA_PYPI_PROVIDED]"',
         )
@@ -6054,14 +6056,14 @@ class TestFoldedCallerOverridesDoNotOutliveTheRun:
         self,
         tmp_path,
         caller_lines,
-        stale = None,
+        stale=None,
     ):
         caller = tmp_path / "ov.txt"
-        caller.write_text("\n".join(caller_lines) + "\n", encoding = "utf-8")
+        caller.write_text("\n".join(caller_lines) + "\n", encoding="utf-8")
         managed = tmp_path / "overrides.txt"
         session = tmp_path / "overrides.session.txt"
         if stale is not None:
-            session.write_text(stale, encoding = "utf-8")
+            session.write_text(stale, encoding="utf-8")
         script = _script(
             functions(INSTALL_SRC, "Resolve-WoaOverrideLine", "Get-WoaRequirementEntries"),
             UV_SAFE_PATH,
@@ -6082,15 +6084,15 @@ class TestFoldedCallerOverridesDoNotOutliveTheRun:
     @requires_pwsh
     def test_a_folded_credential_never_reaches_the_persistent_file(self, tmp_path):
         managed, session, value, recorded = self._run(tmp_path, ["torch==2.9.0", self.SECRET])
-        assert "s3cret" not in managed.read_text(encoding = "utf-8")
-        assert self.SECRET in session.read_text(encoding = "utf-8"), "still applied to this run"
+        assert "s3cret" not in managed.read_text(encoding="utf-8")
+        assert self.SECRET in session.read_text(encoding="utf-8"), "still applied to this run"
         assert value == [str(managed), str(session)], "both files reach uv"
         assert recorded == str(session), "recorded, so the exit path can remove it"
 
     @requires_pwsh
     def test_a_stale_per_run_file_is_removed_even_when_nothing_folds(self, tmp_path):
         managed, session, value, recorded = self._run(
-            tmp_path, ["brotli==1.1.0"], stale = "leftover==1\n"
+            tmp_path, ["brotli==1.1.0"], stale="leftover==1\n"
         )
         assert not session.exists(), "an earlier interrupted run's copy would be re-read by uv"
         assert value[0] == str(managed) and str(session) not in value
@@ -6160,7 +6162,7 @@ class TestAnInlineCommentSurvivesTheRebase:
         ]
 
     @requires_pwsh
-    @pytest.mark.parametrize("path", [INSTALL_PS1, SETUP_PS1], ids = ["install", "setup"])
+    @pytest.mark.parametrize("path", [INSTALL_PS1, SETUP_PS1], ids=["install", "setup"])
     @pytest.mark.parametrize("case", range(8))
     def test_the_comment_is_kept_and_the_path_is_not_polluted(self, path, case):
         line, expected, why = self.cases()[case]
@@ -6238,8 +6240,8 @@ class TestAnUnpairedNewestTorchBacktracks:
         torch_list = ", ".join("'%s'" % v for v in torch_versions)
         vision = "; ".join("'%s' = '%s'" % (k, v) for k, v in paired_vision.items())
         script = native_probe_script(
-            driver = "@(13, 4)",
-            stubs = (
+            driver="@(13, 4)",
+            stubs=(
                 "$script:WoaNvidiaTorchIndexUrls = @('%s')" % NV_NIGHTLY,
                 "$script:TorchList = @(%s)" % torch_list,
                 "$script:Vision = @{ %s }" % vision,
@@ -6255,7 +6257,7 @@ class TestAnUnpairedNewestTorchBacktracks:
                 "    return $script:TorchList[$i + 1] }",
                 "  return $script:TorchList[0] }",
             ),
-            outputs = (
+            outputs=(
                 "Write-Output ('TORCH=' + $script:WoaTorchWheelVersion)",
                 "Write-Output ('VISION=' + $script:WoaVisionWheelVersion)",
             ),

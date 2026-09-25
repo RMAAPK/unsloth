@@ -24,38 +24,38 @@ def _run(monkeypatch, qkv_dtype, backend):
         _check(Q)
         return torch.zeros_like(Q)
 
-    monkeypatch.setattr(ad, "flash_attn_func", fake_flash_dense, raising = False)
-    monkeypatch.setattr(ad, "flash_attn_varlen_func", fake_flash_varlen, raising = False)
+    monkeypatch.setattr(ad, "flash_attn_func", fake_flash_dense, raising=False)
+    monkeypatch.setattr(ad, "flash_attn_varlen_func", fake_flash_varlen, raising=False)
 
     bsz, n_heads, q_len, head_dim = 1, 2, 4, 8
-    Q = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
-    K = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
-    V = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
+    Q = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
+    K = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
+    V = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
 
     seq_info = None
     if backend == ad.FLASH_VARLEN:
-        cu = torch.tensor([0, q_len], dtype = torch.int32)
+        cu = torch.tensor([0, q_len], dtype=torch.int32)
         seq_info = (None, cu, q_len)
 
     config = ad.AttentionConfig(
-        backend = backend,
-        n_kv_heads = n_heads,
-        n_groups = 1,
-        flash_dense_kwargs = {"causal": True},
-        flash_varlen_kwargs = {"dropout_p": 0.0, "causal": True},
+        backend=backend,
+        n_kv_heads=n_heads,
+        n_groups=1,
+        flash_dense_kwargs={"causal": True},
+        flash_varlen_kwargs={"dropout_p": 0.0, "causal": True},
     )
     context = ad.AttentionContext(
-        bsz = bsz,
-        q_len = q_len,
-        kv_seq_len = q_len,
-        n_heads = n_heads,
-        head_dim = head_dim,
-        requires_grad = False,
-        seq_info = seq_info,
-        attention_mask = None,
-        causal_mask = None,
+        bsz=bsz,
+        q_len=q_len,
+        kv_seq_len=q_len,
+        n_heads=n_heads,
+        head_dim=head_dim,
+        requires_grad=False,
+        seq_info=seq_info,
+        attention_mask=None,
+        causal_mask=None,
     )
-    ad.run_attention(config = config, context = context, Q = Q, K = K, V = V)
+    ad.run_attention(config=config, context=context, Q=Q, K=K, V=V)
     return captured["dtype"]
 
 
@@ -83,7 +83,7 @@ def _run_xformers(monkeypatch, qkv_dtype, fp32_unsupported):
         Q,
         K,
         V,
-        attn_bias = None,
+        attn_bias=None,
         **kwargs,
     ):
         captured["dtype"] = Q.dtype
@@ -92,30 +92,30 @@ def _run_xformers(monkeypatch, qkv_dtype, fp32_unsupported):
             raise RuntimeError("no operator found for memory_efficient_attention with fp32")
         return torch.zeros_like(Q)
 
-    monkeypatch.setattr(ad, "_XFORMERS_FP32_UNSUPPORTED", fp32_unsupported, raising = False)
-    monkeypatch.setattr(ad, "xformers_attention", fake_xformers_attention, raising = False)
+    monkeypatch.setattr(ad, "_XFORMERS_FP32_UNSUPPORTED", fp32_unsupported, raising=False)
+    monkeypatch.setattr(ad, "xformers_attention", fake_xformers_attention, raising=False)
     monkeypatch.setattr(
-        ad, "build_xformers_block_causal_mask", lambda *a, **k: object(), raising = False
+        ad, "build_xformers_block_causal_mask", lambda *a, **k: object(), raising=False
     )
 
     bsz, n_heads, q_len, head_dim = 1, 2, 4, 8
-    Q = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
-    K = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
-    V = torch.randn(bsz, n_heads, q_len, head_dim, dtype = qkv_dtype)
+    Q = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
+    K = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
+    V = torch.randn(bsz, n_heads, q_len, head_dim, dtype=qkv_dtype)
 
-    config = ad.AttentionConfig(backend = ad.XFORMERS, n_kv_heads = n_heads, n_groups = 1)
+    config = ad.AttentionConfig(backend=ad.XFORMERS, n_kv_heads=n_heads, n_groups=1)
     context = ad.AttentionContext(
-        bsz = bsz,
-        q_len = q_len,
-        kv_seq_len = q_len,
-        n_heads = n_heads,
-        head_dim = head_dim,
-        requires_grad = False,
-        seq_info = None,
-        attention_mask = None,
-        causal_mask = None,
+        bsz=bsz,
+        q_len=q_len,
+        kv_seq_len=q_len,
+        n_heads=n_heads,
+        head_dim=head_dim,
+        requires_grad=False,
+        seq_info=None,
+        attention_mask=None,
+        causal_mask=None,
     )
-    ad.run_attention(config = config, context = context, Q = Q, K = K, V = V)
+    ad.run_attention(config=config, context=context, Q=Q, K=K, V=V)
     return captured["dtype"]
 
 

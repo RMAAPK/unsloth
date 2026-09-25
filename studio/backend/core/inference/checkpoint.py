@@ -276,7 +276,7 @@ def _select_items(
     def _entry(group: list[dict]) -> Optional[tuple[str, int]]:
         """`group` as (text, cost) if its head is an instruction, else None."""
         head = group[0]
-        if not is_substantive(head, min_chars = min_chars):
+        if not is_substantive(head, min_chars=min_chars):
             return None
         text = _text_of(head).strip()
         if not text:
@@ -286,16 +286,16 @@ def _select_items(
         # for a recall query but not here: the attachment is not in the block, so "ok"
         # sent with a screenshot would be quoted as a standing instruction. Pricing the
         # whole message used to hide that by making such a turn unaffordable.
-        if not is_substantive({"role": "user", "content": text}, min_chars = min_chars):
+        if not is_substantive({"role": "user", "content": text}, min_chars=min_chars):
             return None
         item = _neutralise(text)
         return item, estimate_message({"role": "user", "content": item})
 
     return _pick(
         [_entry(group) for group in group_turns(evicted)],
-        max_tokens = max_tokens,
-        max_items = max_items,
-        reserve_oldest = reserve_oldest,
+        max_tokens=max_tokens,
+        max_items=max_items,
+        reserve_oldest=reserve_oldest,
     )
 
 
@@ -330,11 +330,11 @@ def carried_forward_items(
         return []
     return _select_items(
         evicted,
-        max_tokens = max_tokens,
-        max_items = max_items,
-        min_chars = 0,
-        reserve_oldest = True,
-        estimate_message = estimate_message,
+        max_tokens=max_tokens,
+        max_items=max_items,
+        min_chars=0,
+        reserve_oldest=True,
+        estimate_message=estimate_message,
     )
 
 
@@ -414,9 +414,9 @@ def _recap(
     """
     return _pick(
         [(item, estimate_message({"role": "user", "content": item})) for item in items],
-        max_tokens = max_tokens,
-        max_items = max_items,
-        reserve_leading = carried,
+        max_tokens=max_tokens,
+        max_items=max_items,
+        reserve_leading=carried,
     )
 
 
@@ -508,7 +508,7 @@ def fit_checkpoint_context(
         """`kept` plus the carried-forward block built from everything it dropped."""
         alive = {id(message) for message in kept}
         evicted = [message for message in messages if id(message) not in alive]
-        items = carried_forward_items(evicted, max_tokens = budget, estimate_message = estimate_message)
+        items = carried_forward_items(evicted, max_tokens=budget, estimate_message=estimate_message)
         # A second reset in one request can arrive with a block already in the system turn. Merged and re-capped into
         # ONE block: appending would cap each block separately, bounding a block instead of the (unevictable) system
         # turn. Merged rather than dropped, since that text is now the only copy of those instructions.
@@ -525,10 +525,10 @@ def fit_checkpoint_context(
             # in as one unit.
             items = _recap(
                 prior + items,
-                max_tokens = budget,
-                max_items = MAX_ITEMS,
-                carried = len(prior),
-                estimate_message = estimate_message,
+                max_tokens=budget,
+                max_items=MAX_ITEMS,
+                carried=len(prior),
+                estimate_message=estimate_message,
             )
         if not items:
             # Nothing to carry, so nothing to claim: do not pay for the probe. The old block still has to GO, though:
@@ -538,7 +538,7 @@ def fit_checkpoint_context(
             # re-capped away, so the recount stayed over budget and the request was refused or pushed back to rolling
             # even though the base system prompt plus the newest turn fits with room to spare.
             return _without_block(kept), ""
-        text = render_checkpoint(items, searchable = _resolved(searchable))
+        text = render_checkpoint(items, searchable=_resolved(searchable))
         return _append_to_system(kept, text), text
 
     # Phase one: replay the epoch already in force. Without it the client re-sending the whole transcript would trigger
@@ -554,9 +554,9 @@ def fit_checkpoint_context(
         candidate, replayed = truncate_oldest_messages(
             fitted,
             1.0,
-            protected_message_ids = protected_message_ids,
-            min_dropped = sticky_dropped,
-            estimate_message = estimate_message,
+            protected_message_ids=protected_message_ids,
+            min_dropped=sticky_dropped,
+            estimate_message=estimate_message,
         )
         if replayed:
             fitted = candidate
@@ -574,8 +574,8 @@ def fit_checkpoint_context(
         candidate, reset_dropped = truncate_oldest_messages(
             messages,
             0.0,
-            protected_message_ids = protected_message_ids,
-            estimate_message = estimate_message,
+            protected_message_ids=protected_message_ids,
+            estimate_message=estimate_message,
         )
         if reset_dropped:
             fitted = candidate
@@ -603,6 +603,7 @@ def fit_checkpoint_context(
     if current_tokens > prompt_target:
         # let the rolling fit retry from the originals; any projection made here would be discarded by `_fit_context`
         from core.inference.context_window import turn_diagnosis  # noqa: PLC0415
+
         return messages, {
             "fits": False,
             "dropped_messages": 0,
@@ -610,7 +611,7 @@ def fit_checkpoint_context(
             "prompt_tokens_after": initial_tokens,
             "irreducible_tokens": current_tokens,
             **turn_diagnosis(
-                messages, count_tokens, irreducible_tokens = current_tokens, fitted = measured
+                messages, count_tokens, irreducible_tokens=current_tokens, fitted=measured
             ),
             "context_length": context_length,
             "prompt_target": prompt_target,

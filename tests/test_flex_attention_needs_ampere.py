@@ -41,18 +41,18 @@ class _Model:
     _supports_flex_attn = True
 
 
-def _supports(model_type = "gemma3"):
+def _supports(model_type="gemma3"):
     return U._supports_flex_attention(_Model, {}, model_type)
 
 
-def _cuda(capabilities, hip = None):
+def _cuda(capabilities, hip=None):
     """Patch just enough of torch for the vendor/capability probe."""
     return mock.patch.multiple(
         U.torch.cuda,
-        is_available = lambda: bool(capabilities),
-        device_count = lambda: len(capabilities),
-        get_device_capability = lambda index = 0: capabilities[index],
-    ), mock.patch.object(U.torch.version, "hip", hip, create = True)
+        is_available=lambda: bool(capabilities),
+        device_count=lambda: len(capabilities),
+        get_device_capability=lambda index=0: capabilities[index],
+    ), mock.patch.object(U.torch.version, "hip", hip, create=True)
 
 
 @pytest.mark.parametrize("capability", [(7, 0), (7, 5)])
@@ -83,7 +83,7 @@ def test_a_mixed_box_follows_its_weakest_card():
 def test_rocm_is_not_judged_by_a_cuda_capability():
     """`get_device_capability` answers on ROCm too, with numbers that are not
     CUDA's, so reading them would disable flex on AMD for no reason."""
-    cuda, hip = _cuda([(7, 5)], hip = "6.2.0")
+    cuda, hip = _cuda([(7, 5)], hip="6.2.0")
     with cuda, hip:
         assert U._flex_attention_gpu_is_supported() is True
 
@@ -98,11 +98,11 @@ def test_no_cuda_device_is_left_alone():
 def test_an_unreadable_device_fails_open():
     """Same stance as the `is_torch_flex_attn_available` guard below it."""
 
-    def _boom(index = 0):
+    def _boom(index=0):
         raise RuntimeError("no CUDA driver")
 
     with mock.patch.multiple(
-        U.torch.cuda, is_available = lambda: True, device_count = lambda: 1, get_device_capability = _boom
+        U.torch.cuda, is_available=lambda: True, device_count=lambda: 1, get_device_capability=_boom
     ):
         assert U._flex_attention_gpu_is_supported() is True
 

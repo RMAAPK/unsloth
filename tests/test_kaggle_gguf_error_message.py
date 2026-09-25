@@ -51,7 +51,7 @@ def plenty_of_free_space(monkeypatch):
     still runs and a nonsensical headroom would still be caught.
     """
     real_disk_usage = shutil.disk_usage
-    ample = _Usage(total = 100 * 1024**3, used = 1 * 1024**3, free = 99 * 1024**3)
+    ample = _Usage(total=100 * 1024**3, used=1 * 1024**3, free=99 * 1024**3)
 
     def plenty(path):
         # Keep the real failure modes; only the numbers are ours.
@@ -129,7 +129,7 @@ def test_the_kaggle_branch_is_gated_on_the_check():
     """Source-level, because reaching the branch needs a real conversion."""
     import ast
 
-    src = Path(save.__file__).read_text(encoding = "utf-8")
+    src = Path(save.__file__).read_text(encoding="utf-8")
     tree = ast.parse(src)
     gated = False
     for node in ast.walk(tree):
@@ -143,7 +143,7 @@ def test_the_kaggle_branch_is_gated_on_the_check():
 
 def test_the_real_error_survives_either_way():
     """Both branches must carry the original error text."""
-    src = Path(save.__file__).read_text(encoding = "utf-8")
+    src = Path(save.__file__).read_text(encoding="utf-8")
     i = src.index("GGUF conversion failed in Kaggle environment")
     window = src[i - 200 : i + 900]
     assert (
@@ -228,7 +228,7 @@ def test_an_implicit_context_is_inspected():
 def test_the_quantize_wrapper_chains_its_cause():
     """The build-llama.cpp branch must chain too, else the 137 is unreachable
     from the outer handler."""
-    src = Path(save.__file__).read_text(encoding = "utf-8")
+    src = Path(save.__file__).read_text(encoding="utf-8")
     i = src.index("You might have to compile llama.cpp yourself")
     assert "from e" in src[i : i + 900]
 
@@ -243,6 +243,7 @@ def test_an_ordinary_converter_failure_is_not_called_an_oom():
 
 def test_a_disk_failure_is_not_called_an_oom():
     from unsloth.save import _gguf_child_was_oom_killed
+
     assert not _gguf_child_was_oom_killed(OSError("No space left on device"))
 
 
@@ -289,7 +290,7 @@ def test_no_kaggle_disk_message_is_left_ungated():
     quantize handlers have to make the same check. unslothai/unsloth#835."""
     import ast
 
-    src = Path(save.__file__).read_text(encoding = "utf-8")
+    src = Path(save.__file__).read_text(encoding="utf-8")
     tree = ast.parse(src)
     ungated = []
     for node in ast.walk(tree):
@@ -313,6 +314,6 @@ def test_a_broken_quantizer_is_not_a_disk_problem():
 
 
 def test_the_inner_quantize_branch_chains_the_original():
-    src = Path(save.__file__).read_text(encoding = "utf-8")
+    src = Path(save.__file__).read_text(encoding="utf-8")
     i = src.index("Unsloth: Quantization failed for {output_location}")
     assert "from e" in src[i : i + 900]

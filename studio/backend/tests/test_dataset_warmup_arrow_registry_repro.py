@@ -35,11 +35,11 @@ def test_datasets_can_be_reimported_after_a_failed_warm_is_purged():
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
-        cwd = BACKEND,
-        text = True,
-        capture_output = True,
-        timeout = 60,
-        check = False,
+        cwd=BACKEND,
+        text=True,
+        capture_output=True,
+        timeout=60,
+        check=False,
     )
     combined = result.stdout + result.stderr
     assert result.returncode == 0, combined
@@ -105,11 +105,11 @@ def test_datasets_reimport_waits_for_arrow_registry_cleanup():
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
-        cwd = BACKEND,
-        text = True,
-        capture_output = True,
-        timeout = 60,
-        check = False,
+        cwd=BACKEND,
+        text=True,
+        capture_output=True,
+        timeout=60,
+        check=False,
     )
     combined = result.stdout + result.stderr
     assert result.returncode == 0, combined
@@ -179,11 +179,11 @@ def test_a_request_queued_on_the_failing_warm_import_still_gets_a_working_datase
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
-        cwd = BACKEND,
-        text = True,
-        capture_output = True,
-        timeout = 120,
-        check = False,
+        cwd=BACKEND,
+        text=True,
+        capture_output=True,
+        timeout=120,
+        check=False,
     )
     combined = result.stdout + result.stderr
     assert result.returncode == 0, combined

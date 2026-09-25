@@ -65,14 +65,14 @@ def test_cpu_thread_cap_is_opt_in(raw):
 # Anything that is not a positive integer raises a clear ValueError.
 @pytest.mark.parametrize("raw", ["zero", "0", "-3", "1.5", "abc", "8a", "0x4", "1e3", "4 0"])
 def test_cpu_thread_cap_requires_positive_integer(raw):
-    with pytest.raises(ValueError, match = "must be a positive integer"):
+    with pytest.raises(ValueError, match="must be a positive integer"):
         configure_cpu_threads({"UNSLOTH_CPU_THREADS": raw})
 
 
 # env=None path uses real os.environ (production call from run.py / main.py).
 def test_cpu_thread_cap_uses_os_environ_when_env_is_none(monkeypatch):
     for variable in (*_THREAD_POOL_ENV_VARS, "UNSLOTH_CPU_THREADS"):
-        monkeypatch.delenv(variable, raising = False)
+        monkeypatch.delenv(variable, raising=False)
     monkeypatch.setenv("UNSLOTH_CPU_THREADS", "3")
 
     configure_cpu_threads()
@@ -84,7 +84,7 @@ def test_cpu_thread_cap_uses_os_environ_when_env_is_none(monkeypatch):
 # Calling twice must not flip any seeded value.
 def test_cpu_thread_cap_idempotent(monkeypatch):
     for variable in (*_THREAD_POOL_ENV_VARS, "UNSLOTH_CPU_THREADS"):
-        monkeypatch.delenv(variable, raising = False)
+        monkeypatch.delenv(variable, raising=False)
     monkeypatch.setenv("UNSLOTH_CPU_THREADS", "5")
 
     configure_cpu_threads()
@@ -120,7 +120,7 @@ def _ast_line_of_platform_compat_import(source: str) -> int:
 # run.py and main.py. Robust to formatting / line shifts.
 @pytest.mark.parametrize("entry_point", [_RUN_PY, _MAIN_PY])
 def test_cpu_thread_configuration_runs_before_backend_imports(entry_point):
-    source = entry_point.read_text(encoding = "utf-8")
+    source = entry_point.read_text(encoding="utf-8")
     call_line = _ast_line_of_configure_call(source)
     compat_line = _ast_line_of_platform_compat_import(source)
     assert call_line < compat_line, (
@@ -138,9 +138,9 @@ def test_invalid_cpu_thread_cap_exits_without_traceback(entry_point):
 
     result = subprocess.run(
         [sys.executable, str(entry_point)],
-        env = env,
-        capture_output = True,
-        text = True,
+        env=env,
+        capture_output=True,
+        text=True,
     )
 
     assert result.returncode == 1

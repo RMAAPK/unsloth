@@ -42,8 +42,8 @@ def base_build_tag(tag: str) -> str:
 
 def resolve_latest_tag(repo: str) -> str:
     url = f"https://github.com/{repo}/releases/latest"
-    request = urllib.request.Request(url, headers = {"User-Agent": "unsloth-docker-build"})
-    with urllib.request.urlopen(request, timeout = 60) as response:
+    request = urllib.request.Request(url, headers={"User-Agent": "unsloth-docker-build"})
+    with urllib.request.urlopen(request, timeout=60) as response:
         final_url = response.geturl()
     marker = "/releases/tag/"
     if marker not in final_url:
@@ -54,9 +54,9 @@ def resolve_latest_tag(repo: str) -> str:
 
 
 def fetch(url: str, dest: str) -> None:
-    request = urllib.request.Request(url, headers = {"User-Agent": "unsloth-docker-build"})
-    with urllib.request.urlopen(request, timeout = 600) as response, open(dest, "wb") as f:
-        shutil.copyfileobj(response, f, length = 1 << 20)
+    request = urllib.request.Request(url, headers={"User-Agent": "unsloth-docker-build"})
+    with urllib.request.urlopen(request, timeout=600) as response, open(dest, "wb") as f:
+        shutil.copyfileobj(response, f, length=1 << 20)
 
 
 def sha256_file(path: str) -> str:
@@ -99,9 +99,9 @@ def sanity_check_binaries(install_dir, build_bin):
     for binary, expect, require_zero_exit in checks:
         out = subprocess.run(
             [binary, "--version"],
-            capture_output = True,
-            text = True,
-            timeout = 120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         banner = (out.stdout + out.stderr).strip()
         print(
@@ -145,8 +145,8 @@ def main() -> None:
         bundle_dir = os.path.join(work, "bundle")
         os.makedirs(bundle_dir)
         with tarfile.open(bundle_path) as tf:
-            tf.extractall(bundle_dir, filter = "tar")
-        os.makedirs(install_dir, exist_ok = True)
+            tf.extractall(bundle_dir, filter="tar")
+        os.makedirs(install_dir, exist_ok=True)
         root = extracted_root(bundle_dir)
         for entry in os.listdir(root):
             target = os.path.join(install_dir, entry)
@@ -158,7 +158,7 @@ def main() -> None:
         source_dir = os.path.join(work, "source")
         os.makedirs(source_dir)
         with tarfile.open(source_path) as tf:
-            tf.extractall(source_dir, filter = "tar")
+            tf.extractall(source_dir, filter="tar")
         src_root = extracted_root(source_dir)
         converter = os.path.join(src_root, "convert_hf_to_gguf.py")
         gguf_py = os.path.join(src_root, "gguf-py")
@@ -167,10 +167,10 @@ def main() -> None:
         for script in os.listdir(src_root):
             if script.startswith("convert_") and script.endswith(".py"):
                 shutil.copy2(os.path.join(src_root, script), os.path.join(install_dir, script))
-        shutil.copytree(gguf_py, os.path.join(install_dir, "gguf-py"), dirs_exist_ok = True)
+        shutil.copytree(gguf_py, os.path.join(install_dir, "gguf-py"), dirs_exist_ok=True)
         conversion = os.path.join(src_root, "conversion")
         if os.path.isdir(conversion):
-            shutil.copytree(conversion, os.path.join(install_dir, "conversion"), dirs_exist_ok = True)
+            shutil.copytree(conversion, os.path.join(install_dir, "conversion"), dirs_exist_ok=True)
 
     # Studio's freshness check wants the install_llama_prebuilt.py schema: "tag" is the
     # NORMALIZED BASE build, "release_tag" the full release. No timestamp, so layers
@@ -186,7 +186,7 @@ def main() -> None:
     marker.setdefault("release_tag", tag)
     marker.setdefault("published_repo", RELEASE_REPO)
     with open(marker_path, "w") as f:
-        json.dump(marker, f, indent = 2)
+        json.dump(marker, f, indent=2)
         f.write("\n")
     print(
         f"marker augmented for freshness: tag={marker['tag']} "
@@ -197,7 +197,7 @@ def main() -> None:
     # its source-build fallback, which would compile CPU-only llama.cpp over the baked
     # CUDA bundle. Hardlinks keep the $ORIGIN rpath.
     build_bin = os.path.join(install_dir, "build", "bin")
-    os.makedirs(build_bin, exist_ok = True)
+    os.makedirs(build_bin, exist_ok=True)
     for entry in os.listdir(install_dir):
         source = os.path.join(install_dir, entry)
         if os.path.isfile(source) and not os.path.islink(source):

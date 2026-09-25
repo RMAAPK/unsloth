@@ -44,10 +44,11 @@ def cache_root(tmp_path, monkeypatch):
 @pytest.fixture
 def bicodec_subdirs(monkeypatch):
     import utils.security as security_pkg
+
     monkeypatch.setattr(
         security_pkg,
         "security_load_subdirs",
-        lambda model_name, hf_token = None, local_files_only = False: ("LLM",)
+        lambda model_name, hf_token=None, local_files_only=False: ("LLM",)
         if model_name == _BICODEC
         else (),
     )
@@ -62,29 +63,29 @@ def offline(monkeypatch):
 def _snapshot(
     cache_root,
     repo_id,
-    revision = "c" * 40,
+    revision="c" * 40,
 ):
     repo_dir = cache_root / f"models--{repo_id.replace('/', '--')}"
     snapshot = repo_dir / "snapshots" / revision
-    snapshot.mkdir(parents = True)
-    (repo_dir / "refs").mkdir(parents = True, exist_ok = True)
-    (repo_dir / "refs" / "main").write_text(revision, encoding = "utf-8")
+    snapshot.mkdir(parents=True)
+    (repo_dir / "refs").mkdir(parents=True, exist_ok=True)
+    (repo_dir / "refs" / "main").write_text(revision, encoding="utf-8")
     return snapshot
 
 
 def _write_model(directory):
-    directory.mkdir(parents = True, exist_ok = True)
+    directory.mkdir(parents=True, exist_ok=True)
     (directory / "config.json").write_text(json.dumps({"model_type": "qwen2"}))
     (directory / "model.safetensors").write_bytes(b"\x00" * 512)
 
 
 def _request(model_name, snapshot_path):
     return TrainingStartRequest(
-        model_name = model_name,
-        training_type = "LoRA/QLoRA",
-        format_type = "alpaca",
-        resume_from_checkpoint = "/runs/run-1/checkpoint-10",
-        model_snapshot_path = str(snapshot_path),
+        model_name=model_name,
+        training_type="LoRA/QLoRA",
+        format_type="alpaca",
+        resume_from_checkpoint="/runs/run-1/checkpoint-10",
+        model_snapshot_path=str(snapshot_path),
     )
 
 
@@ -137,8 +138,8 @@ def test_load_subdir_lookup_failure_degrades_to_root_only(cache_root, offline, m
 
     def boom(
         model_name,
-        hf_token = None,
-        local_files_only = False,
+        hf_token=None,
+        local_files_only=False,
     ):
         raise RuntimeError("hub unreachable")
 

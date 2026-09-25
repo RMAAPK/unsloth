@@ -66,13 +66,14 @@ TORCH_RELEASES_WITHOUT_XFORMERS_WHEELS: tuple[str, ...] = ()
 def _tomllib():
     if sys.version_info >= (3, 11):
         import tomllib
+
         return tomllib
     return pytest.importorskip("tomli")
 
 
 def _extras() -> dict[str, list[str]]:
     tomllib = _tomllib()
-    return tomllib.loads(PYPROJECT.read_text(encoding = "utf-8"))["project"]["optional-dependencies"]
+    return tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["project"]["optional-dependencies"]
 
 
 def _windows_xformers(deps: list[str]) -> list[str]:
@@ -169,7 +170,7 @@ def test_windows_extra_documents_the_cuda_matched_route():
     """The comment block is load bearing: it is the only place a Windows user is told
     that `unsloth[windows]` cannot pick a CUDA-matched wheel and `unsloth[cu130-torch2100]`
     can. Losing it is how this regressed the first time."""
-    text = PYPROJECT.read_text(encoding = "utf-8")
+    text = PYPROJECT.read_text(encoding="utf-8")
     header = text.split("\nwindows = [", 1)[0]
     assert "unsloth[cu130-torch2100]" in header
     assert "unsloth[cu128-torch2100]" in header
@@ -179,7 +180,7 @@ def test_xformers_matrix_agrees_with_wheel_utils():
     """One matrix, three consumers (pyproject, wheel_utils, install.ps1). Drift here is
     exactly the bug: a runtime resolver that disagrees with the packaged pin."""
     source = (REPO_ROOT / "studio" / "backend" / "utils" / "wheel_utils.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     body = re.search(
         r"_XFORMERS_WHEEL_VERSIONS[^=]*=\s*\{(.*?)^\}", source, re.DOTALL | re.MULTILINE
@@ -196,7 +197,7 @@ def test_xformers_matrix_agrees_with_wheel_utils():
 
 
 def test_install_ps1_matrix_agrees_with_pyproject():
-    source = (REPO_ROOT / "install.ps1").read_text(encoding = "utf-8")
+    source = (REPO_ROOT / "install.ps1").read_text(encoding="utf-8")
     body = re.search(
         r"\$script:XformersWheelVersions\s*=\s*@\{(.*?)^\s*\}", source, re.DOTALL | re.MULTILINE
     )

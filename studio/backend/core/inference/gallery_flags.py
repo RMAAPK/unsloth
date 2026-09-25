@@ -105,7 +105,7 @@ def _load(directory: Path) -> tuple[dict[str, Any], bool]:
     """``(data, trusted)``. ``trusted`` is False when a store is present but unusable, so a caller
     can tell "nothing is flagged" apart from "we cannot say what is flagged"."""
     try:
-        with open(_store_path(directory), encoding = "utf-8-sig") as f:
+        with open(_store_path(directory), encoding="utf-8-sig") as f:
             data = json.load(f)
         # Validate the shape, not just the version: a hand-edited ``items`` that is not a dict (e.g. ``[]``) would
         # otherwise crash every lookup instead of failing safe.
@@ -162,13 +162,13 @@ def _save(directory: Path, data: dict[str, Any]) -> None:
     path = _store_path(directory)
     tmp = directory / f".{_STORE_NAME}.tmp-{os.getpid()}"
     try:
-        with open(tmp, "w", encoding = "utf-8") as f:
-            json.dump(data, f, indent = 2)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
         os.replace(tmp, path)
     except Exception as exc:
         logger.warning("gallery_flags.write_failed: %s", exc)
         try:
-            tmp.unlink(missing_ok = True)
+            tmp.unlink(missing_ok=True)
         except OSError:
             pass
         raise
@@ -189,9 +189,11 @@ def _file_lock(directory: Path):
         try:
             if os.name == "nt":
                 import msvcrt
+
                 msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
             else:
                 import fcntl
+
                 fcntl.flock(fd, fcntl.LOCK_EX)
             locked = True
         except Exception:
@@ -204,9 +206,11 @@ def _file_lock(directory: Path):
                 with contextlib.suppress(Exception):
                     if os.name == "nt":
                         import msvcrt
+
                         msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
                     else:
                         import fcntl
+
                         fcntl.flock(fd, fcntl.LOCK_UN)
         finally:
             os.close(fd)
@@ -334,7 +338,7 @@ def set_flags(
     An id whose flags all end up default is removed entirely, so toggling something on and off
     again leaves no residue."""
     with _lock, _file_lock(directory):
-        return set_flags_locked(directory, item_id, pinned = pinned, archived = archived)
+        return set_flags_locked(directory, item_id, pinned=pinned, archived=archived)
 
 
 def _load_repaired(directory: Path) -> dict[str, Any]:
@@ -374,7 +378,7 @@ def set_flags_locked(
             # holding for exactly the case the client serializes its PATCHes to preserve.
             latest = max(
                 (_pinned_at(v) for v in items.values() if _pinned_at(v) is not None),
-                default = float("-inf"),
+                default=float("-inf"),
             )
             now = time.time()
             nudged = math.nextafter(latest, math.inf) if latest != float("-inf") else now
@@ -478,12 +482,12 @@ def place_locked(
     if pinned:
         high = _pinned_at(_entry(items, above[0])) if above and is_pinned(above) else None
         low = _pinned_at(_entry(items, below[0])) if below and is_pinned(below) else None
-        entry["pinned_at"] = _between(high, low, top = now) if (high, low) != (None, None) else now
+        entry["pinned_at"] = _between(high, low, top=now) if (high, low) != (None, None) else now
     else:
         entry.pop("pinned_at", None)
         high = order_rank(items, above[0], above[1]) if above and not is_pinned(above) else None
         low = order_rank(items, below[0], below[1]) if below and not is_pinned(below) else None
-        key = _between(high, low, top = now)
+        key = _between(high, low, top=now)
         if key is None:
             entry.pop("order_at", None)
         else:

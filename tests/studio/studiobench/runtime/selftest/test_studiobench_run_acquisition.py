@@ -72,7 +72,7 @@ class _Pacer:
     base_url = "http://127.0.0.1:65535"
 
     def __init__(self) -> None:
-        self.state = types.SimpleNamespace(model_ids = [])
+        self.state = types.SimpleNamespace(model_ids=[])
 
     def start(self):
         return self
@@ -105,7 +105,7 @@ def studio(monkeypatch, tmp_path):
         if ref == state["install_fails_for"]:
             raise RuntimeError(f"install.sh for {ref} exited 1")
         state["installed"].append(ref)
-        return StudioInstall(home = Path(home), repo = Path(home).parent / "repo", branch = ref)
+        return StudioInstall(home=Path(home), repo=Path(home).parent / "repo", branch=ref)
 
     def fake_launch(install, port, log_path, *args, **kwargs):
         install.port = port
@@ -135,11 +135,11 @@ def studio(monkeypatch, tmp_path):
         lifecycle,
         "authenticate",
         lambda base_url, username, password: StudioAuth(
-            access_token = "t",
-            refresh_token = "r",
-            base_url = base_url,
-            username = username,
-            password = password,
+            access_token="t",
+            refresh_token="r",
+            base_url=base_url,
+            username=username,
+            password=password,
         ),
     )
     monkeypatch.setattr(lifecycle, "register_provider", lambda *a, **k: "provider-1")
@@ -148,7 +148,7 @@ def studio(monkeypatch, tmp_path):
     monkeypatch.setattr(
         browser_mod,
         "install_wall_clock_watchdog",
-        lambda *a, **k: types.SimpleNamespace(cancel = lambda: None),
+        lambda *a, **k: types.SimpleNamespace(cancel=lambda: None),
     )
     monkeypatch.setattr(pacer_mod, "Pacer", _Pacer)
     monkeypatch.setattr(session_mod, "CellRunner", _Runner)
@@ -163,7 +163,7 @@ def _args(state, *extra):
 
 def _rows(state):
     path = Paths.under(state["out"]).payload_jsonl
-    return [json.loads(line) for line in path.read_text(encoding = "utf-8").splitlines() if line]
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
 # ── the sides a failed setup leaves behind ──────────────────────────────────────────────────
@@ -175,7 +175,7 @@ def test_the_base_studio_is_stopped_when_the_treatment_install_fails(studio):
     studio["install_fails_for"] = "pr-9296"
 
     with pytest.raises(RuntimeError):
-        sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref = "pr-9296")
+        sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref="pr-9296")
 
     assert [i.branch for i in studio["launched"]] == ["main"]
     assert [i.branch for i in studio["stopped"]] == ["main"]
@@ -186,14 +186,14 @@ def test_every_studio_is_stopped_when_one_of_them_never_answers_healthz(studio):
 
     studio["healthy"] = False
 
-    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref = "pr-9296") == 2
+    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref="pr-9296") == 2
     assert [i.branch for i in studio["stopped"]] == ["main", "pr-9296"]
 
 
 def test_every_studio_is_stopped_when_the_gate_refuses_a_development_build(studio):
     studio["production"] = False
 
-    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref = "pr-9296") == 3
+    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref="pr-9296") == 3
     assert [i.branch for i in studio["stopped"]] == ["main", "pr-9296"]
 
 
@@ -205,7 +205,7 @@ def test_keep_studio_still_leaves_a_failed_setup_running(studio):
     with pytest.raises(RuntimeError):
         sb.run(
             _args(studio, "--branch", "main", "--ab", "pr-9296", "--keep-studio"),
-            ab_ref = "pr-9296",
+            ab_ref="pr-9296",
         )
 
     assert [i.branch for i in studio["launched"]] == ["main"]
@@ -226,7 +226,7 @@ def test_a_studio_the_caller_attached_is_never_stopped(studio):
         "fix",
     )
 
-    assert sb.run(args, ab_ref = "fix") == 2
+    assert sb.run(args, ab_ref="fix") == 2
     assert studio["stopped"] == []
 
 
@@ -239,7 +239,7 @@ def test_a_run_that_reaches_its_cells_stops_the_studios_once_at_the_end(studio):
 
     args = _args(studio, "--branch", "main", "--ab", "pr-9296", "--reps", "2")
 
-    assert sb.run(args, ab_ref = "pr-9296") == 0
+    assert sb.run(args, ab_ref="pr-9296") == 0
     assert studio["stopped_when_the_cells_ran"] == []
     assert [i.branch for i in studio["stopped"]] == ["main", "pr-9296"]
 
@@ -258,7 +258,7 @@ def test_an_attached_ab_records_the_treatment_url_it_measured(studio):
         "fix",
     )
 
-    assert sb.run(args, ab_ref = "fix") == 0
+    assert sb.run(args, ab_ref="fix") == 0
 
     plan = [r for r in _rows(studio) if r.get("row_type") == "ab_plan"]
     assert len(plan) == 1
@@ -270,7 +270,7 @@ def test_a_self_managed_ab_records_no_treatment_url(studio):
 
     args = _args(studio, "--branch", "main", "--ab", "pr-9296")
 
-    assert sb.run(args, ab_ref = "pr-9296") == 0
+    assert sb.run(args, ab_ref="pr-9296") == 0
 
     plan = [r for r in _rows(studio) if r.get("row_type") == "ab_plan"]
     assert plan[0]["treatment_url"] == ""
@@ -289,7 +289,7 @@ def test_a_resume_pointed_at_another_treatment_studio_is_refused(studio):
         "--ab",
         "fix",
     )
-    assert sb.run(first, ab_ref = "fix") == 0
+    assert sb.run(first, ab_ref="fix") == 0
 
     again = _args(
         studio,
@@ -307,8 +307,8 @@ def test_a_resume_pointed_at_another_treatment_studio_is_refused(studio):
         sb.prepare_payload(
             paths,
             sb.requested_identity(again, "fix", corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
 
     message = str(excinfo.value)
@@ -329,7 +329,7 @@ def test_the_same_treatment_studio_still_resumes(studio):
         "--ab",
         "fix",
     )
-    assert sb.run(args, ab_ref = "fix") == 0
+    assert sb.run(args, ab_ref="fix") == 0
     corpus_hash = _rows(studio)[0]["corpus_hash"]
 
     resumed = _args(
@@ -347,8 +347,8 @@ def test_the_same_treatment_studio_still_resumes(studio):
         sb.prepare_payload(
             paths,
             sb.requested_identity(resumed, "fix", corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
         is None
     )
@@ -385,8 +385,8 @@ def test_a_resume_that_drops_the_click_probe_is_refused(studio):
         sb.prepare_payload(
             paths,
             sb.requested_identity(_args(studio, "--branch", "main", "--resume"), None, corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
 
     assert "click_probe" in str(excinfo.value)
@@ -405,8 +405,8 @@ def test_a_resume_that_keeps_the_click_probe_still_resumes(studio):
         sb.prepare_payload(
             paths,
             sb.requested_identity(resumed, None, corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
         is None
     )
@@ -426,8 +426,8 @@ def test_a_plain_run_and_a_plain_resume_are_unaffected(studio):
         sb.prepare_payload(
             paths,
             sb.requested_identity(_args(studio, "--branch", "main", "--resume"), None, corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
         is None
     )
@@ -445,7 +445,7 @@ def test_a_plain_run_and_a_plain_resume_are_unaffected(studio):
 class _ProbedBundle(_Bundle):
     """A probe run attaches console and `pageerror` listeners, which a `None` page cannot take."""
 
-    page = types.SimpleNamespace(on = lambda *_a, **_k: None)
+    page = types.SimpleNamespace(on=lambda *_a, **_k: None)
 
 
 @pytest.fixture
@@ -453,7 +453,7 @@ def probe(tmp_path, monkeypatch):
     """A probe installed the way a caller installs one, with a file that really is readable."""
 
     path = tmp_path / "paint_counter.js"
-    path.write_text("window.__probe_ticks = 0;\n", encoding = "utf-8")
+    path.write_text("window.__probe_ticks = 0;\n", encoding="utf-8")
     monkeypatch.setattr(browser_mod, "launch", lambda *a, **k: _ProbedBundle())
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(path))
     return path
@@ -481,8 +481,8 @@ def test_a_resume_that_drops_the_external_probe_is_refused(studio, probe, monkey
         sb.prepare_payload(
             paths,
             sb.requested_identity(_args(studio, "--branch", "main", "--resume"), None, corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
 
     assert "probe_init_script" in str(excinfo.value)
@@ -497,15 +497,15 @@ def test_an_unreadable_probe_is_refused_before_the_payload_is_archived(studio, m
     the one name every reader opens: `--report`, `--assert-liveness` and the next `--resume`.
     """
 
-    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising = False)
+    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising=False)
     paths = Paths.under(studio["out"])
     assert sb.run(_args(studio, "--branch", "main")) == 0
-    recorded = paths.payload_jsonl.read_text(encoding = "utf-8")
+    recorded = paths.payload_jsonl.read_text(encoding="utf-8")
 
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(studio["out"] / "typo_not_a_file.js"))
     assert sb.run(_args(studio, "--branch", "main")) == 2
 
-    assert paths.payload_jsonl.read_text(encoding = "utf-8") == recorded
+    assert paths.payload_jsonl.read_text(encoding="utf-8") == recorded
     assert sorted(p.name for p in paths.out.glob("payload-*.jsonl")) == []
     # The refusal is still ahead of everything it was ahead of before.
     assert studio["installed"] == ["main"]
@@ -529,7 +529,7 @@ def test_a_duplicate_run_is_refused_before_it_archives_or_installs_anything(stud
 
     paths = Paths.under(studio["out"])
     assert sb.run(_args(studio, "--branch", "main")) == 0
-    recorded = paths.payload_jsonl.read_text(encoding = "utf-8")
+    recorded = paths.payload_jsonl.read_text(encoding="utf-8")
 
     studio["installed"].clear()
     holder = OutDirLock.take(paths.out)
@@ -541,7 +541,7 @@ def test_a_duplicate_run_is_refused_before_it_archives_or_installs_anything(stud
 
     assert "still running" in str(excinfo.value)
     assert (
-        paths.payload_jsonl.read_text(encoding = "utf-8") == recorded
+        paths.payload_jsonl.read_text(encoding="utf-8") == recorded
     ), "the refused duplicate archived the live payload of the run it was refused in favour of"
     assert sorted(p.name for p in paths.out.glob("payload-*.jsonl")) == []
     assert studio["installed"] == [], (
@@ -580,7 +580,7 @@ def test_a_duplicate_is_still_refused_while_the_report_is_being_rendered(studio,
     def render_with_a_duplicate_arriving(*args, **kwargs):
         if "duplicate" not in seen:
             seen["installed_before"] = list(studio["installed"])
-            seen["payload_before"] = paths.payload_jsonl.read_text(encoding = "utf-8")
+            seen["payload_before"] = paths.payload_jsonl.read_text(encoding="utf-8")
             try:
                 seen["duplicate"] = sb.run(_args(studio, "--branch", "main"))
             except SystemExit as exc:
@@ -588,7 +588,7 @@ def test_a_duplicate_is_still_refused_while_the_report_is_being_rendered(studio,
         return real_render(*args, **kwargs)
 
     monkeypatch.setattr(sb, "_render_ab", render_with_a_duplicate_arriving)
-    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref = "pr-9296") == 0
+    assert sb.run(_args(studio, "--branch", "main", "--ab", "pr-9296"), ab_ref="pr-9296") == 0
 
     assert isinstance(
         seen["duplicate"], SystemExit
@@ -596,11 +596,11 @@ def test_a_duplicate_is_still_refused_while_the_report_is_being_rendered(studio,
     assert "still running" in str(seen["duplicate"])
     # Nothing of the first run's was moved, and nothing was installed on top of it.
     assert paths.payload_jsonl.exists(), "the duplicate archived the payload being reported on"
-    assert paths.payload_jsonl.read_text(encoding = "utf-8") == seen["payload_before"]
+    assert paths.payload_jsonl.read_text(encoding="utf-8") == seen["payload_before"]
     assert sorted(p.name for p in paths.out.glob("payload-*.jsonl")) == []
     assert studio["installed"] == seen["installed_before"]
     # The report is the first run's own, over its own rows.
-    table = (paths.out / "ab.md").read_text(encoding = "utf-8")
+    table = (paths.out / "ab.md").read_text(encoding="utf-8")
     assert "main -> pr-9296" in table
     # And the control: the directory is released once `run()` has actually finished with it.
     assert sb.run(_args(studio, "--branch", "main")) == 0
@@ -614,7 +614,7 @@ def _clean_summary(studio) -> Path:
     assert sb.main(["--report", str(paths.payload_jsonl), "--tier", "quick", "--rungs", "1K"]) == 0
     summary = paths.out / "summary.md"
     assert summary.exists()
-    assert "studiobench summary" in summary.read_text(encoding = "utf-8")
+    assert "studiobench summary" in summary.read_text(encoding="utf-8")
     return summary
 
 
@@ -630,17 +630,17 @@ def test_a_fresh_probe_run_replaces_the_summary_it_inherited(studio, monkeypatch
     directory.
     """
 
-    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising = False)
+    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising=False)
     summary = _clean_summary(studio)
-    clean = summary.read_text(encoding = "utf-8")
+    clean = summary.read_text(encoding="utf-8")
 
     script = tmp_path / "paint_counter.js"
-    script.write_text("window.__probe_ticks = 0;\n", encoding = "utf-8")
+    script.write_text("window.__probe_ticks = 0;\n", encoding="utf-8")
     monkeypatch.setattr(browser_mod, "launch", lambda *a, **k: _ProbedBundle())
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(script))
     assert sb.run(_args(studio, "--branch", "main")) == 0
 
-    text = summary.read_text(encoding = "utf-8")
+    text = summary.read_text(encoding="utf-8")
     assert text != clean
     assert "NO SUMMARY" in text
     assert script.name in text
@@ -662,22 +662,22 @@ def test_a_fresh_single_arm_probe_run_replaces_the_ab_table_it_inherited(
     an early return jumped over its refusal.
     """
 
-    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising = False)
+    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising=False)
     table = Paths.under(studio["out"]).out / "ab.md"
     table.write_text(
         "studiobench A/B\n===============\n\n  headline_ratio 0.923 (7.7% faster)\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
-    clean = table.read_text(encoding = "utf-8")
+    clean = table.read_text(encoding="utf-8")
 
     script = tmp_path / "paint_counter.js"
-    script.write_text("window.__probe_ticks = 0;\n", encoding = "utf-8")
+    script.write_text("window.__probe_ticks = 0;\n", encoding="utf-8")
     monkeypatch.setattr(browser_mod, "launch", lambda *a, **k: _ProbedBundle())
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(script))
     # No --ab, so _render_ab is never called and only this refusal can reach the file.
     assert sb.run(_args(studio, "--branch", "main")) == 0
 
-    text = table.read_text(encoding = "utf-8")
+    text = table.read_text(encoding="utf-8")
     assert text != clean
     assert "NO TABLE" in text
     assert script.name in text
@@ -688,7 +688,7 @@ def test_a_probe_run_invents_no_ab_table_where_there_was_none(studio, monkeypatc
     """The control, matching the summary one: replace a stale table, never invent one."""
 
     script = tmp_path / "paint_counter.js"
-    script.write_text("window.__probe_ticks = 0;\n", encoding = "utf-8")
+    script.write_text("window.__probe_ticks = 0;\n", encoding="utf-8")
     monkeypatch.setattr(browser_mod, "launch", lambda *a, **k: _ProbedBundle())
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(script))
     assert sb.run(_args(studio, "--branch", "main")) == 0
@@ -700,7 +700,7 @@ def test_a_probe_run_invents_no_summary_where_there_was_none(studio, monkeypatch
     in a directory whose reader was never given one to misread."""
 
     script = tmp_path / "paint_counter.js"
-    script.write_text("window.__probe_ticks = 0;\n", encoding = "utf-8")
+    script.write_text("window.__probe_ticks = 0;\n", encoding="utf-8")
     monkeypatch.setattr(browser_mod, "launch", lambda *a, **k: _ProbedBundle())
     monkeypatch.setenv("SBENCH_EXTRA_INIT_SCRIPT", str(script))
     assert sb.run(_args(studio, "--branch", "main")) == 0
@@ -727,12 +727,12 @@ def test_a_clean_rerun_also_invalidates_the_summary_it_inherited(studio, monkeyp
     that was correct and is kept below.
     """
 
-    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising = False)
+    monkeypatch.delenv("SBENCH_EXTRA_INIT_SCRIPT", raising=False)
     summary = _clean_summary(studio)
     paths = Paths.under(studio["out"])
 
     assert sb.run(_args(studio, "--branch", "main")) == 0
-    text = summary.read_text(encoding = "utf-8")
+    text = summary.read_text(encoding="utf-8")
     assert "NO SUMMARY" in text
     assert "studiobench summary" not in text, "a summary of the archived payload survived a rerun"
     # It names where the payload it described went, so the reader can still reach it.
@@ -740,7 +740,7 @@ def test_a_clean_rerun_also_invalidates_the_summary_it_inherited(studio, monkeyp
 
     # And the legitimate `--report` path still scores the new payload rather than refusing it.
     assert sb.main(["--report", str(paths.payload_jsonl), "--tier", "quick", "--rungs", "1K"]) == 0
-    assert "studiobench summary" in summary.read_text(encoding = "utf-8")
+    assert "studiobench summary" in summary.read_text(encoding="utf-8")
 
 
 def test_a_resume_under_the_same_probe_still_resumes(studio, probe):
@@ -754,8 +754,8 @@ def test_a_resume_under_the_same_probe_still_resumes(studio, probe):
         sb.prepare_payload(
             paths,
             sb.requested_identity(_args(studio, "--branch", "main", "--resume"), None, corpus_hash),
-            resume = True,
-            log = lambda *_a: None,
+            resume=True,
+            log=lambda *_a: None,
         )
         is None
     )
@@ -800,7 +800,7 @@ def _capture_init_scripts(monkeypatch) -> list:
     def fake_launch(
         engine,
         *args,
-        init_scripts = None,
+        init_scripts=None,
         **kwargs,
     ):
         captured.extend(init_scripts or [])
@@ -841,7 +841,7 @@ def test_an_attached_null_control_registers_one_provider_for_the_one_studio(stud
     url = "http://127.0.0.1:5310"
 
     args = _args(studio, "--attach", url, "--attach-b", url, "--branch", "main", "--ab", "main")
-    assert sb.run(args, ab_ref = "main") == 0
+    assert sb.run(args, ab_ref="main") == 0
 
     # THE SYMPTOM FIRST. Whatever the bookkeeping says, the failure a cell meets is a seed script that
     # SELECTS a provider the backend no longer has, so that is what this pins: every id named by a
@@ -865,7 +865,7 @@ def test_two_attached_studios_still_get_a_provider_each(studio, monkeypatch):
     base_url, treatment_url = "http://127.0.0.1:5310", "http://127.0.0.1:5311"
 
     args = _args(studio, "--attach", base_url, "--attach-b", treatment_url, "--ab", "fix")
-    assert sb.run(args, ab_ref = "fix") == 0
+    assert sb.run(args, ab_ref="fix") == 0
 
     assert backend.registrations == [(base_url, "provider-1"), (treatment_url, "provider-2")]
     assert _selected_provider_ids(scripts, base_url) == {"provider-1"}

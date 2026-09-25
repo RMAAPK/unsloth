@@ -39,7 +39,7 @@ _SIGKILL_TEXT = "SIGKILL" if hasattr(signal, "SIGKILL") else "SIG9"
 
 
 class _FakeTensor:
-    def __init__(self, dtype = None) -> None:
+    def __init__(self, dtype=None) -> None:
         self.dtype = dtype
         self.moved_to = []
 
@@ -57,22 +57,22 @@ class _FakeProcessor:
     def __call__(
         self,
         audio,
-        sampling_rate = None,
-        return_tensors = None,
+        sampling_rate=None,
+        return_tensors=None,
     ):
         self.seen_audio = audio
         self.seen_rate = sampling_rate
-        return SimpleNamespace(input_features = self.features)
+        return SimpleNamespace(input_features=self.features)
 
     def batch_decode(self, _generated, **_kwargs):
         return ["hello"]
 
 
 class _FakeModel:
-    def __init__(self, dtype = "float16") -> None:
+    def __init__(self, dtype="float16") -> None:
         self.dtype = dtype
         self.device = "cuda"
-        self.generation_config = SimpleNamespace(is_multilingual = True)
+        self.generation_config = SimpleNamespace(is_multilingual=True)
         self.generate_kwargs = None
         self.moved_to = None
         self.evaluated = False
@@ -95,8 +95,8 @@ class _FakeProcess:
 
     def __init__(
         self,
-        pid = 4242,
-        alive = True,
+        pid=4242,
+        alive=True,
     ) -> None:
         self.pid = pid
         self._alive = alive
@@ -107,7 +107,7 @@ class _FakeProcess:
     def is_alive(self):
         return self._alive
 
-    def join(self, _timeout = None):
+    def join(self, _timeout=None):
         return None
 
     def terminate(self):
@@ -121,7 +121,7 @@ class _FakeProcess:
         self.exitcode = -9
 
 
-def _wired_worker(process = None):
+def _wired_worker(process=None):
     """A handle wired to in-process queues, so no child is ever spawned."""
     handle = WhisperWorker()
     handle._process = process if process is not None else _FakeProcess()
@@ -133,8 +133,8 @@ def _wired_worker(process = None):
 
 def _install_fake_transformers(
     monkeypatch,
-    model = None,
-    processor = None,
+    model=None,
+    processor=None,
 ):
     fake_model = model if model is not None else _FakeModel()
     fake_processor = processor if processor is not None else _FakeProcessor()
@@ -163,19 +163,19 @@ def _install_fake_transformers(
         __import__("sys").modules,
         "transformers",
         SimpleNamespace(
-            WhisperForConditionalGeneration = FakeWhisperForConditionalGeneration,
-            WhisperProcessor = FakeWhisperProcessor,
-            StoppingCriteriaList = list,
+            WhisperForConditionalGeneration=FakeWhisperForConditionalGeneration,
+            WhisperProcessor=FakeWhisperProcessor,
+            StoppingCriteriaList=list,
         ),
     )
     monkeypatch.setitem(
         __import__("sys").modules,
         "torch",
         SimpleNamespace(
-            float16 = "float16",
-            float32 = "float32",
-            device = lambda value: value,
-            no_grad = _NoGrad,
+            float16="float16",
+            float32="float32",
+            device=lambda value: value,
+            no_grad=_NoGrad,
         ),
     )
     return calls, fake_model, fake_processor
@@ -233,7 +233,7 @@ def test_child_falls_back_to_float32_for_an_unknown_dtype_name(monkeypatch):
 
 def test_child_feeds_decoded_pcm_and_matches_the_model_dtype(monkeypatch):
     _calls, model, processor = _install_fake_transformers(monkeypatch)
-    pcm = np.arange(4, dtype = np.float32).tobytes()
+    pcm = np.arange(4, dtype=np.float32).tobytes()
 
     text = worker_module.transcribe_window(
         model, processor, pcm, {"task": "transcribe", "num_beams": 5}
@@ -241,7 +241,7 @@ def test_child_feeds_decoded_pcm_and_matches_the_model_dtype(monkeypatch):
 
     assert text == "hello"
     assert processor.seen_rate == 16000
-    assert np.array_equal(processor.seen_audio, np.arange(4, dtype = np.float32))
+    assert np.array_equal(processor.seen_audio, np.arange(4, dtype=np.float32))
     # to(device) then to(dtype): features must match the weights they meet.
     assert processor.features.moved_to == ["cuda", "float16"]
     assert model.generate_kwargs == {"task": "transcribe", "num_beams": 5}
@@ -250,7 +250,7 @@ def test_child_feeds_decoded_pcm_and_matches_the_model_dtype(monkeypatch):
 def test_child_only_installs_stopping_criteria_for_a_cancellable_request(monkeypatch):
     _calls, model, processor = _install_fake_transformers(monkeypatch)
     cancel_event = threading.Event()
-    pcm = np.zeros(4, dtype = np.float32).tobytes()
+    pcm = np.zeros(4, dtype=np.float32).tobytes()
 
     worker_module.transcribe_window(model, processor, pcm, {}, cancel_event)
     criteria = model.generate_kwargs["stopping_criteria"]
@@ -272,8 +272,8 @@ def _run_child(
     monkeypatch,
     commands,
     *,
-    load = None,
-    transcribe = None,
+    load=None,
+    transcribe=None,
 ):
     """Drive run_stt_worker over in-process queues and collect its responses.
 
@@ -291,18 +291,18 @@ def _run_child(
         cmd_queue.put(command)
     ready_event = threading.Event()
     thread = threading.Thread(
-        target = worker_module.run_stt_worker,
-        kwargs = {
+        target=worker_module.run_stt_worker,
+        kwargs={
             "cmd_queue": cmd_queue,
             "resp_queue": resp_queue,
             "cancel_event": cancel_event,
             "ready_event": ready_event,
             "config": {},
         },
-        daemon = True,
+        daemon=True,
     )
     thread.start()
-    thread.join(timeout = 10)
+    thread.join(timeout=10)
     assert thread.is_alive() is False
     assert ready_event.is_set() is True
     responses = []
@@ -313,7 +313,7 @@ def _run_child(
 
 def test_child_reports_the_loaded_model_then_transcribes_then_exits(monkeypatch):
     model = _FakeModel()
-    model.generation_config = SimpleNamespace(is_multilingual = False)
+    model.generation_config = SimpleNamespace(is_multilingual=False)
     responses, _cancel = _run_child(
         monkeypatch,
         [
@@ -326,8 +326,8 @@ def test_child_reports_the_loaded_model_then_transcribes_then_exits(monkeypatch)
             {"type": "transcribe", "audio": b"", "generate_kwargs": {}, "cancellable": False},
             {"type": "shutdown"},
         ],
-        load = lambda *_args, **_kwargs: (model, _FakeProcessor()),
-        transcribe = lambda *_args, **_kwargs: "hello",
+        load=lambda *_args, **_kwargs: (model, _FakeProcessor()),
+        transcribe=lambda *_args, **_kwargs: "hello",
     )
 
     assert responses == [
@@ -353,7 +353,7 @@ def test_child_exits_after_a_failed_load_so_a_half_taken_context_goes_with_it(mo
             },
             {"type": "transcribe", "audio": b"", "generate_kwargs": {}, "cancellable": False},
         ],
-        load = boom,
+        load=boom,
     )
 
     assert responses == [{"type": "error", "kind": "RuntimeError", "error": "out of memory"}]
@@ -370,8 +370,8 @@ def test_child_survives_a_failed_transcription_and_keeps_the_model(monkeypatch):
             {"type": "transcribe", "audio": b"", "generate_kwargs": {}, "cancellable": False},
             {"type": "shutdown"},
         ],
-        load = lambda *_args, **_kwargs: (_FakeModel(), _FakeProcessor()),
-        transcribe = boom,
+        load=lambda *_args, **_kwargs: (_FakeModel(), _FakeProcessor()),
+        transcribe=boom,
     )
 
     assert [response["type"] for response in responses] == ["loaded", "error", "shutdown_ack"]
@@ -384,7 +384,7 @@ def test_child_reports_a_cancelled_generation_rather_than_partial_text(monkeypat
         _processor,
         _pcm,
         _kwargs,
-        cancel_event = None,
+        cancel_event=None,
     ):
         cancel_event.set()  # what StoppingCriteria does to a running generate
         return "half a sen"
@@ -396,8 +396,8 @@ def test_child_reports_a_cancelled_generation_rather_than_partial_text(monkeypat
             {"type": "transcribe", "audio": b"", "generate_kwargs": {}, "cancellable": True},
             {"type": "shutdown"},
         ],
-        load = lambda *_args, **_kwargs: (_FakeModel(), _FakeProcessor()),
-        transcribe = stop_early,
+        load=lambda *_args, **_kwargs: (_FakeModel(), _FakeProcessor()),
+        transcribe=stop_early,
     )
 
     assert responses[1]["kind"] == "SttTranscriptionCancelledError"
@@ -434,7 +434,7 @@ def test_cancellation_keeps_its_class_across_the_process_boundary():
         SttTranscriptionCancelledError("Transcription cancelled.")
     )
 
-    with pytest.raises(SttTranscriptionCancelledError, match = "cancelled"):
+    with pytest.raises(SttTranscriptionCancelledError, match="cancelled"):
         worker_module._raise_worker_error(response)
 
 
@@ -444,7 +444,7 @@ def test_an_unknown_failure_arrives_as_a_worker_error_carrying_its_message():
     response = worker_module._error_response(TypeError("weird"))
 
     assert response == {"type": "error", "kind": "TypeError", "error": "weird"}
-    with pytest.raises(SttWorkerError, match = "weird"):
+    with pytest.raises(SttWorkerError, match="weird"):
         worker_module._raise_worker_error(response)
 
 
@@ -467,11 +467,11 @@ def test_handle_sends_one_window_and_returns_its_text():
 
 
 def test_handle_reports_a_dead_child_instead_of_waiting_out_its_timeout():
-    process = _FakeProcess(alive = False)
+    process = _FakeProcess(alive=False)
     process.exitcode = -9
     handle = _wired_worker(process)
 
-    with pytest.raises(SttWorkerError, match = _SIGKILL_TEXT):
+    with pytest.raises(SttWorkerError, match=_SIGKILL_TEXT):
         handle.transcribe_window(b"", {})
 
 
@@ -479,7 +479,7 @@ def test_handle_kills_a_child_that_stops_answering():
     process = _FakeProcess()
     handle = _wired_worker(process)
 
-    with pytest.raises(SttWorkerError, match = "stopped responding"):
+    with pytest.raises(SttWorkerError, match="stopped responding"):
         handle._await("text", 0.0, None, "transcribe")
 
     assert process.killed or process.terminated
@@ -501,11 +501,11 @@ def test_handle_mirrors_a_request_cancel_into_the_child():
             }
         )
 
-    thread = threading.Thread(target = answer_once, daemon = True)
+    thread = threading.Thread(target=answer_once, daemon=True)
     thread.start()
     with pytest.raises(SttTranscriptionCancelledError):
         handle._await("text", 30.0, cancel_event, "transcribe")
-    thread.join(timeout = 5)
+    thread.join(timeout=5)
 
     assert handle._cancel_event.is_set()
 
@@ -536,7 +536,7 @@ def test_the_cancel_grace_is_not_followed_by_a_second_shutdown_wait(monkeypatch)
             super().__init__()
             self.joins = []
 
-        def join(self, timeout = None):
+        def join(self, timeout=None):
             self.joins.append(timeout)
 
     process = _Recording()
@@ -571,7 +571,7 @@ def test_a_cancel_that_lands_near_the_command_timeout_keeps_its_cancellation(
             super().__init__()
             self.joins = []
 
-        def join(self, timeout = None):
+        def join(self, timeout=None):
             self.joins.append(timeout)
 
     process = _Recording()
@@ -594,7 +594,7 @@ def test_closing_a_handle_normally_still_asks_the_child_to_exit_first(monkeypatc
             super().__init__()
             self.joins = []
 
-        def join(self, timeout = None):
+        def join(self, timeout=None):
             self.joins.append(timeout)
             self._alive = False  # an idle child consumes the shutdown and exits
 
@@ -720,12 +720,12 @@ class _RefusingProcess:
     def start(self):
         raise self._error
 
-    def join(self, _timeout = None):
+    def join(self, _timeout=None):
         return None
 
 
 class _RefusingContext:
-    def __init__(self, error = None) -> None:
+    def __init__(self, error=None) -> None:
         self.error = error or PermissionError("spawn is not permitted here")
 
     def Queue(self):
@@ -746,14 +746,14 @@ def test_dictation_still_loads_and_transcribes_when_no_child_can_be_started(monk
     monkeypatch.setattr(worker_module, "_CTX", _RefusingContext())
     _calls, _model, _processor = _install_fake_transformers(monkeypatch)
 
-    engine = WhisperSttSidecar(keep_alive_seconds = 0)._build_model(
+    engine = WhisperSttSidecar(keep_alive_seconds=0)._build_model(
         "/cached/model", "cpu", "float32", threading.Event()
     )
 
     assert isinstance(engine, worker_module.InProcessWhisperEngine)
     assert engine.device == "cpu"
     assert engine.is_alive() is True
-    assert engine.transcribe_window(np.zeros(4, dtype = np.float32).tobytes(), {}) == "hello"
+    assert engine.transcribe_window(np.zeros(4, dtype=np.float32).tobytes(), {}) == "hello"
 
 
 def test_a_spawn_failure_on_an_accelerator_leaves_the_cpu_retry_to_the_sidecar(monkeypatch):
@@ -768,8 +768,8 @@ def test_a_spawn_failure_on_an_accelerator_leaves_the_cpu_retry_to_the_sidecar(m
         lambda *_args, **_kwargs: pytest.fail("no in-process load on an accelerator"),
     )
 
-    with pytest.raises(worker_module.SttWorkerSpawnError, match = "not permitted"):
-        WhisperSttSidecar(keep_alive_seconds = 0)._build_model(
+    with pytest.raises(worker_module.SttWorkerSpawnError, match="not permitted"):
+        WhisperSttSidecar(keep_alive_seconds=0)._build_model(
             "/cached/model", "cuda", "float16", threading.Event()
         )
 
@@ -781,7 +781,7 @@ class _StillbornProcess:
     start() returns and the child is gone before it can read a command.
     """
 
-    def __init__(self, exitcode = 1) -> None:
+    def __init__(self, exitcode=1) -> None:
         self.pid = 4243
         self.exitcode = None
         self._exitcode = exitcode
@@ -792,7 +792,7 @@ class _StillbornProcess:
     def is_alive(self):
         return False
 
-    def join(self, _timeout = None):
+    def join(self, _timeout=None):
         return None
 
     def terminate(self):
@@ -803,7 +803,7 @@ class _StillbornProcess:
 
 
 class _StillbornContext:
-    def __init__(self, exitcode = 1) -> None:
+    def __init__(self, exitcode=1) -> None:
         self.exitcode = exitcode
 
     def Queue(self):
@@ -824,7 +824,7 @@ def test_a_child_that_never_bootstraps_reads_as_a_host_that_cannot_spawn(monkeyp
     monkeypatch.setattr(worker_module, "_CTX", _StillbornContext())
     _calls, _model, _processor = _install_fake_transformers(monkeypatch)
 
-    engine = WhisperSttSidecar(keep_alive_seconds = 0)._build_model(
+    engine = WhisperSttSidecar(keep_alive_seconds=0)._build_model(
         "/cached/model", "cpu", "float32", threading.Event()
     )
 
@@ -835,7 +835,7 @@ def test_a_child_that_never_bootstraps_reads_as_a_host_that_cannot_spawn(monkeyp
 def test_a_child_killed_by_a_signal_keeps_its_crash_instead_of_falling_back(monkeypatch):
     # A child the box killed under memory pressure bootstrapped fine, so spawn
     # works here; loading the same model in the backend would only repeat it.
-    monkeypatch.setattr(worker_module, "_CTX", _StillbornContext(exitcode = -9))
+    monkeypatch.setattr(worker_module, "_CTX", _StillbornContext(exitcode=-9))
     monkeypatch.setattr(
         worker_module,
         "load_whisper",
@@ -843,7 +843,7 @@ def test_a_child_killed_by_a_signal_keeps_its_crash_instead_of_falling_back(monk
     )
 
     handle = WhisperWorker()
-    with pytest.raises(SttWorkerError, match = _SIGKILL_TEXT) as caught:
+    with pytest.raises(SttWorkerError, match=_SIGKILL_TEXT) as caught:
         handle.start("/cached/model", "cpu", "float32")
 
     assert isinstance(caught.value, worker_module.SttWorkerSpawnError) is False
@@ -867,9 +867,9 @@ class _NativeCrashProcess:
 
     def start(self):
         thread = threading.Thread(
-            target = worker_module.run_stt_worker,
-            kwargs = self._kwargs,
-            daemon = True,
+            target=worker_module.run_stt_worker,
+            kwargs=self._kwargs,
+            daemon=True,
         )
         thread.start()
 
@@ -879,7 +879,7 @@ class _NativeCrashProcess:
             return False
         return True
 
-    def join(self, _timeout = None):
+    def join(self, _timeout=None):
         return None
 
     def terminate(self):
@@ -959,7 +959,7 @@ def test_a_crash_in_the_child_load_is_never_repeated_inside_the_backend(monkeypa
 
     try:
         with pytest.raises(SttWorkerError):
-            WhisperSttSidecar(keep_alive_seconds = 0)._build_model(
+            WhisperSttSidecar(keep_alive_seconds=0)._build_model(
                 "/cached/model", "cpu", "float32", threading.Event()
             )
     finally:
@@ -981,11 +981,11 @@ def test_the_child_says_it_is_ready_before_it_touches_a_command(monkeypatch):
     )
     ready_event = threading.Event()
     worker_module.run_stt_worker(
-        cmd_queue = cmd_queue,
-        resp_queue = resp_queue,
-        cancel_event = threading.Event(),
-        ready_event = ready_event,
-        config = {},
+        cmd_queue=cmd_queue,
+        resp_queue=resp_queue,
+        cancel_event=threading.Event(),
+        ready_event=ready_event,
+        config={},
     )
 
     assert ready_event.is_set() is True
@@ -994,7 +994,7 @@ def test_the_child_says_it_is_ready_before_it_touches_a_command(monkeypatch):
 
 def test_the_in_process_fallback_reports_the_checkpoint_language_support(monkeypatch):
     _calls, model, _processor = _install_fake_transformers(monkeypatch)
-    model.generation_config = SimpleNamespace(is_multilingual = False)
+    model.generation_config = SimpleNamespace(is_multilingual=False)
 
     engine = worker_module.InProcessWhisperEngine()
     engine.start("/cached/model", "cpu", "float32")

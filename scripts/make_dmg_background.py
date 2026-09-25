@@ -75,7 +75,7 @@ CHEVRON_SUPERSAMPLE = 4
 
 def hex_rgb(value: str) -> np.ndarray:
     value = value.lstrip("#")
-    return np.array([int(value[i : i + 2], 16) / 255.0 for i in (0, 2, 4)], dtype = np.float32)
+    return np.array([int(value[i : i + 2], 16) / 255.0 for i in (0, 2, 4)], dtype=np.float32)
 
 
 def smoothstep(edge: np.ndarray) -> np.ndarray:
@@ -84,7 +84,7 @@ def smoothstep(edge: np.ndarray) -> np.ndarray:
 
 
 def base_canvas() -> np.ndarray:
-    ramp = np.linspace(0.0, 1.0, H, dtype = np.float32)[:, None, None]
+    ramp = np.linspace(0.0, 1.0, H, dtype=np.float32)[:, None, None]
     return hex_rgb(TOP_COLOR) * (1.0 - ramp) + hex_rgb(BOTTOM_COLOR) * ramp
 
 
@@ -122,11 +122,11 @@ def draw_chevron(image: Image.Image) -> None:
     stroke = CHEVRON_STROKE * SCALE * ss
 
     points = [(cx - half_w, cy - half_h), (cx + half_w, cy), (cx - half_w, cy + half_h)]
-    draw.line(points, fill = CHEVRON_COLOR, width = int(stroke), joint = "curve")
+    draw.line(points, fill=CHEVRON_COLOR, width=int(stroke), joint="curve")
     for x, y in points:
         draw.ellipse(
             [x - stroke / 2, y - stroke / 2, x + stroke / 2, y + stroke / 2],
-            fill = CHEVRON_COLOR,
+            fill=CHEVRON_COLOR,
         )
 
     image.alpha_composite(layer.resize(image.size, Image.LANCZOS))
@@ -144,7 +144,7 @@ def report() -> None:
     """Print how the halo sits relative to the icon and its label."""
     base = base_canvas()
     # the halo on its own, with the base gradient taken back out so the vertical ramp does not read as part of it
-    halo = np.clip(base - render_glow(base), 0.0, None).max(axis = 2)
+    halo = np.clip(base - render_glow(base), 0.0, None).max(axis=2)
     cx, cy = APP_X * SCALE, APP_Y * SCALE
 
     # 60pt is the disc a viewer reads as round, 90pt is out in the label's row
@@ -173,7 +173,7 @@ def write_tiff(image: Image.Image, destination: Path) -> None:
         image.resize((WIN_W, WIN_H), Image.LANCZOS).convert("RGB").save(base_page)
         image.convert("RGB").save(hidpi_page)
 
-        destination.parent.mkdir(parents = True, exist_ok = True)
+        destination.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             [
                 "tiffutil",
@@ -183,8 +183,8 @@ def write_tiff(image: Image.Image, destination: Path) -> None:
                 "-out",
                 str(destination),
             ],
-            check = True,
-            stdout = subprocess.DEVNULL,
+            check=True,
+            stdout=subprocess.DEVNULL,
         )
 
 

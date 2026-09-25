@@ -39,7 +39,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 SCRIPT = REPO / ".github" / "scripts" / "Watch-ForCompiler.ps1"
 
 PWSH = shutil.which("pwsh")
-pytestmark = pytest.mark.skipif(PWSH is None, reason = "needs PowerShell")
+pytestmark = pytest.mark.skipif(PWSH is None, reason="needs PowerShell")
 
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
@@ -74,9 +74,9 @@ def _run_pwsh(body: str) -> subprocess.CompletedProcess:
     script = f"$ErrorActionPreference = 'Stop'\n. '{SCRIPT}'\n{body}"
     return run_pwsh(
         [PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output = True,
-        text = True,
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
 
 
@@ -109,7 +109,7 @@ def _walk(root: pathlib.Path, patterns: str = "'*.dll','*.cmdline'") -> list[str
 
 @pytest.mark.skipif(
     os.name == "nt",
-    reason = (
+    reason=(
         "POSIX permissions only. Windows has no os.geteuid, and chmod there sets the read-only "
         "attribute rather than making a directory unopenable, so this would not deny anything. "
         "There is deliberately NO Windows equivalent of this row: see the note below on what "
@@ -187,7 +187,7 @@ def test_the_scan_refuses_to_report_a_truncated_snapshot(tmp_path: pathlib.Path)
     # The real ceiling is 200000, far too large to build, so the shape is asserted instead and
     # the behaviour is driven at a scale that fits: the function is re-defined with the same body
     # and a smaller limit, taken from the shipped source rather than retyped.
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     assert (
         "throw (" in text and "$visited -gt 200000" in text
     ), "the ceiling no longer raises, so a truncated scan would be read as a complete one"
@@ -201,7 +201,7 @@ def test_the_scan_refuses_to_report_a_truncated_snapshot(tmp_path: pathlib.Path)
     for i in range(12):
         (tmp_path / f"d{i}").mkdir()
     holder = tmp_path / "small.ps1"
-    holder.write_text(small, encoding = "utf-8")
+    holder.write_text(small, encoding="utf-8")
     proc = run_pwsh(
         [
             PWSH,
@@ -213,9 +213,9 @@ def test_the_scan_refuses_to_report_a_truncated_snapshot(tmp_path: pathlib.Path)
             f"Get-StudioTempSubtree -Root '{tmp_path}' -Patterns '*.dll' | Out-Null\n"
             "Write-Output 'NO-THROW'\n",
         ],
-        capture_output = True,
-        text = True,
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     assert (
         "NO-THROW" not in proc.stdout
@@ -239,9 +239,9 @@ def test_the_artifact_filter_still_selects_by_extension(tmp_path: pathlib.Path) 
     )
     proc = run_pwsh(
         [PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output = True,
-        text = True,
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     got = {line.strip() for line in proc.stdout.splitlines() if line.strip()}
@@ -255,7 +255,7 @@ def test_no_recursive_listing_is_left_in_the_script() -> None:
     A future edit that reaches for -Recurse again brings the whole failure back, and it only
     shows up on a runner whose temp directory happened to change under it.
     """
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     # Comments first: this file EXPLAINS the shape it removed, and prose naming it is not a
     # call. Stripping the comment-based help blocks as well, which is where that prose lives.
     body, inside_help = [], False
@@ -276,7 +276,7 @@ def test_no_recursive_listing_is_left_in_the_script() -> None:
 
 @pytest.mark.skipif(
     os.name == "nt",
-    reason = (
+    reason=(
         "POSIX permissions only, for the same reason as the walk control above: chmod on "
         "Windows sets the read-only attribute rather than making a directory unopenable."
     ),
@@ -312,7 +312,7 @@ def test_an_unreadable_directory_is_reported_and_not_just_skipped(tmp_path: path
 
 @pytest.mark.skipif(
     os.name == "nt",
-    reason = "POSIX permissions only; see the walk control above.",
+    reason="POSIX permissions only; see the walk control above.",
 )
 def test_a_directory_that_vanished_is_not_reported_as_unread(tmp_path: pathlib.Path) -> None:
     """A path that is gone is not a hole in the measurement, and must not void a run.
@@ -338,7 +338,7 @@ def _shipped_left_expression() -> str:
     the regression worth catching: the comparison is the only place the unread directories
     are allowed to change the answer.
     """
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     start = text.index("    $left = @(")
     end = text.index("\n    )\n", start) + len("\n    )\n")
     expression = text[start:end]
@@ -501,7 +501,7 @@ def test_the_error_subscription_exists_and_condemns_its_root() -> None:
     The wiring is asserted on the shipped source rather than by forcing a real overflow, which
     needs a Windows host and thousands of creations to land reliably.
     """
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     assert "-EventName Error" in text, (
         "no Error subscription on the watcher, so an overflow is not observable at all and the "
         "root keeps counting as covered"
@@ -515,7 +515,7 @@ def test_the_error_subscription_exists_and_condemns_its_root() -> None:
 
 def test_a_failed_watcher_root_is_dropped_from_the_coverage_set() -> None:
     """Driven: the filter that builds $watchedRoots, read out of the shipped file."""
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     start = text.index("    $watchedRoots = New-Object")
     end = text.index("OrdinalIgnoreCase)", start) + len("OrdinalIgnoreCase)")
     expression = text[start:end]
@@ -534,9 +534,9 @@ def test_a_failed_watcher_root_is_dropped_from_the_coverage_set() -> None:
     ], f"a root whose watcher raised Error was still counted as covering it: {roots}"
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX permissions only; see the note above.")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permissions only; see the note above.")
 def test_an_inaccessible_directory_is_recorded_not_mistaken_for_a_deleted_one(
-    tmp_path: pathlib.Path,
+    tmp_path: pathlib.Path
 ) -> None:
     """An ACL denial must not read as "the directory is gone".
 
@@ -571,7 +571,7 @@ def test_an_inaccessible_directory_is_recorded_not_mistaken_for_a_deleted_one(
 
 def test_the_walk_classifies_the_error_and_never_probes_with_test_path() -> None:
     """The shape that makes the row above possible, pinned so it cannot regress quietly."""
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     body = text[
         text.index("function Get-StudioTempSubtree") : text.index(
             "function Get-StudioTempArtifacts"
@@ -627,7 +627,7 @@ def test_the_classifier_answers_both_cases() -> None:
 
 def _measured_action_body() -> str:
     """Invoke-WithCompilerWatch, as shipped."""
-    text = SCRIPT.read_text(encoding = "utf-8")
+    text = SCRIPT.read_text(encoding="utf-8")
     return text[text.index("function Invoke-WithCompilerWatch") :]
 
 

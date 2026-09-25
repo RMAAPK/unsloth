@@ -331,7 +331,7 @@ def _research_question_context(
         if remaining <= 0:
             break
     turns.reverse()
-    return question, json.dumps(turns, ensure_ascii = False)
+    return question, json.dumps(turns, ensure_ascii=False)
 
 
 def _positive_int_or_none(value: object) -> int | None:
@@ -380,13 +380,14 @@ def _loaded_context_length(inference: dict[str, Any] | None = None) -> int | Non
         return None
     try:
         from routes.inference import get_llama_cpp_backend
+
         llama = get_llama_cpp_backend()
         if getattr(llama, "is_loaded", False):
             ctx = _positive_int_or_none(getattr(llama, "context_length", None))
             if ctx is not None:
                 return ctx
     except Exception:
-        logger.debug("research.context_probe_llama_failed", exc_info = True)
+        logger.debug("research.context_probe_llama_failed", exc_info=True)
     try:
         backend = _peek_inference_backend()
         name = getattr(backend, "active_model_name", None)
@@ -401,7 +402,7 @@ def _loaded_context_length(inference: dict[str, Any] | None = None) -> int | Non
             if ctx is not None:
                 return ctx
     except Exception:
-        logger.debug("research.context_probe_failed", exc_info = True)
+        logger.debug("research.context_probe_failed", exc_info=True)
     return None
 
 
@@ -450,7 +451,7 @@ def _resolve_max_tokens(
         requested = max(1, int(max_tokens))
     # Defers rather than short-circuits: _loaded_context_length is already None for a run
     # carrying a providerType.
-    return _clamp_max_tokens_for_context(requested, messages, inference = inference)
+    return _clamp_max_tokens_for_context(requested, messages, inference=inference)
 
 
 def _synthesis_max_tokens(inference: dict[str, Any], model_timeout_seconds: Any = None) -> int:
@@ -532,7 +533,7 @@ def _saved_connection_cap(provider_id: object) -> int | None | object:
         try:
             provider = providers_db.get_provider(provider_id) or {}
         except Exception:
-            logger.debug("research.provider_cap_probe_failed", exc_info = True)
+            logger.debug("research.provider_cap_probe_failed", exc_info=True)
             # A read that lost the writer lock is transient, and this runs off the loop.
             if attempt + 1 < _CAP_LOOKUP_ATTEMPTS:
                 time.sleep(_CAP_LOOKUP_RETRY_SECONDS)
@@ -552,7 +553,7 @@ def _custom_responses_rejects_sampling(inference: dict[str, Any]) -> bool:
     try:
         provider = providers_db.get_provider(provider_id) or {}
     except Exception:
-        logger.debug("research.provider_api_type_probe_failed", exc_info = True)
+        logger.debug("research.provider_api_type_probe_failed", exc_info=True)
         return False
     if provider.get("provider_type") != "custom" or provider.get("api_type") != "responses":
         return False
@@ -607,7 +608,7 @@ def _synthesis_length_limit_error(
     if _external_provider_run(inference):
         return "Connected model report reached its output limit before completion"
     if _completion_hit_context_wall(
-        usage, requested_max_tokens = requested_max_tokens, inference = inference
+        usage, requested_max_tokens=requested_max_tokens, inference=inference
     ):
         return (
             "Local model report hit the loaded context window before completion. "
@@ -681,7 +682,7 @@ def _retry_after_delay(raw: object) -> float | None:
             return None
         if at.tzinfo is None:
             # RFC 9110 dates are GMT; a form that omits the zone is not a local time.
-            at = at.replace(tzinfo = timezone.utc)
+            at = at.replace(tzinfo=timezone.utc)
         delay = (at - datetime.now(timezone.utc)).total_seconds()
     return delay if delay > 0 else None
 
@@ -758,18 +759,19 @@ def _local_model_ready() -> bool:
     probed = False
     try:
         from routes.inference import get_llama_cpp_backend
+
         if getattr(get_llama_cpp_backend(), "is_loaded", False):
             return True
         probed = True
     except Exception:
-        logger.debug("research.model_probe_llama_failed", exc_info = True)
+        logger.debug("research.model_probe_llama_failed", exc_info=True)
     try:
         # No orchestrator yet is a real answer (nothing is loaded), not a failed probe.
         if getattr(_peek_inference_backend(), "active_model_name", None):
             return True
         probed = True
     except Exception:
-        logger.debug("research.model_probe_failed", exc_info = True)
+        logger.debug("research.model_probe_failed", exc_info=True)
     return not probed
 
 
@@ -794,7 +796,7 @@ def _fit_decision_inputs(
     question: str, plan: dict, system_chars: int, total_budget: int | None
 ) -> tuple[str, str]:
     """Fit the decision question and plan while keeping the plan valid JSON."""
-    full_plan = json.dumps(plan, ensure_ascii = False)
+    full_plan = json.dumps(plan, ensure_ascii=False)
     if total_budget is None:
         minimum_question_chars = min(len(question), _MIN_QUESTION_CHARS)
         research_reserve = 0
@@ -821,7 +823,7 @@ def _fit_decision_inputs(
         for count in range(len(steps) + 1):
             candidate = json.dumps(
                 {"title": plan.get("title") or "Research plan", "steps": steps[:count]},
-                ensure_ascii = False,
+                ensure_ascii=False,
             )
             if len(candidate) > plan_budget:
                 break
@@ -952,7 +954,7 @@ def _fit_synthesis_context(
     )
     serialized_payloads = []
     for payload in prioritized_payloads:
-        candidate = json.dumps(payload, ensure_ascii = False) if payload else placeholder
+        candidate = json.dumps(payload, ensure_ascii=False) if payload else placeholder
         extra_chars = max(0, len(candidate) - len(placeholder))
         if extra_chars <= remaining_payload_budget:
             serialized_payloads.append(candidate)
@@ -1060,7 +1062,7 @@ _TERMINAL_WRITE_RETRY_SECONDS = 1.0
 
 def _as_literal_markdown(text: str) -> str:
     """Provider text for a Markdown surface, as the one inline context nothing reparses."""
-    longest = max((len(run) for run in re.findall(r"`+", text)), default = 0)
+    longest = max((len(run) for run in re.findall(r"`+", text)), default=0)
     fence = "`" * (longest + 1)
     # A span whose content touches a backtick needs padding, which the renderer then strips.
     pad = " " if text.startswith("`") or text.endswith("`") else ""
@@ -1097,11 +1099,11 @@ def _update_assistant(
             return
         message_id, _created = db.create_and_bind_terminal_fallback(
             run["id"],
-            text = text,
-            status = status,
-            sources = sources,
-            completion_worker_id = completion_worker_id,
-            expected_attempt = int(run.get("retryCount") or 0),
+            text=text,
+            status=status,
+            sources=sources,
+            completion_worker_id=completion_worker_id,
+            expected_attempt=int(run.get("retryCount") or 0),
         )
         if not message_id:
             return
@@ -1153,9 +1155,9 @@ def _update_assistant(
             "metadata": metadata,
             "createdAt": existing.get("createdAt") or db.now_ms(),
         },
-        allow_research_update = True,
-        expected_research_run_id = run["id"],
-        expected_research_attempt = int(run.get("retryCount") or 0),
+        allow_research_update=True,
+        expected_research_run_id=run["id"],
+        expected_research_attempt=int(run.get("retryCount") or 0),
     )
 
 
@@ -1185,7 +1187,7 @@ class ResearchSupervisor:
         for account in job_accounts():
             run_as(account, db.recover_expired)
         if self._task is None:
-            self._task = asyncio.create_task(self._loop(), name = "research-supervisor")
+            self._task = asyncio.create_task(self._loop(), name="research-supervisor")
 
     async def stop(self) -> None:
         self._stopping.set()
@@ -1265,13 +1267,13 @@ class ResearchSupervisor:
                     execute_tool,
                     "web_search",
                     {"url": source["url"]},
-                    cancel_event = cancel_event,
-                    timeout = tool_timeout,
-                    website_policy = website_policy,
+                    cancel_event=cancel_event,
+                    timeout=tool_timeout,
+                    website_policy=website_policy,
                 )
                 for source in targets
             ),
-            return_exceptions = True,
+            return_exceptions=True,
         )
         pages = []
         fetched = []
@@ -1301,9 +1303,9 @@ class ResearchSupervisor:
             web_rank.retrieve_web_chunks,
             pages,
             question,
-            top_n = _WEB_RAG_TOP_N,
-            min_score = _WEB_RAG_MIN_SCORE,
-            char_budget = _AUTO_SCRAPE_TOTAL_CHARS,
+            top_n=_WEB_RAG_TOP_N,
+            min_score=_WEB_RAG_MIN_SCORE,
+            char_budget=_AUTO_SCRAPE_TOTAL_CHARS,
         )
         if not section:
             return "", []
@@ -1367,7 +1369,7 @@ class ResearchSupervisor:
                 logger.warning(
                     "research.lease_loss_finish_retry run_id=%s",
                     run_id,
-                    exc_info = True,
+                    exc_info=True,
                 )
                 await asyncio.sleep(1)
 
@@ -1542,7 +1544,7 @@ class ResearchSupervisor:
         error = task.exception()
         if error is not None:
             logger.warning(
-                "research.%s_late_cleanup_failed run_id=%s", what, run_id, exc_info = error
+                "research.%s_late_cleanup_failed run_id=%s", what, run_id, exc_info=error
             )
 
     def _absorb_when_done(self, run_id: str, task: asyncio.Task, what: str) -> None:
@@ -1561,7 +1563,7 @@ class ResearchSupervisor:
         """
         task.cancel()
         try:
-            await asyncio.wait({task}, timeout = _STREAM_CLEANUP_TIMEOUT_SECONDS)
+            await asyncio.wait({task}, timeout=_STREAM_CLEANUP_TIMEOUT_SECONDS)
         except asyncio.CancelledError:
             # Must keep propagating, but the child outlives this frame, so hand it over first.
             # Bound expired but the task lives on: absorb its outcome when it cooperates.
@@ -1576,7 +1578,7 @@ class ResearchSupervisor:
         except (asyncio.CancelledError, StopAsyncIteration):
             pass
         except Exception:
-            logger.warning("research.%s_cleanup_failed run_id=%s", what, run_id, exc_info = True)
+            logger.warning("research.%s_cleanup_failed run_id=%s", what, run_id, exc_info=True)
 
     async def _iter_stream_lines(
         self,
@@ -1607,7 +1609,7 @@ class ResearchSupervisor:
             discarded = False
             try:
                 while not line_task.done():
-                    await asyncio.wait({line_task}, timeout = timeout)
+                    await asyncio.wait({line_task}, timeout=timeout)
                     if self._cancel_event(run_id).is_set():
                         # Set first: the finally must not spend the bound on it again.
                         discarded = True
@@ -1643,20 +1645,20 @@ class ResearchSupervisor:
     ) -> tuple[str, str, str | None, dict[str, int] | None]:
         call_id = uuid.uuid4().hex
         expires = (
-            datetime.now(timezone.utc) + timedelta(seconds = _MODEL_CALL_KEY_LIFETIME_SECONDS)
+            datetime.now(timezone.utc) + timedelta(seconds=_MODEL_CALL_KEY_LIFETIME_SECONDS)
         ).isoformat()
         key_minted = asyncio.get_running_loop().time()
         account = current_account()
         token, key = await asyncio.to_thread(
             auth_storage.create_api_key,
-            username = run["ownerSubject"],
+            username=run["ownerSubject"],
             # The name is load-bearing: the external-provider route scopes its saved-credential exception to
             # exactly this workflow.
-            name = auth_storage.DEEP_RESEARCH_WORKFLOW_KEY_NAME,
-            expires_at = expires,
-            internal = True,
+            name=auth_storage.DEEP_RESEARCH_WORKFLOW_KEY_NAME,
+            expires_at=expires,
+            internal=True,
             # Pinned to the claiming account: the username could name a recreated namesake.
-            account_id = None if account.is_owner else account.account_id,
+            account_id=None if account.is_owner else account.account_id,
         )
         config = run["config"]
         inference = config.get("inferenceRequest") or {}
@@ -1758,7 +1760,7 @@ class ResearchSupervisor:
                     logger.warning(
                         "research.reasoning_flush_failed run_id=%s",
                         run["id"],
-                        exc_info = True,
+                        exc_info=True,
                     )
                     last_progress_flush = asyncio.get_running_loop().time()
                     return
@@ -1781,7 +1783,7 @@ class ResearchSupervisor:
                     logger.warning(
                         "research.report_flush_failed run_id=%s",
                         run["id"],
-                        exc_info = True,
+                        exc_info=True,
                     )
             last_progress_flush = asyncio.get_running_loop().time()
 
@@ -1811,7 +1813,7 @@ class ResearchSupervisor:
                     first_output_budget,
                     # Strictly looser than the guards above, so a stall is reported by name rather than as a message-
                     # less HTTPX ReadTimeout.
-                    read = admission_gap_budget + _STREAM_READ_TIMEOUT_MARGIN_SECONDS,
+                    read=admission_gap_budget + _STREAM_READ_TIMEOUT_MARGIN_SECONDS,
                 )
             )
             loop = asyncio.get_running_loop()
@@ -1833,7 +1835,7 @@ class ResearchSupervisor:
                 retry_deadline = min(retry_deadline, call_started + model_timeout)
             async with (
                 _wall_clock_timeout(model_timeout or None),
-                httpx.AsyncClient(timeout = timeout, trust_env = False) as client,
+                httpx.AsyncClient(timeout=timeout, trust_env=False) as client,
             ):
                 response: httpx.Response | None = None
                 send_task: asyncio.Task | None = None
@@ -1864,18 +1866,18 @@ class ResearchSupervisor:
                         request = client.build_request(
                             "POST",
                             self._endpoint(),
-                            json = payload,
-                            headers = {
+                            json=payload,
+                            headers={
                                 "Authorization": f"Bearer {token}",
                                 # Keep text-only intent across retries and model switches.
                                 "X-Unsloth-Require-Text": "1",
                             },
                         )
                         try:
-                            send_task = asyncio.create_task(client.send(request, stream = True))
+                            send_task = asyncio.create_task(client.send(request, stream=True))
                             send_discarded = False
                             while not send_task.done():
-                                await asyncio.wait({send_task}, timeout = 0.2)
+                                await asyncio.wait({send_task}, timeout=0.2)
                                 if self._cancel_event(run["id"]).is_set():
                                     # Set first: a send outlasting the bound is not waited on twice.
                                     send_discarded = True
@@ -2059,7 +2061,7 @@ class ResearchSupervisor:
                             logger.warning(
                                 "research.stream_cleanup_failed run_id=%s",
                                 run["id"],
-                                exc_info = True,
+                                exc_info=True,
                             )
             await flush_progress()
             return report, reasoning, finish_reason, usage
@@ -2076,7 +2078,7 @@ class ResearchSupervisor:
                     await flush_progress()
                 except Exception:
                     logger.warning(
-                        "research.error_flush_failed run_id=%s", run["id"], exc_info = True
+                        "research.error_flush_failed run_id=%s", run["id"], exc_info=True
                     )
             if isinstance(
                 exc, (ModelFirstOutputTimeout, ModelOutputIdleTimeout, ModelWallClockTimeout)
@@ -2100,7 +2102,7 @@ class ResearchSupervisor:
                 logger.warning(
                     "research.api_key_cleanup_failed run_id=%s",
                     run["id"],
-                    exc_info = True,
+                    exc_info=True,
                 )
             await self._note_phase(run["id"], "phase.ended", phase, call_id, step_position)
 
@@ -2121,7 +2123,7 @@ class ResearchSupervisor:
                     {"phase": phase, "callId": call_id, "label": label},
                 )
             except Exception:
-                logger.debug("research.phase_preview_failed run_id=%s", run_id, exc_info = True)
+                logger.debug("research.phase_preview_failed run_id=%s", run_id, exc_info=True)
                 return emitted
             emitted += 1
         return emitted
@@ -2149,7 +2151,7 @@ class ResearchSupervisor:
             )
         except Exception:
             # Best effort: a progress marker must never fail the run it is reporting on.
-            logger.debug("research.phase_event_failed run_id=%s", run_id, exc_info = True)
+            logger.debug("research.phase_event_failed run_id=%s", run_id, exc_info=True)
 
     async def _process(self, run: dict) -> None:
         # Everything this worker writes after a terminal status is only its to write while the run is still
@@ -2233,7 +2235,7 @@ class ResearchSupervisor:
             try:
                 renewed = await asyncio.to_thread(db.heartbeat, run_id, self.worker_id)
             except Exception:
-                logger.warning("research.heartbeat_failed run_id=%s", run_id, exc_info = True)
+                logger.warning("research.heartbeat_failed run_id=%s", run_id, exc_info=True)
                 # A busy SQLite writer is not proof that ownership was lost; retry briefly, but stop well before the
                 # 120-second lease expires.
                 consecutive_errors += 1
@@ -2298,12 +2300,12 @@ class ResearchSupervisor:
                     ),
                 },
             ],
-            json_mode = True,
-            report_progress = False,
-            phase = "planning",
-            max_tokens = 4096,
-            enable_thinking = False,
-            preview_labels = True,
+            json_mode=True,
+            report_progress=False,
+            phase="planning",
+            max_tokens=4096,
+            enable_thinking=False,
+            preview_labels=True,
         )
         plan = _parse_and_validate_plan(response, planning_reasoning, max_steps)
         try:
@@ -2451,7 +2453,7 @@ class ResearchSupervisor:
         start_position = (
             max(
                 (int(step["position"]) for step in run.get("steps") or []),
-                default = -1,
+                default=-1,
             )
             + 1
         )
@@ -2493,9 +2495,9 @@ class ResearchSupervisor:
             )
             decision_query_history_json = json.dumps(
                 sorted(used_queries),
-                ensure_ascii = False,
+                ensure_ascii=False,
             )
-            decision_state_json = json.dumps(research_state, ensure_ascii = False)
+            decision_state_json = json.dumps(research_state, ensure_ascii=False)
             decision_scaffold = (
                 len(decision_system)
                 + len(decision_question)
@@ -2540,12 +2542,12 @@ class ResearchSupervisor:
                         ),
                     },
                 ],
-                json_mode = True,
-                report_progress = False,
-                phase = "decision",
-                step_position = position,
-                max_tokens = 2048,
-                enable_thinking = False,
+                json_mode=True,
+                report_progress=False,
+                phase="decision",
+                step_position=position,
+                max_tokens=2048,
+                enable_thinking=False,
             )
             try:
                 action = _parse_and_validate_action(
@@ -2622,9 +2624,9 @@ class ResearchSupervisor:
                     execute_tool,
                     "web_search",
                     {"url": argument},
-                    cancel_event = self._cancel_event(run["id"]),
-                    timeout = tool_timeout,
-                    website_policy = website_policy,
+                    cancel_event=self._cancel_event(run["id"]),
+                    timeout=tool_timeout,
+                    website_policy=website_policy,
                 )
                 rag_result = ""
             else:
@@ -2633,9 +2635,9 @@ class ResearchSupervisor:
                     execute_tool,
                     "web_search",
                     {"query": argument},
-                    cancel_event = self._cancel_event(run["id"]),
-                    timeout = tool_timeout,
-                    website_policy = website_policy,
+                    cancel_event=self._cancel_event(run["id"]),
+                    timeout=tool_timeout,
+                    website_policy=website_policy,
                 )
                 rag_result = ""
                 if run["config"].get("ragScope"):
@@ -2643,9 +2645,9 @@ class ResearchSupervisor:
                         execute_tool,
                         "search_knowledge_base",
                         {"query": argument},
-                        cancel_event = self._cancel_event(run["id"]),
-                        timeout = tool_timeout,
-                        rag_scope = run["config"]["ragScope"],
+                        cancel_event=self._cancel_event(run["id"]),
+                        timeout=tool_timeout,
+                        rag_scope=run["config"]["ragScope"],
                     )
             rag_result, rag_sources = _split_rag_result(rag_result)
             await self._check_active(run["id"])
@@ -2728,9 +2730,9 @@ class ResearchSupervisor:
                     question,
                     step_sources,
                     fetched_urls,
-                    limit = max_auto_scrape,
-                    tool_timeout = tool_timeout,
-                    website_policy = website_policy,
+                    limit=max_auto_scrape,
+                    tool_timeout=tool_timeout,
+                    website_policy=website_policy,
                 )
                 fetched_urls.update(scraped_urls)
                 await self._check_active(run["id"])
@@ -2816,7 +2818,7 @@ class ResearchSupervisor:
         total_budget = _prompt_char_budget(
             _SYNTHESIS_CONTEXT_RESERVE_TOKENS, _run_inference_request(run)
         )
-        plan_json = json.dumps(run["plan"], ensure_ascii = False)
+        plan_json = json.dumps(run["plan"], ensure_ascii=False)
         audit_system = _system_prompt_with_instructions(
             _SYNTHESIS_AUDIT_SYSTEM_PROMPT,
             run["config"],
@@ -2878,11 +2880,11 @@ class ResearchSupervisor:
                     ),
                 },
             ],
-            json_mode = True,
-            report_progress = False,
-            phase = "synthesis_audit",
-            max_tokens = 2048,
-            enable_thinking = False,
+            json_mode=True,
+            report_progress=False,
+            phase="synthesis_audit",
+            max_tokens=2048,
+            enable_thinking=False,
         )
         synthesis_audit: dict[str, Any] = {}
         for candidate in (audit_response, audit_reasoning):
@@ -2968,7 +2970,7 @@ class ResearchSupervisor:
             if not reason and finish_reason == "length":
                 # Without the token count, which only a call reaching its own end reports.
                 reason = _synthesis_length_limit_error(
-                    None, requested_max_tokens = 0, inference = _run_inference_request(run)
+                    None, requested_max_tokens=0, inference=_run_inference_request(run)
                 ).rstrip(".")
             text = _delivered(report).strip()
             draft = _ReportDraft(
@@ -3001,9 +3003,9 @@ class ResearchSupervisor:
             ) = await self._stream_completion(
                 run,
                 synthesis_messages,
-                phase = "synthesis",
-                max_tokens = synthesis_max_tokens,
-                on_partial = _keep_partial,
+                phase="synthesis",
+                max_tokens=synthesis_max_tokens,
+                on_partial=_keep_partial,
             )
         except (RunCancelled, LeaseLost, httpx.ReadTimeout):
             raise
@@ -3016,7 +3018,7 @@ class ResearchSupervisor:
                 "research.synthesis_budget_refused run_id=%s budget=%s",
                 run["id"],
                 synthesis_max_tokens,
-                exc_info = True,
+                exc_info=True,
             )
             await self._check_active(run["id"])
             synthesis_max_tokens = _SYNTHESIS_MAX_TOKENS
@@ -3028,9 +3030,9 @@ class ResearchSupervisor:
             ) = await self._stream_completion(
                 run,
                 synthesis_messages,
-                phase = "synthesis",
-                max_tokens = synthesis_max_tokens,
-                on_partial = _keep_partial,
+                phase="synthesis",
+                max_tokens=synthesis_max_tokens,
+                on_partial=_keep_partial,
             )
         report = _select_synthesis_report(report, synthesis_reasoning)
         # Before the checks below, which can fail once the report already exists.
@@ -3070,10 +3072,10 @@ class ResearchSupervisor:
                 ) = await self._stream_completion(
                     run,
                     recovery_messages,
-                    phase = "synthesis_recovery",
-                    max_tokens = synthesis_max_tokens,
-                    enable_thinking = False,
-                    on_partial = _keep_partial,
+                    phase="synthesis_recovery",
+                    max_tokens=synthesis_max_tokens,
+                    enable_thinking=False,
+                    on_partial=_keep_partial,
                 )
             except (RunCancelled, LeaseLost):
                 raise
@@ -3084,7 +3086,7 @@ class ResearchSupervisor:
                     "research.synthesis_recovery_failed run_id=%s budget=%s",
                     run["id"],
                     synthesis_max_tokens,
-                    exc_info = True,
+                    exc_info=True,
                 )
                 await self._check_active(run["id"])
                 recovered_report, recovery_reasoning = "", ""
@@ -3120,8 +3122,8 @@ class ResearchSupervisor:
             if report and synthesis_finish_reason == "length":
                 truncation_notice = _synthesis_length_limit_error(
                     synthesis_usage,
-                    requested_max_tokens = requested_max_tokens,
-                    inference = _run_inference_request(run),
+                    requested_max_tokens=requested_max_tokens,
+                    inference=_run_inference_request(run),
                 ).rstrip(".")
         report = _validate_report(report, sources, document_sources)
         if not report:

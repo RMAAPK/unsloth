@@ -16,8 +16,8 @@ if "structlog" not in sys.modules:
             return lambda *args, **kwargs: None
 
     sys.modules["structlog"] = types.SimpleNamespace(
-        BoundLogger = _DummyLogger,
-        get_logger = lambda *args, **kwargs: _DummyLogger(),
+        BoundLogger=_DummyLogger,
+        get_logger=lambda *args, **kwargs: _DummyLogger(),
     )
 
 import routes.models as models_route
@@ -37,20 +37,20 @@ def test_get_model_config_resolves_cached_case_before_model_checks(monkeypatch):
 
     def _record_vision(
         model_name,
-        hf_token = None,
-        local_files_only = False,
+        hf_token=None,
+        local_files_only=False,
     ):
         calls["is_vision_model"] = model_name
         return False
 
-    def _record_embedding(model_name, hf_token = None):
+    def _record_embedding(model_name, hf_token=None):
         calls["is_embedding_model"] = model_name
         return False
 
     def _record_audio(
         model_name,
-        hf_token = None,
-        local_files_only = False,
+        hf_token=None,
+        local_files_only=False,
     ):
         calls["detect_audio_type"] = model_name
         return None, True
@@ -58,12 +58,12 @@ def test_get_model_config_resolves_cached_case_before_model_checks(monkeypatch):
     def _record_from_identifier(
         cls,
         model_name,
-        hf_token = None,
+        hf_token=None,
     ):
         calls["from_identifier"] = model_name
         return _DummyModelConfig()
 
-    def _record_remote_size(model_name, hf_token = None):
+    def _record_remote_size(model_name, hf_token=None):
         calls["model_size"] = model_name
         return 123
 
@@ -83,9 +83,9 @@ def test_get_model_config_resolves_cached_case_before_model_checks(monkeypatch):
 
     result = asyncio.run(
         models_route.get_model_config(
-            model_name = "org/model",
-            hf_token = None,
-            current_subject = "test-subject",
+            model_name="org/model",
+            hf_token=None,
+            current_subject="test-subject",
         )
     )
 
@@ -110,10 +110,10 @@ def test_get_model_config_inspects_selected_cache_snapshot(
     cache_root = tmp_path / "hub"
     repo_root = cache_root / "models--org--model"
     snapshot_path = repo_root / "snapshots" / "selected"
-    snapshot_path.mkdir(parents = True)
-    (snapshot_path / "config.json").write_text("{}", encoding = "utf-8")
+    snapshot_path.mkdir(parents=True)
+    (snapshot_path / "config.json").write_text("{}", encoding="utf-8")
     tokenizer_path = snapshot_path / tokenizer_relative_path
-    tokenizer_path.parent.mkdir(parents = True, exist_ok = True)
+    tokenizer_path.parent.mkdir(parents=True, exist_ok=True)
     tokenizer_path.write_text(
         json.dumps(
             {
@@ -122,7 +122,7 @@ def test_get_model_config_inspects_selected_cache_snapshot(
                 }
             }
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     blobs_path = repo_root / "blobs"
     blobs_path.mkdir()
@@ -135,11 +135,11 @@ def test_get_model_config_inspects_selected_cache_snapshot(
     (snapshot_path / "escaped.pt").symlink_to(outside_weight)
     other_snapshot = repo_root / "snapshots" / "other"
     other_snapshot.mkdir()
-    (other_snapshot / "config.json").write_text("{}", encoding = "utf-8")
+    (other_snapshot / "config.json").write_text("{}", encoding="utf-8")
     (other_snapshot / "model.safetensors").write_bytes(b"wrong-revision" * 10)
     refs_path = repo_root / "refs"
     refs_path.mkdir()
-    (refs_path / "main").write_text("selected", encoding = "utf-8")
+    (refs_path / "main").write_text("selected", encoding="utf-8")
     snapshot = str(snapshot_path.resolve())
     expected_model_size = len(b"selected-weights") + len(b"adapter")
 
@@ -171,20 +171,20 @@ def test_get_model_config_inspects_selected_cache_snapshot(
 
     def _record_vision(
         model_name,
-        hf_token = None,
-        local_files_only = False,
+        hf_token=None,
+        local_files_only=False,
     ):
         calls["is_vision_model"] = (model_name, local_files_only)
         return True
 
-    def _record_embedding(model_name, hf_token = None):
+    def _record_embedding(model_name, hf_token=None):
         calls["is_embedding_model"] = model_name
         return False
 
     def _record_from_identifier(
         cls,
         model_name,
-        hf_token = None,
+        hf_token=None,
     ):
         calls["from_identifier"] = model_name
         return _DummyModelConfig()
@@ -221,11 +221,11 @@ def test_get_model_config_inspects_selected_cache_snapshot(
 
     result = asyncio.run(
         models_route.get_model_config(
-            model_name = "org/model",
-            hf_token = None,
-            prefer_local_cache = True,
-            local_path = str(repo_root),
-            current_subject = "test-subject",
+            model_name="org/model",
+            hf_token=None,
+            prefer_local_cache=True,
+            local_path=str(repo_root),
+            current_subject="test-subject",
         )
     )
 
@@ -252,8 +252,8 @@ def test_get_model_config_rejects_invalid_selected_cache_path(path_kind, tmp_pat
     if path_kind == "mismatched":
         local_path = cache_root / "models--other--model"
         snapshot = local_path / "snapshots" / "selected"
-        snapshot.mkdir(parents = True)
-        (snapshot / "config.json").write_text("{}", encoding = "utf-8")
+        snapshot.mkdir(parents=True)
+        (snapshot / "config.json").write_text("{}", encoding="utf-8")
     else:
         local_path = cache_root / "models--org--model"
 
@@ -268,11 +268,11 @@ def test_get_model_config_rejects_invalid_selected_cache_path(path_kind, tmp_pat
     with pytest.raises(models_route.HTTPException) as exc_info:
         asyncio.run(
             models_route.get_model_config(
-                model_name = "org/model",
-                hf_token = None,
-                prefer_local_cache = True,
-                local_path = str(local_path),
-                current_subject = "test-subject",
+                model_name="org/model",
+                hf_token=None,
+                prefer_local_cache=True,
+                local_path=str(local_path),
+                current_subject="test-subject",
             )
         )
 

@@ -105,20 +105,20 @@ MAX_LONG_TASK_MS = int(os.environ.get("SMOKE_STREAM_LONG_TASK_BUDGET_MS", "10000
 
 
 def info(msg: str) -> None:
-    print(f"[{LABEL}] {msg}", flush = True)
+    print(f"[{LABEL}] {msg}", flush=True)
 
 
 def run() -> dict:
     headless = os.environ.get("SMOKE_HEADFUL") != "1"
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless = headless, args = chromium_launch_args())
-        context = browser.new_context(viewport = {"width": 1200, "height": 900})
+        browser = p.chromium.launch(headless=headless, args=chromium_launch_args())
+        context = browser.new_context(viewport={"width": 1200, "height": 900})
         page = context.new_page()
         errors: list[str] = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         try:
-            page.goto(f"{BASE}/smoke-stream-pacing.html", wait_until = "load", timeout = 60_000)
-            page.wait_for_function("() => window.__stream && window.__stream.ready", timeout = 60_000)
+            page.goto(f"{BASE}/smoke-stream-pacing.html", wait_until="load", timeout=60_000)
+            page.wait_for_function("() => window.__stream && window.__stream.ready", timeout=60_000)
 
             cdp = context.new_cdp_session(page)
             # After load so the harness bundle is not itself throttled in, and recorded
@@ -166,8 +166,8 @@ def main() -> int:
         wait_for_smoke_page(
             f"{BASE}/smoke-stream-pacing.html",
             "smoke-stream-pacing-main.tsx",
-            proc = vite,
-            info = info,
+            proc=vite,
+            info=info,
         )
         results = run()
     finally:
@@ -176,9 +176,9 @@ def main() -> int:
             info("vite stopped")
 
     out = OUT / f"{LABEL}.json"
-    out.parent.mkdir(parents = True, exist_ok = True)
-    out.write_text(json.dumps(results, indent = 2), encoding = "utf-8")
-    info(json.dumps(results, indent = 2))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    info(json.dumps(results, indent=2))
     info(f"wrote {out}")
 
     failures: list[str] = []

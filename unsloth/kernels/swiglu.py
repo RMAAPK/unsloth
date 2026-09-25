@@ -31,8 +31,8 @@ def _fg_kernel(e, g, h, n_elements, BLOCK_SIZE: tl.constexpr, LONG_INDEXING: tl.
         offsets = block_idx * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     mask = offsets < n_elements
 
-    e_row = tl.load(e + offsets, mask = mask, other = 0).to(tl.float32)
-    g_row = tl.load(g + offsets, mask = mask, other = 0)
+    e_row = tl.load(e + offsets, mask=mask, other=0).to(tl.float32)
+    g_row = tl.load(g + offsets, mask=mask, other=0)
 
     # f = e * sigmoid(e), h = f * g.
     f_row = e_row * tl.sigmoid(e_row)
@@ -40,13 +40,13 @@ def _fg_kernel(e, g, h, n_elements, BLOCK_SIZE: tl.constexpr, LONG_INDEXING: tl.
     # h = f * g
     h_row = f_row * g_row
 
-    tl.store(h + offsets, h_row, mask = mask)
+    tl.store(h + offsets, h_row, mask=mask)
 
 
 def swiglu_fg_kernel(e, g):
     batch, seq_len, hd = e.shape
     n_elements = e.numel()
-    h = torch.empty((batch, seq_len, hd), dtype = e.dtype, device = e.device)
+    h = torch.empty((batch, seq_len, hd), dtype=e.dtype, device=e.device)
     grid = lambda meta: (triton.cdiv(n_elements, meta["BLOCK_SIZE"]),)
     with torch_gpu_device(e.device):
         _fg_kernel[grid](
@@ -54,8 +54,8 @@ def swiglu_fg_kernel(e, g):
             g,
             h,
             n_elements,
-            BLOCK_SIZE = BLOCK_SIZE,
-            LONG_INDEXING = 0 if n_elements <= INT32_SAFETY_BUFFER else 1,
+            BLOCK_SIZE=BLOCK_SIZE,
+            LONG_INDEXING=0 if n_elements <= INT32_SAFETY_BUFFER else 1,
         )
     return h
 
@@ -79,9 +79,9 @@ def _DWf_DW_dfg_kernel(DW, e, g, n_elements, BLOCK_SIZE: tl.constexpr, LONG_INDE
         offsets = block_idx * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     mask = offsets < n_elements
 
-    DW_row = tl.load(DW + offsets, mask = mask, other = 0)
-    e_row = tl.load(e + offsets, mask = mask, other = 0).to(tl.float32)
-    g_row = tl.load(g + offsets, mask = mask, other = 0)
+    DW_row = tl.load(DW + offsets, mask=mask, other=0)
+    e_row = tl.load(e + offsets, mask=mask, other=0).to(tl.float32)
+    g_row = tl.load(g + offsets, mask=mask, other=0)
 
     # se = sigmoid(e), f = se * e, df = DW * f, dg = DW * g, de = dg * se * (1 + e * (1 - se)).
     se_row = tl.sigmoid(e_row)
@@ -98,9 +98,9 @@ def _DWf_DW_dfg_kernel(DW, e, g, n_elements, BLOCK_SIZE: tl.constexpr, LONG_INDE
     de_row = dg_row.to(tl.float32) * se_row * (1.0 + e_row * (1.0 - se_row))
     de_row = de_row.to(DW_row.dtype)
 
-    tl.store(DW + offsets, h_row, mask = mask)
-    tl.store(e + offsets, df_row, mask = mask)
-    tl.store(g + offsets, de_row, mask = mask)
+    tl.store(DW + offsets, h_row, mask=mask)
+    tl.store(e + offsets, df_row, mask=mask)
+    tl.store(g + offsets, de_row, mask=mask)
 
 
 def swiglu_DWf_DW_dfg_kernel(DW, e, g):
@@ -113,7 +113,7 @@ def swiglu_DWf_DW_dfg_kernel(DW, e, g):
             e,
             g,
             n_elements,
-            BLOCK_SIZE = BLOCK_SIZE,
-            LONG_INDEXING = 0 if n_elements <= INT32_SAFETY_BUFFER else 1,
+            BLOCK_SIZE=BLOCK_SIZE,
+            LONG_INDEXING=0 if n_elements <= INT32_SAFETY_BUFFER else 1,
         )
     return DW, e, g

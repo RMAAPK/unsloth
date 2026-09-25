@@ -158,7 +158,7 @@ def test_surrounding_whitespace_is_stripped(resolved, url, hostname):
 
 @pytest.mark.parametrize("url", ["127.0.0.1", "169.254.169.254", "10.0.0.1", "192.168.1.1"])
 def test_normalization_does_not_bypass_ssrf_guard(url):
-    err, _, _ = tools._fetch_url_raw(url, timeout = 3)
+    err, _, _ = tools._fetch_url_raw(url, timeout=3)
     assert err and "non-public address" in err
 
 
@@ -179,14 +179,14 @@ def _request_url_for(monkeypatch, url):
         def open(
             self,
             req,
-            timeout = None,
+            timeout=None,
         ):
             seen["url"] = req.full_url
             raise RuntimeError("captured")
 
     monkeypatch.setattr(tools, "_resolve_with_budget", lambda *a: (True, "", ["93.184.216.34"]))
     monkeypatch.setattr(tools.urllib.request, "build_opener", lambda *a: _Opener())
-    tools._fetch_url_raw(url, timeout = 5)
+    tools._fetch_url_raw(url, timeout=5)
     return seen.get("url", "")
 
 

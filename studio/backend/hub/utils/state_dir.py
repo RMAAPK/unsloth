@@ -57,7 +57,7 @@ def state_root(*, create: bool = False) -> Optional[Path]:
     if not create:
         return root
     try:
-        root.mkdir(parents = True, exist_ok = True)
+        root.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         logger.debug("Could not create hub state root %s: %s", root, exc)
         return None
@@ -65,14 +65,14 @@ def state_root(*, create: bool = False) -> Optional[Path]:
 
 
 def _subdir(name: str, *, create: bool = False) -> Optional[Path]:
-    root = state_root(create = create)
+    root = state_root(create=create)
     if root is None:
         return None
     path = root / name
     if not create:
         return path
     try:
-        path.mkdir(parents = True, exist_ok = True)
+        path.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         logger.debug("Could not create hub state subdir %s: %s", path, exc)
         return None
@@ -148,8 +148,8 @@ def variant_filename_prefix(
     repo_key = _state_repo_key(
         repo_type,
         repo_id,
-        legacy_repo_key = legacy_repo_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_repo_key=legacy_repo_key,
+        legacy_hash_key=legacy_hash_key,
     )
     return f"{repo_key}--variant--"
 
@@ -180,8 +180,8 @@ def variant_key_fragments(variant: str) -> tuple[str, ...]:
             try:
                 fragment = _variant_fragment(
                     variant,
-                    legacy_variant_key = legacy_variant_key,
-                    legacy_hash_key = legacy_hash_key,
+                    legacy_variant_key=legacy_variant_key,
+                    legacy_hash_key=legacy_hash_key,
                 )
             except (UnicodeError, ValueError):
                 continue
@@ -202,21 +202,21 @@ def _entry_key(
     base = _state_repo_key(
         repo_type,
         repo_id,
-        legacy_repo_key = legacy_repo_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_repo_key=legacy_repo_key,
+        legacy_hash_key=legacy_hash_key,
     )
     if not variant:
         return base
     variant_fragment = _variant_fragment(
         variant,
-        legacy_variant_key = legacy_variant_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_variant_key=legacy_variant_key,
+        legacy_hash_key=legacy_hash_key,
     )
     prefix = variant_filename_prefix(
         repo_type,
         repo_id,
-        legacy_repo_key = legacy_repo_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_repo_key=legacy_repo_key,
+        legacy_hash_key=legacy_hash_key,
     )
     return f"{prefix}{variant_fragment}"
 
@@ -229,7 +229,7 @@ def normalize_hub_cache(hub_cache: str | Path) -> str:
     Kept here rather than in download_manifest so the digest and the manifest reader cannot normalize differently: a resolved/unresolved pair of the same directory used to produce two ``cache-<digest>`` scopes, one holding the manifest and the other the one looked in, a complete download that could never report complete.
     """
     try:
-        resolved = str(Path(hub_cache).expanduser().resolve(strict = False))
+        resolved = str(Path(hub_cache).expanduser().resolve(strict=False))
     except (OSError, RuntimeError, ValueError):
         # Windows can refuse to resolve a path it can still open (OneDrive placeholders, a locked junction), so degrade to the expanded spelling; it has to be exactly what legacy_cache_scope_name builds or the read side cannot recover this state.
         try:
@@ -279,7 +279,7 @@ def _cache_scope(
     if not create:
         return scoped
     try:
-        scoped.mkdir(parents = True, exist_ok = True)
+        scoped.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         logger.debug("Could not create cache-scoped Hub state dir %s: %s", scoped, exc)
         return None
@@ -299,14 +299,14 @@ def manifest_path(
     cache_scope: Optional[str] = None,
 ) -> Optional[Path]:
     """Path to the manifest file for this triple. May or may not exist."""
-    parent = _subdir(_MANIFESTS_SUBDIR, create = create)
+    parent = _subdir(_MANIFESTS_SUBDIR, create=create)
     if parent is None:
         return None
     parent = _cache_scope(
         parent,
         hub_cache,
-        create = create,
-        cache_scope = cache_scope,
+        create=create,
+        cache_scope=cache_scope,
     )
     if parent is None:
         return None
@@ -314,9 +314,9 @@ def manifest_path(
         repo_type,
         repo_id,
         variant,
-        legacy_variant_key = legacy_variant_key,
-        legacy_repo_key = legacy_repo_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_variant_key=legacy_variant_key,
+        legacy_repo_key=legacy_repo_key,
+        legacy_hash_key=legacy_hash_key,
     )
     return parent / f"{entry_key}.json"
 
@@ -334,14 +334,14 @@ def marker_path(
     cache_scope: Optional[str] = None,
 ) -> Optional[Path]:
     """Path to the cancel-marker file for this triple. May or may not exist."""
-    parent = _subdir(_CANCELLED_SUBDIR, create = create)
+    parent = _subdir(_CANCELLED_SUBDIR, create=create)
     if parent is None:
         return None
     parent = _cache_scope(
         parent,
         hub_cache,
-        create = create,
-        cache_scope = cache_scope,
+        create=create,
+        cache_scope=cache_scope,
     )
     if parent is None:
         return None
@@ -349,23 +349,23 @@ def marker_path(
         repo_type,
         repo_id,
         variant,
-        legacy_variant_key = legacy_variant_key,
-        legacy_repo_key = legacy_repo_key,
-        legacy_hash_key = legacy_hash_key,
+        legacy_variant_key=legacy_variant_key,
+        legacy_repo_key=legacy_repo_key,
+        legacy_hash_key=legacy_hash_key,
     )
     return parent / f"{entry_key}.json"
 
 
 def manifests_dir(*, create: bool = False) -> Optional[Path]:
     """Manifests subdirectory, created on demand. ``None`` on failure. Exposed for iter_variant_manifests, which enumerates the directory to find every variant-keyed manifest for a repo (the path helpers above answer "where would key X go" but not "what keys exist")."""
-    return _subdir(_MANIFESTS_SUBDIR, create = create)
+    return _subdir(_MANIFESTS_SUBDIR, create=create)
 
 
 def cancelled_dir(*, create: bool = False) -> Optional[Path]:
     """Cancel-marker subdirectory, created on demand. ``None`` on failure. See manifests_dir for why this iteration entry point is needed."""
-    return _subdir(_CANCELLED_SUBDIR, create = create)
+    return _subdir(_CANCELLED_SUBDIR, create=create)
 
 
 def workers_dir() -> Optional[Path]:
     """Worker PID-breadcrumb subdirectory, created on demand. ``None`` on failure. Each live download worker drops one breadcrumb here so a backend that restarts after a hard crash can reap workers it can no longer reach through its in-memory registry."""
-    return _subdir(_WORKERS_SUBDIR, create = True)
+    return _subdir(_WORKERS_SUBDIR, create=True)

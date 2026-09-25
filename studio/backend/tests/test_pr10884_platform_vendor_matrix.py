@@ -75,8 +75,8 @@ def _fake_torch(*, rocm: bool, device_count: int) -> types.ModuleType:
     version.cuda = None if rocm else "13.0"
     torch.version = version
     cuda = types.SimpleNamespace(
-        is_available = lambda: device_count > 0,
-        device_count = lambda: device_count,
+        is_available=lambda: device_count > 0,
+        device_count=lambda: device_count,
     )
     torch.cuda = cuda
     return torch
@@ -90,22 +90,22 @@ def host(monkeypatch):
         os_label: str,
         vendor: str,
         *,
-        cards = TWO_CARDS,
-        tmp_path = None,
+        cards=TWO_CARDS,
+        tmp_path=None,
     ):
         platform, is_wsl = OSES[os_label]
         monkeypatch.setattr(sys, "platform", platform)
-        monkeypatch.setattr(llama_cpp, "_is_wsl", lambda: is_wsl, raising = False)
+        monkeypatch.setattr(llama_cpp, "_is_wsl", lambda: is_wsl, raising=False)
         # A real Mac is never the paravirtual case unless it is a VM; that shape
         # has its own test in the sibling file.
-        monkeypatch.setattr(llama_cpp, "_metal_device_is_paravirtual", lambda: False, raising = False)
+        monkeypatch.setattr(llama_cpp, "_metal_device_is_paravirtual", lambda: False, raising=False)
         visible = [] if vendor == "cpu" else cards
         monkeypatch.setitem(
             sys.modules,
             "torch",
-            _fake_torch(rocm = vendor == "rocm", device_count = len(visible)),
+            _fake_torch(rocm=vendor == "rocm", device_count=len(visible)),
         )
-        backend, gguf = _backend(tmp_path, vulkan = vendor == "vulkan", memory = list(visible))
+        backend, gguf = _backend(tmp_path, vulkan=vendor == "vulkan", memory=list(visible))
         backend._can_estimate_kv = lambda: True
         backend._estimate_kv_cache_bytes = lambda *a, **k: 0
         backend._compute_buffer_ctx_bytes = lambda *a, **k: 0
@@ -123,7 +123,7 @@ def _flag(cmd, name):
 
 
 def _auto_tp(backend, gguf, visible, **kwargs):
-    params = dict(gpu_memory_mode = "auto", tensor_parallel = True, n_ctx = 4096)
+    params = dict(gpu_memory_mode="auto", tensor_parallel=True, n_ctx=4096)
     if visible:
         params["gpu_ids"] = [idx for idx, *_ in visible]
     params.update(kwargs)
@@ -135,8 +135,8 @@ def _auto_tp(backend, gguf, visible, **kwargs):
 def test_the_user_ratio_survives_every_host(tmp_path, host, os_label, vendor):
     """One statement per host: the load launches, and the ratio either reaches
     llama-server or is absent for a reason this table can name."""
-    backend, gguf, visible = host(os_label, vendor, tmp_path = tmp_path)
-    captured = _auto_tp(backend, gguf, visible, tensor_split = [3, 1])
+    backend, gguf, visible = host(os_label, vendor, tmp_path=tmp_path)
+    captured = _auto_tp(backend, gguf, visible, tensor_split=[3, 1])
     cmd = captured["cmd"]
 
     if vendor == "cpu":
@@ -163,13 +163,13 @@ def test_a_failed_plan_still_launches_on_every_host(tmp_path, host, os_label, ve
     version of this test that used them passed against the unfixed revision.
     """
     cards = [(0, 24_000, 24_000), (1, 24_000, 24_000), (2, 200, 24_000)]
-    backend, gguf, visible = host(os_label, vendor, cards = cards, tmp_path = tmp_path)
+    backend, gguf, visible = host(os_label, vendor, cards=cards, tmp_path=tmp_path)
 
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated GPU selection failure")
 
     backend._plan_tensor_parallel = _boom
-    cmd = _auto_tp(backend, gguf, visible, tensor_split = [2, 1, 1])["cmd"]
+    cmd = _auto_tp(backend, gguf, visible, tensor_split=[2, 1, 1])["cmd"]
     assert cmd, f"{os_label}/{vendor} did not launch"
 
 
@@ -188,8 +188,8 @@ def test_the_ratio_and_the_device_pin_agree_on_every_host(tmp_path, host, os_lab
       HIP mask instead;
     * Vulkan does not mask at all, it pins ``--device VulkanN`` on the argv.
     """
-    backend, gguf, visible = host(os_label, vendor, tmp_path = tmp_path)
-    captured = _auto_tp(backend, gguf, visible, tensor_split = [3, 1])
+    backend, gguf, visible = host(os_label, vendor, tmp_path=tmp_path)
+    captured = _auto_tp(backend, gguf, visible, tensor_split=[3, 1])
     env, cmd = captured["env"], captured["cmd"]
 
     weights = _flag(cmd, "--tensor-split").split(",")
@@ -225,7 +225,7 @@ def test_an_identical_request_reuses_the_server_on_every_host(
     the comparison runs on every platform."""
     from core.inference.llama_cpp import GgufLoadIntent, LlamaCppBackend
 
-    backend, gguf, visible = host(os_label, vendor, tmp_path = tmp_path)
+    backend, gguf, visible = host(os_label, vendor, tmp_path=tmp_path)
     # The matcher asks the binary about MTP through a CLASSMETHOD, so the
     # instance stub `_backend` installs does not cover it, and under a
     # simulated `sys.platform = "win32"` the stdlib's own `shutil.which` then
@@ -236,17 +236,17 @@ def test_an_identical_request_reuses_the_server_on_every_host(
     monkeypatch.setattr(
         LlamaCppBackend, "probe_server_capabilities", staticmethod(lambda *a, **k: {})
     )
-    _auto_tp(backend, gguf, visible, tensor_split = [3, 1])
+    _auto_tp(backend, gguf, visible, tensor_split=[3, 1])
 
     def _intent(split):
         return GgufLoadIntent(
-            gguf_path = str(gguf),
-            model_identifier = "test",
-            gpu_memory_mode = "auto",
-            tensor_parallel = True,
-            tensor_split = split,
-            gpu_ids = [idx for idx, *_ in visible],
-            n_ctx = 4096,
+            gguf_path=str(gguf),
+            model_identifier="test",
+            gpu_memory_mode="auto",
+            tensor_parallel=True,
+            tensor_split=split,
+            gpu_ids=[idx for idx, *_ in visible],
+            n_ctx=4096,
         )
 
     assert backend.adopt_load_intent_if_matched(_intent([3, 1])) is True

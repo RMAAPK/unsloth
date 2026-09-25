@@ -29,7 +29,7 @@ def settings_store(monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
     monkeypatch.setattr(
         "storage.studio_db.get_app_setting",
-        lambda key, fallback = None: store.get(key, fallback),
+        lambda key, fallback=None: store.get(key, fallback),
     )
     monkeypatch.setattr(
         "storage.studio_db.upsert_app_settings",
@@ -72,7 +72,7 @@ def test_environment_cache_is_read_only(monkeypatch, tmp_path):
     assert paths.source == "environment"
     assert paths.editable is False
     assert paths.hub_cache == custom / "hub"
-    with pytest.raises(RuntimeError, match = "environment variable"):
+    with pytest.raises(RuntimeError, match="environment variable"):
         hf_cache_settings.set_hf_cache_home(str(tmp_path / "other"))
 
 
@@ -99,7 +99,7 @@ def test_explicit_hub_cache_display_wins_over_hf_home(monkeypatch, tmp_path):
     hf_home = tmp_path / "hf-home"
     custom_hub = tmp_path / "other-disk" / "models-cache"
     hf_home.mkdir()
-    custom_hub.mkdir(parents = True)
+    custom_hub.mkdir(parents=True)
     monkeypatch.setattr(
         hf_cache_settings,
         "_EXPLICIT_CACHE_ENV",
@@ -133,7 +133,7 @@ def test_xet_only_override_keeps_model_cache_editable(settings_store, monkeypatc
     assert paths.editable is True
 
     selected = tmp_path / "selected-cache"
-    selected.parent.mkdir(exist_ok = True)
+    selected.parent.mkdir(exist_ok=True)
     updated = hf_cache_settings.set_hf_cache_home(str(selected))
     assert updated.hub_cache == selected / "hub"
     assert updated.xet_cache == xet_cache
@@ -168,7 +168,7 @@ def test_spawn_environment_is_applied_then_restored(monkeypatch, tmp_path):
     hub = str(tmp_path / "hub")
     xet = str(tmp_path / "xet")
     monkeypatch.setenv("HF_HUB_CACHE", "parent-hub")
-    monkeypatch.delenv("HF_XET_CACHE", raising = False)
+    monkeypatch.delenv("HF_XET_CACHE", raising=False)
 
     with hf_cache_settings.child_environment_for_spawn({"HF_HUB_CACHE": hub, "HF_XET_CACHE": xet}):
         assert os.environ["HF_HUB_CACHE"] == hub
@@ -200,23 +200,23 @@ def test_spawn_environment_serializes_threads(monkeypatch):
         with hf_cache_settings.child_environment_for_spawn({"HF_HUB_CACHE": "first"}):
             observations.append(("first", os.environ["HF_HUB_CACHE"]))
             first_entered.set()
-            assert release_first.wait(timeout = 2)
+            assert release_first.wait(timeout=2)
 
     def second():
-        assert first_entered.wait(timeout = 2)
+        assert first_entered.wait(timeout=2)
         with hf_cache_settings.child_environment_for_spawn({"HF_HUB_CACHE": "second"}):
             observations.append(("second", os.environ["HF_HUB_CACHE"]))
 
-    first_thread = threading.Thread(target = first)
-    second_thread = threading.Thread(target = second)
+    first_thread = threading.Thread(target=first)
+    second_thread = threading.Thread(target=second)
     first_thread.start()
     second_thread.start()
-    assert first_entered.wait(timeout = 2)
+    assert first_entered.wait(timeout=2)
     time.sleep(0.02)
     assert observations == [("first", "first")]
     release_first.set()
-    first_thread.join(timeout = 2)
-    second_thread.join(timeout = 2)
+    first_thread.join(timeout=2)
+    second_thread.join(timeout=2)
 
     assert observations == [("first", "first"), ("second", "second")]
     assert os.environ["HF_HUB_CACHE"] == "parent"
@@ -268,20 +268,20 @@ def test_cache_validation_rejects_unwritable_child(settings_store, tmp_path, mon
 
     monkeypatch.setattr(hf_cache_settings.tempfile, "NamedTemporaryFile", reject_hub)
 
-    with pytest.raises(ValueError, match = "permission"):
+    with pytest.raises(ValueError, match="permission"):
         hf_cache_settings.set_hf_cache_home(str(selected))
 
 
 def test_inactive_cache_model_loads_from_snapshot_path(tmp_path):
     snapshot = tmp_path / "snapshots" / "revision"
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     row = _local_model_info(
-        scan_path = snapshot,
-        load_path = snapshot,
-        source = "hf_cache",
-        model_format = "safetensors",
-        model_id = "org/model",
-        active_cache = False,
+        scan_path=snapshot,
+        load_path=snapshot,
+        source="hf_cache",
+        model_format="safetensors",
+        model_id="org/model",
+        active_cache=False,
     )
     assert row.model_id == "org/model"
     assert row.active_cache is False
@@ -306,9 +306,9 @@ def test_diffusion_cache_root_follows_a_live_switch(settings_store, tmp_path):
 def test_diffusion_loader_calls_pin_the_cache_dir():
     # Every from_pretrained / from_single_file must carry cache_dir, else diffusers resolves it through the stale constant.
     for rel in ("core/inference/diffusion.py", "core/inference/video.py"):
-        source = (Path(_BACKEND_DIR) / rel).read_text(encoding = "utf-8")
+        source = (Path(_BACKEND_DIR) / rel).read_text(encoding="utf-8")
         for call in ("from_pretrained(", "from_single_file("):
-            for index, line in enumerate(source.splitlines(), start = 1):
+            for index, line in enumerate(source.splitlines(), start=1):
                 if not line.strip().startswith(("pipe = ", "transformer = ", "cn_model = ")):
                     continue
                 if call not in line:
@@ -357,30 +357,30 @@ def _run_guard_probe(
 ) -> tuple[str | None, bool]:
     """Return (_stored_cache_home() answer, whether the database was read)."""
     fake = tmp_path / "fake_storage"
-    (fake / "storage").mkdir(parents = True, exist_ok = True)
-    (fake / "storage" / "__init__.py").write_text("", encoding = "utf-8")
-    (fake / "storage" / "studio_db.py").write_text(_FAKE_STUDIO_DB, encoding = "utf-8")
+    (fake / "storage").mkdir(parents=True, exist_ok=True)
+    (fake / "storage" / "__init__.py").write_text("", encoding="utf-8")
+    (fake / "storage" / "studio_db.py").write_text(_FAKE_STUDIO_DB, encoding="utf-8")
     witness = tmp_path / "read_witness"
-    witness.unlink(missing_ok = True)
+    witness.unlink(missing_ok=True)
 
     environment = dict(os.environ)
     environment.update(
-        BACKEND_DIR = _BACKEND_DIR,
-        FAKE_STORAGE = str(fake),
-        READ_WITNESS = str(witness),
-        STORED_CACHE_HOME = str(stored),
-        UNSLOTH_STUDIO_HOME = str(studio_home),
-        PYTHONPATH = "",
+        BACKEND_DIR=_BACKEND_DIR,
+        FAKE_STORAGE=str(fake),
+        READ_WITNESS=str(witness),
+        STORED_CACHE_HOME=str(stored),
+        UNSLOTH_STUDIO_HOME=str(studio_home),
+        PYTHONPATH="",
     )
     environment.update(extra_env or {})
     for key in ("HF_HOME", "HF_HUB_CACHE", "HUGGINGFACE_HUB_CACHE", "HF_XET_CACHE"):
         environment.pop(key, None)
     result = subprocess.run(
         [sys.executable, "-c", probe if probe is not None else _GUARD_PROBE],
-        capture_output = True,
-        text = True,
-        env = environment,
-        timeout = 120,
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout.strip().splitlines()[-1])["stored"], witness.exists()
@@ -390,7 +390,7 @@ def test_absent_studio_db_skips_the_database_read(tmp_path):
     # The skip 912024e84 added must survive the tightening below: no studio.db answers None
     # WITHOUT a connection, which is what stops the CLI creating a 250 KB database.
     studio_home = tmp_path / "root" / "studio"
-    studio_home.mkdir(parents = True)
+    studio_home.mkdir(parents=True)
 
     answer, was_read = _run_guard_probe(tmp_path, studio_home, tmp_path / "chosen")
 
@@ -405,13 +405,13 @@ def test_uninspectable_studio_db_keeps_the_stored_cache_home(tmp_path, fixture):
     chosen = tmp_path / "chosen"
     studio_home = tmp_path / "root" / "studio"
     if fixture == "not_a_directory":
-        studio_home.parent.mkdir(parents = True)
-        studio_home.write_text("", encoding = "utf-8")
+        studio_home.parent.mkdir(parents=True)
+        studio_home.write_text("", encoding="utf-8")
     elif fixture == "symlink_loop":
-        studio_home.parent.mkdir(parents = True)
+        studio_home.parent.mkdir(parents=True)
         studio_home.symlink_to(studio_home)
     else:
-        studio_home.mkdir(parents = True)
+        studio_home.mkdir(parents=True)
         (studio_home / "studio.db").write_bytes(b"")
         os.chmod(studio_home, 0o000)
 
@@ -462,16 +462,16 @@ def test_a_studio_home_that_is_a_file_still_reads_the_database_on_windows(tmp_pa
     cross-platform leg, held here by reproducing the error shape rather than the platform.
     """
     studio_home = tmp_path / "root" / "studio"
-    studio_home.parent.mkdir(parents = True)
-    studio_home.write_text("", encoding = "utf-8")
+    studio_home.parent.mkdir(parents=True)
+    studio_home.write_text("", encoding="utf-8")
     chosen = tmp_path / "chosen"
 
     answer, was_read = _run_guard_probe(
         tmp_path,
         studio_home,
         chosen,
-        probe = _WINDOWS_SHAPED_GUARD_PROBE,
-        extra_env = {"NOT_A_DIRECTORY": str(studio_home)},
+        probe=_WINDOWS_SHAPED_GUARD_PROBE,
+        extra_env={"NOT_A_DIRECTORY": str(studio_home)},
     )
 
     assert was_read, "a studio home we could not inspect was read as no database"

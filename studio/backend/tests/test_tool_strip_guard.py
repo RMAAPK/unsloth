@@ -64,14 +64,14 @@ def test_strip_markup_representative_cases_unchanged():
     assert strip_tool_call_markup("a <function=x><parameter=p>1</parameter></function> b") == "a  b"
     # Non-final keeps an unclosed block; final strips it to EOF.
     assert strip_tool_call_markup("a <tool_call>{partial") == "a <tool_call>{partial"
-    assert strip_tool_call_markup("a <tool_call>{partial", final = True) == "a"
+    assert strip_tool_call_markup("a <tool_call>{partial", final=True) == "a"
 
 
 def test_no_quadratic_blowup_on_unclosed_markers():
     # Unguarded, this took minutes.
     big = "<tool_call>" * 20000 + "<function=x>" * 20000
     t0 = time.perf_counter()
-    out = strip_tool_call_markup(big, final = True)
+    out = strip_tool_call_markup(big, final=True)
     assert time.perf_counter() - t0 < 2.0
     assert out == ""
 
@@ -88,8 +88,8 @@ def test_the_two_bracket_depth_rules_stay_separate():
 
     truncated = '[{"name": "x", "arguments": {"a": 1}]'
     assert tool_healing._balanced_bracket_end(truncated, 0) is None
-    assert tool_healing._balanced_bracket_end(truncated, 0, braces_count = False) == 36
+    assert tool_healing._balanced_bracket_end(truncated, 0, braces_count=False) == 36
     assert _balanced_bracket_end(truncated, 0) == 36
 
-    assert strip_tool_markup("[TOOL_CALLS] [} prose ] tail", final = True) == "tail"
+    assert strip_tool_markup("[TOOL_CALLS] [} prose ] tail", final=True) == "tail"
     assert tool_healing.strip_tool_call_markup("[TOOL_CALLS] [} prose ] tail") == " prose ] tail"

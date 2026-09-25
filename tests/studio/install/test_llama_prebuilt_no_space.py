@@ -33,50 +33,50 @@ GB = 1024**3
 
 def linux_host() -> "M.HostInfo":
     return M.HostInfo(
-        system = "Linux",
-        machine = "x86_64",
-        is_windows = False,
-        is_linux = True,
-        is_macos = False,
-        is_x86_64 = True,
-        is_arm64 = False,
-        nvidia_smi = None,
-        driver_cuda_version = None,
-        compute_caps = [],
-        visible_cuda_devices = None,
-        has_physical_nvidia = False,
-        has_usable_nvidia = False,
+        system="Linux",
+        machine="x86_64",
+        is_windows=False,
+        is_linux=True,
+        is_macos=False,
+        is_x86_64=True,
+        is_arm64=False,
+        nvidia_smi=None,
+        driver_cuda_version=None,
+        compute_caps=[],
+        visible_cuda_devices=None,
+        has_physical_nvidia=False,
+        has_usable_nvidia=False,
     )
 
 
 def choice(name: str, tag: str = "release-2") -> "M.AssetChoice":
     return AssetChoice(
-        repo = "unslothai/llama.cpp",
-        tag = tag,
-        name = name,
-        url = f"https://example.com/{name}",
-        source_label = "published",
-        install_kind = "linux-cpu",
+        repo="unslothai/llama.cpp",
+        tag=tag,
+        name=name,
+        url=f"https://example.com/{name}",
+        source_label="published",
+        install_kind="linux-cpu",
     )
 
 
 def checksums(release_tag: str, llama_tag: str) -> "M.ApprovedReleaseChecksums":
     return ApprovedReleaseChecksums(
-        repo = "unslothai/llama.cpp",
-        release_tag = release_tag,
-        upstream_tag = llama_tag,
-        source_commit = None,
-        artifacts = {},
+        repo="unslothai/llama.cpp",
+        release_tag=release_tag,
+        upstream_tag=llama_tag,
+        source_commit=None,
+        artifacts={},
     )
 
 
 def plan(llama_tag: str, release_tag: str, attempts) -> "M.InstallReleasePlan":
     return M.InstallReleasePlan(
-        requested_tag = "latest",
-        llama_tag = llama_tag,
-        release_tag = release_tag,
-        attempts = attempts,
-        approved_checksums = checksums(release_tag, llama_tag),
+        requested_tag="latest",
+        llama_tag=llama_tag,
+        release_tag=release_tag,
+        attempts=attempts,
+        approved_checksums=checksums(release_tag, llama_tag),
     )
 
 
@@ -141,7 +141,7 @@ def test_low_disk_does_not_block_an_install_that_fits(tmp_path, monkeypatch, cap
     install_dir = tmp_path / "llama.cpp"
     install_dir.mkdir()
     only = plan("b10079", "release-2", [choice("app-b10079-linux-x64-cpu.tar.gz")])
-    reached = install_harness(monkeypatch, [only], free_bytes = 3 * GB)
+    reached = install_harness(monkeypatch, [only], free_bytes=3 * GB)
 
     M.install_prebuilt(install_dir, "latest", "unslothai/llama.cpp", "")
 
@@ -212,7 +212,7 @@ def test_http_errors_in_the_chain_do_not_crash_the_classifier():
         assert M._environment_fatal_reason(outer) is None
 
 
-@pytest.mark.skipif(not hasattr(errno, "EDQUOT"), reason = "EDQUOT is POSIX only")
+@pytest.mark.skipif(not hasattr(errno, "EDQUOT"), reason="EDQUOT is POSIX only")
 def test_quota_exhaustion_counts_as_out_of_space():
     """A quota'd home has free blocks this user cannot have, so the larger source
     build is just as doomed. Reported as a quota so df does not mislead."""
@@ -305,14 +305,14 @@ def test_validate_install_mode_still_falls_back_on_ordinary_failure(tmp_path, mo
 def test_classifies_enospc_hidden_in_a_shutil_error(tmp_path):
     """copytree stringifies the per-file OSError, so errno and the chain are gone."""
     src = tmp_path / "src" / "sub"
-    src.mkdir(parents = True)
-    (src / "f").write_text("x", encoding = "utf-8")
+    src.mkdir(parents=True)
+    (src / "f").write_text("x", encoding="utf-8")
 
     def boom(*args, **kwargs):
         raise OSError(errno.ENOSPC, "No space left on device")
 
     with pytest.raises(shutil.Error) as caught:
-        shutil.copytree(tmp_path / "src", tmp_path / "dst", copy_function = boom)
+        shutil.copytree(tmp_path / "src", tmp_path / "dst", copy_function=boom)
 
     assert caught.value.errno is None
     assert M._environment_fatal_reason(caught.value)
@@ -326,8 +326,8 @@ def test_source_tree_enospc_is_not_masked_by_a_later_mirror_error(tmp_path, monk
         url,
         path,
         *,
-        expected_sha256 = None,
-        label = None,
+        expected_sha256=None,
+        label=None,
     ):
         calls.append(url)
         if len(calls) == 1:
@@ -341,10 +341,10 @@ def test_source_tree_enospc_is_not_masked_by_a_later_mirror_error(tmp_path, monk
             "deadbeef",
             tmp_path / "install",
             tmp_path,
-            source_repo = "unslothai/llama.cpp",
-            expected_sha256 = None,
-            exact_source = True,
-            asset_url = "https://example.com/llama.cpp-source.tar.gz",
+            source_repo="unslothai/llama.cpp",
+            expected_sha256=None,
+            exact_source=True,
+            asset_url="https://example.com/llama.cpp-source.tar.gz",
         )
 
     assert len(calls) == 1, f"stopped after the first ENOSPC, tried: {calls}"
@@ -359,7 +359,7 @@ def test_enospc_exits_no_space_without_trying_older_releases(tmp_path, monkeypat
     install_dir.mkdir()
     newer = plan("b9002", "release-2", [choice("app-b9002-linux-x64-cpu.tar.gz")])
     older = plan("b9001", "release-1", [choice("app-b9001-linux-x64-cpu.tar.gz", "release-1")])
-    reached = install_harness(monkeypatch, [newer, older], free_bytes = 50 * GB)
+    reached = install_harness(monkeypatch, [newer, older], free_bytes=50 * GB)
 
     def enospc(attempt, *args, **kwargs):
         reached.append(attempt.name)
@@ -378,7 +378,7 @@ def test_ordinary_failure_still_exits_fallback(tmp_path, monkeypatch):
     install_dir = tmp_path / "llama.cpp"
     install_dir.mkdir()
     only = plan("b9002", "release-2", [choice("app-b9002-linux-x64-cpu.tar.gz")])
-    install_harness(monkeypatch, [only], free_bytes = 50 * GB)
+    install_harness(monkeypatch, [only], free_bytes=50 * GB)
     monkeypatch.setattr(
         M,
         "validate_prebuilt_choice",

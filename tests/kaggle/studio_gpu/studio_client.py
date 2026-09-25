@@ -81,13 +81,13 @@ class Studio:
             headers["Content-Type"] = "application/json"
         if auth and self.token:
             headers["Authorization"] = f"Bearer {self.token}"
-        req = urllib.request.Request(url, data = data, headers = headers, method = method)
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout = timeout or self.timeout) as resp:
-                raw = resp.read().decode("utf-8", errors = "replace")
+            with urllib.request.urlopen(req, timeout=timeout or self.timeout) as resp:
+                raw = resp.read().decode("utf-8", errors="replace")
                 status = resp.status
         except urllib.error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", errors = "replace")
+            raw = exc.read().decode("utf-8", errors="replace")
             status = exc.code
         try:
             return status, json.loads(raw)
@@ -157,7 +157,7 @@ class Studio:
         status, payload = self.post(
             "/api/auth/login",
             {"username": username, "password": password},
-            auth = False,
+            auth=False,
         )
         if status != 200 or not isinstance(payload, dict):
             raise StudioError(f"login failed with HTTP {status}")
@@ -380,7 +380,7 @@ def newest_gguf(root: str | Path) -> Path | None:
         return None
     candidates = sorted(
         (p for p in root.rglob("*.gguf") if "mmproj" not in p.name.lower()),
-        key = lambda p: p.stat().st_mtime,
-        reverse = True,
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
     )
     return candidates[0] if candidates else None

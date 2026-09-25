@@ -34,7 +34,7 @@ def test_the_production_default_is_still_a_full_second(monkeypatch):
     The conftest pins the override for the suite, so this has to unset it to see what a
     production process sees.
     """
-    monkeypatch.delenv("UNSLOTH_SETTLE_DELAY_S", raising = False)
+    monkeypatch.delenv("UNSLOTH_SETTLE_DELAY_S", raising=False)
     assert dm._settle_delay(1.0) == 1.0
     assert dm._settle_delay(0.25) == 0.25
 
@@ -81,7 +81,7 @@ def test_the_override_shortens_the_wait_without_dropping_a_read(monkeypatch):
     monkeypatch.setenv("UNSLOTH_SETTLE_DELAY_S", "0")
 
     target = type("T", (), {"device": "cuda", "backend": "cuda"})()
-    dm.settled_snapshot_device_memory(target, attempts = 4, delay_s = 1.0)
+    dm.settled_snapshot_device_memory(target, attempts=4, delay_s=1.0)
 
     assert (
         len(reads) == 4
@@ -96,6 +96,7 @@ def test_the_override_shortens_the_wait_without_dropping_a_read(monkeypatch):
 def test_the_backend_conftest_pins_the_override_for_the_whole_suite():
     """Set by conftest at import, so it holds for subprocess-spawning tests too."""
     import os
+
     assert os.environ.get("UNSLOTH_SETTLE_DELAY_S") == "0", (
         "the backend conftest no longer pins UNSLOTH_SETTLE_DELAY_S; the diffusion and "
         "video suites go back to paying a real second per retried VRAM read"

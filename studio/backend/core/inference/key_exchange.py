@@ -51,8 +51,8 @@ def init_key_pair() -> None:
             _public_key_fingerprint,
         )
     _private_key = rsa.generate_private_key(
-        public_exponent = 65537,
-        key_size = 2048,
+        public_exponent=65537,
+        key_size=2048,
     )
     _public_key_pem = (
         _private_key.public_key()
@@ -85,9 +85,9 @@ def _unwrap_oaep(ciphertext: bytes, *, what: str) -> bytes:
         return _private_key.decrypt(
             ciphertext,
             padding.OAEP(
-                mgf = padding.MGF1(algorithm = hashes.SHA256()),
-                algorithm = hashes.SHA256(),
-                label = None,
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
             ),
         )
     except Exception as exc:
@@ -106,7 +106,7 @@ def _unwrap_oaep(ciphertext: bytes, *, what: str) -> bytes:
 
 def _b64decode_part(value: str, *, what: str, validate: bool) -> bytes:
     try:
-        return base64.b64decode(value, validate = validate)
+        return base64.b64decode(value, validate=validate)
     except Exception as exc:
         logger.warning(
             "decrypt_api_key: base64 decode failed (%s, input_len=%d, fingerprint=%s): %s: %s",
@@ -137,10 +137,10 @@ def decrypt_api_key(encrypted_b64: str) -> str:
                 _public_key_fingerprint,
             )
             raise ValueError("Unsupported encrypted API key envelope.")
-        wrapped_key = _b64decode_part(parts[1], what = "wrapped_key", validate = True)
-        nonce = _b64decode_part(parts[2], what = "nonce", validate = True)
-        ciphertext = _b64decode_part(parts[3], what = "ciphertext", validate = True)
-        aes_key = _unwrap_oaep(wrapped_key, what = "wrapped_key")
+        wrapped_key = _b64decode_part(parts[1], what="wrapped_key", validate=True)
+        nonce = _b64decode_part(parts[2], what="nonce", validate=True)
+        ciphertext = _b64decode_part(parts[3], what="ciphertext", validate=True)
+        aes_key = _unwrap_oaep(wrapped_key, what="wrapped_key")
         try:
             plaintext = AESGCM(aes_key).decrypt(nonce, ciphertext, _ENVELOPE_AAD)
         except Exception as exc:
@@ -156,7 +156,7 @@ def decrypt_api_key(encrypted_b64: str) -> str:
             raise
     else:
         # Lenient as this path was before the envelope: tightening it could reject a working key.
-        legacy_ciphertext = _b64decode_part(encrypted_b64, what = "legacy", validate = False)
-        plaintext = _unwrap_oaep(legacy_ciphertext, what = "legacy")
+        legacy_ciphertext = _b64decode_part(encrypted_b64, what="legacy", validate=False)
+        plaintext = _unwrap_oaep(legacy_ciphertext, what="legacy")
 
     return plaintext.decode("utf-8")

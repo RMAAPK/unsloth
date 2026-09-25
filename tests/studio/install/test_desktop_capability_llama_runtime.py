@@ -88,7 +88,7 @@ def _venv_python() -> Path | None:
 VENV_PYTHON = _venv_python()
 NEEDS_VENV = pytest.mark.skipif(
     VENV_PYTHON is None,
-    reason = "no prepared venv with the CLI installed; see this module's docstring",
+    reason="no prepared venv with the CLI installed; see this module's docstring",
 )
 
 
@@ -119,11 +119,11 @@ def _capabilities(
         args.append("--json")
     result = subprocess.run(
         args,
-        cwd = str(tmp_path),
-        env = env,
-        capture_output = True,
-        text = True,
-        timeout = 120,
+        cwd=str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     return result.returncode, result.stdout
 
@@ -144,9 +144,9 @@ def _shared_health_groups() -> list[list[str]]:
                 tuple(group)
                 for group in ILP.runtime_payload_health_groups(
                     kind,
-                    source_label = None,
-                    runtime_name = None,
-                    tag = "b10830",
+                    source_label=None,
+                    runtime_name=None,
+                    tag="b10830",
                 )
             }
             for kind in kinds
@@ -163,18 +163,18 @@ def _complete_tree(root: Path) -> Path:
     """
     host = ILP.platform_only_host()
     runtime_dir = ILP.install_runtime_dir(root, host)
-    runtime_dir.mkdir(parents = True, exist_ok = True)
+    runtime_dir.mkdir(parents=True, exist_ok=True)
     (root / "UNSLOTH_PREBUILT_INFO.json").write_text(
         json.dumps({"release_tag": "b10830-mix-d5c17a0", "tag": "b10830"}) + "\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     for group in _shared_health_groups():
         # Dropping the globs from the first pattern still matches it:
         # libggml-cpu*.so* -> libggml-cpu.so.
-        (runtime_dir / group[0].replace("*", "")).write_text("x", encoding = "utf-8")
+        (runtime_dir / group[0].replace("*", "")).write_text("x", encoding="utf-8")
     ext = ".exe" if host.is_windows else ""
     for name in ("server", "quantize"):
-        (runtime_dir / f"llama-{name}{ext}").write_text("x", encoding = "utf-8")
+        (runtime_dir / f"llama-{name}{ext}").write_text("x", encoding="utf-8")
     return runtime_dir
 
 
@@ -211,10 +211,10 @@ def test_studio_is_importable_from_an_installed_wheel():
     )
     result = subprocess.run(
         [str(VENV_PYTHON), "-c", probe],
-        cwd = str(VENV_PYTHON.parent),
-        capture_output = True,
-        text = True,
-        timeout = 120,
+        cwd=str(VENV_PYTHON.parent),
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr
     module_file, callable_flag = result.stdout.strip().splitlines()
@@ -289,7 +289,7 @@ def test_the_human_readable_form_still_prints_every_key(tmp_path):
     """The desktop reads --json; a support request pastes the bare form, same dict."""
     root = tmp_path / "llama.cpp"
     _complete_tree(root)
-    rc, out = _capabilities(root, tmp_path, json_output = False)
+    rc, out = _capabilities(root, tmp_path, json_output=False)
     assert rc == 0
     printed = {line.split(":", 1)[0] for line in out.splitlines() if ":" in line}
     for key in (*PRE_PR_KEYS, *NEW_KEYS):
@@ -323,11 +323,11 @@ def test_the_probe_stays_off_the_critical_path_budget(tmp_path):
     started = time.perf_counter()
     result = subprocess.run(
         [str(VENV_PYTHON), "-c", script],
-        cwd = str(tmp_path),
-        env = env,
-        capture_output = True,
-        text = True,
-        timeout = 120,
+        cwd=str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr
     measured = json.loads(result.stdout)
@@ -361,18 +361,18 @@ def test_an_unimportable_probe_leaves_the_verdict_null(tmp_path):
         "from unsloth_cli import app\n"
         "sys.argv = ['unsloth', 'studio', 'desktop-capabilities', '--json']\n"
         "app()\n",
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     env = dict(os.environ)
     env["UNSLOTH_LLAMA_CPP_PATH"] = str(root)
     env["UNSLOTH_STUDIO_HOME"] = str(tmp_path / "studio_home")
     result = subprocess.run(
         [str(VENV_PYTHON), str(driver)],
-        cwd = str(tmp_path),
-        env = env,
-        capture_output = True,
-        text = True,
-        timeout = 120,
+        cwd=str(tmp_path),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
@@ -388,10 +388,10 @@ def test_the_command_emits_exactly_the_pre_pr_keys_plus_the_two_new_ones():
     """Read off the source, so it holds without the venv. A key added without a matching
     Option<T> in managed.rs is invisible to the desktop; a key removed breaks it.
     """
-    source = (PACKAGE_ROOT / "unsloth_cli" / "commands" / "studio.py").read_text(encoding = "utf-8")
+    source = (PACKAGE_ROOT / "unsloth_cli" / "commands" / "studio.py").read_text(encoding="utf-8")
     body = source.split("def desktop_capabilities(", 1)[1]
     body = body.split("if json_output:", 1)[0]
-    emitted = set(re.findall(r'^\s+"([a-z_]+)":', body, flags = re.MULTILINE))
+    emitted = set(re.findall(r'^\s+"([a-z_]+)":', body, flags=re.MULTILINE))
     emitted |= set(re.findall(r'payload\["([a-z_]+)"\]', body))
     assert emitted == set(PRE_PR_KEYS) | set(NEW_KEYS), sorted(emitted)
 
@@ -417,9 +417,9 @@ def test_the_desktop_reads_every_emitted_key_as_optional():
     serde fills an absent Option with None and managed.rs only treats Some(false) as broken,
     so absent is safe only while every field stays an Option.
     """
-    source = MANAGED_RS.read_text(encoding = "utf-8")
+    source = MANAGED_RS.read_text(encoding="utf-8")
     struct_body = source.split("struct DesktopCapability {", 1)[1].split("\n}", 1)[0]
-    fields = dict(re.findall(r"^\s+([a-z_]+):\s*(.+),$", struct_body, flags = re.MULTILINE))
+    fields = dict(re.findall(r"^\s+([a-z_]+):\s*(.+),$", struct_body, flags=re.MULTILINE))
     for key in (*PRE_PR_KEYS, *NEW_KEYS):
         assert key in fields, f"the desktop struct has no field for {key}"
         assert fields[key].startswith(
@@ -432,7 +432,7 @@ def test_unknown_keys_do_not_break_the_desktop_parse():
     otherwise, so the guard is that nobody adds deny_unknown_fields to the capability
     struct; without it, today's additive keys would have bricked every shipped desktop.
     """
-    source = MANAGED_RS.read_text(encoding = "utf-8")
+    source = MANAGED_RS.read_text(encoding="utf-8")
     assert "deny_unknown_fields" not in source
     prologue = source.split("struct DesktopCapability {", 1)[0]
     assert "deny_unknown_fields" not in prologue.rsplit("#[derive", 1)[-1]
@@ -446,7 +446,7 @@ def test_unknown_keys_do_not_break_the_cli_side_consumer():
     probe = PACKAGE_ROOT / ".github" / "scripts" / "interrupted_install_probe.py"
     if not probe.is_file():
         pytest.skip("CI probe script not present in this tree")
-    source = probe.read_text(encoding = "utf-8")
+    source = probe.read_text(encoding="utf-8")
     # The parse is `json.loads` plus `.get`, never a key-set comparison.
     assert 'parsed.get("studio_install_ok")' in source
     assert not re.search(r"set\(parsed", source)
@@ -467,7 +467,7 @@ def test_the_managed_probe_is_skipped_when_a_custom_runtime_is_active(monkeypatc
     regardless would send a user who runs their own build into repair over an install their
     backend never opens. Offline that repair cannot even succeed."""
     active = _active_helper()
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
     assert active() is True
 
     pinned = pathlib.Path(__file__).resolve().parents[3] / "studio" / "install_llama_prebuilt.py"
@@ -484,12 +484,12 @@ def test_the_managed_runtime_path_override_is_not_treated_as_a_custom_runtime(mo
     already grades exactly the tree that variable names. Skipping on it would drop the
     coverage for every user who relocated their install."""
     active = _active_helper()
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", "/opt/relocated/llama.cpp")
     assert active() is True
 
 
-def _helper_namespace(studio_home = None):
+def _helper_namespace(studio_home=None):
     """The helper block, read out of the CLI source: importing the module pulls in typer.
 
     ``studio_home`` stands in for the root ``_resolve_studio_home`` inferred off
@@ -497,7 +497,7 @@ def _helper_namespace(studio_home = None):
     """
     text = (
         pathlib.Path(__file__).resolve().parents[3] / "unsloth_cli" / "commands" / "studio.py"
-    ).read_text(encoding = "utf-8")
+    ).read_text(encoding="utf-8")
     start = text.index("def _managed_llama_runtime_is_the_active_one")
     end = text.index('@studio_app.command("desktop-capabilities"', start)
     # _master_root_llama_dir lives beside the export that writes the same value, so it
@@ -539,7 +539,7 @@ def test_an_inferred_studio_root_is_graded_not_the_legacy_tree(tmp_path, monkeyp
         "STUDIO_HOME",
         "UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH",
     ):
-        monkeypatch.delenv(name, raising = False)
+        monkeypatch.delenv(name, raising=False)
     root = tmp_path / "custom-studio"
     graded = _helper_namespace(root)["_llama_runtime_to_grade"]()
     assert graded == root / "llama.cpp"
@@ -558,7 +558,7 @@ def test_a_legacy_install_still_grades_the_legacy_tree(tmp_path, monkeypatch):
         "STUDIO_HOME",
         "UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH",
     ):
-        monkeypatch.delenv(name, raising = False)
+        monkeypatch.delenv(name, raising=False)
     graded = _helper_namespace()["_llama_runtime_to_grade"]()
     assert graded == pathlib.Path.home() / ".unsloth" / "llama.cpp"
 
@@ -572,7 +572,7 @@ def test_an_explicit_studio_home_is_left_alone(tmp_path, monkeypatch):
         "UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH",
         "STUDIO_HOME",
     ):
-        monkeypatch.delenv(name, raising = False)
+        monkeypatch.delenv(name, raising=False)
     theirs = tmp_path / "theirs"
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(theirs))
     graded = _helper_namespace(tmp_path / "inferred")["_llama_runtime_to_grade"]()
@@ -590,7 +590,7 @@ def test_a_deleted_llama_server_path_does_not_suppress_the_managed_verdict(tmp_p
     assert active() is True
 
     present = tmp_path / "llama-server"
-    present.write_text("", encoding = "utf-8")
+    present.write_text("", encoding="utf-8")
     monkeypatch.setenv("LLAMA_SERVER_PATH", str(present))
     assert active() is False
 
@@ -612,7 +612,7 @@ def test_a_dangling_symlink_pin_falls_through_like_any_absent_pin(tmp_path, monk
     monkeypatch.setenv("LLAMA_SERVER_PATH", str(link))
     assert active() is True
 
-    (tmp_path / "never-existed").write_text("", encoding = "utf-8")
+    (tmp_path / "never-existed").write_text("", encoding="utf-8")
     assert active() is False
 
 
@@ -636,10 +636,10 @@ def test_a_user_set_runtime_override_is_not_ours_to_repair(tmp_path, monkeypatch
     server = (
         override / "build" / "bin" / ("llama-server.exe" if os.name == "nt" else "llama-server")
     )
-    server.parent.mkdir(parents = True)
-    server.write_text("x", encoding = "utf-8")
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    server.parent.mkdir(parents=True)
+    server.write_text("x", encoding="utf-8")
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(override))
     _stub_stored_selection(monkeypatch, "/home/someone/older-build")
     assert active() is False
@@ -669,10 +669,10 @@ def test_the_cli_s_own_inferred_override_is_not_mistaken_for_a_user_pin(tmp_path
     studio_home = tmp_path / "custom-studio"
     managed = studio_home / "llama.cpp"
     server = managed / "build" / "bin" / ("llama-server.exe" if os.name == "nt" else "llama-server")
-    server.parent.mkdir(parents = True)
-    server.write_text("", encoding = "utf-8")
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    server.parent.mkdir(parents=True)
+    server.write_text("", encoding="utf-8")
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(studio_home))
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(managed))
     _stub_stored_selection(monkeypatch, "/home/someone/older-build")
@@ -690,8 +690,8 @@ def test_the_cli_s_own_inferred_override_is_not_mistaken_for_a_user_pin(tmp_path
     pinned = (
         elsewhere / "build" / "bin" / ("llama-server.exe" if os.name == "nt" else "llama-server")
     )
-    pinned.parent.mkdir(parents = True)
-    pinned.write_text("x", encoding = "utf-8")
+    pinned.parent.mkdir(parents=True)
+    pinned.write_text("x", encoding="utf-8")
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(elsewhere))
     assert active() is False
     # And the classification itself is unchanged: with the stored folder cleared, the
@@ -713,10 +713,10 @@ def test_a_master_root_grades_the_runtime_beside_studio_not_the_one_under_it(tmp
     master = tmp_path / "portable"
     managed = master / "llama.cpp"
     server = managed / "build" / "bin" / ("llama-server.exe" if os.name == "nt" else "llama-server")
-    server.parent.mkdir(parents = True)
-    server.write_text("", encoding = "utf-8")
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    server.parent.mkdir(parents=True)
+    server.write_text("", encoding="utf-8")
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_HOME", str(master))
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(master / "studio"))
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(managed))
@@ -731,8 +731,8 @@ def test_a_master_root_grades_the_runtime_beside_studio_not_the_one_under_it(tmp
     pinned = (
         elsewhere / "build" / "bin" / ("llama-server.exe" if os.name == "nt" else "llama-server")
     )
-    pinned.parent.mkdir(parents = True)
-    pinned.write_text("x", encoding = "utf-8")
+    pinned.parent.mkdir(parents=True)
+    pinned.write_text("x", encoding="utf-8")
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(elsewhere))
     assert active() is False
 
@@ -741,7 +741,7 @@ def test_the_master_root_rule_is_the_one_the_export_writes(tmp_path, monkeypatch
     """One rule, not two that can drift: the value graded has to be the value exported."""
     namespace = _helper_namespace()
     master_dir = namespace["_master_root_llama_dir"]
-    monkeypatch.delenv("UNSLOTH_HOME", raising = False)
+    monkeypatch.delenv("UNSLOTH_HOME", raising=False)
     assert master_dir() is None, "no master root means the studio home decides, as before"
     master = tmp_path / "portable"
     monkeypatch.setenv("UNSLOTH_HOME", str(master))
@@ -757,8 +757,8 @@ def test_an_override_that_holds_no_server_does_not_outrank_the_stored_folder(tmp
     final graded a directory nobody loads, answered "not installed", and left the runtime the
     backend really opens ungraded."""
     active = _active_helper()
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(tmp_path / "never-installed"))
     _stub_stored_selection(monkeypatch, "/home/someone/older-build")
     assert active() is False, "the finder walks past an empty override to the stored folder"
@@ -769,7 +769,7 @@ def test_an_override_that_holds_no_server_does_not_outrank_the_stored_folder(tmp
     assert active() is True
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX ~name expansion")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX ~name expansion")
 def test_an_override_naming_no_account_answers_instead_of_raising(tmp_path, monkeypatch):
     """Codex 3962938521, P2. Path.expanduser raises RuntimeError for a "~name" that resolves
     to no account, which an override left in a service unit or a .env after a rename does, and
@@ -777,8 +777,8 @@ def test_an_override_naming_no_account_answers_instead_of_raising(tmp_path, monk
     expanded_user_path, which hands an unresolvable name back unchanged, so the override then
     reaches the search as an ordinary path, finds nothing, and the documented order continues."""
     active = _active_helper()
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", "~no-such-account-9d3f/llama.cpp")
     with pytest.raises(RuntimeError):
         pathlib.Path("~no-such-account-9d3f/llama.cpp").expanduser()
@@ -848,14 +848,14 @@ def test_a_skipped_runtime_verdict_says_so_in_its_reason(monkeypatch):
     cache it. Read off the source, so it holds without the venv."""
     source = (
         pathlib.Path(__file__).resolve().parents[3] / "unsloth_cli" / "commands" / "studio.py"
-    ).read_text(encoding = "utf-8")
+    ).read_text(encoding="utf-8")
     body = source.split("def desktop_capabilities(", 1)[1].split("if json_output:", 1)[0]
     assert 'payload["llama_runtime_reason"] = "llama_runtime_not_managed"' in body
     # Codex 3973660789, P2: the third null. A probe that raised is a fact about one
     # attempt and carries the damaged tree's own fingerprint, so it is not cacheable
     # either, while "nothing installed" is a fact about the tree and still is.
     assert 'payload["llama_runtime_reason"] = "llama_runtime_probe_failed"' in body
-    managed_rs = MANAGED_RS.read_text(encoding = "utf-8")
+    managed_rs = MANAGED_RS.read_text(encoding="utf-8")
     for reason in ("llama_runtime_not_managed", "llama_runtime_probe_failed"):
         assert reason in managed_rs, "the desktop must know the reason the CLI emits"
 
@@ -874,14 +874,14 @@ def test_the_stored_settings_lookup_can_reach_its_own_database_module(monkeypatc
     root = pathlib.Path(__file__).resolve().parents[3]
     without = subprocess.run(
         [_sys.executable, "-c", "import storage.studio_db"],
-        cwd = root,
-        capture_output = True,
-        text = True,
+        cwd=root,
+        capture_output=True,
+        text=True,
     )
     assert without.returncode != 0, "storage must not already be importable from the repo root"
     assert "No module named 'storage'" in without.stderr
 
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
     _active_helper()()
     assert str(root / "studio" / "backend") in _sys.path, (
         "the helper must put the backend on the path itself, or the settings lookup "
@@ -889,7 +889,7 @@ def test_the_stored_settings_lookup_can_reach_its_own_database_module(monkeypatc
     )
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX ~ expansion")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX ~ expansion")
 def test_the_finder_expands_the_override_the_way_every_other_reader_does(tmp_path, monkeypatch):
     """Codex 3960401528, P1. ``default_managed_llama_dir``, ``get_stored_custom_llama_cpp_path``
     and the desktop's own pinning all expand UNSLOTH_LLAMA_CPP_PATH; the finder's
@@ -907,15 +907,15 @@ def test_the_finder_expands_the_override_the_way_every_other_reader_does(tmp_pat
 
     home = tmp_path / "home"
     build = home / "llama.cpp" / "build" / "bin"
-    build.mkdir(parents = True)
+    build.mkdir(parents=True)
     server = build / "llama-server"
-    server.write_text("", encoding = "utf-8")
+    server.write_text("", encoding="utf-8")
     os.chmod(server, 0o755)
 
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
     monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", "~/llama.cpp")
     monkeypatch.chdir(tmp_path)
     assert LlamaCppBackend._find_llama_server_binary() == str(server)

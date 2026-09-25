@@ -137,18 +137,18 @@ window.revokeSandbox = () => URL.revokeObjectURL(window.sandboxObjectUrl);
 
 @contextmanager
 def running_server(server: ThreadingHTTPServer) -> Iterator[ThreadingHTTPServer]:
-    thread = threading.Thread(target = server.serve_forever, daemon = True)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
         yield server
     finally:
         server.shutdown()
         server.server_close()
-        thread.join(timeout = 5)
+        thread.join(timeout=5)
 
 
 def main() -> None:
-    config = json.loads(TAURI_CONFIG.read_text(encoding = "utf-8"))
+    config = json.loads(TAURI_CONFIG.read_text(encoding="utf-8"))
     csp = config["app"]["security"]["csp"]
     state = ProbeState()
     target = ProbeServer(TargetHandler, state)
@@ -174,19 +174,19 @@ def main() -> None:
                 nonlocal redirect_requests
                 redirect_requests += 1
                 route.fulfill(
-                    status = 302,
-                    headers = {"Location": f"{target_origin}{SENSITIVE_PATH}"},
+                    status=302,
+                    headers={"Location": f"{target_origin}{SENSITIVE_PATH}"},
                 )
 
             def https_loopback(route) -> None:
                 nonlocal https_loopback_requests
                 https_loopback_requests += 1
-                route.fulfill(status = 200, content_type = "image/png", body = PNG)
+                route.fulfill(status=200, content_type="image/png", body=PNG)
 
             context.route(REDIRECT_URL, redirect)
             context.route(HTTPS_LOOPBACK_URL, https_loopback)
             page = context.new_page()
-            page.goto(page_origin, wait_until = "domcontentloaded")
+            page.goto(page_origin, wait_until="domcontentloaded")
             dimensions = page.evaluate("window.sandboxResult")
             page.wait_for_timeout(500)
 

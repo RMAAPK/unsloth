@@ -22,7 +22,7 @@ from unsloth_cli.commands import export as export_command
         (["--format", "merged-4bit"], True),
         (["--format", "merged-4bit", "--no-load-in-4bit"], False),
     ],
-    ids = [
+    ids=[
         "default",
         "gguf_default",
         "explicit_4bit",

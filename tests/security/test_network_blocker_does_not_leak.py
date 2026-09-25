@@ -23,7 +23,7 @@ CONFTEST = Path(__file__).resolve().parent / "conftest.py"
 
 
 def _network_blocker_decorators():
-    tree = ast.parse(CONFTEST.read_text(encoding = "utf-8"))
+    tree = ast.parse(CONFTEST.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "network_blocker":
             return node.decorator_list
@@ -55,11 +55,12 @@ def test_the_blocker_is_still_autouse():
 def test_the_blocker_is_installed_right_now():
     """It is autouse, so this test is already running under it."""
     from tests.security.conftest import _BlockedSocket
+
     assert socket.socket is _BlockedSocket
 
 
 def test_an_outbound_connection_is_refused():
-    with pytest.raises(RuntimeError, match = "network access blocked"):
+    with pytest.raises(RuntimeError, match="network access blocked"):
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("93.184.216.34", 80))
 
 
@@ -76,6 +77,7 @@ def test_the_original_socket_is_what_gets_restored():
     """Teardown must hand back the real class, not another blocker: nesting two
     installs and restoring in the wrong order would leave the patch behind."""
     import tests.security.conftest as C
+
     assert (
         not issubclass(socket.socket, C._BlockedSocket) or socket.socket is C._BlockedSocket
     ), "socket.socket has been wrapped more than once"
@@ -125,7 +127,7 @@ def test_a_later_suite_gets_a_working_socket_back(tmp_path):
         from tests.security.conftest import *          # noqa: F401,F403
         from tests.security.conftest import network_blocker  # noqa: F401
     """),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     (tmp_path / "security" / "test_inside.py").write_text(
         textwrap.dedent("""
@@ -133,7 +135,7 @@ def test_a_later_suite_gets_a_working_socket_back(tmp_path):
         def test_the_guard_is_on():
             assert socket.socket.__name__ == "_BlockedSocket"
     """),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
     (tmp_path / "test_zafter.py").write_text(
         textwrap.dedent("""
@@ -143,7 +145,7 @@ def test_a_later_suite_gets_a_working_socket_back(tmp_path):
                 "the security suite's socket patch outlived it"
             )
     """),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
     done = subprocess.run(
@@ -158,8 +160,8 @@ def test_a_later_suite_gets_a_working_socket_back(tmp_path):
             "-p",
             "no:cacheprovider",
         ],
-        capture_output = True,
-        text = True,
-        timeout = 300,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
     assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-2000:]

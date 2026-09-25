@@ -55,7 +55,7 @@ class BundleVerdict:
     bundle_type: Optional[int] = None
     entry_url: Optional[str] = None
     entry_bytes: Optional[int] = None
-    checked: list[str] = field(default_factory = list)
+    checked: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {
@@ -74,9 +74,9 @@ class BundleVerdict:
 
 
 def _get(url: str, timeout: float = 20.0) -> tuple[int, bytes, str]:
-    req = urllib.request.Request(url, headers = {"Accept": "*/*"})
+    req = urllib.request.Request(url, headers={"Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout = timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, r.read(), (r.headers.get("Content-Type") or "")
     except urllib.error.HTTPError as exc:
         return exc.code, b"", ""
@@ -139,14 +139,14 @@ def check_bundle(base_url: str) -> BundleVerdict:
     )
     if is_dev:
         return BundleVerdict(
-            production = False,
-            reason = (
+            production=False,
+            reason=(
                 "/@vite/client served a JavaScript module, so this is a Vite dev server. "
                 "React's development build inflates the very axis under investigation by "
                 "about 3.2x; a measurement here would confirm any hypothesis."
             ),
-            vite_client_status = status,
-            checked = checked,
+            vite_client_status=status,
+            checked=checked,
         )
 
     doc_status, doc, _ = _get(f"{base_url}/chat")
@@ -155,10 +155,10 @@ def check_bundle(base_url: str) -> BundleVerdict:
     checked.append(f"index document -> {doc_status}, {len(doc)} bytes")
     if doc_status != 200 or not doc:
         return BundleVerdict(
-            production = False,
-            reason = f"could not fetch the index document ({doc_status})",
-            vite_client_status = status,
-            checked = checked,
+            production=False,
+            reason=f"could not fetch the index document ({doc_status})",
+            vite_client_status=status,
+            checked=checked,
         )
 
     html = doc.decode("utf-8", "replace")
@@ -166,14 +166,14 @@ def check_bundle(base_url: str) -> BundleVerdict:
     checked.append(f"{len(urls)} script assets in the document")
     if not urls:
         return BundleVerdict(
-            production = False,
-            reason = "the index document loads no script assets to inspect",
-            vite_client_status = status,
-            checked = checked,
+            production=False,
+            reason="the index document loads no script assets to inspect",
+            vite_client_status=status,
+            checked=checked,
         )
 
     for url in urls:
-        asset_status, raw, _ = _get(url, timeout = 60)
+        asset_status, raw, _ = _get(url, timeout=60)
         if asset_status != 200 or not raw:
             checked.append(f"{url} -> {asset_status}")
             continue
@@ -196,34 +196,34 @@ def check_bundle(base_url: str) -> BundleVerdict:
         checked.append(f"{url}: react-dom bundleType={bundle_type}")
         if bundle_type == 0:
             return BundleVerdict(
-                production = True,
-                reason = "react-dom reports bundleType 0",
-                vite_client_status = status,
-                bundle_type = 0,
-                entry_url = url,
-                entry_bytes = len(raw),
-                checked = checked,
+                production=True,
+                reason="react-dom reports bundleType 0",
+                vite_client_status=status,
+                bundle_type=0,
+                entry_url=url,
+                entry_bytes=len(raw),
+                checked=checked,
             )
         return BundleVerdict(
-            production = False,
-            reason = (
+            production=False,
+            reason=(
                 f"react-dom reports bundleType {bundle_type}, which is a DEVELOPMENT build "
                 "of React. Its per-render bookkeeping inflates the axis under "
                 "investigation by about 3.2x."
             ),
-            vite_client_status = status,
-            bundle_type = bundle_type,
-            entry_url = url,
-            entry_bytes = len(raw),
-            checked = checked,
+            vite_client_status=status,
+            bundle_type=bundle_type,
+            entry_url=url,
+            entry_bytes=len(raw),
+            checked=checked,
         )
 
     return BundleVerdict(
-        production = False,
-        reason = (
+        production=False,
+        reason=(
             'no asset carried a `rendererPackageName: "react-dom"` marker, so the build '
             "mode could not be established. Refusing rather than assuming production."
         ),
-        vite_client_status = status,
-        checked = checked,
+        vite_client_status=status,
+        checked=checked,
     )

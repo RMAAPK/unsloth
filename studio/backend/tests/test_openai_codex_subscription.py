@@ -58,10 +58,10 @@ class AlwaysRejecting:
     async def get(
         self,
         _url,
-        headers = None,
-        params = None,
+        headers=None,
+        params=None,
     ):
-        return httpx.Response(401, json = {"detail": "expired"})
+        return httpx.Response(401, json={"detail": "expired"})
 
     async def aclose(self):
         return None
@@ -123,21 +123,21 @@ def test_account_claim_and_token_response_are_validated_without_returning_raw_bo
     )
     assert bundle["account_id"] == "acct-1"
     assert bundle["expires_at"] > time.time()
-    with pytest.raises(Exception, match = "invalid access token"):
+    with pytest.raises(Exception, match="invalid access token"):
         extract_chatgpt_account_id("not-a-jwt")
 
 
 def test_safe_flow_never_exposes_pkce_state_or_device_identifier():
     flow = OAuthFlow(
-        id = "opaque",
-        provider_id = "provider",
-        method = "browser",
-        created_at = 1,
-        expires_at = 2,
-        state = "secret-state",
-        verifier = "secret-verifier",
-        device_auth_id = "secret-device",
-        authorization_url = "https://auth.openai.com/oauth/authorize",
+        id="opaque",
+        provider_id="provider",
+        method="browser",
+        created_at=1,
+        expires_at=2,
+        state="secret-state",
+        verifier="secret-verifier",
+        device_auth_id="secret-device",
+        authorization_url="https://auth.openai.com/oauth/authorize",
     )
     serialized = json.dumps(safe_flow(flow))
     assert "opaque" in serialized
@@ -230,12 +230,12 @@ def test_responses_conversion_stably_shortens_oversized_tool_call_ids():
 def test_cancelled_oauth_exchange_cannot_persist_credentials(monkeypatch):
     persisted = []
     flow = OAuthFlow(
-        id = "flow-cancelled",
-        provider_id = "provider",
-        method = "browser",
-        created_at = time.time(),
-        expires_at = time.time() + 60,
-        persist_bundle = lambda _provider, bundle: persisted.append(bundle),
+        id="flow-cancelled",
+        provider_id="provider",
+        method="browser",
+        created_at=time.time(),
+        expires_at=time.time() + 60,
+        persist_bundle=lambda _provider, bundle: persisted.append(bundle),
     )
     token = _jwt({"https://api.openai.com/auth": {"chatgpt_account_id": "acct-1"}})
 
@@ -244,7 +244,7 @@ def test_cancelled_oauth_exchange_cannot_persist_credentials(monkeypatch):
         return {"access_token": token, "refresh_token": "refresh", "expires_in": 600}
 
     monkeypatch.setattr(codex_auth, "_token_request", token_request)
-    with pytest.raises(codex_auth.CodexAuthError, match = "cancelled"):
+    with pytest.raises(codex_auth.CodexAuthError, match="cancelled"):
         asyncio.run(codex_auth._exchange_code(flow, "code"))
     assert persisted == []
 
@@ -262,13 +262,13 @@ def test_successful_callback_does_not_wait_for_its_own_connection(monkeypatch):
     server = Server()
     persisted = []
     flow = OAuthFlow(
-        id = "flow-success",
-        provider_id = "provider",
-        method = "browser",
-        created_at = time.time(),
-        expires_at = time.time() + 60,
-        persist_bundle = lambda _provider, bundle: persisted.append(bundle),
-        server = server,
+        id="flow-success",
+        provider_id="provider",
+        method="browser",
+        created_at=time.time(),
+        expires_at=time.time() + 60,
+        persist_bundle=lambda _provider, bundle: persisted.append(bundle),
+        server=server,
     )
     token = _jwt({"https://api.openai.com/auth": {"chatgpt_account_id": "acct-1"}})
 
@@ -311,7 +311,7 @@ def test_fixed_host_transport_sends_subscription_headers_and_normalizes_sse(
 
     class FakeClient:
         def stream(self, method, url, **kwargs):
-            captured.update(method = method, url = url, **kwargs)
+            captured.update(method=method, url=url, **kwargs)
             return FakeStream()
 
         async def aclose(self):
@@ -324,14 +324,14 @@ def test_fixed_host_transport_sends_subscription_headers_and_normalizes_sse(
         lines = [
             line
             async for line in client.stream(
-                provider_id = "provider-1",
-                thread_id = "thread-1",
-                messages = [{"role": "user", "content": "hello"}],
-                model = model,
-                max_tokens = 100,
-                reasoning_effort = reasoning_effort,
-                tools = None,
-                tool_choice = None,
+                provider_id="provider-1",
+                thread_id="thread-1",
+                messages=[{"role": "user", "content": "hello"}],
+                model=model,
+                max_tokens=100,
+                reasoning_effort=reasoning_effort,
+                tools=None,
+                tool_choice=None,
             )
         ]
         await client.close()
@@ -356,15 +356,15 @@ def test_fixed_host_transport_sends_subscription_headers_and_normalizes_sse(
 def test_browser_state_mismatch_does_not_consume_flow(monkeypatch):
     persisted = []
     flow = OAuthFlow(
-        id = "flow",
-        provider_id = "provider",
-        method = "browser",
-        created_at = time.time(),
-        expires_at = time.time() + 60,
-        state = "expected-state",
-        verifier = "secret-verifier",
-        redirect_uri = "http://127.0.0.1:1455/auth/callback",
-        persist_bundle = lambda _provider, bundle: persisted.append(bundle),
+        id="flow",
+        provider_id="provider",
+        method="browser",
+        created_at=time.time(),
+        expires_at=time.time() + 60,
+        state="expected-state",
+        verifier="secret-verifier",
+        redirect_uri="http://127.0.0.1:1455/auth/callback",
+        persist_bundle=lambda _provider, bundle: persisted.append(bundle),
     )
     monkeypatch.setitem(codex_auth._flows, flow.id, flow)
     token = _jwt({"https://api.openai.com/auth": {"chatgpt_account_id": "acct-1"}})
@@ -374,7 +374,7 @@ def test_browser_state_mismatch_does_not_consume_flow(monkeypatch):
         return {"access_token": token, "refresh_token": "refresh", "expires_in": 600}
 
     monkeypatch.setattr(codex_auth, "_token_request", token_request)
-    with pytest.raises(codex_auth.CodexAuthError, match = "state"):
+    with pytest.raises(codex_auth.CodexAuthError, match="state"):
         asyncio.run(
             codex_auth.complete_browser_flow(
                 "provider",
@@ -394,7 +394,7 @@ def test_browser_state_mismatch_does_not_consume_flow(monkeypatch):
     )
     assert flow.status == "connected"
     assert len(persisted) == 1
-    with pytest.raises(codex_auth.CodexAuthError, match = "no longer active"):
+    with pytest.raises(codex_auth.CodexAuthError, match="no longer active"):
         asyncio.run(
             codex_auth.complete_browser_flow(
                 "provider",
@@ -445,16 +445,16 @@ def test_device_poll_shape_structured_pending_slow_down_and_exchange(monkeypatch
 
     persisted = []
     flow = OAuthFlow(
-        id = "device-flow",
-        provider_id = "provider",
-        method = "device",
-        created_at = time.time(),
-        expires_at = time.time() + 60,
-        device_auth_id = "device-id",
-        user_code = "USER-CODE",
-        interval = 1,
-        redirect_uri = OPENAI_CODEX_DEVICE_REDIRECT_URI,
-        persist_bundle = lambda _provider, bundle: persisted.append(bundle),
+        id="device-flow",
+        provider_id="provider",
+        method="device",
+        created_at=time.time(),
+        expires_at=time.time() + 60,
+        device_auth_id="device-id",
+        user_code="USER-CODE",
+        interval=1,
+        redirect_uri=OPENAI_CODEX_DEVICE_REDIRECT_URI,
+        persist_bundle=lambda _provider, bundle: persisted.append(bundle),
     )
     monkeypatch.setattr(codex_auth.httpx, "AsyncClient", lambda **_kwargs: FakeClient())
     monkeypatch.setattr(codex_auth.asyncio, "sleep", fake_sleep)
@@ -517,15 +517,15 @@ def test_device_poll_persists_terminal_error_for_other_workers(monkeypatch):
         record.update(json.loads(value))
 
     flow = OAuthFlow(
-        id = "device-error",
-        provider_id = "provider",
-        method = "device",
-        created_at = record["created_at"],
-        expires_at = record["expires_at"],
-        device_auth_id = "device-id",
-        user_code = "USER-CODE",
-        interval = 1,
-        marker = "marker",
+        id="device-error",
+        provider_id="provider",
+        method="device",
+        created_at=record["created_at"],
+        expires_at=record["expires_at"],
+        device_auth_id="device-id",
+        user_code="USER-CODE",
+        interval=1,
+        marker="marker",
     )
     monkeypatch.setattr(codex_auth.httpx, "AsyncClient", lambda **_kwargs: FakeClient())
     monkeypatch.setattr(codex_auth.asyncio, "sleep", fake_sleep)
@@ -600,7 +600,7 @@ def test_oauth_start_captures_generation_guarded_persistence(monkeypatch):
     monkeypatch.setattr(
         codex_auth,
         "save_oauth_flow_marker",
-        lambda scope, marker, _flow = None: markers.__setitem__(scope, marker),
+        lambda scope, marker, _flow=None: markers.__setitem__(scope, marker),
     )
 
     monkeypatch.setattr(
@@ -618,7 +618,7 @@ def test_oauth_start_captures_generation_guarded_persistence(monkeypatch):
     monkeypatch.setattr(
         codex_auth,
         "delete_oauth_flow_marker",
-        lambda scope, marker = None: markers.pop(scope, None)
+        lambda scope, marker=None: markers.pop(scope, None)
         if marker is None or markers.get(scope) == marker
         else None,
     )
@@ -635,21 +635,21 @@ def test_oauth_start_captures_generation_guarded_persistence(monkeypatch):
         assert markers[provider_id] == marker
         await persist(provider_id, {"access_token": "not-returned"})
         return OAuthFlow(
-            id = "opaque",
-            provider_id = provider_id,
-            method = method,
-            created_at = 1,
-            expires_at = 2,
-            marker = marker,
+            id="opaque",
+            provider_id=provider_id,
+            method=method,
+            created_at=1,
+            expires_at=2,
+            marker=marker,
         )
 
     monkeypatch.setattr(codex_auth, "start_flow", fake_start)
     result = asyncio.run(
         auth_route.start_oauth(
             "provider",
-            auth_route.OAuthStartRequest(method = "browser"),
-            credential = ("alice", "generation-1"),
-            via_api_key = False,
+            auth_route.OAuthStartRequest(method="browser"),
+            credential=("alice", "generation-1"),
+            via_api_key=False,
         )
     )
     assert result["flow_id"] == "opaque"
@@ -697,14 +697,14 @@ def test_malformed_or_truncated_stream_fails_without_token_leak(stream_lines):
             return [
                 line
                 async for line in client.stream(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    messages = [{"role": "user", "content": "hello"}],
-                    model = "gpt-5.4",
-                    max_tokens = None,
-                    reasoning_effort = None,
-                    tools = None,
-                    tool_choice = None,
+                    provider_id="provider",
+                    thread_id="thread",
+                    messages=[{"role": "user", "content": "hello"}],
+                    model="gpt-5.4",
+                    max_tokens=None,
+                    reasoning_effort=None,
+                    tools=None,
+                    tool_choice=None,
                 )
             ]
         finally:
@@ -720,7 +720,7 @@ def test_structured_upstream_error_is_actionable_and_bounded():
         async def __aenter__(self):
             return __import__("httpx").Response(
                 400,
-                json = {
+                json={
                     "error": {"code": "invalid_request", "message": "Unsupported request field."}
                 },
             )
@@ -743,14 +743,14 @@ def test_structured_upstream_error_is_actionable_and_bounded():
             return [
                 line
                 async for line in client.stream(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    messages = [{"role": "user", "content": "hello"}],
-                    model = "gpt-5.4",
-                    max_tokens = None,
-                    reasoning_effort = None,
-                    tools = None,
-                    tool_choice = None,
+                    provider_id="provider",
+                    thread_id="thread",
+                    messages=[{"role": "user", "content": "hello"}],
+                    model="gpt-5.4",
+                    max_tokens=None,
+                    reasoning_effort=None,
+                    tools=None,
+                    tool_choice=None,
                 )
             ]
         finally:
@@ -770,7 +770,7 @@ def test_bare_detail_upstream_error_reaches_the_user():
         async def __aenter__(self):
             return __import__("httpx").Response(
                 400,
-                json = {
+                json={
                     "detail": (
                         "The 'gpt-5.3-codex-spark' model is not supported when using "
                         "Codex with a ChatGPT account."
@@ -796,14 +796,14 @@ def test_bare_detail_upstream_error_reaches_the_user():
             return [
                 line
                 async for line in client.stream(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    messages = [{"role": "user", "content": "hello"}],
-                    model = "gpt-5.3-codex-spark",
-                    max_tokens = None,
-                    reasoning_effort = None,
-                    tools = None,
-                    tool_choice = None,
+                    provider_id="provider",
+                    thread_id="thread",
+                    messages=[{"role": "user", "content": "hello"}],
+                    model="gpt-5.3-codex-spark",
+                    max_tokens=None,
+                    reasoning_effort=None,
+                    tools=None,
+                    tool_choice=None,
                 )
             ]
         finally:
@@ -816,7 +816,7 @@ def test_bare_detail_upstream_error_reaches_the_user():
     assert "secret-token" not in str(error.value)
 
 
-def _models_response(payload, status = 200):
+def _models_response(payload, status=200):
     class FakeClient:
         def __init__(self):
             self.calls = []
@@ -824,11 +824,11 @@ def _models_response(payload, status = 200):
         async def get(
             self,
             url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
             self.calls.append((url, params))
-            return httpx.Response(status, json = payload)
+            return httpx.Response(status, json=payload)
 
         async def aclose(self):
             return None
@@ -979,7 +979,7 @@ def test_a_forced_reload_skips_the_cached_catalog(monkeypatch):
         assert len(second.calls) == 0
 
         reloaded = asyncio.run(
-            list_subscription_models("provider-6", "token", "acct-1", force = True)
+            list_subscription_models("provider-6", "token", "acct-1", force=True)
         )
         assert [model["id"] for model in reloaded] == ["gpt-5.8-new"]
         assert len(second.calls) == 1
@@ -993,7 +993,7 @@ def test_subscription_model_list_rejects_non_200(monkeypatch):
     monkeypatch.setattr(
         codex_client,
         "_create_http_client",
-        lambda: _models_response({"detail": "Not Found"}, status = 404),
+        lambda: _models_response({"detail": "Not Found"}, status=404),
     )
     forget_subscription_models("provider-2")
 
@@ -1013,7 +1013,7 @@ def test_model_route_falls_back_to_curated_when_upstream_is_unusable(monkeypatch
     def call():
         return asyncio.run(
             codex_routes.list_subscription_models(
-                "provider-3", _credential = ("user", "session"), via_api_key = False
+                "provider-3", _credential=("user", "session"), via_api_key=False
             )
         )
 
@@ -1088,14 +1088,14 @@ async def _successful_stream_lines():
         return [
             line
             async for line in client.stream(
-                provider_id = "provider",
-                thread_id = None,
-                messages = [{"role": "user", "content": "hello"}],
-                model = "gpt-5.4",
-                max_tokens = None,
-                reasoning_effort = None,
-                tools = None,
-                tool_choice = None,
+                provider_id="provider",
+                thread_id=None,
+                messages=[{"role": "user", "content": "hello"}],
+                model="gpt-5.4",
+                max_tokens=None,
+                reasoning_effort=None,
+                tools=None,
+                tool_choice=None,
             )
         ]
     finally:
@@ -1179,11 +1179,11 @@ def test_stale_unauthorized_response_does_not_poison_reconnected_bundle(monkeypa
 
 def test_expired_flow_is_removed_after_terminal_retention(monkeypatch):
     flow = OAuthFlow(
-        id = "expired-flow",
-        provider_id = "provider",
-        method = "browser",
-        created_at = time.time() - 10,
-        expires_at = time.time() - 1,
+        id="expired-flow",
+        provider_id="provider",
+        method="browser",
+        created_at=time.time() - 10,
+        expires_at=time.time() - 1,
     )
     codex_auth._flows[flow.id] = flow
     monkeypatch.setattr(codex_auth, "_FLOW_TERMINAL_RETENTION_SECONDS", 0)
@@ -1225,7 +1225,7 @@ def test_cancellation_interrupts_request_before_response_headers():
         task = asyncio.create_task(_collect_codex_lines(client, cancel_event))
         await entered.wait()
         cancel_event.set()
-        lines = await asyncio.wait_for(task, timeout = 1)
+        lines = await asyncio.wait_for(task, timeout=1)
         await client.close()
         return lines
 
@@ -1237,15 +1237,15 @@ async def _collect_codex_lines(client, cancel_event):
     return [
         line
         async for line in client.stream(
-            provider_id = "provider",
-            thread_id = "thread",
-            messages = [{"role": "user", "content": "hello"}],
-            model = "gpt-5.4",
-            max_tokens = None,
-            reasoning_effort = None,
-            tools = None,
-            tool_choice = None,
-            cancel_event = cancel_event,
+            provider_id="provider",
+            thread_id="thread",
+            messages=[{"role": "user", "content": "hello"}],
+            model="gpt-5.4",
+            max_tokens=None,
+            reasoning_effort=None,
+            tools=None,
+            tool_choice=None,
+            cancel_event=cancel_event,
         )
     ]
 
@@ -1279,7 +1279,7 @@ def test_transient_refresh_failure_does_not_require_reauthorization(monkeypatch)
         raise codex_auth.CodexAuthError("Could not reach ChatGPT authentication.")
 
     async def run():
-        client = OpenAICodexClient("secret", "account", refresh_access = transient_refresh)
+        client = OpenAICodexClient("secret", "account", refresh_access=transient_refresh)
         await client._client.aclose()
         client._client = FakeClient()
         try:
@@ -1333,7 +1333,7 @@ def test_codex_tool_loop_autoinjects_rag_before_first_model_call(monkeypatch):
             "events": [{"type": "status", "text": "Searching documents"}],
             "messages": injected_messages,
         },
-        raising = False,
+        raising=False,
     )
     client = FakeCodexClient()
 
@@ -1342,24 +1342,24 @@ def test_codex_tool_loop_autoinjects_rag_before_first_model_call(monkeypatch):
             line
             async for line in tool_loop.stream_codex_with_studio_tools(
                 client,
-                run = tool_loop.CodexRunContext(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    session_id = "session",
-                    messages = [{"role": "user", "content": "docs"}],
-                    model = "gpt-5.6-sol",
-                    reasoning_effort = "medium",
+                run=tool_loop.CodexRunContext(
+                    provider_id="provider",
+                    thread_id="thread",
+                    session_id="session",
+                    messages=[{"role": "user", "content": "docs"}],
+                    model="gpt-5.6-sol",
+                    reasoning_effort="medium",
                 ),
-                policy = tool_loop.CodexToolPolicy(
-                    tools = [{"type": "function", "function": {"name": "search_knowledge_base"}}],
-                    max_calls = 2,
-                    timeout = 30,
-                    permission_mode = "auto",
-                    confirm_calls = True,
-                    bypass_permissions = False,
-                    rag_scope = {"thread_id": "thread"},
+                policy=tool_loop.CodexToolPolicy(
+                    tools=[{"type": "function", "function": {"name": "search_knowledge_base"}}],
+                    max_calls=2,
+                    timeout=30,
+                    permission_mode="auto",
+                    confirm_calls=True,
+                    bypass_permissions=False,
+                    rag_scope={"thread_id": "thread"},
                 ),
-                cancel_event = threading.Event(),
+                cancel_event=threading.Event(),
             )
         ]
 
@@ -1398,16 +1398,16 @@ def test_codex_studio_tool_loop_executes_and_continues(monkeypatch):
             line
             async for line in tool_loop.stream_codex_with_studio_tools(
                 client,
-                run = tool_loop.CodexRunContext(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    session_id = "sandbox",
-                    messages = [{"role": "user", "content": "calculate"}],
-                    model = "gpt-5.6-sol",
-                    reasoning_effort = "medium",
+                run=tool_loop.CodexRunContext(
+                    provider_id="provider",
+                    thread_id="thread",
+                    session_id="sandbox",
+                    messages=[{"role": "user", "content": "calculate"}],
+                    model="gpt-5.6-sol",
+                    reasoning_effort="medium",
                 ),
-                policy = tool_loop.CodexToolPolicy(
-                    tools = [
+                policy=tool_loop.CodexToolPolicy(
+                    tools=[
                         {
                             "type": "function",
                             "function": {
@@ -1417,14 +1417,14 @@ def test_codex_studio_tool_loop_executes_and_continues(monkeypatch):
                             },
                         }
                     ],
-                    max_calls = 2,
-                    timeout = 30,
-                    permission_mode = "off",
-                    confirm_calls = False,
-                    bypass_permissions = False,
-                    rag_scope = None,
+                    max_calls=2,
+                    timeout=30,
+                    permission_mode="off",
+                    confirm_calls=False,
+                    bypass_permissions=False,
+                    rag_scope=None,
                 ),
-                cancel_event = threading.Event(),
+                cancel_event=threading.Event(),
             )
         ]
 
@@ -1477,24 +1477,24 @@ def test_codex_tool_budget_resolves_parallel_overflow_without_executing_it(monke
             line
             async for line in tool_loop.stream_codex_with_studio_tools(
                 client,
-                run = tool_loop.CodexRunContext(
-                    provider_id = "provider",
-                    thread_id = "thread",
-                    session_id = "session",
-                    messages = [{"role": "user", "content": "go"}],
-                    model = "gpt-5.6-sol",
-                    reasoning_effort = "medium",
+                run=tool_loop.CodexRunContext(
+                    provider_id="provider",
+                    thread_id="thread",
+                    session_id="session",
+                    messages=[{"role": "user", "content": "go"}],
+                    model="gpt-5.6-sol",
+                    reasoning_effort="medium",
                 ),
-                policy = tool_loop.CodexToolPolicy(
-                    tools = [{"type": "function", "function": {"name": "python"}}],
-                    max_calls = 1,
-                    timeout = 30,
-                    permission_mode = "off",
-                    confirm_calls = False,
-                    bypass_permissions = False,
-                    rag_scope = None,
+                policy=tool_loop.CodexToolPolicy(
+                    tools=[{"type": "function", "function": {"name": "python"}}],
+                    max_calls=1,
+                    timeout=30,
+                    permission_mode="off",
+                    confirm_calls=False,
+                    bypass_permissions=False,
+                    rag_scope=None,
                 ),
-                cancel_event = threading.Event(),
+                cancel_event=threading.Event(),
             )
         ]
 
@@ -1517,8 +1517,8 @@ def test_codex_tool_budget_resolves_parallel_overflow_without_executing_it(monke
 def _codex_chat_gate(
     monkeypatch,
     model: str,
-    resolve = None,
-    saved_models = None,
+    resolve=None,
+    saved_models=None,
 ):
     """Drive the chat route far enough to answer "may this model be used?".
 
@@ -1550,18 +1550,18 @@ def _codex_chat_gate(
     monkeypatch.setattr(codex_auth, "resolve_access", resolve or _refuse)
 
     request = SimpleNamespace(
-        headers = {},
-        state = SimpleNamespace(skip_api_monitor = True),
-        is_disconnected = _is_disconnected,
+        headers={},
+        state=SimpleNamespace(skip_api_monitor=True),
+        is_disconnected=_is_disconnected,
     )
     payload = ChatCompletionRequest(
-        messages = [{"role": "user", "content": "hello"}],
-        provider_id = "codex-1",
-        external_model = model,
-        stream = True,
+        messages=[{"role": "user", "content": "hello"}],
+        provider_id="codex-1",
+        external_model=model,
+        stream=True,
     )
     with pytest.raises(HTTPException) as excinfo:
-        asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject = "t"))
+        asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject="t"))
     return excinfo.value
 
 
@@ -1617,19 +1617,19 @@ def test_codex_chat_receives_the_current_date(monkeypatch):
     )
 
     request = SimpleNamespace(
-        headers = {},
-        state = SimpleNamespace(skip_api_monitor = True),
-        is_disconnected = _is_disconnected,
+        headers={},
+        state=SimpleNamespace(skip_api_monitor=True),
+        is_disconnected=_is_disconnected,
     )
     payload = ChatCompletionRequest(
-        messages = [{"role": "user", "content": "hello"}],
-        provider_id = "codex-1",
-        external_model = model,
-        stream = True,
+        messages=[{"role": "user", "content": "hello"}],
+        provider_id="codex-1",
+        external_model=model,
+        stream=True,
     )
 
     async def _run():
-        response = await inf._proxy_to_external_provider(payload, request, current_subject = "t")
+        response = await inf._proxy_to_external_provider(payload, request, current_subject="t")
         return [chunk async for chunk in response.body_iterator]
 
     asyncio.run(_run())
@@ -1702,7 +1702,7 @@ def test_chat_refetches_the_plan_catalog_after_a_restart(monkeypatch):
     monkeypatch.setattr(codex_client, "_create_http_client", lambda: fake)
     try:
         # Cold cache, exactly as after a restart: the gate fetches rather than refusing.
-        accepted = _codex_chat_gate(monkeypatch, listed, resolve = _resolve)
+        accepted = _codex_chat_gate(monkeypatch, listed, resolve=_resolve)
         assert accepted.status_code == 401, accepted.detail
         assert offered_subscription_model_ids("codex-1") == {listed}
         assert len(calls) == 2
@@ -1726,7 +1726,7 @@ def test_chat_refuses_when_the_catalog_cannot_be_refreshed(monkeypatch):
 
     monkeypatch.setattr(codex_client, "_create_http_client", lambda: Unreachable())
     try:
-        refused = _codex_chat_gate(monkeypatch, "gpt-5.7-nova", resolve = _resolve)
+        refused = _codex_chat_gate(monkeypatch, "gpt-5.7-nova", resolve=_resolve)
         assert refused.status_code == 400
         assert "Choose a curated Codex model." in str(refused.detail)
     finally:
@@ -1745,7 +1745,7 @@ def test_chat_asks_for_reconnection_rather_than_another_model(monkeypatch):
         raise codex_auth.CodexAuthError("ChatGPT authorization expired. Reconnect.")
 
     try:
-        refused = _codex_chat_gate(monkeypatch, "gpt-5.7-nova", resolve = _needs_reauth)
+        refused = _codex_chat_gate(monkeypatch, "gpt-5.7-nova", resolve=_needs_reauth)
         assert refused.status_code == 401
         assert "Reconnect" in str(refused.detail)
         assert "Choose a curated Codex model." not in str(refused.detail)
@@ -1781,12 +1781,12 @@ def test_chat_reads_vision_support_from_the_plan_catalog(monkeypatch):
 
     def call():
         request = SimpleNamespace(
-            headers = {},
-            state = SimpleNamespace(skip_api_monitor = True),
-            is_disconnected = _is_disconnected,
+            headers={},
+            state=SimpleNamespace(skip_api_monitor=True),
+            is_disconnected=_is_disconnected,
         )
         payload = ChatCompletionRequest(
-            messages = [
+            messages=[
                 {
                     "role": "user",
                     "content": [
@@ -1797,12 +1797,12 @@ def test_chat_reads_vision_support_from_the_plan_catalog(monkeypatch):
                     ],
                 }
             ],
-            provider_id = "codex-1",
-            external_model = listed,
-            stream = True,
+            provider_id="codex-1",
+            external_model=listed,
+            stream=True,
         )
         with pytest.raises(HTTPException) as excinfo:
-            asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject = "t"))
+            asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject="t"))
         return excinfo.value
 
     codex_client._offered_models["codex-1"] = {
@@ -1842,7 +1842,7 @@ def test_chat_keeps_a_saved_slug_the_plan_stopped_listing(monkeypatch):
         refused = _codex_chat_gate(monkeypatch, hidden)
         assert refused.status_code == 400
 
-        accepted = _codex_chat_gate(monkeypatch, hidden, saved_models = [hidden])
+        accepted = _codex_chat_gate(monkeypatch, hidden, saved_models=[hidden])
         assert accepted.status_code == 401, accepted.detail
         assert "Choose a curated Codex model." not in str(accepted.detail)
     finally:
@@ -1859,12 +1859,12 @@ def test_chat_retires_a_saved_slug_the_new_account_does_not_carry(monkeypatch):
     forget_subscription_models("codex-1")
     try:
         # No catalog read yet: the row is the only evidence, so it is still trusted.
-        cold = _codex_chat_gate(monkeypatch, stale, saved_models = [stale])
+        cold = _codex_chat_gate(monkeypatch, stale, saved_models=[stale])
         assert cold.status_code == 401, cold.detail
 
         # The new account's catalog does not carry it at all, hidden or otherwise.
         codex_client._offered_models["codex-1"] = {"gpt-5.5": {"id": "gpt-5.5", "listed": True}}
-        refused = _codex_chat_gate(monkeypatch, stale, saved_models = [stale])
+        refused = _codex_chat_gate(monkeypatch, stale, saved_models=[stale])
         assert refused.status_code == 400
         assert "Choose a curated Codex model." in str(refused.detail)
     finally:
@@ -1898,7 +1898,7 @@ def test_chat_reports_reconnection_when_an_image_needs_the_catalog(monkeypatch):
     monkeypatch.setattr(codex_auth, "resolve_access", _needs_reauth)
 
     payload = ChatCompletionRequest(
-        messages = [
+        messages=[
             {
                 "role": "user",
                 "content": [
@@ -1909,18 +1909,18 @@ def test_chat_reports_reconnection_when_an_image_needs_the_catalog(monkeypatch):
                 ],
             }
         ],
-        provider_id = "codex-1",
-        external_model = saved,
-        stream = True,
+        provider_id="codex-1",
+        external_model=saved,
+        stream=True,
     )
     request = SimpleNamespace(
-        headers = {},
-        state = SimpleNamespace(skip_api_monitor = True),
-        is_disconnected = _is_disconnected,
+        headers={},
+        state=SimpleNamespace(skip_api_monitor=True),
+        is_disconnected=_is_disconnected,
     )
     try:
         with pytest.raises(HTTPException) as excinfo:
-            asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject = "t"))
+            asyncio.run(inf._proxy_to_external_provider(payload, request, current_subject="t"))
         assert excinfo.value.status_code == 401
         assert "does not accept image input" not in str(excinfo.value.detail)
     finally:
@@ -1952,7 +1952,7 @@ def test_a_hidden_slug_is_not_invocable_just_because_the_catalog_was_fetched(mon
         assert "Choose a curated Codex model." in str(refused.detail)
 
         # Still reachable when the connection already carries it.
-        accepted = _codex_chat_gate(monkeypatch, hidden, saved_models = [hidden])
+        accepted = _codex_chat_gate(monkeypatch, hidden, saved_models=[hidden])
         assert accepted.status_code == 401, accepted.detail
     finally:
         forget_subscription_models("codex-1")
@@ -1988,7 +1988,7 @@ def test_chat_does_not_trust_the_saved_row_after_a_rebind(monkeypatch):
     forget_subscription_models("codex-1")
     try:
         # A plain cold start still trusts the row.
-        cold = _codex_chat_gate(monkeypatch, stale_slug, saved_models = [stale_slug])
+        cold = _codex_chat_gate(monkeypatch, stale_slug, saved_models=[stale_slug])
         assert cold.status_code == 401, cold.detail
 
         # Rebound: the row is not evidence, so the gate reads the new account's catalog
@@ -2001,7 +2001,7 @@ def test_chat_does_not_trust_the_saved_row_after_a_rebind(monkeypatch):
         fake = _models_response({"models": [{"slug": "gpt-5.5", "visibility": "list"}]})
         monkeypatch.setattr(codex_client, "_create_http_client", lambda: fake)
         refused = _codex_chat_gate(
-            monkeypatch, stale_slug, resolve = _resolve, saved_models = [stale_slug]
+            monkeypatch, stale_slug, resolve=_resolve, saved_models=[stale_slug]
         )
         assert refused.status_code == 400
         assert "Choose a curated Codex model." in str(refused.detail)
@@ -2072,7 +2072,7 @@ def test_a_superseded_catalog_read_does_not_commit(monkeypatch):
             forget_subscription_models("provider-9")
             mark = codex_client.mark_subscription_catalog_stale
             mark("provider-9")
-            return httpx.Response(200, json = {"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
+            return httpx.Response(200, json={"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
 
         async def aclose(self):
             return None
@@ -2102,7 +2102,7 @@ def test_chat_drops_a_catalog_another_worker_rebound(monkeypatch):
     # What the shared DB now says this connection is bound to.
     monkeypatch.setattr(codex_auth, "load_oauth_bundle", lambda _pid: {"account_id": "acct-b"})
     try:
-        refused = _codex_chat_gate(monkeypatch, stale_slug, saved_models = [stale_slug])
+        refused = _codex_chat_gate(monkeypatch, stale_slug, saved_models=[stale_slug])
         assert refused.status_code == 401, refused.detail
         # The catalog for the previous account is gone and the row is unproven again.
         assert codex_client.subscription_catalog_known("codex-1") is False
@@ -2125,7 +2125,7 @@ def test_the_model_route_reports_a_dead_connection(monkeypatch):
     monkeypatch.setattr(codex_routes.codex_auth, "resolve_access", _needs_reauth)
     answered = asyncio.run(
         codex_routes.list_subscription_models(
-            "provider-10", _credential = ("user", "session"), via_api_key = False
+            "provider-10", _credential=("user", "session"), via_api_key=False
         )
     )
     # Not a 401: authFetch would read that as an expired Unsloth session, refresh it and
@@ -2147,13 +2147,13 @@ def test_a_catalog_401_spends_one_forced_refresh(monkeypatch):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
             calls.append(headers["Authorization"])
             if len(calls) == 1:
-                return httpx.Response(401, json = {"detail": "expired"})
-            return httpx.Response(200, json = {"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
+                return httpx.Response(401, json={"detail": "expired"})
+            return httpx.Response(200, json={"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
 
         async def aclose(self):
             return None
@@ -2162,8 +2162,8 @@ def test_a_catalog_401_spends_one_forced_refresh(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         refreshed.append(force_refresh)
         return "fresh-token", "acct-1"
@@ -2185,8 +2185,8 @@ def test_a_second_catalog_401_asks_for_reconnection(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "fresh-token", "acct-1"
 
@@ -2212,18 +2212,18 @@ def test_a_refresh_that_cannot_be_reached_stays_retryable(monkeypatch):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
-            return httpx.Response(401, json = {"detail": "expired"})
+            return httpx.Response(401, json={"detail": "expired"})
 
         async def aclose(self):
             return None
 
     async def _unreachable(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         raise codex_auth.CodexAuthError("token endpoint unreachable")
 
@@ -2245,18 +2245,18 @@ def test_a_rejected_refresh_credential_is_a_reauthorization(monkeypatch):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
-            return httpx.Response(401, json = {"detail": "expired"})
+            return httpx.Response(401, json={"detail": "expired"})
 
         async def aclose(self):
             return None
 
     async def _rejected(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         raise codex_auth.CodexReauthorizationRequired("refresh token rejected")
 
@@ -2281,10 +2281,10 @@ def test_a_catalog_is_not_committed_for_an_account_another_worker_replaced(monke
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
-            return httpx.Response(200, json = {"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
+            return httpx.Response(200, json={"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
 
         async def aclose(self):
             return None
@@ -2316,7 +2316,7 @@ def test_the_model_route_reports_an_already_marked_connection(monkeypatch):
     )
     answered = asyncio.run(
         codex_routes.list_subscription_models(
-            "provider-16", _credential = ("user", "session"), via_api_key = False
+            "provider-16", _credential=("user", "session"), via_api_key=False
         )
     )
     assert answered["source"] == "reauthorization_required"
@@ -2325,7 +2325,7 @@ def test_the_model_route_reports_an_already_marked_connection(monkeypatch):
     monkeypatch.setattr(codex_routes.codex_auth, "auth_status", lambda _id: "disconnected")
     plain = asyncio.run(
         codex_routes.list_subscription_models(
-            "provider-16", _credential = ("user", "session"), via_api_key = False
+            "provider-16", _credential=("user", "session"), via_api_key=False
         )
     )
     assert plain["source"] == "curated"
@@ -2343,20 +2343,20 @@ def test_an_overtaken_read_still_answers_its_own_caller(monkeypatch):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
             # A newer read for the same connection starts while this one is out.
             codex_client._begin_catalog_request("provider-17")
-            return httpx.Response(200, json = {"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
+            return httpx.Response(200, json={"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
 
         async def aclose(self):
             return None
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "token", "acct-1"
 
@@ -2380,19 +2380,19 @@ def test_an_overtaken_read_is_dropped_when_the_account_moved(monkeypatch):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
             codex_client._begin_catalog_request("provider-18")
-            return httpx.Response(200, json = {"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
+            return httpx.Response(200, json={"models": [{"slug": "gpt-5.4", "visibility": "list"}]})
 
         async def aclose(self):
             return None
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "token", "acct-a"
 
@@ -2414,8 +2414,8 @@ def test_a_cold_worker_does_not_trust_a_row_it_cannot_vouch_for(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         calls.append(_provider_id)
         # The gate's own refresh resolves; the chat path's later call stops the request.
@@ -2435,7 +2435,7 @@ def test_a_cold_worker_does_not_trust_a_row_it_cannot_vouch_for(monkeypatch):
     monkeypatch.setattr(codex_client, "_create_http_client", lambda: Unreachable())
     monkeypatch.setattr(codex_auth, "load_oauth_bundle", lambda _pid: {"account_id": "acct-b"})
     try:
-        refused = _codex_chat_gate(monkeypatch, saved, resolve = _resolve, saved_models = [saved])
+        refused = _codex_chat_gate(monkeypatch, saved, resolve=_resolve, saved_models=[saved])
         assert refused.status_code == 400
         assert "Choose a curated Codex model." in str(refused.detail)
 
@@ -2449,14 +2449,14 @@ def test_a_cold_worker_does_not_trust_a_row_it_cannot_vouch_for(monkeypatch):
 
         async def _always_refuse(
             _provider_id,
-            force_refresh = False,
-            expected_access_token = None,
+            force_refresh=False,
+            expected_access_token=None,
         ):
             proven_calls.append(_provider_id)
             raise codex_auth.CodexAuthError("stub: past the model gate")
 
         accepted = _codex_chat_gate(
-            monkeypatch, saved, resolve = _always_refuse, saved_models = [saved]
+            monkeypatch, saved, resolve=_always_refuse, saved_models=[saved]
         )
         assert accepted.status_code == 401, accepted.detail
         # Allowed straight off the row, so the gate never reached for a catalog: the one
@@ -2540,7 +2540,7 @@ def test_a_token_refresh_keeps_the_catalog_proof(monkeypatch):
 
     monkeypatch.setattr(codex_auth, "provider_oauth_write_guard", _guard)
 
-    token, account = asyncio.run(codex_auth.resolve_access("provider-20", force_refresh = True))
+    token, account = asyncio.run(codex_auth.resolve_access("provider-20", force_refresh=True))
     assert (token, account) == ("new", "acct-1")
     assert stored["provider-20"]["catalog_account_id"] == "acct-1"
 
@@ -2579,8 +2579,8 @@ def test_a_second_catalog_401_is_recorded_on_the_connection(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "fresh-token", "acct-1"
 
@@ -2589,7 +2589,7 @@ def test_a_second_catalog_401_is_recorded_on_the_connection(monkeypatch):
     monkeypatch.setattr(
         codex_auth,
         "mark_reauthorization_required",
-        lambda provider_id, expected_access_token = None: marked.append(
+        lambda provider_id, expected_access_token=None: marked.append(
             (provider_id, expected_access_token)
         ),
     )
@@ -2637,14 +2637,14 @@ def test_a_cold_worker_rejects_credentials_for_another_account(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "token-b", "acct-b"
 
     monkeypatch.setattr(codex_auth, "load_oauth_bundle", _bundle)
     try:
-        refused = _codex_chat_gate(monkeypatch, saved, resolve = _resolve, saved_models = [saved])
+        refused = _codex_chat_gate(monkeypatch, saved, resolve=_resolve, saved_models=[saved])
         assert refused.status_code == 400
         assert "Choose a curated Codex model." in str(refused.detail)
         # The connection is left needing a fresh catalog before anything is trusted again.
@@ -2664,8 +2664,8 @@ def test_the_reauthorization_marker_is_written_under_the_guard(monkeypatch):
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "fresh-token", "acct-1"
 
@@ -2683,7 +2683,7 @@ def test_the_reauthorization_marker_is_written_under_the_guard(monkeypatch):
     monkeypatch.setattr(
         codex_auth,
         "mark_reauthorization_required",
-        lambda provider_id, expected_access_token = None: order.append(("mark", provider_id)),
+        lambda provider_id, expected_access_token=None: order.append(("mark", provider_id)),
     )
     try:
         with pytest.raises(CodexReauthorizationError):
@@ -2782,11 +2782,11 @@ def _gated_models_client(gate, slug):
         async def get(
             self,
             _url,
-            headers = None,
-            params = None,
+            headers=None,
+            params=None,
         ):
             await gate.wait()
-            return httpx.Response(200, json = {"models": [{"slug": slug, "visibility": "list"}]})
+            return httpx.Response(200, json={"models": [{"slug": slug, "visibility": "list"}]})
 
         async def aclose(self):
             return None
@@ -2809,8 +2809,8 @@ def test_a_disconnect_mid_read_retires_that_read_and_releases_its_ticket(monkeyp
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "token", "acct-1"
 
@@ -2855,8 +2855,8 @@ def test_a_read_started_after_a_release_cannot_be_matched_by_the_older_one(monke
 
     async def _resolve(
         _provider_id,
-        force_refresh = False,
-        expected_access_token = None,
+        force_refresh=False,
+        expected_access_token=None,
     ):
         return "token", "acct-1"
 
@@ -2890,12 +2890,12 @@ def test_quota_metadata_marks_a_terminal_refusal():
     """A 429 is both "wait a moment" and "your plan is spent"; only the flag tells them apart."""
     response = httpx.Response(
         429,
-        headers = {"retry-after": "30"},
-        request = httpx.Request("POST", "https://chatgpt.com/backend-api/codex/responses"),
+        headers={"retry-after": "30"},
+        request=httpx.Request("POST", "https://chatgpt.com/backend-api/codex/responses"),
     )
     throttled = codex_client._quota_metadata(response)
     assert throttled == {"retry_after": "30"}
-    assert codex_client._quota_metadata(response, terminal = True) == {
+    assert codex_client._quota_metadata(response, terminal=True) == {
         "retry_after": "30",
         "terminal": True,
     }
@@ -2905,16 +2905,16 @@ def test_quota_metadata_falls_back_to_retry_after_ms():
     """The client's own backoff already reads retry-after-ms; dropping it here left the delay
     honoured on this side of the proxy and guessed at on the other."""
     request = httpx.Request("POST", "https://chatgpt.com/backend-api/codex/responses")
-    ms_only = httpx.Response(429, headers = {"retry-after-ms": "30000"}, request = request)
+    ms_only = httpx.Response(429, headers={"retry-after-ms": "30000"}, request=request)
     assert codex_client._quota_metadata(ms_only) == {"retry_after": "30.0"}
     # Seconds win when both are present, and neither means no invented delay.
     both = httpx.Response(
         429,
-        headers = {"retry-after": "45", "retry-after-ms": "30000"},
-        request = request,
+        headers={"retry-after": "45", "retry-after-ms": "30000"},
+        request=request,
     )
     assert codex_client._quota_metadata(both) == {"retry_after": "45"}
-    assert codex_client._quota_metadata(httpx.Response(429, request = request)) == {}
+    assert codex_client._quota_metadata(httpx.Response(429, request=request)) == {}
 
 
 def _quota_error_for(monkeypatch, body):
@@ -2928,7 +2928,7 @@ def _quota_error_for(monkeypatch, body):
 
     class _Ctx:
         async def __aenter__(self):
-            return httpx.Response(429, json = body, request = request)
+            return httpx.Response(429, json=body, request=request)
 
         async def __aexit__(self, *exc):
             return False
@@ -2938,11 +2938,11 @@ def _quota_error_for(monkeypatch, body):
     async def _run():
         async with codex_client._validated_stream_response(
             None,
-            url = "https://chatgpt.com/backend-api/codex/responses",
-            headers = {"Authorization": "Bearer t"},
-            body = {},
-            cancel_event = None,
-            refresh_access = None,
+            url="https://chatgpt.com/backend-api/codex/responses",
+            headers={"Authorization": "Bearer t"},
+            body={},
+            cancel_event=None,
+            refresh_access=None,
         ):
             pass
 
@@ -2983,7 +2983,7 @@ def test_upstream_error_code_survives_a_body_that_cannot_be_read():
     request = httpx.Request("POST", "https://chatgpt.com/backend-api/codex/responses")
 
     async def _both():
-        response = httpx.Response(429, stream = _FailingStream(), request = request)
+        response = httpx.Response(429, stream=_FailingStream(), request=request)
         # The order the send loop uses: the message first, then the code off the same response.
         return (
             await codex_client._upstream_error_detail(response),
@@ -2998,7 +2998,7 @@ def test_upstream_error_code_reads_code_then_type():
 
     def _code_of(body):
         return asyncio.run(
-            codex_client._upstream_error_code(httpx.Response(429, json = body, request = request))
+            codex_client._upstream_error_code(httpx.Response(429, json=body, request=request))
         )
 
     assert _code_of({"error": {"message": "m", "code": "insufficient_quota"}}) == (

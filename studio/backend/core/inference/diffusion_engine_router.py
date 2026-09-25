@@ -85,6 +85,7 @@ def engine_for(name: str) -> Any:
     model, so /images/load's gated-repo preflight needs the pending engine before the switch."""
     if name == ENGINE_SD_CPP:
         from core.inference.sd_cpp_backend import get_sd_cpp_backend
+
         return get_sd_cpp_backend()
     from core.inference.diffusion import get_diffusion_backend
 
@@ -111,7 +112,7 @@ def cancel_generation_for_account(account_id: str) -> bool:
         if engine is None or engine._active_generate_account != account_id:
             continue
         # cancel_generate rechecks the owner under its lock.
-        if engine.cancel_generate(expected_account = account_id):
+        if engine.cancel_generate(expected_account=account_id):
             cancelled = True
     return cancelled
 
@@ -202,6 +203,7 @@ def _selected_card(gpu_ordinal) -> Optional[str]:
         return None
     try:
         from core.inference.sd_cpp_backend import selected_card_identity
+
         return selected_card_identity(gpu_ordinal)
     except Exception:  # noqa: BLE001
         return None
@@ -261,8 +263,8 @@ def select_and_activate_engine(
 
         server_binary = _accept(
             ensure_sd_server_binary(
-                allow_install = _install_allowed(),
-                accelerator = install_accelerator,
+                allow_install=_install_allowed(),
+                accelerator=install_accelerator,
             )
         )
         unlaunchable_server: Optional[str] = None
@@ -278,12 +280,12 @@ def select_and_activate_engine(
         # inside the background load.
         binary = _accept(
             ensure_sd_cpp_binary(
-                allow_install = _install_allowed() and server_binary is None,
-                accelerator = install_accelerator,
+                allow_install=_install_allowed() and server_binary is None,
+                accelerator=install_accelerator,
             )
         )
         unlaunchable_cli: Optional[str] = None
-        if binary and SdCppEngine(binary = binary).version() is None:
+        if binary and SdCppEngine(binary=binary).version() is None:
             logger.warning("sd-cli at %s is present but not runnable; not using it", binary)
             unlaunchable_cli = binary
             binary = None
@@ -292,7 +294,7 @@ def select_and_activate_engine(
             # nothing about the accelerator, and two strikes from one install event would divert.
             # Here, not in the load, because a build the router rejects never reaches the load.
             note_unlaunchable_accelerator_build(
-                unlaunchable_cli or unlaunchable_server, card = selected_card
+                unlaunchable_cli or unlaunchable_server, card=selected_card
             )
         # Runnable is not the same as capable. A build installed before this family's architecture
         # existed upstream is reused untouched -- nothing upgrades a runnable build of the right
@@ -318,7 +320,7 @@ def select_and_activate_engine(
 
     native_available = bool(binary or server_binary) and policy_eligible and fam_ok
     choice = select_diffusion_engine(
-        backend, native_available = native_available, prefer_native = prefer_native
+        backend, native_available=native_available, prefer_native=prefer_native
     )
     if choice == ENGINE_SD_CPP:
         return _activate(ENGINE_SD_CPP, None)
@@ -357,7 +359,7 @@ def native_binary_installed(
         _install_accelerator_for(resolve_diffusion_device_target().backend), selected_card
     )
     server_binary = usable_or_recorded_failure(
-        ensure_sd_server_binary(allow_install = False, accelerator = install_accelerator),
+        ensure_sd_server_binary(allow_install=False, accelerator=install_accelerator),
         install_accelerator,
         selected_card,
     )
@@ -368,13 +370,13 @@ def native_binary_installed(
     ):
         return True
     binary = usable_or_recorded_failure(
-        ensure_sd_cpp_binary(allow_install = False, accelerator = install_accelerator),
+        ensure_sd_cpp_binary(allow_install=False, accelerator=install_accelerator),
         install_accelerator,
         selected_card,
     )
     if fam is not None and binary and not sd_cpp_binary_runs_family(binary, fam):
         return False
-    return bool(binary and SdCppEngine(binary = binary).version() is not None)
+    return bool(binary and SdCppEngine(binary=binary).version() is not None)
 
 
 def predict_engine(
@@ -417,11 +419,11 @@ def predict_engine(
     # build that cannot run this family is never upgraded away, and predicting native for it would
     # stage sd-cli's companions for a load the router sends to diffusers. With nothing resident the
     # install happens and lands on the pinned prebuilt, which is current by definition.
-    native_available = native_binary_installed(gpu_ordinal = gpu_ordinal, fam = fam) or (
-        _install_allowed() and not native_binary_installed(gpu_ordinal = gpu_ordinal)
+    native_available = native_binary_installed(gpu_ordinal=gpu_ordinal, fam=fam) or (
+        _install_allowed() and not native_binary_installed(gpu_ordinal=gpu_ordinal)
     )
     return select_diffusion_engine(
-        backend, native_available = native_available, prefer_native = prefer_native
+        backend, native_available=native_available, prefer_native=prefer_native
     )
 
 
@@ -450,7 +452,7 @@ def family_buildable_here(fam: Optional[DiffusionFamily], *, model_kind: Optiona
     if model_kind != "gguf" or not family_sd_cpp_supported(fam):
         return False
     try:
-        return predict_engine(fam, model_kind = "gguf") == ENGINE_SD_CPP
+        return predict_engine(fam, model_kind="gguf") == ENGINE_SD_CPP
     except Exception:  # noqa: BLE001 -- a probe failure must not hide/refuse a usable model
         return False
 

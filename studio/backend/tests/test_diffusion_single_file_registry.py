@@ -34,14 +34,14 @@ def test_the_fused_mlp_splits_gate_first_and_the_prefix_goes():
     Gate first, proj second is what the upstream bf16 weights say: both halves of the fused tensor
     are bit-identical to their diffusers tensors that way round, and off by up to 1.08 the other.
     """
-    gate = torch.arange(0, 6 * 4, dtype = torch.float32).reshape(6, 4)
-    proj = -torch.arange(0, 6 * 4, dtype = torch.float32).reshape(6, 4)
+    gate = torch.arange(0, 6 * 4, dtype=torch.float32).reshape(6, 4)
+    proj = -torch.arange(0, 6 * 4, dtype=torch.float32).reshape(6, 4)
     checkpoint = {
         PREFIX + "transformer_blocks.3.img_mlp.gate_up.weight": torch.cat([gate, proj]),
         PREFIX + "transformer_blocks.3.img_mlp.out.weight": torch.ones(4, 6),
         "img_in.weight": torch.zeros(2, 2),
     }
-    out = studio._qwen_image_21_checkpoint_to_diffusers(checkpoint = checkpoint, config = {})
+    out = studio._qwen_image_21_checkpoint_to_diffusers(checkpoint=checkpoint, config={})
 
     assert set(out) == {
         "transformer_blocks.3.img_mlp.gate_layer.weight",
@@ -54,9 +54,9 @@ def test_the_fused_mlp_splits_gate_first_and_the_prefix_goes():
 
 
 def test_an_odd_fused_tensor_is_refused_rather_than_split_wrong():
-    with pytest.raises(ValueError, match = "odd row count"):
+    with pytest.raises(ValueError, match="odd row count"):
         studio._qwen_image_21_checkpoint_to_diffusers(
-            checkpoint = {"transformer_blocks.0.img_mlp.gate_up.weight": torch.zeros(5, 4)}
+            checkpoint={"transformer_blocks.0.img_mlp.gate_up.weight": torch.zeros(5, 4)}
         )
 
 
@@ -71,11 +71,11 @@ def test_a_row_split_keeps_a_gguf_tensor_quantised():
     qtype = gguf.GGMLQuantizationType.Q4_K
     block_size, type_size = gguf.GGML_QUANT_SIZES[qtype]
     cols = 2 * block_size
-    raw = torch.randint(0, 255, (8, cols // block_size * type_size), dtype = torch.uint8)
-    fused = GGUFParameter(raw, quant_type = qtype)
+    raw = torch.randint(0, 255, (8, cols // block_size * type_size), dtype=torch.uint8)
+    fused = GGUFParameter(raw, quant_type=qtype)
 
     out = studio._qwen_image_21_checkpoint_to_diffusers(
-        checkpoint = {"transformer_blocks.0.img_mlp.gate_up.weight": fused}
+        checkpoint={"transformer_blocks.0.img_mlp.gate_up.weight": fused}
     )
     for name, rows in (("gate_layer", slice(0, 4)), ("proj", slice(4, 8))):
         half = out[f"transformer_blocks.0.img_mlp.{name}.weight"]
@@ -98,12 +98,12 @@ def test_a_packed_norm_weight_comes_out_as_real_values(qtype_name):
     qtype = getattr(gguf.GGMLQuantizationType, qtype_name)
     block_size, type_size = gguf.GGML_QUANT_SIZES[qtype]
     n = 4 * block_size
-    raw = torch.randint(0, 255, (n // block_size * type_size,), dtype = torch.uint8)
-    packed = GGUFParameter(raw, quant_type = qtype)
-    expected = dequantize_gguf_tensor(GGUFParameter(raw.clone(), quant_type = qtype))
+    raw = torch.randint(0, 255, (n // block_size * type_size,), dtype=torch.uint8)
+    packed = GGUFParameter(raw, quant_type=qtype)
+    expected = dequantize_gguf_tensor(GGUFParameter(raw.clone(), quant_type=qtype))
 
     out = studio._qwen_image_21_checkpoint_to_diffusers(
-        checkpoint = {PREFIX + "txt_in.text_norm.weight": packed}
+        checkpoint={PREFIX + "txt_in.text_norm.weight": packed}
     )["txt_in.text_norm.weight"]
     assert not hasattr(out, "quant_type")
     assert tuple(out.shape) == (n,)
@@ -133,7 +133,7 @@ def test_registration_never_overwrites_diffusers_own_entry(monkeypatch):
     monkeypatch.setattr(
         sfm, "SINGLE_FILE_LOADABLE_CLASSES", {**sfm.SINGLE_FILE_LOADABLE_CLASSES, CLASS: upstream}
     )
-    monkeypatch.setattr(diffusers, CLASS, type(CLASS, (), {}), raising = False)
+    monkeypatch.setattr(diffusers, CLASS, type(CLASS, (), {}), raising=False)
 
     assert studio._register_unregistered_single_file_classes() == ()
     assert sfm.SINGLE_FILE_LOADABLE_CLASSES[CLASS] is upstream

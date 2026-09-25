@@ -22,7 +22,7 @@ from utils.account_context import OWNER, AccountContext, run_as
 ALICE = AccountContext("a" * 32, "alice")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def studio_home(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
@@ -63,11 +63,11 @@ def test_a_managed_request_reads_the_owners_preview_sharing_switch():
 
 def test_a_managed_load_reads_the_owners_llama_cpp_path(tmp_path, monkeypatch):
     binary = tmp_path / "llama" / llama_cpp_path_settings.llama_server_binary_name()
-    binary.parent.mkdir(parents = True, exist_ok = True)
+    binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_text("")
     binary.chmod(0o755)
-    monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
-    monkeypatch.delenv("UNSLOTH_LLAMA_CPP_PATH", raising = False)
+    monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
+    monkeypatch.delenv("UNSLOTH_LLAMA_CPP_PATH", raising=False)
     run_as(OWNER, llama_cpp_path_settings.set_custom_llama_cpp_path, str(binary.parent))
     assert run_as(ALICE, llama_cpp_path_settings.get_stored_custom_llama_cpp_path) is not None
     assert run_as(ALICE, llama_cpp_path_settings.custom_llama_cpp_path_source) == "studio"
@@ -75,7 +75,7 @@ def test_a_managed_load_reads_the_owners_llama_cpp_path(tmp_path, monkeypatch):
 
 def test_a_managed_scan_keys_on_the_owners_cache_home(tmp_path):
     custom = tmp_path / "external" / "huggingface"
-    custom.parent.mkdir(parents = True, exist_ok = True)
+    custom.parent.mkdir(parents=True, exist_ok=True)
     run_as(OWNER, hf_cache_settings.set_hf_cache_home, str(custom))
     # The key separates in-flight scans per cache volume, so it must name the home actually scanned.
     assert run_as(ALICE, hf_cache_settings.get_hf_cache_paths).cache_home == custom

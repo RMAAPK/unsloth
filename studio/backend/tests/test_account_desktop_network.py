@@ -20,7 +20,7 @@ from utils import keyless_api_access as keyless
 from utils.account_context import OWNER, arun_as, current_account, current_account_id, run_as
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def auth_db(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "auth.db")
     monkeypatch.setattr(storage, "_BOOTSTRAP_PW_PATH", tmp_path / ".bootstrap_password")
@@ -33,12 +33,12 @@ def auth_db(tmp_path, monkeypatch):
     keyless._reset_scope_cache()
 
 
-def add_managed(*, must_change = False):
+def add_managed(*, must_change=False):
     storage.create_initial_user(
         "alice",
         "alice-password",
         secrets.token_urlsafe(32),
-        must_change_password = must_change,
+        must_change_password=must_change,
     )
     return storage.get_account("alice")
 
@@ -48,16 +48,16 @@ def client():
     app.state.secure = True
     app.state.bind_host = "127.0.0.1"
     app.state.cloudflare_url = "https://shared.trycloudflare.com"
-    app.include_router(auth_routes.router, prefix = "/api/auth")
+    app.include_router(auth_routes.router, prefix="/api/auth")
     app.add_middleware(keyless.KeylessToolPolicyMiddleware)
 
     @app.get("/account")
-    async def account(subject = Depends(authentication.get_current_subject)):
+    async def account(subject=Depends(authentication.get_current_subject)):
         return {"subject": subject, "account_id": current_account_id()}
 
     @app.get(
         "/owner",
-        dependencies = [
+        dependencies=[
             Depends(authentication.get_current_subject),
             Depends(policy.require_owner),
         ],
@@ -65,15 +65,15 @@ def client():
     async def owner():
         return {"account_id": current_account_id()}
 
-    @app.api_route("/events", methods = ["GET", "POST"])
-    async def events(subject = Depends(authentication.get_current_subject)):
+    @app.api_route("/events", methods=["GET", "POST"])
+    async def events(subject=Depends(authentication.get_current_subject)):
         async def stream():
             await asyncio.sleep(0)
             yield f"data: {subject}:{current_account_id()}\n\n"
 
-        return StreamingResponse(stream(), media_type = "text/event-stream")
+        return StreamingResponse(stream(), media_type="text/event-stream")
 
-    return TestClient(app, client = ("127.0.0.1", 55000))
+    return TestClient(app, client=("127.0.0.1", 55000))
 
 
 def test_desktop_multi_validates_secret_and_never_mints_tokens(monkeypatch):
@@ -86,10 +86,10 @@ def test_desktop_multi_validates_secret_and_never_mints_tokens(monkeypatch):
     monkeypatch.setattr(auth_routes, "create_access_token", no_token)
     monkeypatch.setattr(auth_routes, "create_refresh_token", no_token)
     with client() as http:
-        response = http.post("/api/auth/desktop-login", json = {"secret": raw})
+        response = http.post("/api/auth/desktop-login", json={"secret": raw})
         assert response.status_code == 200
         assert response.content == b'{"login_required":true,"login_mode":"multi"}'
-        assert http.post("/api/auth/desktop-login", json = {"secret": raw + "x"}).status_code == 401
+        assert http.post("/api/auth/desktop-login", json={"secret": raw + "x"}).status_code == 401
 
 
 def test_desktop_single_response_bytes_and_return_to_single(monkeypatch):
@@ -107,12 +107,12 @@ def test_desktop_single_response_bytes_and_return_to_single(monkeypatch):
         b'"must_change_password":false,"account_id":"owner"}'
     )
     with client() as http:
-        single = http.post("/api/auth/desktop-login", json = {"secret": raw})
+        single = http.post("/api/auth/desktop-login", json={"secret": raw})
         assert single.content == expected
         add_managed()
-        assert http.post("/api/auth/desktop-login", json = {"secret": raw}).json()["login_required"]
+        assert http.post("/api/auth/desktop-login", json={"secret": raw}).json()["login_required"]
         storage.delete_user("alice")
-        assert http.post("/api/auth/desktop-login", json = {"secret": raw}).content == expected
+        assert http.post("/api/auth/desktop-login", json={"secret": raw}).content == expected
     assert len(minted) == 2
     assert all(
         call == {"subject": "unsloth", "desktop": True, "secret": storage.get_jwt_secret("unsloth")}
@@ -122,14 +122,14 @@ def test_desktop_single_response_bytes_and_return_to_single(monkeypatch):
 
 @pytest.mark.parametrize("desktop", [False, True])
 def test_managed_account_cannot_set_desktop_initial_password(desktop):
-    add_managed(must_change = True)
+    add_managed(must_change=True)
     before = storage.get_user_and_secret("alice")
-    token = authentication.create_access_token(subject = "alice", desktop = desktop)
+    token = authentication.create_access_token(subject="alice", desktop=desktop)
     with client() as http:
         response = http.post(
             "/api/auth/desktop-initial-password",
-            headers = {"Authorization": f"Bearer {token}"},
-            json = {"new_password": "changed-password"},
+            headers={"Authorization": f"Bearer {token}"},
+            json={"new_password": "changed-password"},
         )
     assert response.status_code == 403
     assert storage.get_user_and_secret("alice") == before
@@ -137,19 +137,19 @@ def test_managed_account_cannot_set_desktop_initial_password(desktop):
 
 def request(
     *,
-    scope = "full",
-    lan = False,
-    headers = None,
+    scope="full",
+    lan=False,
+    headers=None,
 ):
     address = "192.168.1.2" if lan else "127.0.0.1"
     app = SimpleNamespace(
-        state = SimpleNamespace(
-            bind_host = address,
-            secure = False,
-            cloudflare_url = None,
-            lan_access_launch_managed = lan,
-            lan_access_launch_addresses = [address] if lan else [],
-            lan_access_port = 8888,
+        state=SimpleNamespace(
+            bind_host=address,
+            secure=False,
+            cloudflare_url=None,
+            lan_access_launch_managed=lan,
+            lan_access_launch_addresses=[address] if lan else [],
+            lan_access_port=8888,
         )
     )
     return Request(
@@ -173,7 +173,7 @@ def request(
 def test_keyless_refused_for_every_multi_account_entry(scope, lan, bearer, monkeypatch):
     monkeypatch.setattr(keyless, "get_keyless_api_access_scope", lambda: scope)
     headers = [] if bearer is None else [(b"authorization", f"Bearer {bearer}".encode())]
-    req = request(scope = scope, lan = lan, headers = headers)
+    req = request(scope=scope, lan=lan, headers=headers)
     assert keyless.keyless_request_allowed(req)
     alice = add_managed()
     assert not keyless.keyless_request_allowed(req)
@@ -195,7 +195,7 @@ def test_single_keyless_admission_explicitly_rebinds_owner(bearer, monkeypatch):
     storage.delete_user("alice")
     monkeypatch.setattr(keyless, "get_keyless_api_access_scope", lambda: "full")
     headers = [] if bearer is None else [(b"authorization", f"Bearer {bearer}".encode())]
-    req = request(headers = headers)
+    req = request(headers=headers)
 
     async def resolve():
         credentials = await authentication.security(req)
@@ -222,7 +222,7 @@ def test_network_request_uses_account_credentials(subject, credential, transport
     alice = add_managed()
     monkeypatch.setattr(keyless, "_read_settings", lambda: ("full", True))
     token = (
-        authentication.create_access_token(subject = subject)
+        authentication.create_access_token(subject=subject)
         if credential == "jwt"
         else storage.create_api_key(subject, "network")[0]
     )
@@ -231,14 +231,14 @@ def test_network_request_uses_account_credentials(subject, credential, transport
         headers.update({"Host": "shared.trycloudflare.com", "cf-connecting-ip": "203.0.113.7"})
     expected = OWNER.account_id if subject == "unsloth" else alice.account_id
     with client() as http:
-        response = http.get("/account", headers = headers)
+        response = http.get("/account", headers=headers)
         assert response.status_code == 200
         assert response.json() == {"subject": subject, "account_id": expected}
-        assert http.get("/owner", headers = headers).status_code == (
+        assert http.get("/owner", headers=headers).status_code == (
             200 if subject == "unsloth" else 403
         )
         for method in ("GET", "POST"):
-            response = http.request(method, "/events", headers = headers)
+            response = http.request(method, "/events", headers=headers)
             assert response.status_code == 200
             assert response.text == f"data: {subject}:{expected}\n\n"
     assert current_account() == OWNER
@@ -251,7 +251,7 @@ def test_tunnel_never_admits_keyless_even_with_one_account(bearer, monkeypatch):
     if bearer:
         headers["Authorization"] = f"Bearer {bearer}"
     with client() as http:
-        assert http.get("/account", headers = headers).status_code == 401
+        assert http.get("/account", headers=headers).status_code == 401
 
 
 def test_bootstrap_html_single_bytes_and_multi_suppression(monkeypatch):
@@ -260,7 +260,7 @@ def test_bootstrap_html_single_bytes_and_multi_suppression(monkeypatch):
 
     monkeypatch.setattr(storage, "requires_password_change", lambda username: username == "unsloth")
     monkeypatch.setattr(secrets_module, "token_urlsafe", lambda size: "fixed-nonce")
-    app = SimpleNamespace(state = SimpleNamespace(bootstrap_password = "owner-bootstrap"))
+    app = SimpleNamespace(state=SimpleNamespace(bootstrap_password="owner-bootstrap"))
     html = b"<html><head></head><body>Studio</body></html>"
     expected = b'<html><head><script nonce="fixed-nonce">window.__UNSLOTH_BOOTSTRAP__={"username": "unsloth", "password": "owner-bootstrap"}</script></head><body>Studio</body></html>'
     assert main._inject_bootstrap(html, app) == (expected, "fixed-nonce")
@@ -276,7 +276,7 @@ def test_bootstrap_html_stays_suppressed_while_a_deactivated_account_exists(monk
 
     monkeypatch.setattr(storage, "requires_password_change", lambda username: username == "unsloth")
     monkeypatch.setattr(secrets_module, "token_urlsafe", lambda size: "fixed-nonce")
-    app = SimpleNamespace(state = SimpleNamespace(bootstrap_password = "owner-bootstrap"))
+    app = SimpleNamespace(state=SimpleNamespace(bootstrap_password="owner-bootstrap"))
     html = b"<html><head></head><body>Studio</body></html>"
     account = add_managed()
     storage.set_account_active(account.account_id, False)
@@ -303,16 +303,16 @@ def test_secure_banner_bytes_and_shared_url_survive_account_creation(monkeypatch
         "\n  To stop Unsloth Studio: press Ctrl+C (Control+C, not Command+C, on macOS).\n"
         f"{divider}\n\n"
     ).encode()
-    run._emit_secure_startup_output(8888, enable_tools = False)
+    run._emit_secure_startup_output(8888, enable_tools=False)
     assert capsys.readouterr().out.encode() == expected
     add_managed()
-    run._emit_secure_startup_output(8888, enable_tools = False)
+    run._emit_secure_startup_output(8888, enable_tools=False)
     assert capsys.readouterr().out.encode() == expected
 
 
 @pytest.mark.parametrize("owner_pending", [False, True])
 def test_timeout_checks_only_owner_even_in_managed_context(owner_pending, monkeypatch, capsys):
-    alice = add_managed(must_change = True)
+    alice = add_managed(must_change=True)
     checked = []
     stopped = []
 
@@ -326,7 +326,7 @@ def test_timeout_checks_only_owner_even_in_managed_context(owner_pending, monkey
         enforce_bootstrap_password_deadline,
         storage,
         lambda: stopped.append(True),
-        timeout_seconds = 1,
+        timeout_seconds=1,
     )
     assert result is owner_pending
     assert checked == ["unsloth"]
@@ -338,12 +338,12 @@ def test_terminal_gate_ignores_managed_setup_and_changes_only_owner(monkeypatch)
     import run
     from auth import terminal_prompt
 
-    alice = add_managed(must_change = True)
+    alice = add_managed(must_change=True)
     output = io.StringIO()
     monkeypatch.setattr(run.sys, "stderr", output)
     monkeypatch.setattr(run, "_stream_isatty", lambda stream: True)
     kwargs = dict(
-        tunnel_will_start = True, host = "127.0.0.1", secure = True, api_only = False, frontend_served = True
+        tunnel_will_start=True, host="127.0.0.1", secure=True, api_only=False, frontend_served=True
     )
     assert run_as(alice, run._terminal_password_gate, **kwargs) == (True, False)
     assert output.getvalue() == ""
@@ -367,7 +367,7 @@ def _request(path, headers):
         "path": path,
         "query_string": b"",
         "headers": [(k.encode(), v.encode()) for k, v in headers.items()],
-        "app": SimpleNamespace(state = SimpleNamespace()),
+        "app": SimpleNamespace(state=SimpleNamespace()),
     }
     return Request(scope)
 
@@ -402,14 +402,14 @@ def test_desktop_secret_stops_the_backend_it_owns(monkeypatch):
     app = FastAPI()
     fired = []
     app.state.trigger_shutdown = lambda: fired.append(True)
-    app.add_api_route("/api/desktop/shutdown", main.desktop_shutdown_server, methods = ["POST"])
+    app.add_api_route("/api/desktop/shutdown", main.desktop_shutdown_server, methods=["POST"])
     with TestClient(app) as http:
         assert http.post("/api/desktop/shutdown").status_code == 401
         assert (
-            http.post("/api/desktop/shutdown", headers = {"X-Desktop-Secret": raw + "x"}).status_code
+            http.post("/api/desktop/shutdown", headers={"X-Desktop-Secret": raw + "x"}).status_code
             == 401
         )
-        response = http.post("/api/desktop/shutdown", headers = {"X-Desktop-Secret": raw})
+        response = http.post("/api/desktop/shutdown", headers={"X-Desktop-Secret": raw})
         assert response.status_code == 200
         assert response.json() == {"status": "shutting_down"}
         deadline = time.monotonic() + 5

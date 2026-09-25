@@ -24,7 +24,7 @@ from core.inference.key_exchange import decrypt_api_key, init_key_pair
 from storage import credential_secrets
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def isolated_databases(tmp_path, monkeypatch):
     auth_db = tmp_path / "auth.db"
     studio_db = tmp_path / "studio.db"
@@ -32,7 +32,7 @@ def isolated_databases(tmp_path, monkeypatch):
     monkeypatch.setattr(auth_storage, "_credential_encryption_key_cache", None)
     monkeypatch.setattr(credential_secrets, "studio_db_path", lambda: studio_db)
     monkeypatch.setattr(
-        credential_secrets, "ensure_dir", lambda path: path.mkdir(parents = True, exist_ok = True)
+        credential_secrets, "ensure_dir", lambda path: path.mkdir(parents=True, exist_ok=True)
     )
     monkeypatch.setattr(
         credential_secrets,
@@ -133,7 +133,7 @@ def test_repeated_schema_initialization_and_concurrent_upserts():
     credential_secrets._schema_ready = set()
     credential_secrets.get_connection().close()
 
-    with ThreadPoolExecutor(max_workers = 4) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         list(
             pool.map(
                 lambda value: credential_secrets.save_provider_api_key("provider-1", value),
@@ -248,17 +248,17 @@ assert seen["api_key"] == "sk_restart"
 
     subprocess.run(
         [sys.executable, "-c", write_credentials],
-        cwd = backend_dir,
-        env = env,
-        check = True,
-        timeout = 30,
+        cwd=backend_dir,
+        env=env,
+        check=True,
+        timeout=30,
     )
     subprocess.run(
         [sys.executable, "-c", use_credentials_after_restart],
-        cwd = backend_dir,
-        env = env,
-        check = True,
-        timeout = 30,
+        cwd=backend_dir,
+        env=env,
+        check=True,
+        timeout=30,
     )
 
 
@@ -277,13 +277,13 @@ ENVELOPE_VERSION = "v1"
 ENVELOPE_AAD = b"unsloth-studio-provider-key-v1"
 
 OAEP = padding.OAEP(
-    mgf = padding.MGF1(algorithm = hashes.SHA256()),
-    algorithm = hashes.SHA256(),
-    label = None,
+    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+    algorithm=hashes.SHA256(),
+    label=None,
 )
 
 
-@pytest.fixture(scope = "module", autouse = True)
+@pytest.fixture(scope="module", autouse=True)
 def key_pair():
     init_key_pair()
 
@@ -354,7 +354,7 @@ def test_a_different_nonce_is_rejected():
 
 def test_an_envelope_sealed_under_other_associated_data_is_rejected():
     with pytest.raises(InvalidTag):
-        decrypt_api_key(encrypt_envelope("sk-aad", aad = b"some-other-protocol"))
+        decrypt_api_key(encrypt_envelope("sk-aad", aad=b"some-other-protocol"))
 
 
 @pytest.mark.parametrize("parts", [2, 3, 5])
@@ -372,5 +372,5 @@ def test_envelope_parts_are_decoded_strictly():
 
 
 def test_an_unknown_version_is_rejected_rather_than_read_as_legacy():
-    with pytest.raises(ValueError, match = "Unsupported"):
-        decrypt_api_key(encrypt_envelope("sk-future", version = "v2"))
+    with pytest.raises(ValueError, match="Unsupported"):
+        decrypt_api_key(encrypt_envelope("sk-future", version="v2"))

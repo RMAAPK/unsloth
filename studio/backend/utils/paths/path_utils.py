@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 _WINDOWS_CONTENT_RECALL_ATTRIBUTES = 0x00001000 | 0x00040000 | 0x00400000
 
 
-def file_contents_available_locally(path, stat_result = None) -> bool:
+def file_contents_available_locally(path, stat_result=None) -> bool:
     """Whether opening *path* can read data without recalling a cloud placeholder. Non-Windows files have no ``st_file_attributes`` and are treated as local; an inaccessible path is not safe to open during inventory discovery."""
     try:
         info = stat_result if stat_result is not None else os.stat(path)
@@ -75,7 +75,7 @@ def drop_shadowed_appledouble_names(
     # Optional[...] rather than a PEP 604 union: this module has no `from __future__ import annotations`, so annotations are evaluated at import and PEP 604 is a TypeError on the declared 3.9 floor. tests/test_python39_compatibility.py gates it.
     files: list[str],
     *,
-    subject_key: Optional[Callable[[str], object]] = None,
+    subject_key: Optional[Callable[[str], object]] = None
 ) -> list[str]:
     """*files* without the ``._`` entries whose subject is present in the same listing. For remote listings, which carry no bytes to read, so a sole candidate survives whatever it is called. *subject_key* widens what counts as the subject, for files that come in sets."""
     key = subject_key or (lambda name: name)
@@ -102,7 +102,7 @@ def _is_wsl() -> bool:
     if sys.platform == "win32":
         return False
     try:
-        with open("/proc/version", "r", encoding = "utf-8") as f:
+        with open("/proc/version", "r", encoding="utf-8") as f:
             return "microsoft" in f.read().lower()
     except Exception:
         return False
@@ -135,9 +135,9 @@ def wsl_automount_root() -> str:
     try:
         import configparser
 
-        parser = configparser.ConfigParser(inline_comment_prefixes = ("#", ";"))
-        parser.read("/etc/wsl.conf", encoding = "utf-8")
-        root = parser.get("automount", "root", fallback = "").strip().strip("\"'")
+        parser = configparser.ConfigParser(inline_comment_prefixes=("#", ";"))
+        parser.read("/etc/wsl.conf", encoding="utf-8")
+        root = parser.get("automount", "root", fallback="").strip().strip("\"'")
     except Exception:
         return default
     if not root:
@@ -222,6 +222,7 @@ def is_model_cached(model_name: str) -> bool:
 def _hf_hub_cache_dir() -> Path:
     """Return HF cache root honoring HF_HUB_CACHE when available."""
     from utils.hf_cache_settings import get_hf_cache_paths
+
     return get_hf_cache_paths().hub_cache
 
 
@@ -305,17 +306,18 @@ def reset_cache_case_resolution_state() -> None:
 
 def _wsl_reveal_in_explorer(path: Path, is_file: bool) -> bool:
     import subprocess
+
     if not _IS_WSL:
         return False
     try:
         windows_path = subprocess.run(
             ["wslpath", "-w", str(path)],
-            capture_output = True,
-            text = True,
-            encoding = "utf-8",
-            errors = "replace",
-            check = True,
-            timeout = 10,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=True,
+            timeout=10,
         ).stdout.strip()
         if not windows_path:
             return False

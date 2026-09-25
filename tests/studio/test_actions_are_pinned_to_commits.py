@@ -88,7 +88,7 @@ def _owner_repo(ref_repo: str) -> str:
 def _sources():
     """Every workflow and action definition under .github, as (path, text)."""
     for path in sorted(GITHUB.rglob("*.y*ml")):
-        yield path, path.read_text(encoding = "utf-8", errors = "ignore")
+        yield path, path.read_text(encoding="utf-8", errors="ignore")
 
 
 # Split on the LAST `@` rather than enumerating what a ref may contain. Git ref names

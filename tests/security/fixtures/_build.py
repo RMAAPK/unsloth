@@ -73,7 +73,7 @@ RECORD_HEADER = ""
 
 
 def _write_zip_member(zf: zipfile.ZipFile, name: str, data: bytes) -> None:
-    info = zipfile.ZipInfo(filename = name, date_time = _ZIP_DOS_EPOCH)
+    info = zipfile.ZipInfo(filename=name, date_time=_ZIP_DOS_EPOCH)
     info.compress_type = zipfile.ZIP_DEFLATED
     info.external_attr = (0o644 & 0xFFFF) << 16
     info.create_system = 3  # Unix
@@ -84,7 +84,7 @@ def _build_wheel(out_path: Path, *, name: str, payload_files: dict[str, bytes]) 
     """Write a deterministic .whl; .dist-info METADATA/WHEEL/RECORD are added automatically."""
     dist_info = f"{name}-0.0.1.dist-info"
     members: dict[str, bytes] = dict(payload_files)
-    members[f"{dist_info}/METADATA"] = WHEEL_METADATA.format(name = name).encode()
+    members[f"{dist_info}/METADATA"] = WHEEL_METADATA.format(name=name).encode()
     members[f"{dist_info}/WHEEL"] = WHEEL_FILE.encode()
     # RECORD is minimal; the scanner inspects file bodies, not hash integrity.
     record_lines = []
@@ -94,7 +94,7 @@ def _build_wheel(out_path: Path, *, name: str, payload_files: dict[str, bytes]) 
     members[f"{dist_info}/RECORD"] = ("\n".join(record_lines) + "\n").encode()
 
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", compression = zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(members):
             _write_zip_member(zf, path, members[path])
     _publish(out_path, buf.getvalue())
@@ -145,10 +145,10 @@ def _build_sdist(out_path: Path, *, name: str, payload_files: dict[str, bytes]) 
     import gzip
 
     inner = io.BytesIO()
-    with tarfile.open(fileobj = inner, mode = "w") as tf:
+    with tarfile.open(fileobj=inner, mode="w") as tf:
         for path in sorted(payload_files):
             data = payload_files[path]
-            info = tarfile.TarInfo(name = f"{prefix}/{path}")
+            info = tarfile.TarInfo(name=f"{prefix}/{path}")
             info.size = len(data)
             info.mtime = SOURCE_DATE_EPOCH
             info.mode = 0o644
@@ -162,11 +162,11 @@ def _build_sdist(out_path: Path, *, name: str, payload_files: dict[str, bytes]) 
     # gzip with fixed mtime=0 and explicit compresslevel for stability.
     gz_buf = io.BytesIO()
     with gzip.GzipFile(
-        fileobj = gz_buf,
-        mode = "wb",
-        mtime = SOURCE_DATE_EPOCH,
-        compresslevel = 6,
-        filename = "",
+        fileobj=gz_buf,
+        mode="wb",
+        mtime=SOURCE_DATE_EPOCH,
+        compresslevel=6,
+        filename="",
     ) as gz:
         gz.write(raw)
     _publish(out_path, gz_buf.getvalue())
@@ -187,19 +187,19 @@ def build_all() -> dict[str, Path]:
         "malicious_fixture/__init__.py": b"# malicious fixture stub\n",
     }
     mal_whl = HERE / "malicious_wheel.whl"
-    _build_wheel(mal_whl, name = "malicious_fixture", payload_files = mal_payload)
+    _build_wheel(mal_whl, name="malicious_fixture", payload_files=mal_payload)
     outputs["malicious_wheel"] = mal_whl
 
     clean_payload = {
         "clean_fixture/__init__.py": CLEAN_INIT_PY.encode(),
     }
     clean_whl = HERE / "clean_wheel.whl"
-    _build_wheel(clean_whl, name = "clean_fixture", payload_files = clean_payload)
+    _build_wheel(clean_whl, name="clean_fixture", payload_files=clean_payload)
     outputs["clean_wheel"] = clean_whl
 
     # Malicious sdist: same setup.py, tar.gz form.
     mal_sdist = HERE / "malicious_sdist.tar.gz"
-    _build_sdist(mal_sdist, name = "malicious_fixture", payload_files = mal_payload)
+    _build_sdist(mal_sdist, name="malicious_fixture", payload_files=mal_payload)
     outputs["malicious_sdist"] = mal_sdist
 
     return outputs

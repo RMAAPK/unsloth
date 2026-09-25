@@ -319,7 +319,7 @@ async def get_current_subject(credentials: HTTPAuthorizationCredentials = Depend
 
 
 async def get_current_credential(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> Tuple[str, Optional[str]]:
     """As get_current_subject, but also returns the credential generation, for routes that persist a
     new credential and must not do so on behalf of one a concurrent reset has revoked."""
@@ -330,7 +330,7 @@ async def get_current_credential(
 
 
 async def authenticated_via_api_key(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> bool:
     """True when the caller used an sk-unsloth API key, not a UI session JWT. Lets routes treat
     programmatic API callers differently from the Unsloth UI (e.g. refuse a teardown the UI would
@@ -381,7 +381,7 @@ async def subject_for_header_or_query_token(request: Any, token: Optional[str]) 
 
 
 async def authenticated_without_credential(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> bool:
     """Dependency form of ``admitted_without_credential``."""
     return admitted_without_credential(credentials)
@@ -410,7 +410,7 @@ async def allow_ambient_hf_token(via_api_key: bool = Depends(authenticated_via_a
 
 
 async def authenticated_via_desktop_jwt(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> bool:
     """True when the caller is the local desktop app, not a browser session or API key. Lets routes treat the
     desktop as an authority of its own: it authenticates with a local secret rather than the account password.
@@ -419,7 +419,7 @@ async def authenticated_via_desktop_jwt(
 
 
 async def get_current_subject_allow_password_change(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> str:
     """Validate JWT but allow access to the password-change endpoint."""
     subject, _generation = await _get_current_credential(

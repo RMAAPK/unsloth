@@ -31,7 +31,7 @@ def accounts(tmp_path, monkeypatch):
     rag_db.reset_schema_state_for_tests()
     policy.invalidate_account_cache()
     storage.create_initial_user("unsloth", "owner-password", secrets.token_urlsafe(32))
-    alice = storage.issue_account_setup_code(username = ALICE_NAME)["account"]
+    alice = storage.issue_account_setup_code(username=ALICE_NAME)["account"]
     yield storage.get_account(ALICE_NAME), alice["account_id"]
     policy.invalidate_account_cache()
 
@@ -44,12 +44,12 @@ def _seed_document(account, document_id: str, text: bytes) -> None:
         try:
             store.create_document(
                 conn,
-                scope = "kb:none",
-                filename = f"{document_id}.txt",
-                sha256 = document_id,
-                status = "ready",
-                stored_path = str(path),
-                document_id = document_id,
+                scope="kb:none",
+                filename=f"{document_id}.txt",
+                sha256=document_id,
+                status="ready",
+                stored_path=str(path),
+                document_id=document_id,
             )
         finally:
             conn.close()
@@ -63,11 +63,11 @@ def test_a_signed_rag_link_serves_its_own_accounts_document(accounts):
     _seed_document(alice, "shared-id", b"alice secret")
 
     token = run_as(alice, rag_routes._sign_document, "shared-id")
-    response = rag_routes.document_file_signed("shared-id", token = token)
+    response = rag_routes.document_file_signed("shared-id", token=token)
     assert Path(response.path).read_bytes() == b"alice secret"
 
     owner_token = rag_routes._sign_document("shared-id")
-    owner_response = rag_routes.document_file_signed("shared-id", token = owner_token)
+    owner_response = rag_routes.document_file_signed("shared-id", token=owner_token)
     assert Path(owner_response.path).read_bytes() == b"owner secret"
 
 
@@ -75,12 +75,12 @@ def test_a_signed_rag_link_dies_with_its_account(accounts):
     alice, account_id = accounts
     _seed_document(alice, "doc-1", b"alice secret")
     token = run_as(alice, rag_routes._sign_document, "doc-1")
-    served = rag_routes.document_file_signed("doc-1", token = token)
+    served = rag_routes.document_file_signed("doc-1", token=token)
     assert Path(served.path).read_bytes() == b"alice secret"
 
     storage.set_account_active(account_id, False)
     with pytest.raises(HTTPException) as refused:
-        rag_routes.document_file_signed("doc-1", token = token)
+        rag_routes.document_file_signed("doc-1", token=token)
     assert refused.value.status_code == 401
 
 

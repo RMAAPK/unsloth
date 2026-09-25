@@ -200,6 +200,7 @@ def _load_optional(module_name: str) -> Any:
                 module = importlib.import_module(module_name)
             except Exception as exc:  # noqa: BLE001
                 import logging as _logging
+
                 _logging.getLogger(__name__).debug(
                     "%s unavailable (%s; with GPU init disabled: %s)", module_name, first_error, exc
                 )
@@ -222,6 +223,7 @@ def _xet_health_from(module: Any, **kwargs: Any) -> Any:
         return module.xet_health(**kwargs)
     except Exception as exc:  # noqa: BLE001
         import logging as _logging
+
         _logging.getLogger(__name__).debug("xet_health failed: %s", exc)
         return None
 
@@ -276,6 +278,7 @@ def record_xet_outcome(ok: bool, reason: str = "") -> None:
         module.record_xet_outcome(ok, reason)
     except Exception as exc:  # noqa: BLE001
         import logging as _logging
+
         _logging.getLogger(__name__).debug("record_xet_outcome failed: %s", exc)
 
 
@@ -288,6 +291,7 @@ def xet_env_overrides() -> "dict[str, str]":
         return dict(module.xet_env_overrides())
     except Exception as exc:  # noqa: BLE001
         import logging as _logging
+
         _logging.getLogger(__name__).debug("xet_env_overrides failed: %s", exc)
         return {}
 
@@ -314,12 +318,13 @@ def apply_xet_env(env: dict, cache_dir: "Optional[str]" = None) -> "Optional[dic
         if resize is not None:
             sized = dict(resize(env, cache_dir))
         else:
-            sized = dict(module.apply_xet_env(env, fail_fast = True))
+            sized = dict(module.apply_xet_env(env, fail_fast=True))
     except Exception as exc:  # noqa: BLE001
         import logging as _logging
+
         _logging.getLogger(__name__).debug("apply_xet_env failed: %s", exc)
         return None
-    return clamp_to_available_ram(env, sized, cache_dir = cache_dir, module = module)
+    return clamp_to_available_ram(env, sized, cache_dir=cache_dir, module=module)
 
 
 # Share of free RAM a download may turn into buffers. A quarter of AVAILABLE always exceeds the
@@ -365,6 +370,7 @@ def _pid_alive(pid: int) -> bool:
     second copy that can drift."""
     try:
         from utils.process_lifetime import _pid_alive as _platform_pid_alive
+
         return bool(_platform_pid_alive(pid))
     except Exception:  # noqa: BLE001 - fall through to the POSIX probe below
         pass
@@ -394,6 +400,7 @@ def _worker_rss(pid: int) -> int:
     ``AccessDenied``), which reserves the whole promise -- the conservative pre-credit behaviour."""
     try:
         import psutil  # noqa: PLC0415 - optional, and only on the ledger path
+
         return max(0, int(psutil.Process(pid).memory_info().rss))
     except Exception:  # noqa: BLE001 - an unreadable worker is not evidence it allocated nothing
         return 0
@@ -518,10 +525,10 @@ def clamp_to_available_ram(
                     overrides(
                         dataclasses.replace(
                             profile,
-                            total_ram_bytes = min(total, synthetic),
-                            available_ram_bytes = available,
+                            total_ram_bytes=min(total, synthetic),
+                            available_ram_bytes=available,
                         ),
-                        fail_fast = True,
+                        fail_fast=True,
                     )
                 )
                 clamped = candidate
@@ -561,6 +568,7 @@ def clamp_to_available_ram(
         return written
     except Exception as exc:  # noqa: BLE001 - a clamp must never be what breaks a download
         import logging as _logging
+
         _logging.getLogger(__name__).debug("clamp_to_available_ram failed: %s", exc)
         return sized
 
@@ -579,6 +587,7 @@ def available_ram_bytes() -> "tuple[Optional[int], int]":
         available = int(getattr(profile_of(), "available_ram_bytes", 0) or 0)
     except Exception as exc:  # noqa: BLE001
         import logging as _logging
+
         _logging.getLogger(__name__).debug("available_ram_bytes failed: %s", exc)
         return (None, floor)
     return (available if available > 0 else None, floor)
@@ -608,6 +617,7 @@ def free_ram_pressure_reason() -> "Optional[str]":
                 available = max(0, available - _live_reserved_locked())
     except Exception as exc:  # noqa: BLE001 - a probe must not decide the transport by crashing
         import logging as _logging
+
         _logging.getLogger(__name__).debug("free_ram_pressure_reason failed: %s", exc)
         return None
     if available is None or available >= floor:
@@ -684,9 +694,9 @@ def _degraded_start_watchdog(
                 pass
 
     threading.Thread(
-        target = _beat,
-        daemon = True,
-        name = "hf-xet-degraded-heartbeat",
+        target=_beat,
+        daemon=True,
+        name="hf-xet-degraded-heartbeat",
     ).start()
     return stop
 
@@ -714,13 +724,13 @@ def _degraded_hf_hub_download_with_xet_fallback(
     from huggingface_hub import hf_hub_download
 
     path = hf_hub_download(
-        repo_id = repo_id,
-        filename = filename,
-        token = token,
-        repo_type = repo_type,
-        revision = revision,
-        cache_dir = cache_dir,
-        force_download = force_download,
+        repo_id=repo_id,
+        filename=filename,
+        token=token,
+        repo_type=repo_type,
+        revision=revision,
+        cache_dir=cache_dir,
+        force_download=force_download,
     )
     if _degraded_cancelled(cancel_event):
         raise RuntimeError("Cancelled")
@@ -746,14 +756,14 @@ def _degraded_snapshot_download_with_xet_fallback(
     from huggingface_hub import snapshot_download
 
     path = snapshot_download(
-        repo_id = repo_id,
-        repo_type = repo_type,
-        revision = revision,
-        token = token,
-        cache_dir = cache_dir,
-        allow_patterns = allow_patterns,
-        ignore_patterns = ignore_patterns,
-        force_download = force_download,
+        repo_id=repo_id,
+        repo_type=repo_type,
+        revision=revision,
+        token=token,
+        cache_dir=cache_dir,
+        allow_patterns=allow_patterns,
+        ignore_patterns=ignore_patterns,
+        force_download=force_download,
     )
     if _degraded_cancelled(cancel_event):
         raise RuntimeError("Cancelled")
@@ -907,15 +917,17 @@ def _studio_prepare_for_http(
     not fatal to the retry."""
     try:
         from hub.utils.download_registry import prepare_cache_for_transport
+
         prepare_cache_for_transport(
             repo_type,
             repo_id,
             "http",
-            root = Path(cache_dir) if cache_dir else None,
+            root=Path(cache_dir) if cache_dir else None,
         )
     except Exception as exc:
         try:
             from loggers import get_logger
+
             get_logger(__name__).debug(
                 "Unsloth prepare_cache_for_transport failed for %s: %s", repo_id, exc
             )
@@ -962,6 +974,7 @@ def hf_hub_download_with_xet_fallback(
     ``force_download``, whose point is to re-fetch."""
     if cache_dir is None:
         from utils.hf_cache_settings import get_hf_cache_paths
+
         cache_dir = str(get_hf_cache_paths().hub_cache)
     if reuse_other_cache_root and not force_download and cache_dir is not None:
         try:
@@ -969,11 +982,11 @@ def hf_hub_download_with_xet_fallback(
 
             # Only a str is a cached path; a miss is None and a known-absent file is a sentinel.
             here = try_to_load_from_cache(
-                repo_id, filename, repo_type = repo_type, revision = revision, cache_dir = cache_dir
+                repo_id, filename, repo_type=repo_type, revision=revision, cache_dir=cache_dir
             )
             if not isinstance(here, str):
                 elsewhere = try_to_load_from_cache(
-                    repo_id, filename, repo_type = repo_type, revision = revision, cache_dir = None
+                    repo_id, filename, repo_type=repo_type, revision=revision, cache_dir=None
                 )
                 if isinstance(elsewhere, str) and Path(elsewhere).is_file():
                     cache_dir = None
@@ -987,13 +1000,13 @@ def hf_hub_download_with_xet_fallback(
         if cancel_event is not None and cancel_event.is_set():
             raise RuntimeError("Cancelled")
         path = hf_hub_download(
-            repo_id = repo_id,
-            filename = filename,
-            token = token,
-            repo_type = repo_type,
-            revision = revision,
-            cache_dir = cache_dir,
-            local_files_only = True,
+            repo_id=repo_id,
+            filename=filename,
+            token=token,
+            repo_type=repo_type,
+            revision=revision,
+            cache_dir=cache_dir,
+            local_files_only=True,
         )
         if cancel_event is not None and cancel_event.is_set():
             raise RuntimeError("Cancelled")
@@ -1008,15 +1021,15 @@ def hf_hub_download_with_xet_fallback(
         repo_id,
         filename,
         token,
-        cancel_event = cancel_event,
-        repo_type = repo_type,
-        revision = revision,
+        cancel_event=cancel_event,
+        repo_type=repo_type,
+        revision=revision,
         **optional,
-        grace_period = grace_period,
-        on_status = on_status,
-        force_download = force_download,
-        cache_dir = cache_dir,
-        prepare_for_http_fn = partial(_studio_prepare_for_http, cache_dir = cache_dir),
+        grace_period=grace_period,
+        on_status=on_status,
+        force_download=force_download,
+        cache_dir=cache_dir,
+        prepare_for_http_fn=partial(_studio_prepare_for_http, cache_dir=cache_dir),
     )
 
 
@@ -1024,9 +1037,10 @@ def snapshot_download_with_xet_fallback(repo_id: str, **kwargs: Any) -> str:
     """Whole-repo download via the shared fallback with Unsloth's marker-aware HTTP-retry prep."""
     if kwargs.get("cache_dir") is None:
         from utils.hf_cache_settings import get_hf_cache_paths
+
         kwargs["cache_dir"] = str(get_hf_cache_paths().hub_cache)
     kwargs.setdefault(
         "prepare_for_http_fn",
-        partial(_studio_prepare_for_http, cache_dir = kwargs["cache_dir"]),
+        partial(_studio_prepare_for_http, cache_dir=kwargs["cache_dir"]),
     )
     return _shared_snapshot_download_with_xet_fallback(repo_id, **kwargs)

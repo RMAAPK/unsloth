@@ -15,7 +15,7 @@ from startup_banner import print_studio_access_banner
 
 def test_non_alias_loopback_shows_real_address(capsys):
     # A server bound to 127.0.0.2 does not listen on 127.0.0.1.
-    print_studio_access_banner(port = 8891, bind_host = "127.0.0.2", display_host = "127.0.0.2")
+    print_studio_access_banner(port=8891, bind_host="127.0.0.2", display_host="127.0.0.2")
     out = capsys.readouterr().out
     assert "http://127.0.0.2:8891" in out
     assert "http://127.0.0.1" not in out
@@ -23,7 +23,7 @@ def test_non_alias_loopback_shows_real_address(capsys):
 
 @pytest.mark.parametrize("host", ["127.0.0.1", "localhost"])
 def test_alias_loopback_shows_canned_url(capsys, host):
-    print_studio_access_banner(port = 8891, bind_host = host, display_host = host)
+    print_studio_access_banner(port=8891, bind_host=host, display_host=host)
     assert "http://127.0.0.1:8891" in capsys.readouterr().out
 
 
@@ -37,7 +37,7 @@ def test_alias_loopback_shows_canned_url(capsys, host):
     ],
 )
 def test_wildcard_aliases_show_reachable_urls(capsys, host, loopback_url):
-    print_studio_access_banner(port = 8891, bind_host = host, display_host = "192.168.1.24")
+    print_studio_access_banner(port=8891, bind_host=host, display_host="192.168.1.24")
     out = capsys.readouterr().out
     assert loopback_url in out
     assert "http://192.168.1.24:8891" in out
@@ -45,10 +45,10 @@ def test_wildcard_aliases_show_reachable_urls(capsys, host, loopback_url):
 
 def test_banner_prints_on_strict_cp1252_stdout(monkeypatch):
     buf = io.BytesIO()
-    stdout = io.TextIOWrapper(buf, encoding = "cp1252", errors = "strict")
+    stdout = io.TextIOWrapper(buf, encoding="cp1252", errors="strict")
     monkeypatch.setattr(sys, "stdout", stdout)
 
-    print_studio_access_banner(port = 8891, bind_host = "127.0.0.1", display_host = "127.0.0.1")
+    print_studio_access_banner(port=8891, bind_host="127.0.0.1", display_host="127.0.0.1")
     stdout.flush()
 
     out = buf.getvalue().decode("cp1252")
@@ -61,7 +61,7 @@ def test_banner_print_fallback_handles_unknown_stdout_encoding(monkeypatch):
 
         def __init__(self):
             self.buf = io.BytesIO()
-            self.inner = io.TextIOWrapper(self.buf, encoding = "cp1252", errors = "strict")
+            self.inner = io.TextIOWrapper(self.buf, encoding="cp1252", errors="strict")
 
         def write(self, text):
             return self.inner.write(text)
@@ -76,6 +76,6 @@ def test_banner_print_fallback_handles_unknown_stdout_encoding(monkeypatch):
     stdout = InvalidEncodingStdout()
     monkeypatch.setattr(sys, "stdout", stdout)
 
-    print_studio_access_banner(port = 8891, bind_host = "127.0.0.1", display_host = "127.0.0.1")
+    print_studio_access_banner(port=8891, bind_host="127.0.0.1", display_host="127.0.0.1")
 
     assert "? Unsloth Studio is running" in stdout.getvalue()

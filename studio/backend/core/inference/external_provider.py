@@ -307,7 +307,7 @@ def _build_citation_lookup(url_citations: list[dict[str, Any]]) -> dict[str, tup
     ``source_id`` and plural ``source_ids``. First-seen wins on collision so an earlier citation
     keeps its number."""
     by_source: dict[str, tuple[int, str]] = {}
-    for idx, cit in enumerate(url_citations, start = 1):
+    for idx, cit in enumerate(url_citations, start=1):
         url = cit.get("url")
         if not isinstance(url, str) or not url:
             continue
@@ -497,36 +497,36 @@ class _AnthropicThinkingSpec(NamedTuple):
 
 _ANTHROPIC_THINKING_SPECS = (
     _AnthropicThinkingSpec(
-        prefixes = ("claude-fable-5", "claude-mythos-5"),
-        kind = "adaptive",
-        efforts = ("none", "low", "medium", "high", "xhigh", "max"),
-        thinking_default_on = True,
-        can_disable = False,
+        prefixes=("claude-fable-5", "claude-mythos-5"),
+        kind="adaptive",
+        efforts=("none", "low", "medium", "high", "xhigh", "max"),
+        thinking_default_on=True,
+        can_disable=False,
     ),
     _AnthropicThinkingSpec(
-        prefixes = ("claude-opus-5", "claude-sonnet-5"),
-        kind = "adaptive",
-        efforts = ("none", "low", "medium", "high", "xhigh", "max"),
-        thinking_default_on = True,
+        prefixes=("claude-opus-5", "claude-sonnet-5"),
+        kind="adaptive",
+        efforts=("none", "low", "medium", "high", "xhigh", "max"),
+        thinking_default_on=True,
     ),
     _AnthropicThinkingSpec(
-        prefixes = ("claude-opus-4-8", "claude-opus-4-7"),
-        kind = "adaptive",
-        efforts = ("none", "low", "medium", "high", "xhigh", "max"),
+        prefixes=("claude-opus-4-8", "claude-opus-4-7"),
+        kind="adaptive",
+        efforts=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     _AnthropicThinkingSpec(
-        prefixes = ("claude-opus-4-6", "claude-sonnet-4-6"),
-        kind = "adaptive",
-        efforts = ("none", "low", "medium", "high", "xhigh", "max"),
+        prefixes=("claude-opus-4-6", "claude-sonnet-4-6"),
+        kind="adaptive",
+        efforts=("none", "low", "medium", "high", "xhigh", "max"),
     ),
     _AnthropicThinkingSpec(
-        prefixes = ("claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-4-5"),
-        kind = "manual",
-        efforts = ("none", "low", "medium", "high"),
+        prefixes=("claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-4-5"),
+        kind="manual",
+        efforts=("none", "low", "medium", "high"),
     ),
     # Earlier Claude 4 models and 3.7 Sonnet only take manual budget_tokens; adaptive thinking returns a 400 there.
     _AnthropicThinkingSpec(
-        prefixes = (
+        prefixes=(
             "claude-opus-4-1",
             "claude-opus-4-0",
             "claude-opus-4-2025",
@@ -534,8 +534,8 @@ _ANTHROPIC_THINKING_SPECS = (
             "claude-sonnet-4-2025",
             "claude-3-7-sonnet",
         ),
-        kind = "manual",
-        efforts = ("none", "low", "medium", "high"),
+        kind="manual",
+        efforts=("none", "low", "medium", "high"),
     ),
 )
 
@@ -708,7 +708,7 @@ def _anthropic_citation_key(citation: dict[str, Any]) -> tuple:
             citation.get("start_block_index"),
             citation.get("end_block_index"),
         )
-    return (ctype, _json.dumps(citation, sort_keys = True))
+    return (ctype, _json.dumps(citation, sort_keys=True))
 
 
 class _MistralThinkingSpec(NamedTuple):
@@ -719,8 +719,8 @@ class _MistralThinkingSpec(NamedTuple):
 
 _MISTRAL_THINKING_SPECS = (
     _MistralThinkingSpec(
-        models = ("magistral-medium-latest",),
-        style = "prompt_mode",
+        models=("magistral-medium-latest",),
+        style="prompt_mode",
     ),
     _MistralThinkingSpec(
         # Every id the catalog marks reasoning-capable with an effort list, so the composer's
@@ -728,7 +728,7 @@ _MISTRAL_THINKING_SPECS = (
         # catalog's own ladders are clamped to Mistral's documented pair before they reach the UI,
         # so nothing here can send a third value. zai-glm-5-2 is a partner model in models.dev's
         # mistral bucket rather than a Mistral release, hence the separate line.
-        models = (
+        models=(
             "mistral-small-latest",
             "mistral-small-2603",
             "mistral-medium-latest",
@@ -737,8 +737,8 @@ _MISTRAL_THINKING_SPECS = (
             "mistral-vibe-cli-latest",
             "zai-glm-5-2",
         ),
-        style = "reasoning_effort",
-        efforts = ("none", "high"),
+        style="reasoning_effort",
+        efforts=("none", "high"),
     ),
 )
 
@@ -757,14 +757,14 @@ def _mistral_thinking_spec(model: str) -> _MistralThinkingSpec:
     for spec in _MISTRAL_THINKING_SPECS:
         if model in spec.models:
             return spec
-    return _MistralThinkingSpec(models = (), style = "disabled")
+    return _MistralThinkingSpec(models=(), style="disabled")
 
 
 def _apply_mistral_reasoning_controls(
     body: dict[str, Any],
     model: str,
     enable_thinking: Optional[bool],
-    reasoning_effort: Optional[str],
+    reasoning_effort: Optional[str]
 ) -> None:
     """Translate generic reasoning controls into Mistral's model-specific shape:
     magistral-medium-latest takes baseline or `prompt_mode="reasoning"`; mistral-small-latest /
@@ -880,7 +880,7 @@ def _create_shared_http_client() -> httpx.AsyncClient:
         logger.warning(
             "Ignoring unsupported environment proxy for the shared HTTP client: %s", exc_str
         )
-        return httpx.AsyncClient(trust_env = False)
+        return httpx.AsyncClient(trust_env=False)
 
 
 _http_client = _create_shared_http_client()
@@ -895,7 +895,7 @@ class _PinnedPublicTransport(httpx.AsyncBaseTransport):
 
     def _pool(self, origin: tuple) -> httpx.AsyncHTTPTransport:
         if origin not in self._transports:
-            self._transports[origin] = httpx.AsyncHTTPTransport(trust_env = False)
+            self._transports[origin] = httpx.AsyncHTTPTransport(trust_env=False)
         return self._transports[origin]
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
@@ -907,13 +907,13 @@ class _PinnedPublicTransport(httpx.AsyncBaseTransport):
         try:
             address = await asyncio.to_thread(public_provider_address, str(request.url))
         except ValueError as exc:
-            raise httpx.ConnectError(str(exc), request = request) from exc
+            raise httpx.ConnectError(str(exc), request=request) from exc
         pinned = httpx.Request(
-            method = request.method,
-            url = request.url.copy_with(host = address),
-            headers = request.headers,
-            stream = request.stream,
-            extensions = {**request.extensions, "sni_hostname": host},
+            method=request.method,
+            url=request.url.copy_with(host=address),
+            headers=request.headers,
+            stream=request.stream,
+            extensions={**request.extensions, "sni_hostname": host},
         )
         origin = (request.url.scheme, host, request.url.port)
         return await self._pool(origin).handle_async_request(pinned)
@@ -943,13 +943,13 @@ class _PinnedNonMetadataTransport(_PinnedPublicTransport):
         try:
             address = await asyncio.to_thread(provider_address_excluding_metadata, str(request.url))
         except ValueError as exc:
-            raise httpx.ConnectError(str(exc), request = request) from exc
+            raise httpx.ConnectError(str(exc), request=request) from exc
         pinned = httpx.Request(
-            method = request.method,
-            url = request.url.copy_with(host = address),
-            headers = request.headers,
-            stream = request.stream,
-            extensions = {**request.extensions, "sni_hostname": host},
+            method=request.method,
+            url=request.url.copy_with(host=address),
+            headers=request.headers,
+            stream=request.stream,
+            extensions={**request.extensions, "sni_hostname": host},
         )
         origin = (request.url.scheme, host, request.url.port)
         return await self._pool(origin).handle_async_request(pinned)
@@ -1022,7 +1022,7 @@ def _client() -> httpx.AsyncClient:
         if client is not None:
             return client
         transport = _PinnedNonMetadataTransport() if allowed else _PinnedPublicTransport()
-        client = httpx.AsyncClient(transport = transport, trust_env = False)
+        client = httpx.AsyncClient(transport=transport, trust_env=False)
         # Its pool holds streams bound to this loop, so closing from a different one is not
         # equivalent.
         try:
@@ -1145,14 +1145,14 @@ def safe_fetch_remote_image_sync(
         # http.client refuses a non-ASCII or spaced selector; encode it as _fetch_url_raw does.
         try:
             cp = cp._replace(
-                path = quote(cp.path, safe = _IRI_PATH_SAFE),
-                params = quote(cp.params, safe = _IRI_PATH_SAFE),
-                query = quote(cp.query, safe = _IRI_QUERY_SAFE),
+                path=quote(cp.path, safe=_IRI_PATH_SAFE),
+                params=quote(cp.params, safe=_IRI_PATH_SAFE),
+                query=quote(cp.query, safe=_IRI_QUERY_SAFE),
             )
         except UnicodeError:
             logger.info(f"{label}: refusing unencodable url host=%s", current_host)
             return None
-        pinned_url = urlunparse(cp._replace(netloc = _pinned_netloc(pinned_ips[0], cp.port)))
+        pinned_url = urlunparse(cp._replace(netloc=_pinned_netloc(pinned_ips[0], cp.port)))
 
         # Route on the hostname, as _fetch_url_raw does: no NO_PROXY entry matches the
         # pinned URL's IP. A proxied request reaches the origin through the proxy.
@@ -1164,13 +1164,13 @@ def safe_fetch_remote_image_sync(
         opener = urllib.request.build_opener(*handlers)
         req = urllib.request.Request(
             pinned_url,
-            headers = {"Host": authority, "User-Agent": user_agent},
-            method = "GET",
+            headers={"Host": authority, "User-Agent": user_agent},
+            method="GET",
         )
 
         try:
             resp = opener.open(
-                req, timeout = _fetch_hop_timeout(_GEMINI_REMOTE_IMAGE_TIMEOUT_S, deadline)
+                req, timeout=_fetch_hop_timeout(_GEMINI_REMOTE_IMAGE_TIMEOUT_S, deadline)
             )
         except urllib.error.HTTPError as e:
             if e.code not in (301, 302, 303, 307, 308):
@@ -1283,7 +1283,7 @@ def _safe_fetch_image_for_gemini_sync(
     max_bytes: int = _GEMINI_REMOTE_IMAGE_MAX_BYTES,
 ) -> Optional[tuple[str, str]]:
     return safe_fetch_remote_image_sync(
-        url, fallback_mime, max_bytes, label = _GEMINI_IMAGE_FETCH_LABEL
+        url, fallback_mime, max_bytes, label=_GEMINI_IMAGE_FETCH_LABEL
     )
 
 
@@ -1297,6 +1297,7 @@ async def _safe_fetch_image_for_gemini(
     `max_bytes` carries the remaining per-request budget so over-budget URLs are rejected up
     front."""
     import asyncio
+
     return await asyncio.to_thread(_safe_fetch_image_for_gemini_sync, url, fallback_mime, max_bytes)
 
 
@@ -1379,10 +1380,10 @@ class ExternalProviderClient:
             ) == "/v1beta/openai":
                 self.base_url = self.base_url[: -len("/openai")]
         self.api_key = api_key
-        self._timeout = httpx.Timeout(timeout, connect = 10.0)
+        self._timeout = httpx.Timeout(timeout, connect=10.0)
         # Generous per-byte read timeout: reasoning models pause tens of seconds between bytes, but a dead upstream
         # must eventually error, not hang forever.
-        self._stream_timeout = httpx.Timeout(timeout, connect = 10.0, read = 300.0)
+        self._stream_timeout = httpx.Timeout(timeout, connect=10.0, read=300.0)
 
     def _auth_headers(self) -> dict[str, str]:
         """Build authentication headers using the provider's registry config."""
@@ -1492,6 +1493,7 @@ class ExternalProviderClient:
                 neutralize_tool_descriptions,
                 reconciled_tool_choice,
             )
+
             messages = neutralize_control_markup_in_messages(messages)
             if tools:
                 safe_tools = neutralize_tool_descriptions(tools)
@@ -1538,20 +1540,30 @@ class ExternalProviderClient:
                 prompt_cache_ttl,
                 compaction_threshold,
                 tool_choice,
-                fast_mode = fast_mode,
+                fast_mode=fast_mode,
             ):
                 yield line
             return
 
         if self.provider_type == "replicate":
             from .replicate_bridge import stream_replicate
-            async for line in stream_replicate(_client(), self.base_url, self._auth_headers(), messages, model, temperature, max_tokens, tools): yield line
+
+            async for line in stream_replicate(
+                _client(),
+                self.base_url,
+                self._auth_headers(),
+                messages,
+                model,
+                temperature,
+                max_tokens,
+                tools,
+            ):
+                yield line
             return
 
         # OpenAI moved flagship models (gpt-5.x) off /v1/chat/completions -- those endpoints return 404 "This is not a
         # chat model" for the new families. Route all OpenAI traffic through /v1/responses instead and translate the
         # Responses SSE back into Chat Completions chunks so the frontend stays endpoint-agnostic.
-
 
         if self.provider_type == "openai" or self.api_type == "responses":
             async for line in self._stream_openai_responses(
@@ -1569,7 +1581,7 @@ class ExternalProviderClient:
                 tools,
                 tool_choice,
                 response_format,
-                stream = stream if self.provider_type == "custom" else True,
+                stream=stream if self.provider_type == "custom" else True,
             ):
                 yield line
             return
@@ -1743,18 +1755,18 @@ class ExternalProviderClient:
             async with _client().stream(
                 "POST",
                 url,
-                json = body,
-                headers = self._auth_headers(),
-                timeout = self._stream_timeout,
+                json=body,
+                headers=self._auth_headers(),
+                timeout=self._stream_timeout,
             ) as response:
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    error_text = error_body.decode("utf-8", errors = "replace")
+                    error_text = error_body.decode("utf-8", errors="replace")
                     error_text = _friendly_provider_error_text(
                         self.provider_type,
                         response.status_code,
                         error_text,
-                        model = model,
+                        model=model,
                     )
                     logger.error(
                         "External provider returned %d: %s",
@@ -2030,13 +2042,13 @@ class ExternalProviderClient:
             async with _client().stream(
                 "POST",
                 url,
-                json = body,
-                headers = self._auth_headers(),
-                timeout = self._stream_timeout,
+                json=body,
+                headers=self._auth_headers(),
+                timeout=self._stream_timeout,
             ) as response:
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    error_text = error_body.decode("utf-8", errors = "replace")
+                    error_text = error_body.decode("utf-8", errors="replace")
                     logger.error(
                         "Kimi first-call returned %d: %s",
                         response.status_code,
@@ -2125,13 +2137,13 @@ class ExternalProviderClient:
                 async with _client().stream(
                     "POST",
                     url,
-                    json = fallback_body,
-                    headers = self._auth_headers(),
-                    timeout = self._stream_timeout,
+                    json=fallback_body,
+                    headers=self._auth_headers(),
+                    timeout=self._stream_timeout,
                 ) as response:
                     if response.status_code != 200:
                         error_body = await response.aread()
-                        error_text = error_body.decode("utf-8", errors = "replace")
+                        error_text = error_body.decode("utf-8", errors="replace")
                         logger.error(
                             "Kimi fallback returned %d: %s",
                             response.status_code,
@@ -2233,13 +2245,13 @@ class ExternalProviderClient:
             async with _client().stream(
                 "POST",
                 url,
-                json = followup_body,
-                headers = self._auth_headers(),
-                timeout = self._stream_timeout,
+                json=followup_body,
+                headers=self._auth_headers(),
+                timeout=self._stream_timeout,
             ) as response:
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    error_text = error_body.decode("utf-8", errors = "replace")
+                    error_text = error_body.decode("utf-8", errors="replace")
                     logger.error(
                         "Kimi second-call returned %d: %s",
                         response.status_code,
@@ -2841,13 +2853,13 @@ class ExternalProviderClient:
             async with _client().stream(
                 "POST",
                 url,
-                json = body,
-                headers = request_headers,
-                timeout = self._stream_timeout,
+                json=body,
+                headers=request_headers,
+                timeout=self._stream_timeout,
             ) as response:
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    error_text = error_body.decode("utf-8", errors = "replace")
+                    error_text = error_body.decode("utf-8", errors="replace")
                     logger.error(
                         "Anthropic returned %d: %s",
                         response.status_code,
@@ -3199,7 +3211,7 @@ class ExternalProviderClient:
                                 if isinstance(cit, dict):
                                     key = _anthropic_citation_key(cit)
                                     idx_for_marker: Optional[int] = None
-                                    for idx, existing in enumerate(document_citations, start = 1):
+                                    for idx, existing in enumerate(document_citations, start=1):
                                         if existing.get("_key") == key:
                                             idx_for_marker = idx
                                             break
@@ -3344,7 +3356,7 @@ class ExternalProviderClient:
                                     except Exception:
                                         logger.debug(
                                             "Failed to parse web_fetch input_json",
-                                            buffer = buffer,
+                                            buffer=buffer,
                                         )
                                         url = ""
                                 tool_use_id = current_web_fetch_use["id"]
@@ -3823,7 +3835,7 @@ class ExternalProviderClient:
                                     _fetched = await _safe_fetch_image_for_gemini(
                                         url,
                                         _media_type,
-                                        max_bytes = _remaining_bytes,
+                                        max_bytes=_remaining_bytes,
                                     )
                                     if _fetched is not None:
                                         _final_mime, _b64 = _fetched
@@ -4545,13 +4557,13 @@ class ExternalProviderClient:
             async with _client().stream(
                 "POST",
                 url,
-                json = body,
-                headers = self._auth_headers(),
-                timeout = self._stream_timeout,
+                json=body,
+                headers=self._auth_headers(),
+                timeout=self._stream_timeout,
             ) as response:
                 if response.status_code != 200:
                     error_body = await response.aread()
-                    error_text = error_body.decode("utf-8", errors = "replace")
+                    error_text = error_body.decode("utf-8", errors="replace")
                     logger.error(
                         "Gemini returned %d: %s",
                         response.status_code,
@@ -4685,7 +4697,7 @@ class ExternalProviderClient:
                                     if isinstance(text, str) and text:
                                         yield _text_chunk(
                                             text,
-                                            extra_content = _part_extra,
+                                            extra_content=_part_extra,
                                         )
                                     elif _part_extra is not None and not any(
                                         k in part
@@ -4700,7 +4712,7 @@ class ExternalProviderClient:
                                         # preserve the signature.
                                         yield _text_chunk(
                                             "",
-                                            extra_content = _part_extra,
+                                            extra_content=_part_extra,
                                         )
                                     # functionCall -> OpenAI tool_calls delta envelope.
                                     fc = part.get("functionCall")
@@ -5641,13 +5653,13 @@ class ExternalProviderClient:
                 async with _client().stream(
                     "POST",
                     url,
-                    json = attempt_body,
-                    headers = self._auth_headers(),
-                    timeout = self._stream_timeout,
+                    json=attempt_body,
+                    headers=self._auth_headers(),
+                    timeout=self._stream_timeout,
                 ) as response:
                     if response.status_code != 200:
                         error_body = await response.aread()
-                        error_text = error_body.decode("utf-8", errors = "replace")
+                        error_text = error_body.decode("utf-8", errors="replace")
                         logger.error(
                             "OpenAI Responses returned %d: %s",
                             response.status_code,
@@ -5786,7 +5798,7 @@ class ExternalProviderClient:
                                     "message": message,
                                     "finish_reason": _openai_response_finish_reason(
                                         response_payload,
-                                        has_tool_calls = bool(tool_calls),
+                                        has_tool_calls=bool(tool_calls),
                                     ),
                                 }
                             ],
@@ -5942,7 +5954,7 @@ class ExternalProviderClient:
                         _record_openai_url_citation(all_url_citations, payload)
 
                     def _record_openai_reasoning_replay_item(
-                        payload: Any,
+                        payload: Any
                     ) -> Optional[dict[str, Any]]:
                         if not isinstance(payload, dict):
                             return None
@@ -6074,7 +6086,7 @@ class ExternalProviderClient:
                                         yield _chunk_with_text(flushed)
                                 # Force-drain any segment still awaiting an annotation; lingering codepoints drop.
                                 tail_flushed = _drain_pending_segments(
-                                    force = True,
+                                    force=True,
                                 )
                                 if tail_flushed:
                                     if reasoning_open:
@@ -6134,7 +6146,7 @@ class ExternalProviderClient:
                                         # Re-attempt earlier deferred segments first so output stays in order; the
                                         # needed annotation may have arrived inline above.
                                         flushed = _drain_pending_segments(
-                                            force = False,
+                                            force=False,
                                         )
                                         if flushed:
                                             yield _chunk_with_text(flushed)
@@ -6162,7 +6174,7 @@ class ExternalProviderClient:
                                 if isinstance(ann, dict):
                                     _record_url_citation(ann)
                                 flushed = _drain_pending_segments(
-                                    force = False,
+                                    force=False,
                                 )
                                 if flushed:
                                     if reasoning_open:
@@ -6439,7 +6451,7 @@ class ExternalProviderClient:
                                         yield _chunk_with_text(flushed)
                                 # Force-drain segments still awaiting an annotation.
                                 tail_flushed = _drain_pending_segments(
-                                    force = True,
+                                    force=True,
                                 )
                                 if tail_flushed:
                                     if reasoning_open:
@@ -6560,7 +6572,7 @@ class ExternalProviderClient:
                                         yield _chunk_with_text(flushed)
                                 # Force-drain any segment still awaiting an annotation; lingering codepoints drop.
                                 tail_flushed = _drain_pending_segments(
-                                    force = True,
+                                    force=True,
                                 )
                                 if tail_flushed:
                                     if reasoning_open:
@@ -6742,9 +6754,9 @@ class ExternalProviderClient:
 
         response = await _client().post(
             f"{self.base_url}/chat/completions",
-            json = body,
-            headers = self._auth_headers(),
-            timeout = self._timeout,
+            json=body,
+            headers=self._auth_headers(),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -6772,9 +6784,9 @@ class ExternalProviderClient:
             body["instructions"] = instructions
         response = await _client().post(
             _append_provider_path(self.base_url, "/audio/speech"),
-            headers = self._auth_headers(),
-            json = body,
-            timeout = self._timeout,
+            headers=self._auth_headers(),
+            json=body,
+            timeout=self._timeout,
         )
         response.raise_for_status()
         media_type = (response.headers.get("content-type") or "").split(";")[0].strip()
@@ -6826,10 +6838,10 @@ class ExternalProviderClient:
         headers.pop("Content-Type", None)
         response = await _client().post(
             f"{self.base_url}/audio/transcriptions",
-            headers = headers,
-            files = {"file": (filename, audio, content_type)},
-            data = data,
-            timeout = self._timeout,
+            headers=headers,
+            files={"file": (filename, audio, content_type)},
+            data=data,
+            timeout=self._timeout,
         )
         response.raise_for_status()
         media_type = (response.headers.get("content-type") or "").split(";", 1)[0].strip()
@@ -6843,8 +6855,8 @@ class ExternalProviderClient:
         try:
             response = await _client().get(
                 f"{self.base_url}/models",
-                headers = self._auth_headers(),
-                timeout = self._timeout,
+                headers=self._auth_headers(),
+                timeout=self._timeout,
             )
             response.raise_for_status()
             data = response.json()
@@ -6910,8 +6922,8 @@ class ExternalProviderClient:
         root = self.base_url.removesuffix("/v1").rstrip("/")
         response = await _client().get(
             f"{root}/api/tags",
-            headers = self._auth_headers(),
-            timeout = self._timeout,
+            headers=self._auth_headers(),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         payload = response.json()
@@ -6935,12 +6947,12 @@ class ExternalProviderClient:
             async with _client().stream(
                 "GET",
                 url,
-                headers = self._auth_headers(),
-                timeout = self._timeout,
+                headers=self._auth_headers(),
+                timeout=self._timeout,
             ) as response:
                 if response.status_code != 200:
                     response.raise_for_status()
-                async for _chunk in response.aiter_bytes(chunk_size = 2048):
+                async for _chunk in response.aiter_bytes(chunk_size=2048):
                     break
         except httpx.HTTPError as exc:
             logger.error(
@@ -6963,8 +6975,8 @@ class ExternalProviderClient:
         """
         response = await _client().get(
             f"{self.base_url}/containers",
-            headers = self._container_headers(),
-            timeout = self._timeout,
+            headers=self._container_headers(),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         data = response.json()
@@ -6989,9 +7001,9 @@ class ExternalProviderClient:
         }
         response = await _client().post(
             f"{self.base_url}/containers",
-            json = body,
-            headers = self._container_headers(),
-            timeout = self._timeout,
+            json=body,
+            headers=self._container_headers(),
+            timeout=self._timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -7009,8 +7021,8 @@ class ExternalProviderClient:
             "Authorization" in headers,
             headers.get("OpenAI-Beta"),
         )
-        async with httpx.AsyncClient(timeout = self._timeout) as fresh_client:
-            response = await fresh_client.delete(url, headers = headers)
+        async with httpx.AsyncClient(timeout=self._timeout) as fresh_client:
+            response = await fresh_client.delete(url, headers=headers)
         logger.info(
             "openai_container_delete.response status=%s cf_ray=%s "
             "request_id=%s organization=%s project=%s processing_ms=%s body=%s",
@@ -7038,6 +7050,7 @@ class ExternalProviderClient:
 
 def _provider_display_name(provider_type: str) -> str:
     from core.inference.providers import get_provider_info
+
     info = get_provider_info(provider_type) or {}
     return str(info.get("display_name") or provider_type)
 

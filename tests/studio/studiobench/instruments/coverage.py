@@ -41,7 +41,7 @@ from typing import Any, Iterable, Sequence
 from ..analysis import CellFailure
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class FunctionCount:
     """One function and the exact number of times it was entered."""
 
@@ -74,8 +74,8 @@ class CoverageSnapshot:
     Deliberately has no time fields. Not "unused time fields": none.
     """
 
-    functions: list[FunctionCount] = field(default_factory = list)
-    script_urls: dict[str, str] = field(default_factory = dict)
+    functions: list[FunctionCount] = field(default_factory=list)
+    script_urls: dict[str, str] = field(default_factory=dict)
     # Set when this snapshot is a difference of two absolute snapshots.
     is_delta: bool = False
 
@@ -96,7 +96,7 @@ class CoverageSnapshot:
         rows = self.nonzero()
         if url_filter:
             rows = [f for f in rows if url_filter in f.url]
-        rows.sort(key = lambda f: -f.count)
+        rows.sort(key=lambda f: -f.count)
         return rows[:limit]
 
     def find(self, name: str) -> list[FunctionCount]:
@@ -126,12 +126,12 @@ def _parse(result: dict[str, Any]) -> CoverageSnapshot:
             head = ranges[0]
             snap.functions.append(
                 FunctionCount(
-                    script_id = sid,
-                    url = url,
-                    function_name = str(fn.get("functionName", "")),
-                    start_offset = int(head.get("startOffset", 0)),
-                    end_offset = int(head.get("endOffset", 0)),
-                    count = int(head.get("count", 0)),
+                    script_id=sid,
+                    url=url,
+                    function_name=str(fn.get("functionName", "")),
+                    start_offset=int(head.get("startOffset", 0)),
+                    end_offset=int(head.get("endOffset", 0)),
+                    count=int(head.get("count", 0)),
                 )
             )
     return snap
@@ -214,7 +214,7 @@ def diff(before: CoverageSnapshot, after: CoverageSnapshot) -> CoverageSnapshot:
     from different coverage sessions, so it fails rather than clamping.
     """
     prev = before.by_key()
-    out = CoverageSnapshot(is_delta = True, script_urls = dict(after.script_urls))
+    out = CoverageSnapshot(is_delta=True, script_urls=dict(after.script_urls))
     for f in after.functions:
         base = prev.get(f.key)
         delta = f.count - (base.count if base else 0)
@@ -227,12 +227,12 @@ def diff(before: CoverageSnapshot, after: CoverageSnapshot) -> CoverageSnapshot:
             )
         out.functions.append(
             FunctionCount(
-                script_id = f.script_id,
-                url = f.url,
-                function_name = f.function_name,
-                start_offset = f.start_offset,
-                end_offset = f.end_offset,
-                count = delta,
+                script_id=f.script_id,
+                url=f.url,
+                function_name=f.function_name,
+                start_offset=f.start_offset,
+                end_offset=f.end_offset,
+                count=delta,
             )
         )
     return out
@@ -430,6 +430,6 @@ class CoverageInstrument:
             self.cov = None
 
 
-@register_instrument(name = "coverage", level = 3)
+@register_instrument(name="coverage", level=3)
 def _make_coverage() -> CoverageInstrument:
     return CoverageInstrument()

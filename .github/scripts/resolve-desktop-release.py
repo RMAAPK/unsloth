@@ -42,16 +42,16 @@ def resolve(releases: Any, asset_suffix: str) -> str | None:
             continue
         candidates.append((created_at, tag))
 
-    return max(candidates, default = None)[1] if candidates else None
+    return max(candidates, default=None)[1] if candidates else None
 
 
 def fetch_assets(tag: str, repo: str) -> Any:
     """Asset names for one release, including authorized drafts."""
     result = subprocess.run(
         ["gh", "release", "view", tag, "--repo", repo, "--json", "assets"],
-        check = False,
-        capture_output = True,
-        text = True,
+        check=False,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         raise ValueError(f"could not inspect assets for {tag}: {result.stderr.strip()}")
@@ -76,7 +76,7 @@ def resolve_newest(releases: Any, asset_suffix: str, fetch) -> str | None:
         and SEMVER_TAG.fullmatch(release["tagName"])
         and isinstance(release.get("createdAt"), str)
     ]
-    for created_at, tag in sorted(candidates, reverse = True):
+    for created_at, tag in sorted(candidates, reverse=True):
         if resolve([{"tagName": tag, "createdAt": created_at, "assets": fetch(tag)}], asset_suffix):
             return tag
     return None
@@ -84,8 +84,8 @@ def resolve_newest(releases: Any, asset_suffix: str, fetch) -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--asset-suffix", required = True)
-    parser.add_argument("--repo", required = True)
+    parser.add_argument("--asset-suffix", required=True)
+    parser.add_argument("--repo", required=True)
     args = parser.parse_args()
 
     try:
@@ -95,13 +95,13 @@ def main() -> int:
             lambda release_tag: fetch_assets(release_tag, args.repo),
         )
     except (json.JSONDecodeError, ValueError) as error:
-        print(f"invalid GitHub release listing: {error}", file = sys.stderr)
+        print(f"invalid GitHub release listing: {error}", file=sys.stderr)
         return 2
 
     if tag is None:
         print(
             f"no SemVer v... desktop release contains an asset ending in {args.asset_suffix}",
-            file = sys.stderr,
+            file=sys.stderr,
         )
         return 1
     print(tag)

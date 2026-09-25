@@ -32,7 +32,7 @@ MIN_OUTPUT_SIDE = 256
 DEFAULT_REFERENCE_RESOLUTION = 1024
 
 
-@dataclass(frozen = True)
+@dataclass(frozen=True)
 class LocalizedEdit:
     mode: str
     image: str
@@ -148,7 +148,7 @@ def _decode_bounded(data: str, mode: str, budget: list[int], what: str) -> Any:
     from core.inference.diffusion import decode_b64_image
 
     try:
-        img = decode_b64_image(data, mode = mode, max_pixels = max(1, budget[0]))
+        img = decode_b64_image(data, mode=mode, max_pixels=max(1, budget[0]))
     except ValueError as exc:
         if "source pixels" in str(exc):
             raise ValueError(

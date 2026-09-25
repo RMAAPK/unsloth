@@ -49,7 +49,7 @@ def _logical_lines(path: Path) -> list[tuple[int, str]]:
     out: list[tuple[int, str]] = []
     buffer = ""
     start = 0
-    for number, raw in enumerate(path.read_text(encoding = "utf-8").splitlines(), start = 1):
+    for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not buffer:
             start = number
         stripped = raw.rstrip()
@@ -65,7 +65,7 @@ def _logical_lines(path: Path) -> list[tuple[int, str]]:
 
 
 def _pyproject_floor() -> Version:
-    data = tomllib.loads(PYPROJECT.read_text(encoding = "utf-8"))
+    data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     project = data.get("project") or {}
     raws: list[str] = list(project.get("dependencies") or [])
     for extra in (project.get("optional-dependencies") or {}).values():
@@ -101,7 +101,7 @@ def _installer_sites() -> list[tuple[str, int, str, bool]]:
         lines = (
             _logical_lines(path)
             if path.suffix == ".sh"
-            else list(enumerate(path.read_text(encoding = "utf-8").splitlines(), start = 1))
+            else list(enumerate(path.read_text(encoding="utf-8").splitlines(), start=1))
         )
         for number, text in lines:
             if "pip install" not in text:

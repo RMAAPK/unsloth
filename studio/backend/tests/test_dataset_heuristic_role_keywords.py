@@ -18,8 +18,8 @@ from hub.utils import dataset_format  # noqa: E402
 from utils.datasets import format_detection  # noqa: E402
 
 _HEURISTICS = [
-    pytest.param(format_detection.detect_custom_format_heuristic, id = "utils"),
-    pytest.param(dataset_format.detect_custom_format_heuristic, id = "hub"),
+    pytest.param(format_detection.detect_custom_format_heuristic, id="utils"),
+    pytest.param(dataset_format.detect_custom_format_heuristic, id="hub"),
 ]
 
 _LONG = "x" * 600

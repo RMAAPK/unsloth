@@ -433,7 +433,7 @@ def collect(
 
 
 def declared_windowed(
-    paths: list[Path],
+    paths: list[Path]
 ) -> tuple[dict[tuple[str, str], str], dict[tuple[str, str], str]]:
     """What the RUN SAID about windowing: ({(shard, cell_id): why}, {(shard, arm): why}).
 

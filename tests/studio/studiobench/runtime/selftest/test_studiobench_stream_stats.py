@@ -105,7 +105,7 @@ class _Page:
 
     @property
     def keyboard(self):
-        return types.SimpleNamespace(press = self._press)
+        return types.SimpleNamespace(press=self._press)
 
     def _press(self, key) -> None:
         self.running = True
@@ -115,12 +115,12 @@ class _Page:
             _consume(self.pacer)
             self.running = False
 
-        self._thread = threading.Thread(target = run, daemon = True)
+        self._thread = threading.Thread(target=run, daemon=True)
         self._thread.start()
 
     def drain(self) -> None:
         if self._thread is not None:
-            self._thread.join(timeout = 60)
+            self._thread.join(timeout=60)
 
     def evaluate(self, expr, *args):
         if "isRunning" in expr:
@@ -132,20 +132,20 @@ class _Page:
 
 def _ctx(page, pacer, queue, cursor) -> ActionContext:
     return ActionContext(
-        page = page,
-        cdp = None,
-        cell = Cell(cell_id = CELL_ID, rung = "10K", rung_tokens = 10_000, tier = "quick"),
-        window = Window(name = "action:send_turn", kind = "action", cell = None, t_open_ms = 0.0),
-        args = {
+        page=page,
+        cdp=None,
+        cell=Cell(cell_id=CELL_ID, rung="10K", rung_tokens=10_000, tier="quick"),
+        window=Window(name="action:send_turn", kind="action", cell=None, t_open_ms=0.0),
+        args={
             "cell_id": CELL_ID,
             "cadence": "fast",
             "_pacer": pacer,
             "_stream_queue": queue,
             "_stream_cursor": cursor,
         },
-        budget_ms = 20_000,
-        dom = None,
-        log = lambda msg: None,
+        budget_ms=20_000,
+        dom=None,
+        log=lambda msg: None,
     )
 
 
@@ -156,8 +156,8 @@ def test_send_turn_keeps_the_stats_of_every_turn_before_it():
     pacer = Pacer().start()
     try:
         pacer.reset()
-        pacer.load(OPENING[0], OPENING[1], cadence = "fast", tag = CELL_ID)
-        _consume(pacer, stop_after_bytes = 20_000)
+        pacer.load(OPENING[0], OPENING[1], cadence="fast", tag=CELL_ID)
+        _consume(pacer, stop_after_bytes=20_000)
         time.sleep(0.5)
 
         opening = pacer.last_stats()
@@ -191,7 +191,7 @@ def test_send_turn_keeps_the_stats_of_every_turn_before_it():
             [{"tag": CELL_ID, "turn": "opening", "chars": planned_chars}]
             + [
                 {"tag": t, "turn": f"follow_up{i}", "chars": len(FOLLOW[0]) + len(FOLLOW[1])}
-                for i, t in enumerate(tags, start = 1)
+                for i, t in enumerate(tags, start=1)
             ],
         )
         assert check["ok"] is False
@@ -277,7 +277,7 @@ class _CellPage:
         pass
 
     def query_selector(self, selector):
-        return types.SimpleNamespace(click = lambda: None) if "Send message" in selector else None
+        return types.SimpleNamespace(click=lambda: None) if "Send message" in selector else None
 
     def evaluate(self, expr, *args):
         if "isRunning" in expr:
@@ -337,17 +337,17 @@ class _SceneRunner:
 
 
 def _plan():
-    unit = types.SimpleNamespace(reasoning = "r" * 2_000, content = "c" * 8_000, kind = "tail")
-    follow = types.SimpleNamespace(reasoning = "r" * 300, content = "c" * 1_200, kind = "prose")
+    unit = types.SimpleNamespace(reasoning="r" * 2_000, content="c" * 8_000, kind="tail")
+    follow = types.SimpleNamespace(reasoning="r" * 300, content="c" * 1_200, kind="prose")
     return types.SimpleNamespace(
-        rung = "10K",
-        streamed_unit = unit,
-        seeded_units = [],
-        follow_up_units = [follow],
-        seeded_chars = 0,
-        streamed_chars = 10_000,
-        target_chars = 11_500,
-        target_tokens = 10_000,
+        rung="10K",
+        streamed_unit=unit,
+        seeded_units=[],
+        follow_up_units=[follow],
+        seeded_chars=0,
+        streamed_chars=10_000,
+        target_chars=11_500,
+        target_tokens=10_000,
     )
 
 
@@ -373,47 +373,47 @@ def cell_runner(monkeypatch, tmp_path):
     paths = Paths.under(tmp_path / "out")
     recorder = Recorder(paths.payload_jsonl, "sess-1")
     ctx = BenchContext(
-        page = _CellPage(),
-        cdp = None,
-        base_url = "http://127.0.0.1:5399",
-        session_id = "sess-1",
-        tier = "quick",
-        paths = paths,
-        recorder = recorder,
-        log = lambda msg: None,
+        page=_CellPage(),
+        cdp=None,
+        base_url="http://127.0.0.1:5399",
+        session_id="sess-1",
+        tier="quick",
+        paths=paths,
+        recorder=recorder,
+        log=lambda msg: None,
     )
-    session = Session(ctx = ctx)
+    session = Session(ctx=ctx)
 
     def build(streams):
         return CellRunner(
-            session = session,
-            pacer = _RecordedPacer(streams),
-            seeder = types.SimpleNamespace(
-                seed = lambda plan: types.SimpleNamespace(
-                    thread_id = "t1",
-                    seconds = 0.5,
-                    messages = 0,
+            session=session,
+            pacer=_RecordedPacer(streams),
+            seeder=types.SimpleNamespace(
+                seed=lambda plan: types.SimpleNamespace(
+                    thread_id="t1",
+                    seconds=0.5,
+                    messages=0,
                     # Both markers `SeededThread` declares, present and None: the readiness gate reads `last_marker`
                     # unconditionally, so a stub that omits it fails on the attribute rather than on the stream
                     # accounting.
-                    first_marker = None,
-                    last_marker = None,
+                    first_marker=None,
+                    last_marker=None,
                 ),
-                auth = None,
+                auth=None,
             ),
-            corpus = None,
-            base_url = "http://127.0.0.1:5399",
-            model_id = "studiobench-pacer",
-            tier = "quick",
-            paths = paths,
-            log = lambda msg: None,
+            corpus=None,
+            base_url="http://127.0.0.1:5399",
+            model_id="studiobench-pacer",
+            tier="quick",
+            paths=paths,
+            log=lambda msg: None,
         )
 
     return build
 
 
 def _cell():
-    return Cell(cell_id = CELL_ID, rung = "10K", rung_tokens = 10_000, tier = "quick")
+    return Cell(cell_id=CELL_ID, rung="10K", rung_tokens=10_000, tier="quick")
 
 
 def test_a_cell_whose_opening_reply_under_delivered_does_not_complete(cell_runner):
@@ -663,12 +663,12 @@ class _WirePage:
 
     def query_selector(self, selector):
         if "Send message" in selector:
-            return types.SimpleNamespace(click = lambda: self.send())
+            return types.SimpleNamespace(click=lambda: self.send())
         return object() if "Message input" in selector else None
 
     @property
     def keyboard(self):
-        return types.SimpleNamespace(press = lambda key: self.send())
+        return types.SimpleNamespace(press=lambda key: self.send())
 
     def send(self) -> None:
         self.running = True
@@ -678,7 +678,7 @@ class _WirePage:
             _consume(self.pacer)
             self.running = False
 
-        self._thread = threading.Thread(target = run, daemon = True)
+        self._thread = threading.Thread(target=run, daemon=True)
         self._thread.start()
 
     def evaluate(self, expr, *args):
@@ -711,14 +711,14 @@ class _RealSendTurnScene:
             while page.running:
                 time.sleep(0.05)
             ctx = ActionContext(
-                page = page,
-                cdp = None,
-                cell = self.kwargs["cell"],
-                window = Window(name = "action:send_turn", kind = "action", cell = None, t_open_ms = 0.0),
-                args = dict(self.kwargs["base_args"]),
-                budget_ms = 20_000,
-                dom = None,
-                log = lambda msg: None,
+                page=page,
+                cdp=None,
+                cell=self.kwargs["cell"],
+                window=Window(name="action:send_turn", kind="action", cell=None, t_open_ms=0.0),
+                args=dict(self.kwargs["base_args"]),
+                budget_ms=20_000,
+                dom=None,
+                log=lambda msg: None,
             )
             result = send_turn(ctx)
             row = result.row("send_turn", "action:send_turn", self.kwargs["cell"].cell_id)
@@ -757,50 +757,50 @@ def test_a_healthy_multi_turn_cell_passes_the_check_over_real_wire_bytes(monkeyp
         recorder = Recorder(paths.payload_jsonl, "sess-1")
         page = _WirePage(pacer)
         ctx = BenchContext(
-            page = page,
-            cdp = None,
-            base_url = "http://127.0.0.1:5399",
-            session_id = "sess-1",
-            tier = "quick",
-            paths = paths,
-            recorder = recorder,
-            log = lambda msg: None,
+            page=page,
+            cdp=None,
+            base_url="http://127.0.0.1:5399",
+            session_id="sess-1",
+            tier="quick",
+            paths=paths,
+            recorder=recorder,
+            log=lambda msg: None,
         )
         runner = CellRunner(
-            session = Session(ctx = ctx),
-            pacer = pacer,
-            seeder = types.SimpleNamespace(
-                seed = lambda plan: types.SimpleNamespace(
-                    thread_id = "t1",
-                    seconds = 0.5,
-                    messages = 0,
+            session=Session(ctx=ctx),
+            pacer=pacer,
+            seeder=types.SimpleNamespace(
+                seed=lambda plan: types.SimpleNamespace(
+                    thread_id="t1",
+                    seconds=0.5,
+                    messages=0,
                     # Both markers `SeededThread` declares, present and None: the readiness gate reads `last_marker`
                     # unconditionally, so a stub that omits it fails on the attribute rather than on the stream
                     # accounting.
-                    first_marker = None,
-                    last_marker = None,
+                    first_marker=None,
+                    last_marker=None,
                 ),
-                auth = None,
+                auth=None,
             ),
-            corpus = None,
-            base_url = "http://127.0.0.1:5399",
-            model_id = "studiobench-pacer",
-            tier = "quick",
-            paths = paths,
-            log = lambda msg: None,
-            cadence = "fast",
+            corpus=None,
+            base_url="http://127.0.0.1:5399",
+            model_id="studiobench-pacer",
+            tier="quick",
+            paths=paths,
+            log=lambda msg: None,
+            cadence="fast",
         )
-        unit = types.SimpleNamespace(reasoning = "R" * 400, content = "C" * 1_200, kind = "tail")
-        follow = types.SimpleNamespace(reasoning = "r" * 100, content = "c" * 300, kind = "prose")
+        unit = types.SimpleNamespace(reasoning="R" * 400, content="C" * 1_200, kind="tail")
+        follow = types.SimpleNamespace(reasoning="r" * 100, content="c" * 300, kind="prose")
         plan = types.SimpleNamespace(
-            rung = "10K",
-            streamed_unit = unit,
-            seeded_units = [],
-            follow_up_units = [follow, follow],
-            seeded_chars = 0,
-            streamed_chars = 1_600,
-            target_chars = 2_400,
-            target_tokens = 10_000,
+            rung="10K",
+            streamed_unit=unit,
+            seeded_units=[],
+            follow_up_units=[follow, follow],
+            seeded_chars=0,
+            streamed_chars=1_600,
+            target_chars=2_400,
+            target_tokens=10_000,
         )
 
         row = runner.run(_cell(), plan)

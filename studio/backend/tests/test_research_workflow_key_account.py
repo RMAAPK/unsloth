@@ -35,7 +35,7 @@ def auth_db(tmp_path, monkeypatch):
 
 
 def _alice() -> str:
-    return auth_storage.issue_account_setup_code(username = "alice")["account"]["account_id"]
+    return auth_storage.issue_account_setup_code(username="alice")["account"]["account_id"]
 
 
 def _workflow_key_rows():
@@ -60,7 +60,7 @@ def test_workflow_key_is_pinned_to_the_claimed_account(auth_db, monkeypatch):
     new_id = _alice()
     assert new_id != old_id
 
-    supervisor = ResearchSupervisor(SimpleNamespace(state = SimpleNamespace(server_port = 1)))
+    supervisor = ResearchSupervisor(SimpleNamespace(state=SimpleNamespace(server_port=1)))
 
     async def stop_after_mint(*args, **kwargs):
         raise RuntimeError("stop after the key is minted")
@@ -74,7 +74,7 @@ def test_workflow_key_is_pinned_to_the_claimed_account(auth_db, monkeypatch):
 
     async def drive():
         with pytest.raises(RuntimeError):
-            await arun_as(old_account, supervisor._stream_completion(run, [], phase = "plan"))
+            await arun_as(old_account, supervisor._stream_completion(run, [], phase="plan"))
 
     asyncio.run(drive())
 

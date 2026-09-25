@@ -87,12 +87,12 @@ _ROUTABLE_ARCHES = [("gfx1030", "gfx103X-all"), ("gfx1100", "gfx110X-all")]
 # ── The Python resolvers, called rather than inspected ───────────────────────
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _no_index_mirror():
     """Both resolvers honour a mirror override, and a host that has one set would
     answer with its URL instead of repo.amd.com. Clear them so the assertions below
     are about the arch tables and not about the environment running the suite."""
-    with patch.dict(os.environ, {}, clear = False):
+    with patch.dict(os.environ, {}, clear=False):
         for _v in ("UNSLOTH_AMD_ROCM_MIRROR", "UNSLOTH_ROCM_WINDOWS_MIRROR"):
             os.environ.pop(_v, None)
         yield
@@ -104,7 +104,7 @@ class TestPythonIndexResolversAreAskedDirectly:
     decide what pip is pointed at. Ask them."""
 
     @pytest.mark.parametrize("arch", _UNSUPPORTED_ARCH_INPUTS)
-    @pytest.mark.parametrize("is_windows", [False, True], ids = ["linux", "windows"])
+    @pytest.mark.parametrize("is_windows", [False, True], ids=["linux", "windows"])
     def test_no_unsupported_arch_gets_an_index_url(self, arch, is_windows):
         # IS_WINDOWS is read inside _amd_arch_index_url, so both platform arms are reachable from this host; the Windows
         # arm is the one #8529 was filed from.
@@ -120,7 +120,7 @@ class TestPythonIndexResolversAreAskedDirectly:
         assert url is None, f"{arch} was routed to {url!r}"
 
     @pytest.mark.parametrize("arch", _UNSUPPORTED_ARCH_INPUTS)
-    @pytest.mark.parametrize("is_windows", [False, True], ids = ["linux", "windows"])
+    @pytest.mark.parametrize("is_windows", [False, True], ids=["linux", "windows"])
     def test_no_unsupported_arch_reaches_repo_amd_com(self, arch, is_windows):
         """The same claim stated as the consequence, so that a resolver which starts
         returning some other truthy non-index string still fails here."""
@@ -129,7 +129,7 @@ class TestPythonIndexResolversAreAskedDirectly:
         assert "repo.amd.com" not in url, f"{arch} reaches an AMD wheel index: {url!r}"
 
     @pytest.mark.parametrize("arch,family", _ROUTABLE_ARCHES)
-    @pytest.mark.parametrize("is_windows", [False, True], ids = ["linux", "windows"])
+    @pytest.mark.parametrize("is_windows", [False, True], ids=["linux", "windows"])
     def test_a_covered_arch_still_gets_its_index(self, arch, family, is_windows):
         """The positive control. Without it every assertion above passes on a build
         where the resolvers were gutted to `return None`."""
@@ -170,21 +170,21 @@ def _sh_function_body(source: str, name: str) -> str:
 
 def _run_sh_index_family(arch: str) -> "tuple[int, str]":
     body = _sh_function_body(
-        _INSTALL_SH.read_text(encoding = "utf-8"), "_amd_arch_index_family_for_gfx"
+        _INSTALL_SH.read_text(encoding="utf-8"), "_amd_arch_index_family_for_gfx"
     )
     script = f'{body}\n_amd_arch_index_family_for_gfx "$1"\n'
     out = subprocess.run(
         ["sh", "-c", script, "sh", arch],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 30,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=30,
     )
     return out.returncode, out.stdout.strip()
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 class TestInstallShIndexFamilyRuns:
     """install.sh picks the Linux AMD index from `_amd_arch_index_family_for_gfx`, and
     its three call sites treat a non-zero return as "no AMD wheels, use CPU". An arm
@@ -208,7 +208,7 @@ class TestInstallShIndexFamilyRuns:
     def test_the_index_selector_is_still_the_function_under_test(self):
         """The extraction above is only meaningful while install.sh actually asks this
         function; a renamed selector would leave the tests green against dead code."""
-        src = _INSTALL_SH.read_text(encoding = "utf-8").replace("\r\n", "\n")
+        src = _INSTALL_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
         calls = len(
             re.findall(r"^\s*[^#\n]*_amd_arch_index_family_for_gfx \"\$", src, re.MULTILINE)
         )
@@ -234,7 +234,7 @@ _detect_rocm_version_tag() { [ -n "${_STUB_ROCM_TAG:-}" ] && printf '%s\\n' "$_S
 
 def _run_sh_get_torch_index_url(arch: str, rocm_tag: str = "") -> "tuple[str, str]":
     """Run install.sh's real get_torch_index_url with UNSLOTH_ROCM_GFX_ARCH=arch."""
-    src = _INSTALL_SH.read_text(encoding = "utf-8")
+    src = _INSTALL_SH.read_text(encoding="utf-8")
     script = (
         _sh_function_body(src, "_amd_arch_index_family_for_gfx")
         + "\n"
@@ -263,17 +263,17 @@ def _run_sh_get_torch_index_url(arch: str, rocm_tag: str = "") -> "tuple[str, st
     env["_STUB_ROCM_TAG"] = rocm_tag
     out = subprocess.run(
         ["sh", "-c", script],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.PIPE,
-        text = True,
-        env = env,
-        timeout = 60,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+        timeout=60,
     )
     return out.stdout.strip(), out.stderr
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 class TestInstallShIndexSelectorRuns:
     """The case table above is only one of get_torch_index_url's decisions, and the
     function is what install.sh actually calls. An arch test written straight into
@@ -313,7 +313,7 @@ class TestInstallShIndexSelectorRuns:
         """Second positive control: on the same stubbed host with a readable ROCm
         version the selector returns a ROCm index, which it can only do by running the
         AMD branch the test above depends on."""
-        url, _err = _run_sh_get_torch_index_url("gfx1030", rocm_tag = "rocm6.4")
+        url, _err = _run_sh_get_torch_index_url("gfx1030", rocm_tag="rocm6.4")
         assert url.endswith("/rocm6.4"), f"the AMD branch was not reached: {url!r}"
 
 
@@ -334,7 +334,7 @@ _SH_ASSIGN_TARGET = re.compile(r"(?:^|[;&|(]|\s)([A-Za-z_][A-Za-z0-9_]*)=")
 
 
 def test_setup_sh_never_feeds_the_unsupported_lookup_into_a_routed_variable():
-    src = _SETUP_SH.read_text(encoding = "utf-8").replace("\r\n", "\n")
+    src = _SETUP_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
     code = [line for line in src.splitlines() if not line.lstrip().startswith("#")]
     captures = [
         line.strip()
@@ -370,7 +370,7 @@ def test_setup_sh_never_feeds_the_unsupported_lookup_into_a_routed_variable():
 def test_setup_sh_never_assigns_an_unsupported_arch_to_the_routed_variable(arch):
     """The same property from the other end: whatever names the unsupported arches,
     none of them may be written into the variable that becomes --rocm-gfx."""
-    src = _SETUP_SH.read_text(encoding = "utf-8").replace("\r\n", "\n")
+    src = _SETUP_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
     hits = [
         line.strip()
         for line in src.splitlines()
@@ -403,7 +403,7 @@ def _ps_table_arches(path: Path, header: str, opener: str, closer: str) -> "list
     """Every gfx arch one PowerShell routing table routes, read out of its own file.
     CRLF-normalised first: install.ps1 and setup.ps1 both ship CRLF."""
     return _ps_arches(
-        _ps_block(path.read_text(encoding = "utf-8").replace("\r\n", "\n"), header, opener, closer)
+        _ps_block(path.read_text(encoding="utf-8").replace("\r\n", "\n"), header, opener, closer)
     )
 
 
@@ -443,7 +443,7 @@ _PS_MAP_WRITE = re.compile(
 
 
 class TestPowerShellRoutingTables:
-    @pytest.mark.parametrize("path,header,opener,closer", _PS_TABLES, ids = _PS_TABLE_IDS)
+    @pytest.mark.parametrize("path,header,opener,closer", _PS_TABLES, ids=_PS_TABLE_IDS)
     def test_the_table_parses_and_still_routes_a_covered_arch(self, path, header, opener, closer):
         """The positive control for the two tests below, which are both bans and would
         otherwise pass on a block that parsed to nothing."""
@@ -453,7 +453,7 @@ class TestPowerShellRoutingTables:
             assert _arch in arches, f"{path.name}: {header} no longer routes {_arch}"
 
     @pytest.mark.parametrize("arch", _UNSUPPORTED_ARCHES)
-    @pytest.mark.parametrize("path,header,opener,closer", _PS_TABLES, ids = _PS_TABLE_IDS)
+    @pytest.mark.parametrize("path,header,opener,closer", _PS_TABLES, ids=_PS_TABLE_IDS)
     def test_no_unsupported_arch_is_routed(self, path, header, opener, closer, arch):
         arches = _ps_table_arches(path, header, opener, closer)
         assert arch not in arches, (
@@ -461,14 +461,14 @@ class TestPowerShellRoutingTables:
             f"call uncovered would be sent to an AMD wheel index"
         )
 
-    @pytest.mark.parametrize("path", [_INSTALL_PS1, _SETUP_PS1], ids = lambda p: p.name)
+    @pytest.mark.parametrize("path", [_INSTALL_PS1, _SETUP_PS1], ids=lambda p: p.name)
     def test_the_family_map_is_never_written_to_after_it_is_declared(self, path):
         """The tests above read the `@{...}` literal, which is the whole map only for
         as long as nothing edits it later. `$archFamilyMap["gfx803"] = "gfx103X-all"`
         (or `.Add("gfx803", ...)`) anywhere below the declaration routes gfx803 in the
         real installer while leaving the literal, and so every assertion on it, intact.
         The map is a constant table; require it to stay one."""
-        src = path.read_text(encoding = "utf-8").replace("\r\n", "\n")
+        src = path.read_text(encoding="utf-8").replace("\r\n", "\n")
         block = _ps_block(src, "$archFamilyMap = @{", "{", "}")
         assert _PS_MAP_WRITE.search(block), (
             f"{path.name}: the write pattern no longer matches the declaration itself, "
@@ -491,15 +491,15 @@ class TestPowerShellRoutingTables:
         ), f"{path.name}: nothing reads $archFamilyMap any more (renamed or removed?)"
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason = "pwsh not available")
+@pytest.mark.skipif(shutil.which("pwsh") is None, reason="pwsh not available")
 class TestPowerShellMapEvaluated:
     """The gate the installers actually run is `$archFamilyMap.ContainsKey($arch)`.
     Let PowerShell answer it, so a row this file's regex misreads (a differently
     quoted key, a splatted addition) is not silently treated as absent."""
 
-    @pytest.mark.parametrize("path", [_INSTALL_PS1, _SETUP_PS1], ids = lambda p: p.name)
+    @pytest.mark.parametrize("path", [_INSTALL_PS1, _SETUP_PS1], ids=lambda p: p.name)
     def test_containskey_is_false_for_every_unsupported_arch(self, path):
-        src = path.read_text(encoding = "utf-8").replace("\r\n", "\n")
+        src = path.read_text(encoding="utf-8").replace("\r\n", "\n")
         block = _ps_block(src, "$archFamilyMap = @{", "{", "}")
         probes = ", ".join(f'"{a}"' for a in _UNSUPPORTED_ARCHES)
         script = (
@@ -514,10 +514,10 @@ class TestPowerShellMapEvaluated:
         # See tests/_shared/unsloth_pwsh_runner.py.
         out = run_pwsh(
             ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.DEVNULL,
-            text = True,
-            timeout = 120,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=120,
         )
         assert out.returncode == 0, f"{path.name}: the map did not evaluate under pwsh"
         printed = out.stdout.split()
@@ -530,7 +530,7 @@ class TestPowerShellMapEvaluated:
         rather than on the map, so that list needs the same evaluated check: a member
         added in a quoting style this file's regex does not read would otherwise pass
         the textual ban above and still route the arch."""
-        src = _SETUP_PS1.read_text(encoding = "utf-8").replace("\r\n", "\n")
+        src = _SETUP_PS1.read_text(encoding="utf-8").replace("\r\n", "\n")
         block = _ps_block(src, "$_rocmWheelArches = @(", "(", ")")
         probes = ", ".join(f'"{a}"' for a in _UNSUPPORTED_ARCHES)
         script = (
@@ -545,10 +545,10 @@ class TestPowerShellMapEvaluated:
         # See tests/_shared/unsloth_pwsh_runner.py.
         out = run_pwsh(
             ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.DEVNULL,
-            text = True,
-            timeout = 120,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=120,
         )
         assert out.returncode == 0, "setup.ps1: $_rocmWheelArches did not evaluate under pwsh"
         printed = out.stdout.split()
@@ -570,9 +570,9 @@ _STRIX_SITES = [
 _STRIX_IDS = [p.name for p, _r in _STRIX_SITES]
 
 
-@pytest.mark.parametrize("source_path,pattern", _STRIX_SITES, ids = _STRIX_IDS)
+@pytest.mark.parametrize("source_path,pattern", _STRIX_SITES, ids=_STRIX_IDS)
 def test_the_strix_reroute_names_no_unsupported_arch(source_path, pattern):
-    src = source_path.read_text(encoding = "utf-8")
+    src = source_path.read_text(encoding="utf-8")
     hits = re.findall(pattern, src, re.MULTILINE)
     assert hits, f"{source_path.name}: the Strix reroute arm was not found; was it renamed?"
     named = " ".join(hits)
@@ -593,7 +593,7 @@ _SUMMARY_GUARD_ANCHOR = "_covered_disp_gfx=$(_infer_linux_amd_gfx_arch"
 def _summary_guard_snippet() -> str:
     """The peer guard as install.sh ships it. Extracted rather than retyped, so gutting
     it there fails here."""
-    src = _INSTALL_SH.read_text(encoding = "utf-8").replace("\r\n", "\n")
+    src = _INSTALL_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
     start = src.find(_SUMMARY_GUARD_ANCHOR)
     assert start != -1, "install.sh: the CPU summary's peer guard was not found"
     end = src.find('if [ -n "$_unsup_disp_gfx" ]; then', start)
@@ -603,7 +603,7 @@ def _summary_guard_snippet() -> str:
 
 def _run_summary_guard(tmp_path, lspci_lines: "list[str]") -> str:
     """Which of the two CPU-summary arms wins on a host whose lspci says this."""
-    source = _INSTALL_SH.read_text(encoding = "utf-8")
+    source = _INSTALL_SH.read_text(encoding="utf-8")
     funcs = "\n".join(
         _sh_function_body(source, name)
         for name in (
@@ -619,11 +619,11 @@ def _run_summary_guard(tmp_path, lspci_lines: "list[str]") -> str:
         )
     )
     bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(exist_ok = True)
+    bin_dir.mkdir(exist_ok=True)
     fixture = tmp_path / "lspci.txt"
-    fixture.write_text("\n".join(lspci_lines) + "\n", encoding = "utf-8")
+    fixture.write_text("\n".join(lspci_lines) + "\n", encoding="utf-8")
     lspci = bin_dir / "lspci"
-    lspci.write_text(f'#!/bin/sh\ncat "{fixture}"\n', encoding = "utf-8")
+    lspci.write_text(f'#!/bin/sh\ncat "{fixture}"\n', encoding="utf-8")
     lspci.chmod(0o755)
     script = (
         f"{funcs}\n{_summary_guard_snippet()}\n"
@@ -632,11 +632,11 @@ def _run_summary_guard(tmp_path, lspci_lines: "list[str]") -> str:
     )
     out = subprocess.run(
         ["sh", "-c", script],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 60,
-        env = {"PATH": f"{bin_dir}:/usr/bin:/bin"},
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=60,
+        env={"PATH": f"{bin_dir}:/usr/bin:/bin"},
     )
     return out.stdout.strip()
 
@@ -655,15 +655,15 @@ _RX_7900 = (
 )
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 class TestInstallShCpuSummaryBlamesTheRightCard:
     """The end-of-run summary reaches its lspci lookup even when the arch read fine, so
     unlike the arm in get_torch_index_url it has no empty-probe gate. An RX 5700 beside
     an RX 7900 lands on CPU whenever the 7900's ROCm is too old, and naming the 5700
     there would replace the upgrade advice with advice false for the card at fault."""
 
-    @pytest.mark.parametrize("lines", [[_RX_5700], [_RX_580]], ids = ["rx5700", "rx580"])
+    @pytest.mark.parametrize("lines", [[_RX_5700], [_RX_580]], ids=["rx5700", "rx580"])
     def test_a_lone_uncovered_card_is_still_named(self, tmp_path, lines):
         """The positive control, and the case the whole PR exists for."""
         verdict = _run_summary_guard(tmp_path, lines)
@@ -674,7 +674,7 @@ class TestInstallShCpuSummaryBlamesTheRightCard:
     @pytest.mark.parametrize(
         "lines",
         [[_RX_5700, _RX_7900], [_RX_7900, _RX_5700], [_RX_580, _RX_7900]],
-        ids = ["5700-first", "7900-first", "580-plus-7900"],
+        ids=["5700-first", "7900-first", "580-plus-7900"],
     )
     def test_a_covered_peer_keeps_the_summary_quiet(self, tmp_path, lines):
         verdict = _run_summary_guard(tmp_path, lines)
@@ -703,14 +703,14 @@ def _run_setup_report(
 ) -> str:
     """setup.sh's lookup on the KFD path, where no market name is available and the
     lookup falls back to lspci. Same fixtures as the install.sh summary above."""
-    source = _SETUP_SH.read_text(encoding = "utf-8")
+    source = _SETUP_SH.read_text(encoding="utf-8")
     funcs = "\n".join(textwrap.dedent(_sh_function_body(source, name)) for name in _SETUP_SH_FUNCS)
     bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(exist_ok = True)
+    bin_dir.mkdir(exist_ok=True)
     fixture = tmp_path / "lspci.txt"
-    fixture.write_text("\n".join(lspci_lines) + "\n", encoding = "utf-8")
+    fixture.write_text("\n".join(lspci_lines) + "\n", encoding="utf-8")
     lspci = bin_dir / "lspci"
-    lspci.write_text(f'#!/bin/sh\ncat "{fixture}"\n', encoding = "utf-8")
+    lspci.write_text(f'#!/bin/sh\ncat "{fixture}"\n', encoding="utf-8")
     lspci.chmod(0o755)
     script = (
         f'{funcs}\nif _g=$(_setup_unsupported_gfx_any "{mkt}"); then echo "UNCOVERED $_g"; '
@@ -718,31 +718,31 @@ def _run_setup_report(
     )
     out = subprocess.run(
         ["sh", "-c", script],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 60,
-        env = {"PATH": f"{bin_dir}:/usr/bin:/bin"},
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=60,
+        env={"PATH": f"{bin_dir}:/usr/bin:/bin"},
     )
     return out.stdout.strip()
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 class TestSetupShReportBlamesTheRightCard:
     """The KFD fallback detects the GPU with neither rocminfo nor amd-smi, so the report
     reads lspci and takes the first uncovered adapter. On a host whose RX 5700 enumerates
     before an RX 7900 that is the wrong card: selecting the 7900 and setting its arch
     does reach the supported path, so "no override can help" is false there."""
 
-    @pytest.mark.parametrize("lines", [[_RX_5700], [_RX_580]], ids = ["rx5700", "rx580"])
+    @pytest.mark.parametrize("lines", [[_RX_5700], [_RX_580]], ids=["rx5700", "rx580"])
     def test_a_lone_uncovered_card_is_still_named(self, tmp_path, lines):
         assert _run_setup_report(tmp_path, lines).startswith("UNCOVERED")
 
     @pytest.mark.parametrize(
         "lines",
         [[_RX_5700, _RX_7900], [_RX_7900, _RX_5700], [_RX_580, _RX_7900]],
-        ids = ["5700-first", "7900-first", "580-plus-7900"],
+        ids=["5700-first", "7900-first", "580-plus-7900"],
     )
     def test_a_covered_peer_keeps_the_report_quiet(self, tmp_path, lines):
         assert (
@@ -752,7 +752,7 @@ class TestSetupShReportBlamesTheRightCard:
     @pytest.mark.parametrize(
         "mkt",
         ["", "AMD Radeon Graphics", "Advanced Micro Devices, Inc. [AMD/ATI]"],
-        ids = ["kfd-no-name", "generic-name", "vendor-only"],
+        ids=["kfd-no-name", "generic-name", "vendor-only"],
     )
     def test_an_unmapped_market_name_still_reaches_the_lspci_scan(self, tmp_path, mkt):
         """rocminfo can hand back a nonempty name that maps to nothing. Returning that
@@ -764,19 +764,19 @@ class TestSetupShReportBlamesTheRightCard:
 
     def test_a_mapped_market_name_short_circuits(self):
         """The name still wins when it maps: no lspci call is needed or made."""
-        source = _SETUP_SH.read_text(encoding = "utf-8")
+        source = _SETUP_SH.read_text(encoding="utf-8")
         funcs = "\n".join(
             textwrap.dedent(_sh_function_body(source, name)) for name in _SETUP_SH_FUNCS
         )
         out = subprocess.run(
             ["sh", "-c", f'{funcs}\n_setup_unsupported_gfx_any "AMD Radeon RX 580"\n'],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.DEVNULL,
-            text = True,
-            timeout = 30,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=30,
             # sh itself still has to be found; the point is that lspci is not on PATH, so a fallback that ran would
             # come back empty and fail this.
-            env = {"PATH": os.path.dirname(shutil.which("sh") or "/bin")},
+            env={"PATH": os.path.dirname(shutil.which("sh") or "/bin")},
         )
         assert out.stdout.strip() == "gfx803"
 
@@ -787,7 +787,7 @@ class TestSetupShReportBlamesTheRightCard:
     @pytest.mark.parametrize(
         "lines",
         [[_RX_5700, _RX_7900], [_RX_7900, _RX_5700]],
-        ids = ["5700-first", "7900-first"],
+        ids=["5700-first", "7900-first"],
     )
     def test_a_named_hit_is_guarded_by_the_peers_too(self, tmp_path, lines):
         """amd-smi reports ONE market name, the first device's, so on a mixed host the
@@ -799,7 +799,7 @@ class TestSetupShReportBlamesTheRightCard:
     def test_a_named_hit_survives_a_host_with_no_lspci(self, tmp_path):
         """The guard must not become a silencer: with no adapter list there is no peer to
         find, and the single-card host this report exists for still has to be told."""
-        source = _SETUP_SH.read_text(encoding = "utf-8")
+        source = _SETUP_SH.read_text(encoding="utf-8")
         funcs = "\n".join(
             textwrap.dedent(_sh_function_body(source, name)) for name in _SETUP_SH_FUNCS
         )
@@ -809,28 +809,28 @@ class TestSetupShReportBlamesTheRightCard:
                 "-c",
                 f'{funcs}\n_setup_unsupported_gfx_any "AMD Radeon RX 5700 XT"\n',
             ],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.DEVNULL,
-            text = True,
-            timeout = 30,
-            env = {"PATH": os.path.dirname(shutil.which("sh") or "/bin")},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=30,
+            env={"PATH": os.path.dirname(shutil.which("sh") or "/bin")},
         )
         assert out.stdout.strip() == "gfx1010"
 
     def test_the_supported_matcher_still_answers(self, tmp_path):
         """Positive control on the extracted table: without it the guard above would be
         vacuous, since a matcher that never matches also keeps the report quiet."""
-        source = _SETUP_SH.read_text(encoding = "utf-8")
+        source = _SETUP_SH.read_text(encoding="utf-8")
         script = (
             textwrap.dedent(_sh_function_body(source, "_setup_supported_gfx_from_name"))
             + '\n_setup_supported_gfx_from_name "AMD Radeon RX 7900 XTX"\n'
         )
-        out = subprocess.run(["sh", "-c", script], stdout = subprocess.PIPE, text = True, timeout = 30)
+        out = subprocess.run(["sh", "-c", script], stdout=subprocess.PIPE, text=True, timeout=30)
         assert out.stdout.strip() == "gfx1100"
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 @pytest.mark.parametrize(
     "url,family,pinned",
     [
@@ -840,13 +840,13 @@ class TestSetupShReportBlamesTheRightCard:
         ("https://example/gfx1010", "", True),
         ("", "rocm7.2", True),
     ],
-    ids = ["unset", "spaces", "mixed-blank", "url", "family"],
+    ids=["unset", "spaces", "mixed-blank", "url", "family"],
 )
 def test_setup_sh_treats_a_blank_index_pin_as_unset(url, family, pinned):
     """get_torch_index_url trims both variables and treats a blank one as unset, so a
     blank value here must not suppress the CPU-only warning. The two lines that decide
     it are taken from setup.sh rather than retyped."""
-    src = _SETUP_SH.read_text(encoding = "utf-8").replace("\r\n", "\n")
+    src = _SETUP_SH.read_text(encoding="utf-8").replace("\r\n", "\n")
     start = src.index('_setup_unsup_pin="${UNSLOTH_TORCH_INDEX_URL')
     end = src.index('if [ -n "$_setup_unsup_pin" ]', start)
     snippet = textwrap.dedent(src[start:end])
@@ -856,11 +856,11 @@ def test_setup_sh_treats_a_blank_index_pin_as_unset(url, family, pinned):
             "-c",
             f'{snippet}\nif [ -n "$_setup_unsup_pin" ]; then echo PINNED; else echo UNSET; fi\n',
         ],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 30,
-        env = {
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=30,
+        env={
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "UNSLOTH_TORCH_INDEX_URL": url,
             "UNSLOTH_TORCH_INDEX_FAMILY": family,
@@ -924,20 +924,20 @@ def _py_unsupported(names):
 
 
 def _sh_unsupported(path: Path, func: str, names):
-    body = textwrap.dedent(_sh_function_body(path.read_text(encoding = "utf-8"), func))
+    body = textwrap.dedent(_sh_function_body(path.read_text(encoding="utf-8"), func))
     script = f'{body}\nfor n in "$@"; do {func} "$n" || echo ""; done\n'
     out = subprocess.run(
         ["sh", "-c", script, "sh", *names],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 60,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=60,
     )
     return [l.strip() for l in out.stdout.split("\n")][: len(names)]
 
 
 def _ps_unsupported(path: Path, names):
-    src = path.read_text(encoding = "utf-8").replace("\r\n", "\n")
+    src = path.read_text(encoding="utf-8").replace("\r\n", "\n")
     block = _ps_block(src, "$unsupportedNameArchTable = @(", "(", ")")
     probes = ", ".join("'" + n.replace("'", "''") + "'" for n in names)
     script = (
@@ -955,17 +955,17 @@ def _ps_unsupported(path: Path, names):
     # See tests/_shared/unsloth_pwsh_runner.py.
     out = run_pwsh(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command", script],
-        stdout = subprocess.PIPE,
-        stderr = subprocess.DEVNULL,
-        text = True,
-        timeout = 180,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        timeout=180,
     )
     assert out.returncode == 0, f"{path.name}: the unsupported table did not evaluate"
     return [l.strip() for l in out.stdout.split("\n")][: len(names)]
 
 
-@pytest.mark.skipif(os.name == "nt", reason = "POSIX shell only")
-@pytest.mark.skipif(shutil.which("sh") is None, reason = "no POSIX sh on this host")
+@pytest.mark.skipif(os.name == "nt", reason="POSIX shell only")
+@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh on this host")
 def test_the_five_unsupported_tables_agree_on_every_name():
     """Five hand-kept copies of one table is the standing risk in this area, and the
     supported tables are already pinned to each other. The unsupported ones were not:

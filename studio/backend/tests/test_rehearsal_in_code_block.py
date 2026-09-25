@@ -26,8 +26,8 @@ ENABLED = {"get_weather", "web_search"}
 FENCE = "`" * 3
 
 
-def _names(content, enabled_tool_names = ENABLED):
-    calls = parse_tool_calls_from_text(content, enabled_tool_names = enabled_tool_names)
+def _names(content, enabled_tool_names=ENABLED):
+    calls = parse_tool_calls_from_text(content, enabled_tool_names=enabled_tool_names)
     return [call["function"]["name"] for call in calls]
 
 
@@ -76,13 +76,13 @@ def test_quoted_rehearsal_is_not_a_call(case):
 def test_quoted_rehearsal_stays_visible(case):
     """Parse and strip must agree: text that is not promoted is not removed."""
     content = QUOTED[case]
-    assert strip_tool_call_markup(content, enabled_tool_names = ENABLED) == content
+    assert strip_tool_call_markup(content, enabled_tool_names=ENABLED) == content
 
 
 def test_unquoted_rehearsal_still_calls():
     content = 'Running now. get_weather[ARGS]{"command": "id"}'
     assert _names(content) == ["get_weather"]
-    assert strip_tool_call_markup(content, enabled_tool_names = ENABLED) == "Running now. "
+    assert strip_tool_call_markup(content, enabled_tool_names=ENABLED) == "Running now. "
 
 
 def test_rehearsal_after_a_closed_fence_still_calls():
@@ -108,7 +108,7 @@ def test_explicit_markers_in_a_fence_still_call(body):
 
 def test_unrestricted_mode_also_skips_quoted_rehearsal():
     """The code gate does not depend on the enabled-name gate."""
-    assert _names(QUOTED["fenced"], enabled_tool_names = None) == []
+    assert _names(QUOTED["fenced"], enabled_tool_names=None) == []
 
 
 def test_unmatched_backtick_does_not_hide_a_later_call():
@@ -123,7 +123,7 @@ def test_many_quoted_examples_stay_linear():
     content = " ".join('`get_weather[ARGS]{"command": "id"}`' for _ in range(8000))
     start = time.perf_counter()
     assert _names(content) == []
-    assert strip_tool_call_markup(content, enabled_tool_names = ENABLED) == content
+    assert strip_tool_call_markup(content, enabled_tool_names=ENABLED) == content
     assert time.perf_counter() - start < 5.0
 
 
@@ -141,13 +141,13 @@ def test_unmatched_backtick_runs_stay_linear():
 def test_truncated_call_after_a_quoted_example_is_still_stripped():
     """The tail pattern runs to EOF, so a quoted opener must not shield a real call."""
     content = '`get_weather[ARGS]{"command": "doc"}` then get_weather[ARGS]{"command": '
-    stripped = strip_tool_call_markup(content, final = True, enabled_tool_names = ENABLED)
+    stripped = strip_tool_call_markup(content, final=True, enabled_tool_names=ENABLED)
     assert stripped == '`get_weather[ARGS]{"command": "doc"}` then'
 
 
 def test_quoted_example_alone_survives_the_final_pass():
     content = '`get_weather[ARGS]{"command": "doc"}`'
-    assert strip_tool_call_markup(content, final = True, enabled_tool_names = ENABLED) == content
+    assert strip_tool_call_markup(content, final=True, enabled_tool_names=ENABLED) == content
 
 
 def test_backtick_inside_arguments_does_not_hide_a_later_call():

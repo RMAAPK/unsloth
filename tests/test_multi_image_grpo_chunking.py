@@ -128,7 +128,7 @@ def test_simulate_pixel_attention_mask_axis_decision():
         pixel_values_shape0,
         image_grid_thw_shape0,
         input_ids_shape0,
-        num_images_provided,
+        num_images_provided
     ):
         if num_images_provided and pam_shape0 == image_grid_thw_shape0:
             return "image"
