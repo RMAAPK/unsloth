@@ -70,19 +70,33 @@ async def stream_replicate(
 
         max_retries = 3
         response = None
+        iterator = None
+        first_chunk = None
         for attempt in range(max_retries):
             try:
                 response = await litellm.acompletion(**kwargs)
+                iterator = response.__aiter__()
+                first_chunk = await iterator.__anext__()
+                break
+            except StopAsyncIteration:
                 break
             except Exception as e:
                 err_str = str(e).lower()
                 if attempt < max_retries - 1 and ("429" in err_str or "ratelimit" in err_str or "throttled" in err_str):
-                    await asyncio.sleep(4)
+                    await asyncio.sleep(4.5)
                     continue
                 raise e
 
         accumulated = ""
-        async for chunk in response:
+        
+        async def chunk_generator():
+            if first_chunk is not None:
+                yield first_chunk
+            if iterator is not None:
+                async for c in iterator:
+                    yield c
+        
+        async for chunk in chunk_generator():
             try:
                 chunk_str = chunk.model_dump_json()
             except Exception:
