@@ -1,6 +1,7 @@
-import json
+﻿import json
 import httpx
 from typing import Any, AsyncGenerator, Optional
+import litellm
 
 async def stream_replicate(
     client: httpx.AsyncClient,
@@ -10,54 +11,73 @@ async def stream_replicate(
     model: str,
     temperature: Optional[float] = None,
     max_tokens: Optional[int] = None,
+    tools: Optional[list[dict]] = None
 ) -> AsyncGenerator[str, None]:
-    """Stream responses natively from Replicate's API, translating to OpenAI SSE format."""
     
-    # Extract the latest prompt for Replicate's standard input format
-    prompt = ""
-    system_prompt = ""
-    for msg in messages:
-        if msg.get("role") == "system":
-            system_prompt = msg.get("content", "")
-        elif msg.get("role") == "user":
-            prompt = msg.get("content", "")
-            
-    input_data = {
-        "prompt": prompt,
-        "system_prompt": system_prompt,
-    }
-    if temperature is not None:
-        input_data["temperature"] = temperature
-    if max_tokens is not None:
-        input_data["max_new_tokens"] = max_tokens
+    auth_header = headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "").strip()
+    
+    if not model.startswith("replicate/"):
+        model = f"replicate/{model}"
         
-    # Replicate native prediction endpoint
-    url = f"{base_url}/models/{model}/predictions"
-    payload = {"input": input_data, "stream": True}
-    
-    async with client.stream("POST", url, headers=headers, json=payload) as response:
-        response.raise_for_status()
-        async for line in response.aiter_lines():
-            if not line or not line.startswith("data: "):
-                continue
-            data_str = line[len("data: "):]
-            if data_str.strip() == "[DONE]":
-                yield line + "\\n"
-                return
-            
-            try:
-                # Translate Replicate's chunk format to OpenAI's chunk format
-                chunk = json.loads(data_str)
-                # Replicate sends raw strings or objects depending on the model pipeline.
-                # Assuming standard text output:
-                text = chunk if isinstance(chunk, str) else chunk.get("text", "")
+    if tools:
+        # Replicate's Llama 3 drops native tool schemas, so we must inject them into the system prompt
+        tool_docs = []
+        for t in tools:
+            if t.get("type") == "function":
+                f = t["function"]
+                tool_docs.append({
+                    "name": f.get("name"),
+                    "description": f.get("description"),
+                    "parameters": f.get("parameters")
+                })
+            else:
+                tool_docs.append(t)
                 
-                oai_chunk = {
-                    "choices": [{"delta": {"content": text}}]
-                }
-                yield f"data: {json.dumps(oai_chunk)}\\n\\n"
-            except Exception:
-                pass
+        system_injection = (
+            "\n\n[SYSTEM TOOLING ENGINE ENABLED]\n"
+            "You have access to the following server-side tools. To execute a tool, YOU MUST output a RAW JSON object representing the call, and NOTHING ELSE in that block.\n"
+            "Format: {\"name\": \"tool_name\", \"parameters\": {\"arg\": \"val\"}}\n"
+            f"Available Tools: {json.dumps(tool_docs)}\n"
+        )
         
-        yield "data: [DONE]\\n\\n"
+        # Inject into system prompt
+        for m in messages:
+            if m.get("role") == "system":
+                m["content"] = str(m.get("content", "")) + system_injection
+                break
+        else:
+            messages.insert(0, {"role": "system", "content": system_injection})
+            
+    try:
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "api_key": token
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+            
+        # We don't pass kwargs["tools"] = tools to litellm because litellm throws it away for this model anyway,
+        # and if it did support it, it might clash with our system prompt injection.
+
+        response = await litellm.acompletion(**kwargs)
+        
+        async for chunk in response:
+            try:
+                chunk_str = chunk.model_dump_json()
+            except Exception:
+                try:
+                    chunk_str = chunk.json()
+                except Exception:
+                    chunk_str = json.dumps(dict(chunk))
+            yield f"data: {chunk_str}"
+            
+        yield "data: [DONE]"
+    except Exception as e:
+        yield f"data: {json.dumps({'choices': [{'delta': {'content': f'\\n\\n[LITELLM ERROR: {str(e)}]'}}]})}"
+        yield "data: [DONE]"
 

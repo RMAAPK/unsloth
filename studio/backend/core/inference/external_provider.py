@@ -1543,13 +1543,15 @@ class ExternalProviderClient:
                 yield line
             return
 
+        if self.provider_type == "replicate":
+            from .replicate_bridge import stream_replicate
+            async for line in stream_replicate(_client(), self.base_url, self._auth_headers(), messages, model, temperature, max_tokens, tools): yield line
+            return
+
         # OpenAI moved flagship models (gpt-5.x) off /v1/chat/completions -- those endpoints return 404 "This is not a
         # chat model" for the new families. Route all OpenAI traffic through /v1/responses instead and translate the
         # Responses SSE back into Chat Completions chunks so the frontend stays endpoint-agnostic.
-        if self.provider_type == "replicate":
-            from .replicate_bridge import stream_replicate
-            async for line in stream_replicate(_client(), self.base_url, self._auth_headers(), messages, model, temperature, max_tokens): yield line
-            return
+
 
         if self.provider_type == "openai" or self.api_type == "responses":
             async for line in self._stream_openai_responses(

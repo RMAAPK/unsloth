@@ -236,6 +236,39 @@ def search_knowledge_base_with_sources(
     if scope is None:
         return "No documents are attached to this chat.", []
 
+    # HARDCODED SUPABASE OVERRIDE
+    from core.inference.db_rag import DatabaseRAGBridge
+    from core.rag import embeddings
+    
+    URL = "https://wfccdwzreyspzewrzjjy.supabase.co"
+    KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmY2Nkd3pyZXlzcHpld3J6amp5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTgyNjIyMiwiZXhwIjoyMTA1NDAyMjIyfQ.dux5GhN5ff1XaZ8YXMh6QuUIiWVjSHHghJOy6JYAHHU"
+    
+    try:
+        bridge = DatabaseRAGBridge("supabase", f"{URL}|{KEY}")
+        
+        # Get query embedding using the same model as Unsloth
+        effective_model = model_name or "unsloth/bge-small-en-v1.5"
+        vectors, _ = embeddings.encode_with_identity([query], model_name=effective_model, normalize=True)
+        
+        # Search Supabase
+        results = bridge.search_documents(vectors[0], limit=top_k or 5)
+        
+        if results:
+            rendered = ""
+            sources = []
+            for i, res in enumerate(results):
+                content = res.get("content", "")
+                rendered += f"Document [{i}]:\n{content}\n\n"
+                sources.append({"id": str(i), "content": content})
+            return rendered, sources
+        else:
+            return "No documents found in Supabase RAG.", []
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Supabase RAG Error: {e}", []
+
     conn = rag_db.get_connection()
     try:
         hits = retrieval.retrieve_hybrid(

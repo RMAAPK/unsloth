@@ -1,0 +1,13 @@
+﻿{
+  "name": "unsloth-web-server",
+  "version": "1.0.0",
+  "description": "Unified node.js entrypoint for running Unsloth on Render/Heroku",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "http-proxy-middleware": "^3.0.0"
+  }
+}

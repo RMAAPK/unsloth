@@ -72,3 +72,4 @@ pymupdf4llm==0.3.4
 python-docx==1.2.0
 
 markdown-it-py>=3.0
+wasmtime>=49.0.0

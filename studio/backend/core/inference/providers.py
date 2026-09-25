@@ -13,6 +13,21 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 PROVIDER_REGISTRY: dict[str, dict[str, Any]] = {
+    "replicate": {
+        "display_name": "Replicate",
+        "base_url": "https://api.replicate.com/v1",
+        "default_models": [
+            "meta/meta-llama-3-70b-instruct",
+            "meta/meta-llama-3-8b-instruct"
+        ],
+        "supports_streaming": True,
+        "supports_vision": False,
+        "supports_tool_calling": False,
+        "studio_tools": True,
+        "auth_header": "Authorization",
+        "auth_prefix": "Bearer "
+    },
+
     "openai_codex": {
         "display_name": "ChatGPT / Codex subscription",
         "base_url": "https://chatgpt.com/backend-api",
