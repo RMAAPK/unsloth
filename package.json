@@ -1,10 +1,13 @@
-﻿{
+{
   "name": "unsloth-web-server",
   "version": "1.0.0",
   "description": "Unified node.js entrypoint for running Unsloth on Render/Heroku",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "npm run install:python && npm run build:frontend",
+    "install:python": "pip install -r studio/backend/requirements/studio.txt",
+    "build:frontend": "npm --prefix studio/frontend install && npm --prefix studio/frontend run build"
   },
   "dependencies": {
     "express": "^4.21.0",

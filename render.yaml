@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: unsloth-studio
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.x
+      - key: PYTHON_VERSION
+        value: 3.11.0
