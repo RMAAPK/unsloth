@@ -620,7 +620,7 @@ def run_engine(pw, engine: str) -> None:
     browser = getattr(pw, engine).launch(**launch)
     try:
         for platform, (nav_platform, agent) in PLATFORMS.items():
-            context = browser.new_context(user_agent = agent)
+            context = browser.new_context(user_agent=agent)
             context.add_init_script(
                 "Object.defineProperty(navigator, 'platform', "
                 f"{{ get: () => {json.dumps(nav_platform)} }});"
@@ -628,13 +628,13 @@ def run_engine(pw, engine: str) -> None:
             page = context.new_page()
             for attempt in range(30):
                 try:
-                    page.goto(URL, wait_until = "domcontentloaded", timeout = 30000)
+                    page.goto(URL, wait_until="domcontentloaded", timeout=30000)
                     break
                 except Exception:
                     if attempt == 29:
                         raise
                     time.sleep(2)
-            page.wait_for_selector("#smoke-ready", timeout = 120000)
+            page.wait_for_selector("#smoke-ready", timeout=120000)
             try:
                 check_defaults(page, engine, platform)
                 check_every_default(page, engine, platform)

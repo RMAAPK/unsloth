@@ -189,7 +189,7 @@ async def llama_update_status(
     force_refresh: bool = Query(
         False, description = "Bypass the 24h release cache for an explicit check."
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> LlamaUpdateStatusResponse:
     # Off the event loop: detection may probe the host and read GitHub.
     status = await asyncio.to_thread(get_update_status, force_refresh = force_refresh)
@@ -205,7 +205,7 @@ async def llama_update_status(
     dependencies = [Depends(get_current_subject), Depends(policy.require_owner)],
 )
 async def llama_update(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> LlamaUpdateActionResponse:
     action = await asyncio.to_thread(start_update)
     return LlamaUpdateActionResponse(**action)
@@ -300,7 +300,7 @@ async def llama_backend_status(
     force_refresh: bool = Query(
         False, description = "Bypass the 24h resolver cache for an explicit re-check."
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> LlamaBackendStatusResponse:
     # Off the event loop: resolving the options runs the installer's probe.
     status = await asyncio.to_thread(get_backend_status, force_refresh = force_refresh)

@@ -115,8 +115,8 @@ def _make_backend(monkeypatch, streams: list[object], payloads: list[dict]):
         _url,
         payload,
         _cancel_event,
-        headers=None,
-        first_token_deadline=None,
+        headers = None,
+        first_token_deadline = None,
     ):
         payloads.append(copy.deepcopy(payload))
         yield type("FakeResponse", (), {"status_code": 200, "chunks": streams.pop(0)})()
@@ -124,7 +124,7 @@ def _make_backend(monkeypatch, streams: list[object], payloads: list[dict]):
     def fake_iter_text_cancellable(
         response,
         _cancel_event,
-        first_token_deadline=None,
+        first_token_deadline = None,
     ):
         yield from response.chunks
 
@@ -138,8 +138,8 @@ def _run(backend, **kwargs):
     kwargs.setdefault("max_tool_iterations", 12)
     return list(
         backend.generate_chat_completion_with_tools(
-            messages=[{"role": "user", "content": "Show me the HTML inline"}],
-            tools=[_WEB_SEARCH_TOOL],
+            messages = [{"role": "user", "content": "Show me the HTML inline"}],
+            tools = [_WEB_SEARCH_TOOL],
             **kwargs,
         )
     )
@@ -262,9 +262,9 @@ def test_a_tool_is_not_priced_at_zero_behind_a_finished_call(monkeypatch):
 
     list(
         backend.generate_chat_completion_with_tools(
-            messages=_thread_with_a_big_completed_call(),
-            tools=[_WEB_SEARCH_TOOL],
-            max_tool_iterations=4,
+            messages = _thread_with_a_big_completed_call(),
+            tools = [_WEB_SEARCH_TOOL],
+            max_tool_iterations = 4,
         )
     )
 
@@ -399,9 +399,9 @@ def test_the_budget_rescue_recounts_with_the_stand_in_reply_too(monkeypatch):
 
     list(
         backend.generate_chat_completion_with_tools(
-            messages=[_thread[0], *_older, *_thread[1:]],
-            tools=[_WEB_SEARCH_TOOL],
-            max_tool_iterations=4,
+            messages = [_thread[0], *_older, *_thread[1:]],
+            tools = [_WEB_SEARCH_TOOL],
+            max_tool_iterations = 4,
         )
     )
 
@@ -474,10 +474,10 @@ def test_a_resumed_turn_prices_its_tool_result_by_what_is_left(monkeypatch):
 
     list(
         backend.generate_chat_completion_with_tools(
-            messages=[{"role": "user", "content": "Show me the file"}],
-            tools=[_WEB_SEARCH_TOOL],
-            max_tool_iterations=3,
-            max_tokens=1000,
+            messages = [{"role": "user", "content": "Show me the file"}],
+            tools = [_WEB_SEARCH_TOOL],
+            max_tool_iterations = 3,
+            max_tokens = 1000,
         )
     )
 
@@ -522,10 +522,10 @@ def test_a_resumed_turn_sizes_its_recall_by_what_is_left(monkeypatch):
 
     list(
         backend.generate_chat_completion_with_tools(
-            messages=[{"role": "user", "content": "Show me the file"}],
-            tools=[_WEB_SEARCH_TOOL],
-            max_tool_iterations=3,
-            max_tokens=1000,
+            messages = [{"role": "user", "content": "Show me the file"}],
+            tools = [_WEB_SEARCH_TOOL],
+            max_tool_iterations = 3,
+            max_tokens = 1000,
         )
     )
 

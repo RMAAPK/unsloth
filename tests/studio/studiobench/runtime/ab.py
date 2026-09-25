@@ -104,6 +104,7 @@ def origin_scoped(base_url: str, script: str) -> str:
     spellings that otherwise gate a script onto a document no browser will ever produce.
     """
     import json as _json
+
     return (
         "(() => { if (window.location.origin !== "
         + _json.dumps(browser_origin(base_url))
@@ -126,7 +127,7 @@ def interleave(
     for cell, plan in cells:
         order = list(targets) if cell.rep % 2 == 0 else list(reversed(targets))
         for target in order:
-            out.append((target, cell.derive(arm = target.label), plan))
+            out.append((target, cell.derive(arm=target.label), plan))
     return out
 
 
@@ -442,17 +443,17 @@ def compare_arms(
     from ..scoring.ab import DEFAULT_NOISE_FLOOR_PCT, Pair, RunIdentity, compare
     from ..scoring.anchors import METRIC_BY_KEY, weights_id
 
-    by_arm = readings_by_arm(records, session_id = session_id)
+    by_arm = readings_by_arm(records, session_id=session_id)
     base = by_arm.get(base_label, {})
     treatment = by_arm.get(treatment_label, {})
 
     rung_ladder_id = _ladder_id(sorted({rung for rung, _rep in set(base) | set(treatment)}))
     identity_kwargs = dict(
-        bench_version = bench_version,
-        corpus_hash = corpus_hash,
-        rung_ladder_id = rung_ladder_id,
-        weights_id = weights_id() if callable(weights_id) else str(weights_id),
-        session_id = session_id,
+        bench_version=bench_version,
+        corpus_hash=corpus_hash,
+        rung_ladder_id=rung_ladder_id,
+        weights_id=weights_id() if callable(weights_id) else str(weights_id),
+        session_id=session_id,
     )
     # Paired PER REPETITION, matching (rung, rep) on both sides: repetition r of each arm ran adjacent
     # in time, which is what makes the comparison paired at all. Pooling reps into one reading per
@@ -467,10 +468,10 @@ def compare_arms(
                 continue
             pairs.append(
                 Pair(
-                    rung_tokens = int(rung),
-                    metric_key = metric_key,
-                    base = base_measure,
-                    treatment = treatment_measure,
+                    rung_tokens=int(rung),
+                    metric_key=metric_key,
+                    base=base_measure,
+                    treatment=treatment_measure,
                 )
             )
 
@@ -479,14 +480,15 @@ def compare_arms(
         pairs,
         RunIdentity(**identity_kwargs),
         RunIdentity(**identity_kwargs),
-        noise_floor_pct = (DEFAULT_NOISE_FLOOR_PCT if noise_floor_pct is None else noise_floor_pct),
-        noise_floor_source = noise_floor_source,
-        is_null_control = is_null_control,
+        noise_floor_pct=(DEFAULT_NOISE_FLOOR_PCT if noise_floor_pct is None else noise_floor_pct),
+        noise_floor_source=noise_floor_source,
+        is_null_control=is_null_control,
     )
 
 
 def _ladder_id(rungs: list) -> str:
     import hashlib
+
     digest = hashlib.sha256(",".join(str(int(r)) for r in rungs).encode()).hexdigest()[:12]
     return f"r-{digest}"
 
@@ -506,7 +508,7 @@ def make_target(
     image_path,
     session,
     parity_raw: bool = False,
-    parity_shots = None,
+    parity_shots=None,
     username: str,
     password: str,
 ) -> Target:
@@ -525,24 +527,24 @@ def make_target(
     checkpoint = external_checkpoint_id(provider, model_id)
     log(f"  {label}: {base_url} -> pacer {pacer.base_url}, checkpoint {checkpoint}")
 
-    seeder = Seeder(base_url = base_url, auth = auth, model_id = model_id, log = log)
+    seeder = Seeder(base_url=base_url, auth=auth, model_id=model_id, log=log)
     runner = CellRunner(
-        session = session,
-        pacer = pacer,
-        seeder = seeder,
-        corpus = corpus,
-        base_url = base_url,
-        model_id = model_id,
-        tier = tier,
-        paths = paths,
-        log = log,
-        cadence = cadence,
-        image_path = image_path,
-        parity_raw = parity_raw,
-        parity_shots = parity_shots,
-        arm_label = label,
+        session=session,
+        pacer=pacer,
+        seeder=seeder,
+        corpus=corpus,
+        base_url=base_url,
+        model_id=model_id,
+        tier=tier,
+        paths=paths,
+        log=log,
+        cadence=cadence,
+        image_path=image_path,
+        parity_raw=parity_raw,
+        parity_shots=parity_shots,
+        arm_label=label,
     )
-    target = Target(label = label, ref = ref, base_url = base_url, seeder = seeder, runner = runner)
+    target = Target(label=label, ref=ref, base_url=base_url, seeder=seeder, runner=runner)
     target.auth = auth  # type: ignore[attr-defined]
     target.checkpoint = checkpoint  # type: ignore[attr-defined]
     return target

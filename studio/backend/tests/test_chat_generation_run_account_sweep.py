@@ -36,7 +36,7 @@ _MINUTE_MS = 60_000
 
 
 class _Clock:
-    def __init__(self, start=1_700_000_000_000):
+    def __init__(self, start = 1_700_000_000_000):
         self.now = int(start)
 
     def __call__(self):
@@ -55,8 +55,8 @@ def clock(monkeypatch):
 
 def _running_run(
     owner,
-    run_id="run-1",
-    thread_id="thread-1",
+    run_id = "run-1",
+    thread_id = "thread-1",
 ):
     studio_db.upsert_chat_thread(
         {
@@ -77,12 +77,12 @@ def _running_run(
         }
     )
     runs_db.create_run(
-        run_id=run_id,
-        owner_subject=owner,
-        thread_id=thread_id,
-        user_message_id=f"user-{run_id}",
-        assistant_message_id=f"assistant-{run_id}",
-        request_payload={
+        run_id = run_id,
+        owner_subject = owner,
+        thread_id = thread_id,
+        user_message_id = f"user-{run_id}",
+        assistant_message_id = f"assistant-{run_id}",
+        request_payload = {
             "model": "local.gguf",
             "messages": [{"role": "user", "content": "Hello"}],
             "stream": True,
@@ -108,10 +108,10 @@ async def test_sweep_does_not_cancel_another_accounts_run_with_the_same_id(
     storage.create_initial_user("unsloth", "owner-password", secrets.token_urlsafe(32))
     try:
         alice = AccountContext(
-            storage.issue_account_setup_code(username="alice")["account"]["account_id"], "alice"
+            storage.issue_account_setup_code(username = "alice")["account"]["account_id"], "alice"
         )
         bob = AccountContext(
-            storage.issue_account_setup_code(username="bob")["account"]["account_id"], "bob"
+            storage.issue_account_setup_code(username = "bob")["account"]["account_id"], "bob"
         )
         policy.invalidate_account_cache()
 
@@ -120,15 +120,15 @@ async def test_sweep_does_not_cancel_another_accounts_run_with_the_same_id(
         run_as(alice, lambda: _running_run("alice"))
         clock.advance_ms(11 * _MINUTE_MS)
 
-        app = SimpleNamespace(state=SimpleNamespace())
+        app = SimpleNamespace(state = SimpleNamespace())
         supervisor = ChatGenerationSupervisor(app)
         app.state.chat_generation_supervisor = supervisor
         started = asyncio.Event()
 
         async def _produce(
             run_id,
-            cancel_event=None,
-            activity=None,
+            cancel_event = None,
+            activity = None,
         ):
             started.set()
             await asyncio.sleep(3600)
@@ -141,7 +141,7 @@ async def test_sweep_does_not_cancel_another_accounts_run_with_the_same_id(
 
         def _start_bob():
             _running_run("bob")
-            supervisor.start("run-1", thread_id="thread-1", model="local.gguf")
+            supervisor.start("run-1", thread_id = "thread-1", model = "local.gguf")
 
         run_as(bob, _start_bob)
         for _ in range(100):
@@ -154,7 +154,7 @@ async def test_sweep_does_not_cancel_another_accounts_run_with_the_same_id(
         bob_registration = [e for e in active_generations.snapshot() if e["run_id"] == "run-1"]
         assert [e["account_id"] for e in bob_registration] == [bob.account_id]
 
-        sweeper = ChatGenerationLeaseSweeper(app, interval_s=60.0, timeout_s=600.0)
+        sweeper = ChatGenerationLeaseSweeper(app, interval_s = 60.0, timeout_s = 600.0)
         settled = await sweeper.sweep_once()
         assert settled == ["run-1"]
         assert run_as(alice, lambda: runs_db.get_run("run-1", "alice"))["status"] == "failed"

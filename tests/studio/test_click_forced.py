@@ -39,7 +39,7 @@ class _FakeLocator:
         self._scroll_raises = scroll_raises
         self.click_kwargs: dict | None = None
 
-    def scroll_into_view_if_needed(self, timeout = None):
+    def scroll_into_view_if_needed(self, timeout=None):
         self.calls.append("scroll")
         if self._scroll_raises is not None:
             raise self._scroll_raises
@@ -74,7 +74,7 @@ def test_a_scroll_that_fails_does_not_stop_the_click() -> None:
     reach the click and fail there with Playwright's own message, rather than here
     with a scrolling one that names the wrong problem.
     """
-    loc = _FakeLocator(scroll_raises = RuntimeError("no scrollable ancestor"))
+    loc = _FakeLocator(scroll_raises=RuntimeError("no scrollable ancestor"))
     click_forced(loc)
     assert loc.calls == ["scroll", "click"]
 
@@ -88,7 +88,7 @@ def test_a_failing_click_still_propagates() -> None:
             raise RuntimeError("Element is outside of the viewport")
 
     loc = _Boom()
-    with pytest.raises(RuntimeError, match = "outside of the viewport"):
+    with pytest.raises(RuntimeError, match="outside of the viewport"):
         click_forced(loc)
 
 
@@ -101,7 +101,7 @@ def test_every_forced_click_in_the_suite_goes_through_the_helper() -> None:
     here = Path(__file__).resolve().parent
     offenders = []
     for path in sorted(here.glob("playwright_*.py")):
-        for i, line in enumerate(path.read_text(encoding = "utf-8").splitlines(), 1):
+        for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if "click(force" in line and "def " not in line:
                 offenders.append(f"{path.name}:{i}")
     assert not offenders, (

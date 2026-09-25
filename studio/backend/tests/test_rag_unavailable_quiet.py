@@ -33,7 +33,7 @@ def reset_unavailable_warning(monkeypatch):
     monkeypatch.setattr(rag_db, "_extension_loaded", False)
 
 
-def _break_extension_load(monkeypatch, exc=None):
+def _break_extension_load(monkeypatch, exc = None):
     """Make sqlite_vec.load fail the way a missing vec0 dylib does."""
 
     class _Stub:
@@ -54,7 +54,7 @@ def _client():
     from routes import rag as rag_routes
 
     app = FastAPI()
-    app.include_router(rag_routes.router, prefix="/api/rag")
+    app.include_router(rag_routes.router, prefix = "/api/rag")
     app.dependency_overrides[get_current_subject] = lambda: "tester"
     return TestClient(app)
 
@@ -80,7 +80,7 @@ def test_import_failure_also_raises_the_typed_error(reset_unavailable_warning, m
 
 def test_unavailability_warns_only_once(rag_home, reset_unavailable_warning, monkeypatch, caplog):
     _break_extension_load(monkeypatch)
-    with caplog.at_level("WARNING", logger=rag_db.__name__):
+    with caplog.at_level("WARNING", logger = rag_db.__name__):
         for _ in range(5):
             with pytest.raises(rag_db.RagExtensionUnavailable):
                 rag_db.get_connection()
@@ -107,7 +107,7 @@ def test_rag_available_propagates_real_database_errors(
 
     monkeypatch.setattr(rag_db, "RAG_AVAILABLE", True)
     monkeypatch.setattr(rag_db, "get_connection", _boom)
-    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
+    with pytest.raises(sqlite3.OperationalError, match = "database is locked"):
         rag_db.rag_available()
 
 
@@ -115,7 +115,7 @@ def test_list_knowledge_bases_degrades_to_empty(rag_home, reset_unavailable_warn
     from routes import rag as rag_routes
 
     _break_extension_load(monkeypatch)
-    out = rag_routes.list_knowledge_bases(subject="tester")
+    out = rag_routes.list_knowledge_bases(subject = "tester")
     assert out["knowledgeBases"] == []
     # The marker is what stops the frontend reading this as a working empty state.
     assert out["ragAvailable"] is False
@@ -126,54 +126,54 @@ def test_list_knowledge_bases_degrades_to_empty(rag_home, reset_unavailable_warn
     "call",
     [
         pytest.param(
-            lambda r: r.create_knowledge_base(r.CreateKbRequest(name="notes"), subject="tester"),
-            id="create-kb",
+            lambda r: r.create_knowledge_base(r.CreateKbRequest(name = "notes"), subject = "tester"),
+            id = "create-kb",
         ),
         pytest.param(
             lambda r: r.update_knowledge_base(
-                "kb1", r.UpdateKbRequest(name="renamed"), subject="tester"
+                "kb1", r.UpdateKbRequest(name = "renamed"), subject = "tester"
             ),
-            id="update-kb",
+            id = "update-kb",
         ),
         pytest.param(
-            lambda r: r.delete_knowledge_base("kb1", subject="tester"),
-            id="delete-kb",
+            lambda r: r.delete_knowledge_base("kb1", subject = "tester"),
+            id = "delete-kb",
         ),
         pytest.param(
-            lambda r: r.list_kb_documents("kb1", subject="tester"),
-            id="list-kb-documents",
+            lambda r: r.list_kb_documents("kb1", subject = "tester"),
+            id = "list-kb-documents",
         ),
         pytest.param(
-            lambda r: r.list_thread_documents("t1", subject="tester"),
-            id="list-thread-documents",
+            lambda r: r.list_thread_documents("t1", subject = "tester"),
+            id = "list-thread-documents",
         ),
         pytest.param(
-            lambda r: r.list_project_documents("p1", subject="tester"),
-            id="list-project-documents",
+            lambda r: r.list_project_documents("p1", subject = "tester"),
+            id = "list-project-documents",
         ),
         pytest.param(
-            lambda r: r.list_all_uploaded_documents(subject="tester"),
-            id="list-all-documents",
+            lambda r: r.list_all_uploaded_documents(subject = "tester"),
+            id = "list-all-documents",
         ),
         pytest.param(
-            lambda r: r.delete_document("doc1", subject="tester"),
-            id="delete-document",
+            lambda r: r.delete_document("doc1", subject = "tester"),
+            id = "delete-document",
         ),
         pytest.param(
-            lambda r: r.search(r.SearchRequest(query="hello", kb_id="kb1"), subject="tester"),
-            id="search",
+            lambda r: r.search(r.SearchRequest(query = "hello", kb_id = "kb1"), subject = "tester"),
+            id = "search",
         ),
         pytest.param(
-            lambda r: r.job_status("job1", subject="tester"),
-            id="job-status",
+            lambda r: r.job_status("job1", subject = "tester"),
+            id = "job-status",
         ),
         pytest.param(
-            lambda r: r.preview_target("doc1", subject="tester"),
-            id="preview-target",
+            lambda r: r.preview_target("doc1", subject = "tester"),
+            id = "preview-target",
         ),
         pytest.param(
-            lambda r: r.document_file_url("doc1", subject="tester"),
-            id="file-url",
+            lambda r: r.document_file_url("doc1", subject = "tester"),
+            id = "file-url",
         ),
     ],
 )
@@ -206,7 +206,7 @@ def test_upload_is_refused_before_the_file_is_written(
     with _client() as client:
         response = client.post(
             "/api/rag/threads/t1/documents",
-            files={"file": ("notes.txt", b"alpha bravo", "text/plain")},
+            files = {"file": ("notes.txt", b"alpha bravo", "text/plain")},
         )
     assert response.status_code == 503
     assert response.json() == {"detail": UNAVAILABLE}
@@ -227,7 +227,7 @@ def test_a_saved_upload_is_removed_when_ingestion_cannot_start(
     with _client() as client:
         response = client.post(
             "/api/rag/threads/t1/documents",
-            files={"file": ("notes.txt", b"alpha bravo", "text/plain")},
+            files = {"file": ("notes.txt", b"alpha bravo", "text/plain")},
         )
     assert response.status_code == 503
     assert response.json() == {"detail": UNAVAILABLE}
@@ -245,14 +245,14 @@ def test_a_first_request_that_discovers_the_missing_library_still_gets_503(
     monkeypatch.setattr(rag_db, "_extension_loaded", True)
     assert rag_db.rag_available() is True
     with pytest.raises(HTTPException) as err:
-        rag_routes.create_knowledge_base(rag_routes.CreateKbRequest(name="notes"), subject="tester")
+        rag_routes.create_knowledge_base(rag_routes.CreateKbRequest(name = "notes"), subject = "tester")
     assert err.value.status_code == 503
     assert err.value.detail == UNAVAILABLE
 
 
 @pytest.mark.skipif(
     not hasattr(sqlite3.Connection, "enable_load_extension"),
-    reason="this interpreter's sqlite3 is built without extension loading, so the "
+    reason = "this interpreter's sqlite3 is built without extension loading, so the "
     "healthy path cannot be exercised (python.org macOS builds, some distros)",
 )
 def test_a_failed_load_is_not_latched_for_the_session(
@@ -286,12 +286,12 @@ def test_the_whole_router_stays_quiet_under_repeated_use(
     from routes import rag as rag_routes
 
     _break_extension_load(monkeypatch)
-    with caplog.at_level("WARNING", logger=rag_db.__name__):
+    with caplog.at_level("WARNING", logger = rag_db.__name__):
         for _ in range(5):
-            rag_routes.list_knowledge_bases(subject="tester")
+            rag_routes.list_knowledge_bases(subject = "tester")
             with pytest.raises(HTTPException):
                 rag_routes.create_knowledge_base(
-                    rag_routes.CreateKbRequest(name="notes"), subject="tester"
+                    rag_routes.CreateKbRequest(name = "notes"), subject = "tester"
                 )
     records = [r for r in caplog.records if r.name == rag_db.__name__]
     assert len(records) == 1
@@ -324,7 +324,7 @@ def test_over_http_the_poll_is_200_and_create_is_503(
             "ragUnavailableReason": UNAVAILABLE,
         }
 
-        created = client.post("/api/rag/knowledge-bases", json={"name": "notes"})
+        created = client.post("/api/rag/knowledge-bases", json = {"name": "notes"})
         assert created.status_code == 503
         assert created.json() == {"detail": UNAVAILABLE}
 
@@ -341,8 +341,8 @@ def test_list_knowledge_bases_still_raises_real_database_errors(
 
     monkeypatch.setattr(rag_db, "RAG_AVAILABLE", True)
     monkeypatch.setattr(rag_db, "get_connection", _boom)
-    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
-        rag_routes.list_knowledge_bases(subject="tester")
+    with pytest.raises(sqlite3.OperationalError, match = "database is locked"):
+        rag_routes.list_knowledge_bases(subject = "tester")
 
 
 def test_mutating_endpoints_still_raise_real_database_errors(
@@ -358,13 +358,13 @@ def test_mutating_endpoints_still_raise_real_database_errors(
     monkeypatch.setattr(rag_db, "RAG_AVAILABLE", True)
     monkeypatch.setattr(rag_db, "_extension_loaded", True)
     monkeypatch.setattr(rag_db, "get_connection", _boom)
-    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
-        rag_routes.create_knowledge_base(rag_routes.CreateKbRequest(name="notes"), subject="tester")
+    with pytest.raises(sqlite3.OperationalError, match = "database is locked"):
+        rag_routes.create_knowledge_base(rag_routes.CreateKbRequest(name = "notes"), subject = "tester")
 
 
 @pytest.mark.skipif(
     not hasattr(sqlite3.Connection, "enable_load_extension"),
-    reason="this interpreter's sqlite3 is built without extension loading, so the "
+    reason = "this interpreter's sqlite3 is built without extension loading, so the "
     "healthy path cannot be exercised (python.org macOS builds, some distros)",
 )
 def test_list_knowledge_bases_works_when_the_extension_loads(rag_home, rag_conn):
@@ -373,9 +373,9 @@ def test_list_knowledge_bases_works_when_the_extension_loads(rag_home, rag_conn)
     from core.rag import store
     from routes import rag as rag_routes
 
-    store.create_kb(rag_conn, name="notes", description=None, embedding_model=None)
+    store.create_kb(rag_conn, name = "notes", description = None, embedding_model = None)
     rag_conn.commit()
-    out = rag_routes.list_knowledge_bases(subject="tester")
+    out = rag_routes.list_knowledge_bases(subject = "tester")
     assert [kb["name"] for kb in out["knowledgeBases"]] == ["notes"]
     assert out["ragAvailable"] is True
     assert out["ragUnavailableReason"] is None
@@ -383,7 +383,7 @@ def test_list_knowledge_bases_works_when_the_extension_loads(rag_home, rag_conn)
 
 @pytest.mark.skipif(
     not hasattr(sqlite3.Connection, "enable_load_extension"),
-    reason="this interpreter's sqlite3 is built without extension loading, so the "
+    reason = "this interpreter's sqlite3 is built without extension loading, so the "
     "healthy path cannot be exercised (python.org macOS builds, some distros)",
 )
 def test_mutations_still_work_when_the_extension_loads(rag_home, rag_conn):
@@ -391,10 +391,10 @@ def test_mutations_still_work_when_the_extension_loads(rag_home, rag_conn):
     from routes import rag as rag_routes
 
     created = rag_routes.create_knowledge_base(
-        rag_routes.CreateKbRequest(name="notes"), subject="tester"
+        rag_routes.CreateKbRequest(name = "notes"), subject = "tester"
     )
     assert created["name"] == "notes"
     assert rag_routes.update_knowledge_base(
-        created["id"], rag_routes.UpdateKbRequest(name="renamed"), subject="tester"
+        created["id"], rag_routes.UpdateKbRequest(name = "renamed"), subject = "tester"
     ) == {"ok": True}
-    assert rag_routes.delete_knowledge_base(created["id"], subject="tester") == {"ok": True}
+    assert rag_routes.delete_knowledge_base(created["id"], subject = "tester") == {"ok": True}

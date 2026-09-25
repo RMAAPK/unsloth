@@ -67,7 +67,7 @@ def _write_gguf(
     kv = {"general.architecture": arch}
     for key, value in fields.items():
         kv[f"{arch}.{key}"] = value
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents = True, exist_ok = True)
     path.write_bytes(_make_gguf_bytes(arch, kv))
     return path
 
@@ -86,32 +86,32 @@ def _call_route(
         "_resolve_quant_gguf",
         lambda _repo, _quant, _local: (str(path), 4096),
     )
-    monkeypatch.setattr(models_routes, "is_local_path", lambda _p: False, raising=False)
+    monkeypatch.setattr(models_routes, "is_local_path", lambda _p: False, raising = False)
     monkeypatch.setattr(
         LlamaCppBackend,
         "probe_server_capabilities",
         classmethod(lambda cls, *a, **k: dict(caps if caps is not None else {"mtp_token": True})),
     )
     kwargs = dict(
-        repo_id="org/repo",
-        quant="Q4_K_M",
-        n_ctx=N_CTX,
-        cache_type_kv=None,
-        n_parallel=1,
-        speculative_type=None,
-        spec_draft_n_max=None,
-        spec_draft_cache_type=None,
-        ctx_checkpoints=None,
-        disable_vision=False,
-        n_batch=None,
-        n_ubatch=None,
-        tensor_parallel=False,
-        flash_attn=None,
-        kv_unified=None,
-        swa_full=None,
-        no_mmproj_offload=None,
-        request=None,
-        current_subject="test",
+        repo_id = "org/repo",
+        quant = "Q4_K_M",
+        n_ctx = N_CTX,
+        cache_type_kv = None,
+        n_parallel = 1,
+        speculative_type = None,
+        spec_draft_n_max = None,
+        spec_draft_cache_type = None,
+        ctx_checkpoints = None,
+        disable_vision = False,
+        n_batch = None,
+        n_ubatch = None,
+        tensor_parallel = False,
+        flash_attn = None,
+        kv_unified = None,
+        swa_full = None,
+        no_mmproj_offload = None,
+        request = None,
+        current_subject = "test",
     )
     kwargs.update(overrides)
     return asyncio.run(models_routes.get_kv_cache_estimate(**kwargs))
@@ -129,45 +129,45 @@ def ragged(tmp_path):
 
 class TestFlashAttention:
     def test_an_explicit_off_prices_the_padded_cache(self, monkeypatch, ragged):
-        on = _call_route(monkeypatch, path=ragged, flash_attn=True)
-        off = _call_route(monkeypatch, path=ragged, flash_attn=False)
+        on = _call_route(monkeypatch, path = ragged, flash_attn = True)
+        off = _call_route(monkeypatch, path = ragged, flash_attn = False)
         assert off["kv_bytes"] > on["kv_bytes"]
 
     def test_omitting_it_resolves_to_what_the_launch_emits(self, monkeypatch, ragged):
-        default = _call_route(monkeypatch, path=ragged)
+        default = _call_route(monkeypatch, path = ragged)
         assert (
             default["kv_bytes"]
-            == _call_route(monkeypatch, path=ragged, flash_attn=True)["kv_bytes"]
+            == _call_route(monkeypatch, path = ragged, flash_attn = True)["kv_bytes"]
         )
 
     def test_a_build_without_the_flag_prices_the_padded_cache(self, monkeypatch, ragged):
-        blind = _call_route(monkeypatch, path=ragged)
+        blind = _call_route(monkeypatch, path = ragged)
         unsupported = _call_route(
             monkeypatch,
-            path=ragged,
-            caps={"found": True, "supports_flash_attn": False},
+            path = ragged,
+            caps = {"found": True, "supports_flash_attn": False},
         )
         assert unsupported["kv_bytes"] > blind["kv_bytes"]
 
     def test_a_quantized_v_cache_is_not_priced_without_it(self, monkeypatch, gqa):
         """An explicit off is not a launch that can happen: llama.cpp forces it on."""
-        forced = _call_route(monkeypatch, path=gqa, cache_type_kv="q8_0", flash_attn=False)
-        resolved = _call_route(monkeypatch, path=gqa, cache_type_kv="q8_0")
+        forced = _call_route(monkeypatch, path = gqa, cache_type_kv = "q8_0", flash_attn = False)
+        resolved = _call_route(monkeypatch, path = gqa, cache_type_kv = "q8_0")
         assert forced["kv_bytes"] == resolved["kv_bytes"]
 
     def test_the_quantized_v_answer_is_the_narrow_one(self, monkeypatch, gqa):
         """2.125 bytes per element, not the 3.0625 the loader used to contradict it with."""
-        q8 = _call_route(monkeypatch, path=gqa, cache_type_kv="q8_0")
-        f16 = _call_route(monkeypatch, path=gqa, cache_type_kv="f16")
-        assert q8["kv_bytes"] == pytest.approx(f16["kv_bytes"] * (2.125 / 4.0), rel=1e-6)
+        q8 = _call_route(monkeypatch, path = gqa, cache_type_kv = "q8_0")
+        f16 = _call_route(monkeypatch, path = gqa, cache_type_kv = "f16")
+        assert q8["kv_bytes"] == pytest.approx(f16["kv_bytes"] * (2.125 / 4.0), rel = 1e-6)
 
 
 class TestTheOtherTwoLayoutKnobs:
     def test_swa_full_collapses_the_two_cache_sizes(self, monkeypatch, ragged):
         # Net of checkpoints: --swa-full zeroes the checkpoint share, so the totals can move
         # the other way while the attention cache itself still grows.
-        compact = _call_route(monkeypatch, path=ragged)
-        full = _call_route(monkeypatch, path=ragged, swa_full=True)
+        compact = _call_route(monkeypatch, path = ragged)
+        full = _call_route(monkeypatch, path = ragged, swa_full = True)
         # The share is None, not 0, when nothing is reserved.
         compact_attn = compact["kv_bytes"] - (compact["kv_checkpoint_bytes"] or 0)
         full_attn = full["kv_bytes"] - (full["kv_checkpoint_bytes"] or 0)
@@ -176,29 +176,28 @@ class TestTheOtherTwoLayoutKnobs:
     def test_swa_full_drops_the_checkpoint_share(self, monkeypatch, ragged):
         """No sliding window left to snapshot, so any reported share is memory nobody
         reserves."""
-        compact = _call_route(monkeypatch, path=ragged, ctx_checkpoints=8)
-        full = _call_route(monkeypatch, path=ragged, ctx_checkpoints=8, swa_full=True)
+        compact = _call_route(monkeypatch, path = ragged, ctx_checkpoints = 8)
+        full = _call_route(monkeypatch, path = ragged, ctx_checkpoints = 8, swa_full = True)
         assert compact["kv_checkpoint_bytes"]
         assert not full["kv_checkpoint_bytes"]
 
     def test_the_unified_cache_is_an_input(self, monkeypatch, ragged):
-        unified = _call_route(monkeypatch, path=ragged, n_parallel=4, kv_unified=True)
-        split = _call_route(monkeypatch, path=ragged, n_parallel=4, kv_unified=False)
+        unified = _call_route(monkeypatch, path = ragged, n_parallel = 4, kv_unified = True)
+        split = _call_route(monkeypatch, path = ragged, n_parallel = 4, kv_unified = False)
         assert unified["kv_bytes"] != split["kv_bytes"]
 
     def test_a_single_slot_resolves_to_the_launch_default(self, monkeypatch, ragged):
         """Unsloth asks for a unified cache only to serve more than one slot."""
-        default = _call_route(monkeypatch, path=ragged, n_parallel=1)
+        default = _call_route(monkeypatch, path = ragged, n_parallel = 1)
         assert (
             default["kv_bytes"]
-            == _call_route(monkeypatch, path=ragged, n_parallel=1, kv_unified=False)["kv_bytes"]
+            == _call_route(monkeypatch, path = ragged, n_parallel = 1, kv_unified = False)["kv_bytes"]
         )
 
 
 class TestTheContract:
     def test_the_new_parameters_are_all_optional(self):
         import inspect
-
         signature = inspect.signature(models_routes.get_kv_cache_estimate)
         for name in ("flash_attn", "kv_unified", "swa_full", "no_mmproj_offload"):
             assert name in signature.parameters, f"{name} is not on the route"
@@ -207,14 +206,13 @@ class TestTheContract:
     def test_the_response_shape_did_not_change(self, monkeypatch, gqa):
         """No response_model, so a strict client breaks on a new key."""
         from test_memory_estimate_contract_freeze import _KV_CACHE_ESTIMATE_KEYS
-
-        assert set(_call_route(monkeypatch, path=gqa)) == set(_KV_CACHE_ESTIMATE_KEYS)
+        assert set(_call_route(monkeypatch, path = gqa)) == set(_KV_CACHE_ESTIMATE_KEYS)
 
     def test_an_omitted_plan_does_not_move_the_answer_for_a_plain_model(self, monkeypatch, gqa):
-        answer = _call_route(monkeypatch, path=gqa)
+        answer = _call_route(monkeypatch, path = gqa)
         assert (
             answer["kv_bytes"]
-            == _call_route(monkeypatch, path=gqa, flash_attn=True, kv_unified=True, swa_full=False)[
+            == _call_route(monkeypatch, path = gqa, flash_attn = True, kv_unified = True, swa_full = False)[
                 "kv_bytes"
             ]
         )

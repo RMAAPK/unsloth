@@ -60,7 +60,7 @@ def client_for(account):
 
     app.dependency_overrides[get_current_subject] = subject
     app.dependency_overrides[allow_ambient_hf_token] = lambda: False
-    app.include_router(inference.studio_router, prefix = "/api/inference")
+    app.include_router(inference.studio_router, prefix="/api/inference")
     return TestClient(app)
 
 
@@ -77,23 +77,23 @@ def alice_resident(monkeypatch):
         raise RuntimeError(DIFFUSION_CANCELLED_MSG)
 
     backend = SimpleNamespace(
-        is_loaded = True,
-        status = lambda: {
+        is_loaded=True,
+        status=lambda: {
             "loaded": True,
             "repo_id": "org/public-model",
             "family": "z-image",
             "base_repo": None,
         },
-        generate = generate,
-        generate_progress = lambda: {"active": True, "step": 3, "total": 10},
-        cancel_generate = lambda **kwargs: (cancelled.set(), True)[1],
+        generate=generate,
+        generate_progress=lambda: {"active": True, "step": 3, "total": 10},
+        cancel_generate=lambda **kwargs: (cancelled.set(), True)[1],
     )
     from core.inference import diffusion_engine_router
 
     monkeypatch.setattr(diffusion_engine_router, "get_active_diffusion_engine", lambda: backend)
     monkeypatch.setattr(gpu_arbiter, "_owner", "diffusion")
     monkeypatch.setattr(gpu_arbiter, "_owner_account", ALICE.account_id)
-    return SimpleNamespace(running = running, cancelled = cancelled)
+    return SimpleNamespace(running=running, cancelled=cancelled)
 
 
 def _start_alice_generation(alice_resident):
@@ -102,10 +102,10 @@ def _start_alice_generation(alice_resident):
     def run():
         with client_for(ALICE) as client:
             result["response"] = client.post(
-                "/api/inference/images/generate", json = {"prompt": "a sloth"}
+                "/api/inference/images/generate", json={"prompt": "a sloth"}
             )
 
-    thread = threading.Thread(target = run)
+    thread = threading.Thread(target=run)
     thread.start()
     assert alice_resident.running.wait(20)
     return thread, result

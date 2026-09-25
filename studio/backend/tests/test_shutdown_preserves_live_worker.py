@@ -20,7 +20,7 @@ from core.inference.orchestrator import InferenceOrchestrator
 class _FakeProc:
     """A subprocess handle that dies only on the requested step (or never)."""
 
-    def __init__(self, dies_on=None):
+    def __init__(self, dies_on = None):
         self._alive = True
         self._dies_on = dies_on  # None | "join" | "terminate" | "kill"
         self.pid = 424242
@@ -28,7 +28,7 @@ class _FakeProc:
     def is_alive(self):
         return self._alive
 
-    def join(self, timeout=None):
+    def join(self, timeout = None):
         if self._dies_on == "join":
             self._alive = False
 
@@ -80,42 +80,41 @@ def _bare_export():
     return o
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _no_sleep(monkeypatch):
     # _shutdown_subprocess sleeps 0.5s after cancelling; keep the tests instant.
     import core.inference.orchestrator as inf_mod
-
     monkeypatch.setattr(inf_mod.time, "sleep", lambda *_a, **_k: None)
 
 
 class TestInferenceShutdownReturn:
     def test_worker_that_dies_returns_true_and_clears_handle(self):
         o = _bare_inference()
-        o._proc = _FakeProc(dies_on="terminate")
-        assert o._shutdown_subprocess(timeout=0.01) is True
+        o._proc = _FakeProc(dies_on = "terminate")
+        assert o._shutdown_subprocess(timeout = 0.01) is True
         assert o._proc is None
         assert o.is_worker_alive() is False
 
     def test_survivor_returns_false_and_keeps_handle(self):
         o = _bare_inference()
-        o._proc = _FakeProc(dies_on=None)  # outlives terminate AND kill
-        assert o._shutdown_subprocess(timeout=0.01) is False
+        o._proc = _FakeProc(dies_on = None)  # outlives terminate AND kill
+        assert o._shutdown_subprocess(timeout = 0.01) is False
         assert o._proc is not None
         # is_worker_alive stays truthful, so the pre-swap guard can refuse the swap.
         assert o.is_worker_alive() is True
 
     def test_already_dead_returns_true(self):
         o = _bare_inference()
-        o._proc = _FakeProc(dies_on="join")
+        o._proc = _FakeProc(dies_on = "join")
         o._proc._alive = False
-        assert o._shutdown_subprocess(timeout=0.01) is True
+        assert o._shutdown_subprocess(timeout = 0.01) is True
         assert o._proc is None
 
     def test_forced_shutdown_reaps_worker_tree(self, monkeypatch):
         from utils import process_lifetime
 
         o = _bare_inference()
-        o._proc = _FakeProc(dies_on="terminate")
+        o._proc = _FakeProc(dies_on = "terminate")
         reaped = []
         monkeypatch.setattr(
             process_lifetime,
@@ -123,12 +122,12 @@ class TestInferenceShutdownReturn:
             lambda pid, timeout: reaped.append((pid, timeout)),
         )
 
-        assert o._shutdown_subprocess(timeout=0.01) is True
+        assert o._shutdown_subprocess(timeout = 0.01) is True
         assert reaped == [(424242, 5)]
 
     def test_concurrent_shutdowns_share_one_teardown(self):
         o = _bare_inference()
-        o._proc = _FakeProc(dies_on="join")
+        o._proc = _FakeProc(dies_on = "join")
         first_put = threading.Event()
         second_put = threading.Event()
         release = threading.Event()
@@ -139,7 +138,7 @@ class TestInferenceShutdownReturn:
                 puts.append(message)
                 if len(puts) == 1:
                     first_put.set()
-                    assert release.wait(timeout=5)
+                    assert release.wait(timeout = 5)
                 else:
                     second_put.set()
 
@@ -148,19 +147,19 @@ class TestInferenceShutdownReturn:
 
         def shutdown():
             try:
-                o._shutdown_subprocess(timeout=0.01)
+                o._shutdown_subprocess(timeout = 0.01)
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
-        first = threading.Thread(target=shutdown)
-        second = threading.Thread(target=shutdown)
+        first = threading.Thread(target = shutdown)
+        second = threading.Thread(target = shutdown)
         first.start()
-        assert first_put.wait(timeout=5)
+        assert first_put.wait(timeout = 5)
         second.start()
-        assert not second_put.wait(timeout=0.1)
+        assert not second_put.wait(timeout = 0.1)
         release.set()
-        first.join(timeout=5)
-        second.join(timeout=5)
+        first.join(timeout = 5)
+        second.join(timeout = 5)
 
         assert not first.is_alive() and not second.is_alive()
         assert errors == []
@@ -170,15 +169,15 @@ class TestInferenceShutdownReturn:
 class TestExportShutdownReturn:
     def test_worker_that_dies_returns_true_and_clears_handle(self):
         o = _bare_export()
-        o._proc = _FakeProc(dies_on="terminate")
-        assert o._shutdown_subprocess(timeout=0.01) is True
+        o._proc = _FakeProc(dies_on = "terminate")
+        assert o._shutdown_subprocess(timeout = 0.01) is True
         assert o._proc is None
         assert o.is_worker_alive() is False
 
     def test_survivor_returns_false_and_keeps_handle(self):
         o = _bare_export()
-        o._proc = _FakeProc(dies_on=None)
-        assert o._shutdown_subprocess(timeout=0.01) is False
+        o._proc = _FakeProc(dies_on = None)
+        assert o._shutdown_subprocess(timeout = 0.01) is False
         assert o._proc is not None
         assert o.is_worker_alive() is True
 
@@ -194,7 +193,7 @@ class TestSpawnPathsHonorFailedShutdown:
 
         o = ExportOrchestrator.__new__(ExportOrchestrator)
         o._lock = threading.RLock()
-        o._proc = _FakeProc(dies_on=None)  # survivor
+        o._proc = _FakeProc(dies_on = None)  # survivor
         o.clear_logs = lambda: None
         o._cancel_requested = False
         o._active_op_kind = None
@@ -205,7 +204,7 @@ class TestSpawnPathsHonorFailedShutdown:
         o._record_op_finished = lambda *a, **k: None
         monkeypatch.setattr(tv, "sidecar_swap_in_progress", lambda: False)
 
-        ok, msg = o.load_checkpoint(checkpoint_path="ckpt")
+        ok, msg = o.load_checkpoint(checkpoint_path = "ckpt")
 
         assert ok is False
         assert "did not exit" in msg

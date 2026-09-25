@@ -21,7 +21,7 @@ TRAINER = os.path.join(
 
 def _peft_calls():
     """Every get_peft_model call, plus the peft_kwargs dict that feeds one."""
-    tree = ast.parse(open(TRAINER, encoding="utf-8").read())
+    tree = ast.parse(open(TRAINER, encoding = "utf-8").read())
     fn = next(
         n
         for n in ast.walk(tree)

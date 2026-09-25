@@ -94,7 +94,7 @@ HEAVY = re.compile(
 def _workflows():
     for f in sorted(WORKFLOWS.glob("*.yml")):
         try:
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            doc = yaml.safe_load(f.read_text(encoding = "utf-8"))
         except yaml.YAMLError as exc:  # a broken workflow is another test's problem
             pytest.fail(f"{f.name} does not parse: {exc}")
         if isinstance(doc, dict) and isinstance(doc.get("jobs"), dict):
@@ -259,7 +259,7 @@ def _composite_actions():
     failure mode where a rule quietly stops applying to the thing it was written for.
     """
     for f in sorted((REPO / ".github" / "actions").rglob("action.yml")):
-        doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+        doc = yaml.safe_load(f.read_text(encoding = "utf-8"))
         if isinstance(doc, dict):
             yield f.parent.name, ((doc.get("runs") or {}).get("steps") or [])
 
@@ -559,7 +559,7 @@ def test_every_restored_pip_cache_is_also_saved_and_wired_to_its_restore(name, j
 def test_the_pip_cache_save_action_is_gated_on_the_default_branch():
     """The one place the gate lives, now that nine call sites share it."""
     doc = yaml.safe_load(
-        (REPO / ".github" / "actions" / "pip-cache-save" / "action.yml").read_text(encoding="utf-8")
+        (REPO / ".github" / "actions" / "pip-cache-save" / "action.yml").read_text(encoding = "utf-8")
     )
     steps = (doc.get("runs") or {}).get("steps") or []
     saves = [s for s in steps if "actions/cache" in _uses(s)]
@@ -588,7 +588,7 @@ def test_the_pip_cache_key_carries_the_interpreter_minor_not_its_patch():
     about.
     """
     body = (REPO / ".github" / "actions" / "pip-cache-restore" / "action.yml").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     assert 'print("%d.%d" % sys.version_info[:2])' in body, (
         "the pip cache key no longer derives the interpreter version as a minor. If it "
@@ -748,7 +748,7 @@ def test_every_cache_key_path_resolves_where_the_job_checked_out():
                 # resolve to a file that exists. Checking only the prefix accepted
                 # `unsloth/.github/workflows/typo.yml`, which fails the job just as hard.
                 relative = None
-                for prefix in sorted(own_prefixes, key=len, reverse=True):
+                for prefix in sorted(own_prefixes, key = len, reverse = True):
                     if not prefix:
                         relative = line
                         break

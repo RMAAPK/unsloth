@@ -92,7 +92,7 @@ def check_down_proj_grad(
     moe_block: Qwen3MoeSparseMoeBlock,
     grouped_gemm_block: Qwen3MoeGroupedGEMMBlock,
     atol: float,
-    rtol: float
+    rtol: float,
 ):
     for i, expert in enumerate(moe_block.experts):
         ref_grad = expert.down_proj.weight.grad
@@ -108,7 +108,7 @@ def check_gate_up_proj_grad(
     moe_block: Qwen3MoeSparseMoeBlock,
     grouped_gemm_block: Qwen3MoeGroupedGEMMBlock,
     atol: float,
-    rtol: float
+    rtol: float,
 ):
     moe_intermediate_size = grouped_gemm_block.moe_intermediate_size
     for i, expert in enumerate(moe_block.experts):
@@ -141,7 +141,7 @@ def check_gate_grad(
     moe_block: Qwen3MoeSparseMoeBlock,
     grouped_gemm_block: Qwen3MoeGroupedGEMMBlock,
     atol: float,
-    rtol: float
+    rtol: float,
 ):
     ref_grad = moe_block.gate.weight.grad
     assert ref_grad is not None
@@ -156,7 +156,7 @@ def check_wgrad(
     moe_block: Qwen3MoeSparseMoeBlock,
     grouped_gemm_block: Qwen3MoeGroupedGEMMBlock,
     atol: float,
-    rtol: float
+    rtol: float,
 ):
     check_down_proj_grad(moe_block, grouped_gemm_block, atol, rtol)
     check_gate_up_proj_grad(moe_block, grouped_gemm_block, atol, rtol)

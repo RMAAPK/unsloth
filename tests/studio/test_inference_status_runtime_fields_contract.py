@@ -31,7 +31,7 @@ RUNTIME_MODEL = "_InferenceRuntimeFields"
 
 def _runtime_field_names() -> set[str]:
     """Field names declared on `_InferenceRuntimeFields`, read without importing it."""
-    tree = ast.parse(MODELS_PATH.read_text(encoding = "utf-8"))
+    tree = ast.parse(MODELS_PATH.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == RUNTIME_MODEL:
             # Direct BaseModel subclass, so its own AnnAssign nodes are the whole field set.
@@ -50,7 +50,7 @@ def _runtime_field_names() -> set[str]:
 
 def _splat_call_sites() -> list[tuple[int, set[str]]]:
     """(line, explicit keyword names) for every call that splats the runtime-fields helper."""
-    tree = ast.parse(ROUTE_PATH.read_text(encoding = "utf-8"))
+    tree = ast.parse(ROUTE_PATH.read_text(encoding="utf-8"))
     sites = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):

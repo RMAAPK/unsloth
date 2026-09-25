@@ -220,9 +220,9 @@ def require_live_account() -> None:
         from state import active_generations
 
         if account_is_retired():
-            raise HTTPException(status_code=403, detail="Account is retired")
+            raise HTTPException(status_code = 403, detail = "Account is retired")
         if active_generations.fenced(current_account_id()):
-            raise HTTPException(status_code=403, detail="Account is disabled")
+            raise HTTPException(status_code = 403, detail = "Account is disabled")
 
 
 def admit_media_load(modality: str, start, *references: str):
@@ -367,12 +367,12 @@ def resident_hidden(modality: str | None = None, reference: str | None = None) -
 
 
 def hidden_resident_response():
-    return JSONResponse(content={"loaded": True, "yours": False})
+    return JSONResponse(content = {"loaded": True, "yours": False})
 
 
 def hidden_chat_status_response():
     """The chat status shape (``loaded`` is a list there), with nothing of the resident."""
-    return JSONResponse(content={"loaded": [], "loading": [], "yours": False})
+    return JSONResponse(content = {"loaded": [], "loading": [], "yours": False})
 
 
 def hidden_generate_progress_response(response_model):
@@ -387,7 +387,7 @@ def hidden_generate_progress_response(response_model):
     the declared shape on their own.
     """
     return JSONResponse(
-        content={**response_model().model_dump(mode="json"), "loaded": True, "yours": False}
+        content = {**response_model().model_dump(mode = "json"), "loaded": True, "yours": False}
     )
 
 
@@ -407,14 +407,13 @@ def require_idle_other_accounts(path: str | None = None) -> None:
     # Managed accounts, not login mode: deactivating the last drops the count mid-generation.
     if policy.installation_has_managed_accounts():
         from core.inference.gpu_arbiter import require_no_foreign_generations
-
-        require_no_foreign_generations(current_account_id(), path=path)
+        require_no_foreign_generations(current_account_id(), path = path)
 
 
 def require_resident_control(modality: str, reference: str | None = None) -> None:
     require_idle_other_accounts()
     if resident_hidden(modality, reference):
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(status_code = 404, detail = "Model not found")
 
 
 def gpu_busy_route(handler):
@@ -424,10 +423,10 @@ def gpu_busy_route(handler):
             return await handler(*args, **kwargs)
         except GpuBusyForAnotherAccountError:
             error = gpu_busy_error()
-            return JSONResponse(status_code=409, content=error.detail, headers=error.headers)
+            return JSONResponse(status_code = 409, content = error.detail, headers = error.headers)
         except HTTPException as exc:
             if isinstance(exc.detail, dict) and exc.detail.get("error") == "gpu_busy":
-                return JSONResponse(status_code=409, content=exc.detail, headers=exc.headers)
+                return JSONResponse(status_code = 409, content = exc.detail, headers = exc.headers)
             raise
 
     return wrapped
@@ -446,7 +445,7 @@ def account_hf_token(token):
 
 def require_installation_owner() -> None:
     if managed_account():
-        raise HTTPException(status_code=403, detail="Only the installation owner can do this")
+        raise HTTPException(status_code = 403, detail = "Only the installation owner can do this")
 
 
 _PUBLIC_TTL = 300.0
@@ -464,13 +463,12 @@ _DEFINITIVE_HUB_STATUSES = (401, 403, 404)
 
 def _public_verdicts_path() -> Path:
     from utils.paths.storage_roots import cache_root
-
     return cache_root() / "public_repos.json"
 
 
 def _load_public_verdicts() -> dict[str, float]:
     try:
-        data = json.loads(_public_verdicts_path().read_text(encoding="utf-8"))
+        data = json.loads(_public_verdicts_path().read_text(encoding = "utf-8"))
     except (OSError, ValueError):
         return {}
     if not isinstance(data, dict):
@@ -493,9 +491,9 @@ def _remember_public_verdict(name: str, public: bool) -> None:
         return
     path = _public_verdicts_path()
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents = True, exist_ok = True)
         staging = path.with_name(path.name + ".tmp")
-        staging.write_text(json.dumps(verdicts, sort_keys=True), encoding="utf-8")
+        staging.write_text(json.dumps(verdicts, sort_keys = True), encoding = "utf-8")
         os.replace(staging, path)
     except OSError:
         pass
@@ -504,7 +502,7 @@ def _remember_public_verdict(name: str, public: bool) -> None:
 def _hub_public_answer(repo_id: str, repo_type: str) -> bool | None:
     """True when the Hub says public, False for private/gated/missing, None when unaskable."""
     try:
-        info = HfApi().repo_info(repo_id, repo_type=repo_type, token=False, timeout=5.0)
+        info = HfApi().repo_info(repo_id, repo_type = repo_type, token = False, timeout = 5.0)
     except Exception as exc:  # noqa: BLE001 - classified below, never trusted as public
         status = getattr(getattr(exc, "response", None), "status_code", None)
         if status in _DEFINITIVE_HUB_STATUSES:
@@ -614,7 +612,7 @@ def _warm_public_repos(repo_ids: set[str], repo_type: str) -> None:
                 pass
 
     helpers = [
-        account_thread(target=drain, daemon=True, name="studio-repo-probe")
+        account_thread(target = drain, daemon = True, name = "studio-repo-probe")
         for _ in range(min(_PROBE_FANOUT, len(pending)) - 1)
     ]
     for helper in helpers:
@@ -667,7 +665,7 @@ def record_model_grant(repo_id: str, repo_type: str = "model") -> None:
 
 
 def _write_grant(path: Path, key: str) -> None:
-    with closing(sqlite3.connect(str(path), timeout=5.0)) as conn, conn:
+    with closing(sqlite3.connect(str(path), timeout = 5.0)) as conn, conn:
         conn.execute(
             "CREATE TABLE IF NOT EXISTS app_settings (key TEXT NOT NULL PRIMARY KEY, value_json TEXT NOT NULL, updated_at TEXT NOT NULL)"
         )
@@ -741,7 +739,7 @@ def model_visible(
             if cached is not None:
                 # Snapshots point at their own repo's blobs; cross-repo links are refused.
                 actual = _cached_repo(resolved)
-                return actual == cached and repo_visible(cached[0], cached[1], grants=grants)
+                return actual == cached and repo_visible(cached[0], cached[1], grants = grants)
         except (OSError, RuntimeError, ValueError):
             return False
         return False
@@ -750,16 +748,16 @@ def model_visible(
     if not all(parts[:2]):
         return False
     repo_id = "/".join(parts[:2])
-    return repo_visible(repo_id, repo_type, grants=grants)
+    return repo_visible(repo_id, repo_type, grants = grants)
 
 
 def require_model_access(reference: str, repo_type: str = "model") -> None:
-    if not model_visible(reference, repo_type=repo_type):
-        raise HTTPException(status_code=404, detail="Model not found")
+    if not model_visible(reference, repo_type = repo_type):
+        raise HTTPException(status_code = 404, detail = "Model not found")
 
 
 def _row_reference(row):
-    get = row.get if isinstance(row, dict) else lambda key, default=None: getattr(row, key, default)
+    get = row.get if isinstance(row, dict) else lambda key, default = None: getattr(row, key, default)
     return get("path") or get("local_path") or get("repo_id") or get("model_id") or get("id")
 
 
@@ -774,7 +772,7 @@ def filter_model_rows(rows, *, repo_type: str = "model"):
     return [
         row
         for row, reference in zip(rows, references)
-        if model_visible(reference, grants=grants, repo_type=repo_type)
+        if model_visible(reference, grants = grants, repo_type = repo_type)
     ]
 
 
@@ -790,7 +788,7 @@ def private_directory(path: str, folder: str) -> str:
     own_roots = (workspace_root(), project_workspaces_root())
     resolved = target.resolve()
     if not any(resolved.is_relative_to(root.resolve()) for root in own_roots):
-        raise HTTPException(status_code=404, detail="Directory not found")
+        raise HTTPException(status_code = 404, detail = "Directory not found")
     return str(target)
 
 
@@ -801,12 +799,12 @@ def authorize_download(repo_id: str, repo_type: str, hf_token) -> None:
     try:
         api = HfApi()
         token = account_hf_token(hf_token)
-        info = api.repo_info(repo_id, repo_type=repo_type, token=token, timeout=5.0)
+        info = api.repo_info(repo_id, repo_type = repo_type, token = token, timeout = 5.0)
         if getattr(info, "gated", False):
             # Gated repo metadata is public even when the caller cannot read its files.
-            api.auth_check(repo_id, repo_type=repo_type, token=token)
+            api.auth_check(repo_id, repo_type = repo_type, token = token)
     except Exception as exc:  # noqa: BLE001 - a cached file is never a grant
-        raise HTTPException(status_code=404, detail="Repository not found") from exc
+        raise HTTPException(status_code = 404, detail = "Repository not found") from exc
 
 
 def require_media_references(request) -> None:
@@ -821,7 +819,7 @@ def require_media_references(request) -> None:
         elif path.is_absolute():
             require_model_access(reference)
         elif ".." in path.parts:
-            raise HTTPException(status_code=404, detail="Model not found")
+            raise HTTPException(status_code = 404, detail = "Model not found")
         elif Path(request.model_path).is_absolute():
             require_model_access(str(Path(request.model_path) / path))
 
@@ -847,7 +845,6 @@ def foreign_work_active() -> bool:
     if not policy.installation_has_managed_accounts():
         return False
     from state import active_generations
-
     return bool(active_generations.foreign_count(current_account_id()))
 
 
@@ -859,7 +856,6 @@ def require_download_progress_access(
     if not managed_account():
         return
     from hub.services import download_lifecycle
-
     if not any(
         download_lifecycle.download_belongs_to_account(registry, ref.key)
         for ref in registry.active_job_refs(repo_id)
@@ -882,11 +878,9 @@ def media_adapter_references(request) -> list[str]:
     groups = []
     if loras:
         from core.inference import diffusion_lora
-
         groups.append((loras, diffusion_lora.list_loras()))
     if controlnet:
         from core.inference import diffusion_controlnet
-
         groups.append(([controlnet], diffusion_controlnet.list_controlnets()))
     for selections, entries in groups:
         by_id = {entry.id: entry for entry in entries}

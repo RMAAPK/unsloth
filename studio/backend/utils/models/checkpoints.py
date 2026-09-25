@@ -144,7 +144,7 @@ def _read_checkpoint_loss(checkpoint_path: Path) -> Optional[float]:
 
 
 def scan_checkpoints(
-    outputs_dir: str | None = None
+    outputs_dir: str | None = None,
 ) -> List[Tuple[str, List[Tuple[str, str, Optional[float]]], dict]]:
     """Scan outputs folder for training runs and their checkpoints.
 

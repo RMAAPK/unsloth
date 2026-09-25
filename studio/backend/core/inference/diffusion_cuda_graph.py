@@ -34,7 +34,6 @@ _TRUE_TOKENS = ("1", "true", "yes", "on")
 def _torch():
     """The torch module, imported lazily so this file imports on a torch-free host."""
     import torch
-
     return torch
 
 
@@ -88,7 +87,7 @@ def hold_off_capture():
     The acquire is non-blocking on purpose. This is polled at 10 Hz for progress reporting, and a
     render must never wait on a progress tick; a skipped poll costs a tenth of a second of bar.
     """
-    if not _CAPTURE_LOCK.acquire(blocking=False):
+    if not _CAPTURE_LOCK.acquire(blocking = False):
         yield False
         return
     try:
@@ -228,7 +227,6 @@ class GraphedForward:
         safe = None
         try:
             from .diffusion_capture_safe import resolve as _capture_safe  # noqa: PLC0415
-
             safe, _ = _capture_safe(type(module))
         except Exception:  # noqa: BLE001 - the stock forward is still a correct eager callable
             safe = None
@@ -467,7 +465,7 @@ class GraphedForward:
 
         graph = torch.cuda.CUDAGraph()
         # ``pool = None`` is identical to omitting the argument, so both captures take one path.
-        with _capturing(), torch.cuda.graph(graph, pool=_POOL_BOX[0]):
+        with _capturing(), torch.cuda.graph(graph, pool = _POOL_BOX[0]):
             out = self.orig(*static_args, **static_kwargs)
         if _POOL_BOX[0] is None:
             try:
@@ -543,7 +541,6 @@ def graph_eligible(
     # up front with the reason when its capture-safe rewrite did not apply.
     try:
         from .diffusion_capture_safe import resolve as _capture_safe  # noqa: PLC0415
-
         for module in _denoiser_dits(pipe):
             _, why = _capture_safe(type(module))
             if why:
@@ -566,7 +563,7 @@ def install_cuda_graphs(
     handles: list = []
     for module in _denoiser_dits(pipe):
         try:
-            handles.append(GraphedForward(module, max_graphs=max_graphs, logger=logger).enable())
+            handles.append(GraphedForward(module, max_graphs = max_graphs, logger = logger).enable())
         except Exception as exc:  # noqa: BLE001 - a second expert may fail without failing the load
             _warn(logger, f"install on {type(module).__name__}", exc)
 

@@ -44,7 +44,7 @@ TIER_BUDGET_S = {"fast": 5 * 60, "quick": 5 * 60, "standard": 20 * 60, "full": 6
 
 
 def _log(msg: str = "") -> None:
-    print(msg, flush=True)
+    print(msg, flush = True)
 
 
 def engines_installed(probe_text: str) -> list:
@@ -111,7 +111,7 @@ def doctor(args) -> int:
             "    print(', '.join(out))\n"
         )
         got = subprocess.run(
-            [sys.executable, "-c", probe], capture_output=True, text=True, timeout=120
+            [sys.executable, "-c", probe], capture_output = True, text = True, timeout = 120
         )
         if got.returncode != 0:
             raise RuntimeError((got.stderr or "the engine probe failed").strip().splitlines()[-1])
@@ -127,7 +127,6 @@ def doctor(args) -> int:
 
     def _psutil():
         import psutil
-
         return f"{psutil.__version__}; RSS sampling available"
 
     def _corpus():
@@ -153,25 +152,24 @@ def doctor(args) -> int:
 
     def _engine():
         from .runtime.browser import default_engine
-
         name, _, note = default_engine()
         return f"{name} -- {note}"
 
     check(
         "playwright",
         _playwright,
-        cost="no browser can be driven; install with `pip install playwright` then "
+        cost = "no browser can be driven; install with `pip install playwright` then "
         "`playwright install`",
     )
     check(
         "psutil",
         _psutil,
-        fatal=False,
-        cost="RSS is reported as null with a reason instead of a number; everything else runs",
+        fatal = False,
+        cost = "RSS is reported as null with a reason instead of a number; everything else runs",
     )
-    check("frozen corpus", _corpus, cost="the corpus cannot be loaded, so no cell can be built")
+    check("frozen corpus", _corpus, cost = "the corpus cannot be loaded, so no cell can be built")
     check("registries", _registries)
-    check("desktop webview proxy", _engine, fatal=False)
+    check("desktop webview proxy", _engine, fatal = False)
 
     if args.attach:
 
@@ -190,7 +188,6 @@ def doctor(args) -> int:
 
     def _pacer():
         from .pacer import Pacer
-
         p = Pacer().start()
         try:
             return f"bound to {p.base_url}"
@@ -488,7 +485,6 @@ def arm_origins(specs: list) -> list:
     reading the same thing.
     """
     from .runtime.ab import browser_origin
-
     return [
         (browser_origin(attach) if attach else f"http://127.0.0.1:{port}")
         for _label, _ref, attach, port, _password in specs
@@ -564,7 +560,7 @@ def stop_owned_sides(
             stop(side_install)
 
 
-def run(args, ab_ref=None) -> int:
+def run(args, ab_ref = None) -> int:
     """Take the output directory FIRST, then run inside it.
 
     THE LOCK IS THE FIRST THING THE RUN DOES, and it used to be almost the last. It was taken where
@@ -639,7 +635,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
     extra_init_source = ""
     if extra_init:
         try:
-            extra_init_source = Path(extra_init).read_text(encoding="utf-8")
+            extra_init_source = Path(extra_init).read_text(encoding = "utf-8")
         except (OSError, UnicodeDecodeError) as exc:
             _log(
                 f"  FATAL: SBENCH_EXTRA_INIT_SCRIPT={extra_init} could not be read: "
@@ -679,12 +675,12 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
     # BEFORE the first install, launch and recorded row: a refusal after two builds costs an hour to
     # say what a millisecond could, and a late archive has already appended this run's header.
     archived = prepare_payload(
-        paths, requested_identity(args, ab_ref, corpus.corpus_hash), resume=bool(args.resume)
+        paths, requested_identity(args, ab_ref, corpus.corpus_hash), resume = bool(args.resume)
     )
 
     # AND THE REPORTS THE ARCHIVE LEFT BEHIND: the one point every reuse of an output directory
     # passes through. See `invalidate_stale_reports`.
-    invalidate_stale_reports(paths.out, archived=archived, extra_init=extra_init)
+    invalidate_stale_reports(paths.out, archived = archived, extra_init = extra_init)
 
     # Armed AFTER the sides are known, because what it covers depends on them. Nothing between the
     # `side_specs` call and here can hang.
@@ -693,9 +689,9 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
         watchdog_deadline_s(
             args.tier,
             specs,
-            rungs=planned_rungs(args),
-            reps=args.reps,
-            surfaces=bool(args.surfaces),
+            rungs = planned_rungs(args),
+            reps = args.reps,
+            surfaces = bool(args.surfaces),
         ),
         "studiobench",
         _log,
@@ -718,7 +714,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
                 side_install, owns = None, False
                 _log(f"  {label}: attaching to {side_url}")
             else:
-                home = side_home(args.home, paths.out, label, ab=bool(ab_ref))
+                home = side_home(args.home, paths.out, label, ab = bool(ab_ref))
                 _log(f"  {label}: installing Unsloth from {ref} into {home} (this takes a while)")
                 side_install = install_studio(ref, home)
                 launch_studio(side_install, port, paths.out / "logs" / f"studio_{label}.log")
@@ -834,16 +830,16 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
 
             def _side_seed(
                 auth_now,
-                side=side,
-                provider=side_provider,
-                cp=side_checkpoint,
+                side = side,
+                provider = side_provider,
+                cp = side_checkpoint,
             ):
                 return origin_scoped(
                     side["base_url"],
                     seed_init_script(
                         auth_now,
                         [provider],
-                        extra_local_storage={
+                        extra_local_storage = {
                             # The SELECTION, without which nothing is ever generated.
                             # See lifecycle.external_checkpoint_id.
                             "unsloth_chat_last_external_checkpoint": cp,
@@ -861,7 +857,6 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
                 # VALIDATION, not a measurement mode: burns known main-thread time per SSE chunk on the TREATMENT
                 # side only, so an otherwise-identical A/B has a known answer. Origin-gated, or recovery reads 0.
                 from .instruments.selfcheck import stream_cost_injection_init_script
-
                 init_scripts.append(
                     origin_scoped(
                         side["base_url"],
@@ -895,13 +890,12 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
         procs_before = {}
         try:
             from .instruments.rss import new_roots, snapshot_children
-
             procs_before = snapshot_children(os.getpid())
         except Exception:  # noqa: BLE001
             new_roots = None  # type: ignore[assignment]
 
         bundle = browser_mod.launch(
-            args.engine, headless=not args.headed, init_scripts=init_scripts, log=_log
+            args.engine, headless = not args.headed, init_scripts = init_scripts, log = _log
         )
         # THE RETURN PATH for a probe installed above: Unsloth ships `connect-src 'self'` so a beacon is
         # blocked by CSP, and the schema has no row for a one-off probe. Filtered on a caller prefix.
@@ -931,7 +925,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
         # and re-run on every navigation, so after a re-mint the next `goto` would write the dead one
         # back. Playwright cannot reorder them, so the seed script defers to the later `exp`.
         for side in sides:
-            side["auth"].on_rotate = lambda auth_now, side=side: bundle.context.add_init_script(
+            side["auth"].on_rotate = lambda auth_now, side = side: bundle.context.add_init_script(
                 side["seed_script"](auth_now)
             )
 
@@ -948,7 +942,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
             procs,
             # ADOPTED, NOT TAKEN AGAIN: `run()` has held this directory since before the payload was
             # archived, so the `Recorder` writes its session id into the marker it already holds.
-            out_lock=out_lock,
+            out_lock = out_lock,
         )
         rec = ctx.recorder
         # The ladder this run PROMISED, recorded rather than re-derived: `--report` reads it back to
@@ -1098,26 +1092,26 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
                 )
         for side in sides:
             side_seeder = Seeder(
-                base_url=side["base_url"], auth=side["auth"], model_id=model_id, log=_log
+                base_url = side["base_url"], auth = side["auth"], model_id = model_id, log = _log
             )
             side["seeder"] = side_seeder
             side["runner"] = CellRunner(
-                session=session,
-                pacer=pacer,
-                seeder=side_seeder,
-                corpus=corpus,
-                click_probe=bool(getattr(args, "click_probe", False)),
-                readiness_mode=side["readiness_mode"],
-                base_url=side["base_url"],
-                model_id=model_id,
-                tier=args.tier,
-                paths=paths,
-                log=_log,
-                cadence=args.cadence,
-                image_path=image_path,
-                parity_raw=args.parity_raw,
-                parity_shots=args.parity_shots,
-                arm_label=side["label"],
+                session = session,
+                pacer = pacer,
+                seeder = side_seeder,
+                corpus = corpus,
+                click_probe = bool(getattr(args, "click_probe", False)),
+                readiness_mode = side["readiness_mode"],
+                base_url = side["base_url"],
+                model_id = model_id,
+                tier = args.tier,
+                paths = paths,
+                log = _log,
+                cadence = args.cadence,
+                image_path = image_path,
+                parity_raw = args.parity_raw,
+                parity_shots = args.parity_shots,
+                arm_label = side["label"],
             )
 
         seeder = sides[0]["seeder"]
@@ -1134,13 +1128,13 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
             args.tier,
             ctx.session_id,
             args.instrument_level,
-            reps=args.reps,
-            base_url=sides[0]["base_url"],
-            auth=seeder.auth,
-            model_id=model_id,
-            log=_log,
-            stream_tail_chars=args.stream_tail_chars,
-            corpus_dollars=args.corpus_dollars,
+            reps = args.reps,
+            base_url = sides[0]["base_url"],
+            auth = seeder.auth,
+            model_id = model_id,
+            log = _log,
+            stream_tail_chars = args.stream_tail_chars,
+            corpus_dollars = args.corpus_dollars,
         )
         if args.stream_tail_chars or args.corpus_dollars:
             # Loud, because both change the fixture: a payload produced under either is not comparable with
@@ -1187,11 +1181,11 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
 
             targets = [
                 Target(
-                    label=s["label"],
-                    ref=s["ref"],
-                    base_url=s["base_url"],
-                    seeder=s["seeder"],
-                    runner=s["runner"],
+                    label = s["label"],
+                    ref = s["ref"],
+                    base_url = s["base_url"],
+                    seeder = s["seeder"],
+                    runner = s["runner"],
                 )
                 for s in sides
             ]
@@ -1226,13 +1220,12 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
             # AT PAIR GRANULARITY: an A/B pair whose two arms are not both recorded is re-run whole, so a
             # resumed session never measures one arm on its own.
             from .runtime.ab import skippable_cells
-
             done = skippable_cells(work, done)
             _log(f"  resuming: {len(done)} cells already in {paths.payload_jsonl.name}")
         setup_complete = True
     finally:
         if not setup_complete:
-            stop_owned_sides(installs, stop_studio, keep=args.keep_studio)
+            stop_owned_sides(installs, stop_studio, keep = args.keep_studio)
 
     rows = []
     resumed = 0
@@ -1255,7 +1248,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
             pass
         bundle.close()
         pacer.stop()
-        stop_owned_sides(installs, stop_studio, keep=args.keep_studio)
+        stop_owned_sides(installs, stop_studio, keep = args.keep_studio)
         rec.close()
 
     if ab_ref:
@@ -1267,7 +1260,7 @@ def _run_holding_out_dir(args, ab_ref, specs, arm_labels, windowed, paths, out_l
             sides,
             ctx.session_id,
             corpus.corpus_hash,
-            planned=[c.cell_id for _t, c, _p in work if c.cell_id not in done],
+            planned = [c.cell_id for _t, c, _p in work if c.cell_id not in done],
         )
 
     _summarise(rows, paths)
@@ -1292,7 +1285,6 @@ def _sweep_surfaces(sides: list, ctx, paths) -> None:
     are the measurement, and a broken selector in the registry must not stop them.
     """
     from .scene.surface_sweep import render_manifest, sweep
-
     for side in sides:
         label = side["label"]
         _log(f"\n### surface sweep: {label} at {side['base_url']}")
@@ -1300,9 +1292,9 @@ def _sweep_surfaces(sides: list, ctx, paths) -> None:
             rows, manifest = sweep(
                 ctx.page,
                 side["base_url"],
-                log=_log,
-                cell_id=f"surfaces.{label}",
-                recorder=ctx.recorder,
+                log = _log,
+                cell_id = f"surfaces.{label}",
+                recorder = ctx.recorder,
             )
         except Exception as exc:  # noqa: BLE001
             # Recorded as a failed gate rather than swallowed: a sweep that raised and a sweep that found
@@ -1317,7 +1309,7 @@ def _sweep_surfaces(sides: list, ctx, paths) -> None:
         text = render_manifest(manifest)
         print("\n" + text)
         out = paths.out / f"surfaces_{label}.md"
-        out.write_text(text, encoding="utf-8")
+        out.write_text(text, encoding = "utf-8")
         _log(f"surface coverage manifest written to {out}")
         # PASSES only when every non-conditional surface was reached AND the digests were scoped: an
         # unscoped sweep reports one page-wide digest per surface, which agrees everywhere.
@@ -1410,7 +1402,7 @@ def _render_ab(
     sides,
     session_id: str,
     corpus_hash: str,
-    planned=(),
+    planned = (),
 ) -> None:
     """Render the A/B table from the payload the run just wrote.
 
@@ -1428,7 +1420,7 @@ def _render_ab(
     from .runtime.ab import compare_arms, unmeasured_planned_cells
 
     records = []
-    with paths.payload_jsonl.open(encoding="utf-8") as fh:
+    with paths.payload_jsonl.open(encoding = "utf-8") as fh:
         for line in fh:
             try:
                 records.append(json.loads(line))
@@ -1454,7 +1446,7 @@ def _render_ab(
         # clean `ab.md` would read as this run's result, while deleting it explains nothing.
         stale = paths.out / "ab.md"
         if stale.exists():
-            stale.write_text(f"# No A/B table\n\n{reason}\n", encoding="utf-8")
+            stale.write_text(f"# No A/B table\n\n{reason}\n", encoding = "utf-8")
             _log(f"  a previous {stale} was replaced by this refusal")
         _log("")
         return
@@ -1477,17 +1469,17 @@ def _render_ab(
             records,
             sides[0]["label"],
             sides[1]["label"],
-            bench_version=TOOL_VERSION,
-            corpus_hash=corpus_hash,
-            session_id=session_id,
-            label=label,
-            is_null_control=is_null,
+            bench_version = TOOL_VERSION,
+            corpus_hash = corpus_hash,
+            session_id = session_id,
+            label = label,
+            is_null_control = is_null,
         )
     except Exception as exc:  # noqa: BLE001
         _log(f"\nA/B table could not be built: {type(exc).__name__}: {exc}")
         return
 
-    missing = unmeasured_planned_cells(records, planned, session_id=session_id)
+    missing = unmeasured_planned_cells(records, planned, session_id = session_id)
     if missing:
         result.void = True
         result.void_reason = (
@@ -1497,7 +1489,7 @@ def _render_ab(
 
     text = render_ab_table(result)
     print("\n" + text)
-    out.write_text(text, encoding="utf-8")
+    out.write_text(text, encoding = "utf-8")
     _log(f"A/B table written to {out}")
     if missing:
         # A noise floor derived from a partial null control is a number about the cells that did not
@@ -1506,7 +1498,6 @@ def _render_ab(
         return
     if is_null:
         from .scoring.ab import noise_floor_from_null_control
-
         try:
             floor, source = noise_floor_from_null_control(result)
             _log(
@@ -1659,7 +1650,7 @@ def recorded_identities(payload_path) -> list:
     path = Path(payload_path)
     if not path.exists():
         return []
-    with path.open(encoding="utf-8") as fh:
+    with path.open(encoding = "utf-8") as fh:
         for line in fh:
             try:
                 row = json.loads(line)
@@ -1821,7 +1812,7 @@ def ladder_ratio_problems(recorded: dict, measured: float) -> list:
     ]
 
 
-def archive_payload(paths, log=_log):
+def archive_payload(paths, log = _log):
     """Move an existing payload aside so a FRESH run starts a file of its own. `None` when empty.
 
     APPEND MODE IS FOR VALIDATED RESUMES ONLY. `Recorder` opens the payload with `"a"`, so a second
@@ -1870,7 +1861,7 @@ def payload_mark(payload_path) -> int:
 def rollback_session_rows(
     payload_path,
     mark: int,
-    log=_log,
+    log = _log,
 ) -> int:
     """Undo everything this session appended, back to `mark`. The bytes dropped.
 
@@ -1918,7 +1909,7 @@ def invalidate_stale_reports(
     *,
     archived,
     extra_init,
-    log=_log,
+    log = _log,
 ) -> list:
     """Replace `summary.md` and `ab.md` when the payload they describe is no longer the one there.
 
@@ -1981,7 +1972,7 @@ def invalidate_stale_reports(
         stale = Path(out) / name
         if not stale.exists():
             continue
-        stale.write_text(f"{heading}\n\nNO {what.upper()}: {why}\n", encoding="utf-8")
+        stale.write_text(f"{heading}\n\nNO {what.upper()}: {why}\n", encoding = "utf-8")
         log(f"  a previous {stale} was replaced by this refusal")
         rewritten.append(stale)
     return rewritten
@@ -1992,7 +1983,7 @@ def prepare_payload(
     requested: dict,
     *,
     resume: bool,
-    log=_log,
+    log = _log,
 ):
     """What happens to an `--out` that already holds a payload. Called BEFORE anything is installed.
 
@@ -2013,7 +2004,7 @@ def prepare_payload(
     OLD comparison standing in `ab.md` for somebody to read as the answer for `other`.
     """
     if not resume:
-        return archive_payload(paths, log=log)
+        return archive_payload(paths, log = log)
 
     problems: list = []
     for recorded in recorded_identities(paths.payload_jsonl):
@@ -2054,7 +2045,7 @@ def _resume_set(paths) -> set:
     if not paths.payload_jsonl.exists():
         return done
     records = []
-    with paths.payload_jsonl.open(encoding="utf-8") as fh:
+    with paths.payload_jsonl.open(encoding = "utf-8") as fh:
         for line in fh:
             try:
                 records.append(json.loads(line))
@@ -2133,7 +2124,7 @@ def recorded_ladder(path) -> list:
     """
     ladder: list = []
     try:
-        with Path(path).open(encoding="utf-8") as fh:
+        with Path(path).open(encoding = "utf-8") as fh:
             for line in fh:
                 line = line.strip()
                 if not line:
@@ -2186,7 +2177,7 @@ def report_only(args) -> int:
         # to a now-probed payload. Overwritten rather than deleted, as with the stale `ab.md`.
         _log(str(exc))
         if out.exists():
-            out.write_text(f"# No summary\n\n{exc}\n", encoding="utf-8")
+            out.write_text(f"# No summary\n\n{exc}\n", encoding = "utf-8")
             _log(f"  a previous {out} was replaced by this refusal")
         return 2
     except Exception as exc:  # noqa: BLE001
@@ -2196,7 +2187,7 @@ def report_only(args) -> int:
         return 1
 
     print(text)
-    out.write_text(text, encoding="utf-8")
+    out.write_text(text, encoding = "utf-8")
     _log(f"summary written to {out}")
     return 0
 
@@ -2304,7 +2295,7 @@ def assert_liveness(args) -> int:
     allowed = {a.strip() for a in (args.allow_not_run or "").split(",") if a.strip()}
     slack = max(0, int(getattr(args, "allow_slot_misses", 0) or 0))
     rows, problems, missed = [], [], []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding = "utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
@@ -2394,86 +2385,86 @@ def assert_liveness(args) -> int:
 def parse_args(argv: list):
     """The CLI surface, split out of `main` so the option contract can be asserted directly."""
     ap = argparse.ArgumentParser(
-        prog="studiobench", description="A real-path performance benchmark for Unsloth Studio."
+        prog = "studiobench", description = "A real-path performance benchmark for Unsloth Studio."
     )
     ap.add_argument(
         "--tier",
-        choices=TIERS,
+        choices = TIERS,
         # No default here, and `quick` is applied below: `--report` must tell "the caller asked for this
         # ladder" from "the caller said nothing", because a payload's recorded ladder beats a CLI default.
-        default=None,
-        help=(
+        default = None,
+        help = (
             "fast ~5min (100K only, the iteration loop), quick ~5min (1K,10K, a wiring check), "
             "standard ~20min (1K,10K,100K), full ~60min (+500K,1M)"
         ),
     )
     ap.add_argument(
         "--doctor",
-        action="store_true",
-        help="report what is installed and what each missing piece costs",
+        action = "store_true",
+        help = "report what is installed and what each missing piece costs",
     )
     ap.add_argument(
         "--attach",
-        metavar="URL",
-        help="drive an Unsloth that is already running instead of installing one",
+        metavar = "URL",
+        help = "drive an Unsloth that is already running instead of installing one",
     )
     ap.add_argument(
-        "--resume", action="store_true", help="skip cells already completed in the output payload"
+        "--resume", action = "store_true", help = "skip cells already completed in the output payload"
     )
     ap.add_argument(
         "--ab",
-        metavar="REF",
-        help="A/B a second ref, interleaved within one session; with --attach also pass --attach-b",
+        metavar = "REF",
+        help = "A/B a second ref, interleaved within one session; with --attach also pass --attach-b",
     )
     ap.add_argument(
         "--attach-b",
-        metavar="URL",
-        dest="attach_b",
-        help="the treatment side's already-running Unsloth, when --ab is used "
+        metavar = "URL",
+        dest = "attach_b",
+        help = "the treatment side's already-running Unsloth, when --ab is used "
         "together with --attach",
     )
     ap.add_argument(
         "--report",
-        metavar="PAYLOAD",
-        help="score and render an existing payload.jsonl, then exit. Runs offline, "
+        metavar = "PAYLOAD",
+        help = "score and render an existing payload.jsonl, then exit. Runs offline, "
         "so a payload mailed in from another machine reports here",
     )
     ap.add_argument(
         "--compare",
-        metavar=("PAYLOAD_A", "PAYLOAD_B"),
-        nargs=2,
-        dest="compare",
-        help="offline. Say whether two payloads may be compared at all, and if not, name the "
+        metavar = ("PAYLOAD_A", "PAYLOAD_B"),
+        nargs = 2,
+        dest = "compare",
+        help = "offline. Say whether two payloads may be compared at all, and if not, name the "
         "field that differs. `floor_table` already refuses to POOL across tiers and corpora; "
         "this is for the case it cannot reach, a comparison made in PROSE between two "
         "separately published runs",
     )
     ap.add_argument(
         "--assert-liveness",
-        metavar="PAYLOAD",
-        dest="assert_liveness",
-        help="exit non-zero unless every scheduled action in an existing "
+        metavar = "PAYLOAD",
+        dest = "assert_liveness",
+        help = "exit non-zero unless every scheduled action in an existing "
         "payload.jsonl actually ran, kept its slot and passed its own assertion. "
         "Offline. This is the gate that catches an action which never fired, or "
         "never did what it claimed, reporting as 'no effect'",
     )
     ap.add_argument(
         "--allow-not-run",
-        metavar="ACTIONS",
-        dest="allow_not_run",
-        help="comma-separated action names --assert-liveness may excuse for NOT RUNNING "
+        metavar = "ACTIONS",
+        dest = "allow_not_run",
+        help = "comma-separated action names --assert-liveness may excuse for NOT RUNNING "
         "only. A listed action that does run is still held to its slot and its own "
         "assertion. Use only for an action a platform genuinely cannot perform, and say "
         "which in the pull request: every name here is a hole in the gate",
     )
     ap.add_argument(
         "--windowed-arm",
-        metavar="ARMS",
-        dest="windowed_arm",
+        metavar = "ARMS",
+        dest = "windowed_arm",
         # An ENV FALLBACK as well as the flag: `scripts/pr_perf_sweep.py` builds this command line
         # itself and is shared with other in-flight sweeps, so adding an argument mid-run is a hazard.
-        default=os.environ.get("SBENCH_WINDOWED_ARM", ""),
-        help="comma-separated arm labels (base, treatment) that mount a WINDOW of the thread "
+        default = os.environ.get("SBENCH_WINDOWED_ARM", ""),
+        help = "comma-separated arm labels (base, treatment) that mount a WINDOW of the thread "
         "rather than all of it, and are therefore gated on the windowed readiness signal "
         "instead of on every message being mounted. Not a relaxation: the named arm must "
         "publish aria-setsize equal to the seeded message count, mount the end of the "
@@ -2484,20 +2475,20 @@ def parse_args(argv: list):
     )
     ap.add_argument(
         "--click-probe",
-        dest="click_probe",
-        action="store_true",
-        help="before the film starts, split the composer click into what a USER pays and "
+        dest = "click_probe",
+        action = "store_true",
+        help = "before the film starts, split the composer click into what a USER pays and "
         "what Playwright's actionability check pays, plus a hover-only reading. Off by "
         "default: it costs seconds at large rungs and makes the cell's timings "
         "incomparable with a cell that did not run it",
     )
     ap.add_argument(
         "--allow-slot-misses",
-        metavar="N",
-        dest="allow_slot_misses",
-        type=int,
-        default=0,
-        help="how many MISSED SLOTS --assert-liveness tolerates before failing. A "
+        metavar = "N",
+        dest = "allow_slot_misses",
+        type = int,
+        default = 0,
+        help = "how many MISSED SLOTS --assert-liveness tolerates before failing. A "
         "missed slot is a fact about the machine, not about the harness, and the "
         "film is designed to roll on through one. Default 0, which is right for a "
         "quiet measurement machine; raise it only on a contended runner, where the "
@@ -2505,9 +2496,9 @@ def parse_args(argv: list):
     )
     ap.add_argument(
         "--stream-tail-chars",
-        type=int,
-        dest="stream_tail_chars",
-        help="override how many characters of the last turn STREAM. The rung ladder "
+        type = int,
+        dest = "stream_tail_chars",
+        help = "override how many characters of the last turn STREAM. The rung ladder "
         "pins this at 6,000 on every rung so that the thread is the only thing that "
         "varies, which means a cost scaling with the length of the reply being streamed "
         "is constant across the whole ladder and reads as a floor. This is the axis that "
@@ -2516,9 +2507,9 @@ def parse_args(argv: list):
     )
     ap.add_argument(
         "--inject-stream-cost-ms",
-        type=float,
-        dest="inject_stream_cost_ms",
-        help="VALIDATION. Burn this many milliseconds of main-thread time per SSE chunk on the "
+        type = float,
+        dest = "inject_stream_cost_ms",
+        help = "VALIDATION. Burn this many milliseconds of main-thread time per SSE chunk on the "
         "treatment side, inside the task chain the chunk starts. Needs --ab. The point is to "
         "check that the streaming-cost metric reads back a cost this harness injected itself: a "
         "metric that cannot see a known cost cannot see an unknown one, and the recovery fraction "
@@ -2527,9 +2518,9 @@ def parse_args(argv: list):
     )
     ap.add_argument(
         "--corpus-dollars",
-        action="store_true",
-        dest="corpus_dollars",
-        help="give the STREAMED turns the CURRENCY AND SHELL dollars a real reply has "
+        action = "store_true",
+        dest = "corpus_dollars",
+        help = "give the STREAMED turns the CURRENCY AND SHELL dollars a real reply has "
         "($HOME, $12.99). Not the same thing as the LaTeX the frozen corpus carries since "
         "corpus v2: that is well-formed math in the SEEDED thread, which exercises the "
         "renderer, and this is malformed-on-purpose dollars in the turn that STREAMS, "
@@ -2537,46 +2528,46 @@ def parse_args(argv: list):
         "Measured over one 96,000 character reply, the cheap regime is 15.3 ms and the "
         "expensive one 281.3 ms. The frozen units on disk and their hashes are untouched",
     )
-    ap.add_argument("--rungs", help="comma-separated rung override, e.g. 1K,10K")
-    ap.add_argument("--reps", type=int, default=1)
+    ap.add_argument("--rungs", help = "comma-separated rung override, e.g. 1K,10K")
+    ap.add_argument("--reps", type = int, default = 1)
     ap.add_argument(
         "--instrument-level",
-        type=int,
-        default=0,
-        choices=[0, 1, 2, 3],
-        help="0 is the only level headline numbers may come from",
+        type = int,
+        default = 0,
+        choices = [0, 1, 2, 3],
+        help = "0 is the only level headline numbers may come from",
     )
     ap.add_argument(
         "--cadence",
-        default="field",
-        choices=["field", "fast"],
-        help="field is 24 chars every 73ms, the rate of the captured reply",
+        default = "field",
+        choices = ["field", "fast"],
+        help = "field is 24 chars every 73ms, the rate of the captured reply",
     )
     ap.add_argument(
         "--engine",
-        choices=["chromium", "webkit", "firefox"],
-        help="default matches the platform's desktop webview family",
+        choices = ["chromium", "webkit", "firefox"],
+        help = "default matches the platform's desktop webview family",
     )
-    ap.add_argument("--branch", default="main", help="Unsloth ref to install when not attaching")
-    ap.add_argument("--home", help="UNSLOTH_STUDIO_HOME for an install")
-    ap.add_argument("--port", type=int, default=5399)
+    ap.add_argument("--branch", default = "main", help = "Unsloth ref to install when not attaching")
+    ap.add_argument("--home", help = "UNSLOTH_STUDIO_HOME for an install")
+    ap.add_argument("--port", type = int, default = 5399)
     # `unsloth`, not `admin`: Unsloth's first run prints "DEFAULT ADMIN ACCOUNT CREATED / username:
     # unsloth", and the wrong one answers 401 with a message about resetting the PASSWORD.
-    ap.add_argument("--username", default="unsloth")
-    ap.add_argument("--password", default="")
+    ap.add_argument("--username", default = "unsloth")
+    ap.add_argument("--password", default = "")
     ap.add_argument(
         "--password-b",
-        dest="password_b",
-        default="",
-        help="the treatment Unsloth's password, when --ab is used together with --attach-b. "
+        dest = "password_b",
+        default = "",
+        help = "the treatment Unsloth's password, when --ab is used together with --attach-b. "
         "Two Unsloth instances booted separately mint two different bootstrap passwords, so one "
         "--password cannot authenticate both. Defaults to --password",
     )
-    ap.add_argument("--out", help="output directory")
+    ap.add_argument("--out", help = "output directory")
     ap.add_argument(
         "--surfaces",
-        action="store_true",
-        help="additionally sweep every registered UI surface -- the other routes, "
+        action = "store_true",
+        help = "additionally sweep every registered UI surface -- the other routes, "
         "the settings tabs, the sidebar menus, the model picker -- and take a "
         "parity digest of each. The film covers the chat thread; this covers "
         "the rest of the app. Off by default: it costs about a minute per arm "
@@ -2584,27 +2575,27 @@ def parse_args(argv: list):
     )
     ap.add_argument(
         "--parity-shots",
-        metavar="DIR",
-        dest="parity_shots",
-        help="write a viewport PNG per action per arm into DIR, taken at the same instant as "
+        metavar = "DIR",
+        dest = "parity_shots",
+        help = "write a viewport PNG per action per arm into DIR, taken at the same instant as "
         "the parity digest, so a mismatch can be SEEN rather than read as a hex pair. Off by "
         "default",
     )
     ap.add_argument(
         "--parity-raw",
-        action="store_true",
-        dest="parity_raw",
-        help="record the NORMALISED signature text beside every parity digest, so "
+        action = "store_true",
+        dest = "parity_raw",
+        help = "record the NORMALISED signature text beside every parity digest, so "
         "`sweep/parity_null_control.py --hunt` can name which bytes moved between two arms "
         "instead of only that they did. Off by default: it multiplies a payload's size by "
         "roughly a hundred, and only the hunt reads it",
     )
-    ap.add_argument("--headed", action="store_true")
-    ap.add_argument("--keep-studio", action="store_true")
+    ap.add_argument("--headed", action = "store_true")
+    ap.add_argument("--keep-studio", action = "store_true")
     ap.add_argument(
         "--allow-dev-server",
-        action="store_true",
-        help="run against a development build anyway. ONLY to demonstrate that the "
+        action = "store_true",
+        help = "run against a development build anyway. ONLY to demonstrate that the "
         "production gate matters: React's dev build inflates the axis under "
         "investigation by about 3.2x",
     )
@@ -2628,7 +2619,7 @@ def main(argv: list) -> int:
     if args.assert_liveness:
         return assert_liveness(args)
     if args.ab:
-        return run(args, ab_ref=args.ab)
+        return run(args, ab_ref = args.ab)
     return run(args)
 
 

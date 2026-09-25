@@ -24,9 +24,9 @@ from core.inference.pricing import (
 def _isclose(
     a,
     b,
-    tol=1e-6,
+    tol = 1e-6,
 ):
-    return math.isclose(a, b, rel_tol=tol, abs_tol=tol)
+    return math.isclose(a, b, rel_tol = tol, abs_tol = tol)
 
 
 # ── unknown model -> priced=False, totals zero, tokens still report ──
@@ -657,20 +657,20 @@ def test_sonnet_5_bills_the_launch_rate_until_the_cutover():
     table = ANTHROPIC_PRICING["claude-sonnet-5"]
     assert table["input_per_mtok"] == 3.0 and table["output_per_mtok"] == 15.0
 
-    launch = _launch_prices("anthropic", "claude-sonnet-5", table, today=datetime.date(2026, 8, 31))
+    launch = _launch_prices("anthropic", "claude-sonnet-5", table, today = datetime.date(2026, 8, 31))
     assert launch["input_per_mtok"] == 2.0 and launch["output_per_mtok"] == 10.0
     # A dated snapshot inherits the same launch rate.
     dated = _launch_prices(
-        "anthropic", "claude-sonnet-5-20260629", table, today=datetime.date(2026, 8, 31)
+        "anthropic", "claude-sonnet-5-20260629", table, today = datetime.date(2026, 8, 31)
     )
     assert dated["input_per_mtok"] == 2.0
 
-    after = _launch_prices("anthropic", "claude-sonnet-5", table, today=datetime.date(2026, 9, 1))
+    after = _launch_prices("anthropic", "claude-sonnet-5", table, today = datetime.date(2026, 9, 1))
     assert after == table
     # Neighbouring families are untouched on either side of the cutover.
     opus = ANTHROPIC_PRICING["claude-opus-5"]
     assert (
-        _launch_prices("anthropic", "claude-opus-5", opus, today=datetime.date(2026, 8, 31)) == opus
+        _launch_prices("anthropic", "claude-opus-5", opus, today = datetime.date(2026, 8, 31)) == opus
     )
 
 

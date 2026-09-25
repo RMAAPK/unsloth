@@ -59,7 +59,7 @@ class TestTheDigestMapReadsOnlyWhatGitHubStated:
             ("sha256:" + "a" * 63, "too short"),
             ("sha256:" + "a" * 65, "too long"),
         ],
-        ids=["absent", "empty", "unprefixed", "sha512", "not-hex", "short", "long"],
+        ids = ["absent", "empty", "unprefixed", "sha512", "not-hex", "short", "long"],
     )
     def test_anything_else_is_left_out_rather_than_guessed_at(self, digest, why):
         release = _release(_asset("bundle.zip", digest))
@@ -80,18 +80,18 @@ class TestAnAttemptWithNoDigestIsDropped:
 
     def _choice(
         self,
-        name="bundle.zip",
-        runtime=None,
+        name = "bundle.zip",
+        runtime = None,
     ):
         return ip.AssetChoice(
-            repo="ggml-org/llama.cpp",
-            tag="b10853",
-            name=name,
-            url=f"https://example.invalid/{name}",
-            source_label="upstream",
-            install_kind="windows-arm64-cuda",
-            runtime_name=runtime,
-            runtime_url=f"https://example.invalid/{runtime}" if runtime else None,
+            repo = "ggml-org/llama.cpp",
+            tag = "b10853",
+            name = name,
+            url = f"https://example.invalid/{name}",
+            source_label = "upstream",
+            install_kind = "windows-arm64-cuda",
+            runtime_name = runtime,
+            runtime_url = f"https://example.invalid/{runtime}" if runtime else None,
         )
 
     def test_a_covered_attempt_carries_the_digest_forward(self):
@@ -106,7 +106,7 @@ class TestAnAttemptWithNoDigestIsDropped:
 
     def test_a_paired_runtime_gets_its_own_digest(self):
         kept = ip._apply_release_digests(
-            [self._choice(runtime="cudart.zip")],
+            [self._choice(runtime = "cudart.zip")],
             {"bundle.zip": SHA_A, "cudart.zip": SHA_B},
         )
         assert kept[0].runtime_sha256 == SHA_B
@@ -115,7 +115,7 @@ class TestAnAttemptWithNoDigestIsDropped:
         """Dropping the whole attempt would lose CUDA over a missing side archive, and
         keeping the pair would install one unverified. Unpairing is neither."""
         kept = ip._apply_release_digests(
-            [self._choice(runtime="cudart.zip")], {"bundle.zip": SHA_A}
+            [self._choice(runtime = "cudart.zip")], {"bundle.zip": SHA_A}
         )
         assert len(kept) == 1
         assert kept[0].expected_sha256 == SHA_A
@@ -149,7 +149,7 @@ def test_no_branch_returns_attempts_that_were_never_hash_gated():
     apply_approved_hashes or _apply_release_digests. A future branch that returns a bare
     list would reintroduce exactly the hole this closes.
     """
-    source = (REPO_ROOT / "studio" / "install_llama_prebuilt.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "studio" / "install_llama_prebuilt.py").read_text(encoding = "utf-8")
     start = source.index("def resolve_release_asset_choice(")
     end = source.index("\ndef ", start + 1)
     body = source[start:end]

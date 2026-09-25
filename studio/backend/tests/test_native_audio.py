@@ -128,13 +128,13 @@ def test_local_minimax_detection_and_moss_companion_override(tmp_path):
                 "_blocks_class_name": "MiniMaxMusic3Blocks",
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert native_audio_type_from_local_path(str(tmp_path)) == "minimax_music3"
 
     (tmp_path / "modular_model_index.json").unlink()
     (tmp_path / "processor_config.json").write_text(
-        json.dumps({"audio_tokenizer_name_or_path": "acme/custom-codec"}), encoding="utf-8"
+        json.dumps({"audio_tokenizer_name_or_path": "acme/custom-codec"}), encoding = "utf-8"
     )
     assert native_audio_security_targets(str(tmp_path), "moss_tts_local") == [
         str(tmp_path),
@@ -167,22 +167,22 @@ def test_local_higgs_companion_metadata_drives_security_and_download_plans(
 ):
     if metadata_file != "config.json":
         (tmp_path / "config.json").write_text(
-            json.dumps({"model_type": "higgs_audio_v2"}), encoding="utf-8"
+            json.dumps({"model_type": "higgs_audio_v2"}), encoding = "utf-8"
         )
-    (tmp_path / metadata_file).write_text(json.dumps(metadata), encoding="utf-8")
+    (tmp_path / metadata_file).write_text(json.dumps(metadata), encoding = "utf-8")
     assert native_audio_security_targets(str(tmp_path), audio_type) == [str(tmp_path), codec]
 
     calls = []
-    siblings = [SimpleNamespace(rfilename="model.safetensors", size=100)]
+    siblings = [SimpleNamespace(rfilename = "model.safetensors", size = 100)]
 
     def model_info(repo_id, **_kwargs):
         calls.append(repo_id)
-        return SimpleNamespace(sha="current", siblings=siblings)
+        return SimpleNamespace(sha = "current", siblings = siblings)
 
     monkeypatch.setitem(
         sys.modules,
         "huggingface_hub",
-        SimpleNamespace(HfApi=lambda **_kwargs: SimpleNamespace(model_info=model_info)),
+        SimpleNamespace(HfApi = lambda **_kwargs: SimpleNamespace(model_info = model_info)),
     )
     monkeypatch.setattr(
         "core.inference.native_audio._native_audio_file_is_cached", lambda *_args: False
@@ -195,11 +195,11 @@ def test_local_higgs_companion_metadata_drives_security_and_download_plans(
 def test_higgs2_audio_tokenizer_config_takes_runtime_precedence(tmp_path):
     (tmp_path / "processor_config.json").write_text(
         json.dumps({"audio_tokenizer": {"audio_tokenizer_name_or_path": "acme/processor-codec"}}),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     (tmp_path / "audio_tokenizer_config.json").write_text(
         json.dumps({"audio_tokenizer_name_or_path": "acme/standalone-codec"}),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
 
     assert native_audio_security_targets(str(tmp_path), "higgs_tts2") == [
@@ -211,17 +211,17 @@ def test_higgs2_audio_tokenizer_config_takes_runtime_precedence(tmp_path):
 @pytest.mark.parametrize("metadata_file", ("processor_config.json", "audio_tokenizer_config.json"))
 def test_oversized_higgs_companion_metadata_fails_closed(tmp_path, metadata_file):
     (tmp_path / "config.json").write_text(
-        json.dumps({"model_type": "higgs_audio_v2"}), encoding="utf-8"
+        json.dumps({"model_type": "higgs_audio_v2"}), encoding = "utf-8"
     )
     metadata = {
         "audio_tokenizer": {"audio_tokenizer_name_or_path": "acme/unapproved-codec"},
         "padding": "x" * 1_000_000,
     }
-    (tmp_path / metadata_file).write_text(json.dumps(metadata), encoding="utf-8")
+    (tmp_path / metadata_file).write_text(json.dumps(metadata), encoding = "utf-8")
 
-    with pytest.raises(ValueError, match="security inspection limit"):
+    with pytest.raises(ValueError, match = "security inspection limit"):
         native_audio_security_targets(str(tmp_path), "higgs_tts2")
-    with pytest.raises(ValueError, match="security inspection limit"):
+    with pytest.raises(ValueError, match = "security inspection limit"):
         native_audio_download_plan(str(tmp_path))
 
 
@@ -229,10 +229,10 @@ def test_worker_reports_oversized_audio_metadata_as_a_load_error(tmp_path):
     from core.inference import worker
 
     (tmp_path / "config.json").write_text(
-        json.dumps({"model_type": "higgs_audio_v2"}), encoding="utf-8"
+        json.dumps({"model_type": "higgs_audio_v2"}), encoding = "utf-8"
     )
     (tmp_path / "processor_config.json").write_text(
-        json.dumps({"padding": "x" * 1_000_000}), encoding="utf-8"
+        json.dumps({"padding": "x" * 1_000_000}), encoding = "utf-8"
     )
 
     class Queue:
@@ -251,18 +251,18 @@ def test_worker_reports_oversized_audio_metadata_as_a_load_error(tmp_path):
 
 def test_minimax_download_plan_excludes_unreferenced_legacy_weights(monkeypatch):
     siblings = [
-        SimpleNamespace(rfilename="modular_model_index.json", size=10),
-        SimpleNamespace(rfilename="transformer/model.safetensors", size=100),
-        SimpleNamespace(rfilename="flowmatching_vae.pth", size=500),
-        SimpleNamespace(rfilename="qwen_7B/model.safetensors", size=400),
+        SimpleNamespace(rfilename = "modular_model_index.json", size = 10),
+        SimpleNamespace(rfilename = "transformer/model.safetensors", size = 100),
+        SimpleNamespace(rfilename = "flowmatching_vae.pth", size = 500),
+        SimpleNamespace(rfilename = "qwen_7B/model.safetensors", size = 400),
     ]
     api = SimpleNamespace(
-        model_info=lambda *_args, **_kwargs: SimpleNamespace(sha="current", siblings=siblings)
+        model_info = lambda *_args, **_kwargs: SimpleNamespace(sha = "current", siblings = siblings)
     )
     monkeypatch.setitem(
         sys.modules,
         "huggingface_hub",
-        SimpleNamespace(HfApi=lambda **_kwargs: api),
+        SimpleNamespace(HfApi = lambda **_kwargs: api),
     )
     monkeypatch.setattr(
         "core.inference.native_audio._native_audio_file_is_cached", lambda *_args: False
@@ -278,16 +278,16 @@ def test_minimax_download_plan_excludes_unreferenced_legacy_weights(monkeypatch)
 
 def test_higgs_tts2_download_plan_includes_audio_tokenizer(monkeypatch):
     calls = []
-    siblings = [SimpleNamespace(rfilename="model.safetensors", size=100)]
+    siblings = [SimpleNamespace(rfilename = "model.safetensors", size = 100)]
 
     def model_info(repo_id, **_kwargs):
         calls.append(repo_id)
-        return SimpleNamespace(sha="current", siblings=siblings)
+        return SimpleNamespace(sha = "current", siblings = siblings)
 
     monkeypatch.setitem(
         sys.modules,
         "huggingface_hub",
-        SimpleNamespace(HfApi=lambda **_kwargs: SimpleNamespace(model_info=model_info)),
+        SimpleNamespace(HfApi = lambda **_kwargs: SimpleNamespace(model_info = model_info)),
     )
     monkeypatch.setattr(
         "core.inference.native_audio._native_audio_file_is_cached", lambda *_args: False
@@ -309,7 +309,7 @@ def test_higgs_tts2_download_plan_includes_audio_tokenizer(monkeypatch):
 def test_python39_refuses_unsupported_audio_before_download_planning(monkeypatch, repo, message):
     monkeypatch.setattr("core.inference.native_audio.sys.version_info", (3, 9, 20))
 
-    with pytest.raises(ValueError, match=rf"{message} requires Python 3\.10"):
+    with pytest.raises(ValueError, match = rf"{message} requires Python 3\.10"):
         native_audio_download_plan(repo)
 
 
@@ -325,7 +325,7 @@ def test_moss_kv_memory_uses_full_published_context(tmp_path):
                 }
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert native_audio_kv_memory_gb(str(tmp_path), "moss_tts_nano") == pytest.approx(1.125)
 
@@ -350,7 +350,7 @@ def test_transformers5_moss_compat_is_scoped(monkeypatch):
     monkeypatch.setitem(
         sys.modules,
         "transformers",
-        SimpleNamespace(__version__="5.5.0", AutoConfig=AutoConfig, PreTrainedConfig=Config),
+        SimpleNamespace(__version__ = "5.5.0", AutoConfig = AutoConfig, PreTrainedConfig = Config),
     )
     _moss_transformers5_config_compat("OpenMOSS-Team/codec", {"token": "secret"})
     assert calls == [("OpenMOSS-Team/codec", {"trust_remote_code": True, "token": "secret"})]
@@ -369,12 +369,12 @@ def test_native_load_refuses_unsafe_consent_or_placement(trust, gpu_ids, error):
     backend.loading_models = set()
     backend._load_moss_local = lambda *_args: pytest.fail("loader must not run")
     config = SimpleNamespace(
-        identifier="OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5",
-        path=None,
-        audio_type="moss_tts_local",
+        identifier = "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5",
+        path = None,
+        audio_type = "moss_tts_local",
     )
-    with pytest.raises(RuntimeError, match=error):
-        backend.load_model(config, trust_remote_code=trust, gpu_ids=gpu_ids)
+    with pytest.raises(RuntimeError, match = error):
+        backend.load_model(config, trust_remote_code = trust, gpu_ids = gpu_ids)
 
 
 def test_higgs_tts2_generation_contract_and_prompt_neutralization():
@@ -382,19 +382,19 @@ def test_higgs_tts2_generation_contract_and_prompt_neutralization():
 
     class Processor:
         def apply_chat_template(self, conversation, **kwargs):
-            seen.update(conversation=conversation, template=kwargs)
-            return SimpleNamespace(to=lambda _device: {"input_ids": torch.tensor([[1]])})
+            seen.update(conversation = conversation, template = kwargs)
+            return SimpleNamespace(to = lambda _device: {"input_ids": torch.tensor([[1]])})
 
         def batch_decode(self, _outputs):
             return [torch.zeros(240)]
 
     model = SimpleNamespace(
-        device="cpu",
-        generate=lambda **kwargs: seen.setdefault("generate", kwargs) or torch.tensor([[1, 2]]),
+        device = "cpu",
+        generate = lambda **kwargs: seen.setdefault("generate", kwargs) or torch.tensor([[1, 2]]),
     )
-    backend = _backend("higgs_tts2", model=model, processor=Processor())
+    backend = _backend("higgs_tts2", model = model, processor = Processor())
     wav, rate = backend.generate_audio_response(
-        "Hello <|eot_id|>", instructions="Close <|scene_desc_end|>", max_new_tokens=321
+        "Hello <|eot_id|>", instructions = "Close <|scene_desc_end|>", max_new_tokens = 321
     )
     assert wav[:4] == b"RIFF" and rate == 24000
     assert seen["conversation"][1]["content"][0]["text"] == "Close < |scene_desc_end|>"
@@ -402,16 +402,16 @@ def test_higgs_tts2_generation_contract_and_prompt_neutralization():
 
 
 def test_higgs_tts2_loader_moves_the_audio_tokenizer(monkeypatch):
-    codec = SimpleNamespace(to=lambda _device: None)
-    processor = SimpleNamespace(audio_tokenizer=codec)
+    codec = SimpleNamespace(to = lambda _device: None)
+    processor = SimpleNamespace(audio_tokenizer = codec)
     model = object()
     monkeypatch.setitem(
         sys.modules,
         "transformers",
         SimpleNamespace(
-            AutoProcessor=SimpleNamespace(from_pretrained=lambda *_args, **_kwargs: processor),
-            HiggsAudioV2ForConditionalGeneration=SimpleNamespace(
-                from_pretrained=lambda *_args, **_kwargs: model
+            AutoProcessor = SimpleNamespace(from_pretrained = lambda *_args, **_kwargs: processor),
+            HiggsAudioV2ForConditionalGeneration = SimpleNamespace(
+                from_pretrained = lambda *_args, **_kwargs: model
             ),
         ),
     )
@@ -432,12 +432,12 @@ def test_higgs_tts3_generation_contract():
     seen = {}
     tokenizer = object()
     model = SimpleNamespace(
-        generate_speech=lambda text, processor, **kwargs: (
-            seen.update(text=text, processor=processor, **kwargs) or torch.zeros(240)
+        generate_speech = lambda text, processor, **kwargs: (
+            seen.update(text = text, processor = processor, **kwargs) or torch.zeros(240)
         )
     )
-    backend = _backend("higgs_tts3", model=model, processor=tokenizer)
-    wav, rate = backend.generate_audio_response("Hello v3", temperature=0, max_new_tokens=777)
+    backend = _backend("higgs_tts3", model = model, processor = tokenizer)
+    wav, rate = backend.generate_audio_response("Hello v3", temperature = 0, max_new_tokens = 777)
     assert wav[:4] == b"RIFF" and rate == 24000
     assert (seen["text"], seen["processor"], seen["max_new_tokens"]) == (
         "Hello v3",
@@ -473,16 +473,16 @@ def test_moss_nano_overrides_flash_attention_on_cpu(monkeypatch):
 
     def load_model(*_args, **kwargs):
         seen.update(kwargs)
-        return SimpleNamespace(to=lambda _device: None, eval=lambda: None)
+        return SimpleNamespace(to = lambda _device: None, eval = lambda: None)
 
-    movable = SimpleNamespace(to=lambda _device: None, eval=lambda: None)
+    movable = SimpleNamespace(to = lambda _device: None, eval = lambda: None)
     monkeypatch.setitem(
         sys.modules,
         "transformers",
         SimpleNamespace(
-            AutoModelForCausalLM=SimpleNamespace(from_pretrained=load_model),
-            AutoModel=SimpleNamespace(from_pretrained=lambda *_args, **_kwargs: movable),
-            AutoTokenizer=SimpleNamespace(from_pretrained=lambda *_args, **_kwargs: object()),
+            AutoModelForCausalLM = SimpleNamespace(from_pretrained = load_model),
+            AutoModel = SimpleNamespace(from_pretrained = lambda *_args, **_kwargs: movable),
+            AutoTokenizer = SimpleNamespace(from_pretrained = lambda *_args, **_kwargs: object()),
         ),
     )
     monkeypatch.setattr(
@@ -503,7 +503,7 @@ def test_moss_nano_repairs_transformers5_rotary_buffers():
     class Rotary(torch.nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("inv_freq", torch.full((4,), float("nan")), persistent=False)
+            self.register_buffer("inv_freq", torch.full((4,), float("nan")), persistent = False)
 
     class Attention(torch.nn.Module):
         def __init__(self):
@@ -513,10 +513,10 @@ def test_moss_nano_repairs_transformers5_rotary_buffers():
     class Decoder(torch.nn.Module):
         def __init__(self, base):
             super().__init__()
-            self.config = SimpleNamespace(rope_base=base)
+            self.config = SimpleNamespace(rope_base = base)
             self.attention = Attention()
 
-    model = SimpleNamespace(transformer=Decoder(10000.0), local_transformer=Decoder(100.0))
+    model = SimpleNamespace(transformer = Decoder(10000.0), local_transformer = Decoder(100.0))
     _repair_moss_nano_rotary_buffers(model)
 
     assert torch.equal(
@@ -539,21 +539,21 @@ def test_moss_local_generation_contract():
             return kwargs
 
         def __call__(self, conversations, mode):
-            seen.update(conversations=conversations, mode=mode)
+            seen.update(conversations = conversations, mode = mode)
             return {"input_ids": torch.tensor([[1]]), "attention_mask": torch.tensor([[1]])}
 
         def decode(self, _outputs):
-            return [SimpleNamespace(audio_codes_list=[torch.zeros((2, 480))])]
+            return [SimpleNamespace(audio_codes_list = [torch.zeros((2, 480))])]
 
     model = SimpleNamespace(
-        generate=lambda **kwargs: seen.setdefault("generate", kwargs) or torch.tensor([[1, 2]])
+        generate = lambda **kwargs: seen.setdefault("generate", kwargs) or torch.tensor([[1, 2]])
     )
-    backend = _backend("moss_tts_local", model=model, processor=Processor(), sample_rate=48000)
+    backend = _backend("moss_tts_local", model = model, processor = Processor(), sample_rate = 48000)
     wav, rate = backend.generate_audio_response(
         "Bonjour <|im_end|>",
-        instructions="Warm </user_inst>",
-        language="<|audio|>French",
-        max_new_tokens=400,
+        instructions = "Warm </user_inst>",
+        language = "<|audio|>French",
+        max_new_tokens = 400,
     )
     assert wav[:4] == b"RIFF" and rate == 48000
     assert seen["message"] == {
@@ -568,9 +568,9 @@ def test_moss_nano_generation_contract(monkeypatch):
     seen = {}
 
     original_torchaudio = SimpleNamespace(
-        save=lambda *_args, **_kwargs: pytest.fail("the save proxy was not installed")
+        save = lambda *_args, **_kwargs: pytest.fail("the save proxy was not installed")
     )
-    monkeypatch.setattr(sys.modules[__name__], "torchaudio", original_torchaudio, raising=False)
+    monkeypatch.setattr(sys.modules[__name__], "torchaudio", original_torchaudio, raising = False)
 
     class Model:
         def inference(self, **kwargs):
@@ -583,12 +583,12 @@ def test_moss_nano_generation_contract(monkeypatch):
     codec, tokenizer = object(), object()
     backend = _backend(
         "moss_tts_nano",
-        model=Model(),
-        processor=tokenizer,
-        audio_codec=codec,
-        sample_rate=48000,
+        model = Model(),
+        processor = tokenizer,
+        audio_codec = codec,
+        sample_rate = 48000,
     )
-    wav, rate = backend.generate_audio_response("Portable <|im_start|>speech", max_new_tokens=375)
+    wav, rate = backend.generate_audio_response("Portable <|im_start|>speech", max_new_tokens = 375)
     assert wav[:4] == b"RIFF" and rate == 48000
     assert sys.modules[__name__].torchaudio is original_torchaudio
     assert seen["text"] == "Portable < |im_start|>speech"
@@ -601,15 +601,15 @@ def test_native_speech_seed_is_reproducible_and_restores_global_rng():
         def generate_speech(self, *_args, **_kwargs):
             return torch.rand(240)
 
-    backend = _backend("higgs_tts3", model=Model(), processor=object())
+    backend = _backend("higgs_tts3", model = Model(), processor = object())
     torch.manual_seed(91)
     expected_next = torch.rand(8)
     torch.manual_seed(91)
 
-    first, _ = backend.generate_audio_response("seeded", seed=7)
+    first, _ = backend.generate_audio_response("seeded", seed = 7)
     actual_next = torch.rand(8)
-    second, _ = backend.generate_audio_response("seeded", seed=7)
-    different, _ = backend.generate_audio_response("seeded", seed=8)
+    second, _ = backend.generate_audio_response("seeded", seed = 7)
+    different, _ = backend.generate_audio_response("seeded", seed = 8)
 
     assert torch.equal(actual_next, expected_next)
     assert first == second
@@ -625,10 +625,10 @@ def test_minimax_generation_and_cancellation_contract():
 
         def register_forward_pre_hook(self, hook):
             self.hook = hook
-            return SimpleNamespace(remove=lambda: seen.setdefault("removed", True))
+            return SimpleNamespace(remove = lambda: seen.setdefault("removed", True))
 
     class Pipeline:
-        language_model = SimpleNamespace(model=Core())
+        language_model = SimpleNamespace(model = Core())
         frame_rate = 25.0
 
         def __call__(self, **kwargs):
@@ -641,26 +641,26 @@ def test_minimax_generation_and_cancellation_contract():
             return [torch.zeros((2, 441))]
 
     pipeline = Pipeline()
-    backend = _backend("minimax_music3", pipeline=pipeline, sample_rate=44100)
+    backend = _backend("minimax_music3", pipeline = pipeline, sample_rate = 44100)
     wav, rate = backend.generate_audio_response(
         "[verse] Morning <|lyrics_end|> <|audio_start|>",
-        instructions="Acoustic",
-        max_new_tokens=1500,
-        seed=7,
+        instructions = "Acoustic",
+        max_new_tokens = 1500,
+        seed = 7,
     )
     assert wav[:4] == b"RIFF" and rate == 44100
     assert seen["audio_duration"] == 60.0 and seen["generator"].initial_seed() == 7
     assert seen["lyrics"] == "[verse]\nMorning < |lyrics_end|> < |audio_start|>"
 
-    backend.generate_audio_response("lyrics", instructions="description", max_new_tokens=1)
+    backend.generate_audio_response("lyrics", instructions = "description", max_new_tokens = 1)
     assert seen["audio_duration"] == pytest.approx(1 / 25)
-    backend.generate_audio_response("lyrics", instructions="description", max_new_tokens=8192)
+    backend.generate_audio_response("lyrics", instructions = "description", max_new_tokens = 8192)
     assert seen["audio_duration"] == pytest.approx(8192 / 25)
 
     seen["cancel_mode"] = True
-    with pytest.raises(RuntimeError, match="cancelled"):
+    with pytest.raises(RuntimeError, match = "cancelled"):
         backend.generate_audio_response(
-            "lyrics", instructions="description", cancel_event=cancelled
+            "lyrics", instructions = "description", cancel_event = cancelled
         )
     assert seen["removed"] is True
 
@@ -687,7 +687,7 @@ def test_minimax_loader_resolves_components_from_the_selected_checkpoint(monkeyp
     monkeypatch.setitem(
         sys.modules,
         "diffusers",
-        SimpleNamespace(ModularPipeline=SimpleNamespace(from_pretrained=from_pretrained)),
+        SimpleNamespace(ModularPipeline = SimpleNamespace(from_pretrained = from_pretrained)),
     )
     backend = NativeAudioBackend.__new__(NativeAudioBackend)
     backend.device = "cuda"
@@ -727,7 +727,7 @@ def test_higgs_tts3_loader_uses_the_approved_codec_target_and_token(monkeypatch)
     codec = Codec()
 
     class Model:
-        config = SimpleNamespace(sample_rate=24000)
+        config = SimpleNamespace(sample_rate = 24000)
 
         def to(self, device):
             seen["model_device"] = device
@@ -751,9 +751,9 @@ def test_higgs_tts3_loader_uses_the_approved_codec_target_and_token(monkeypatch)
         sys.modules,
         "transformers",
         SimpleNamespace(
-            AutoModel=SimpleNamespace(from_pretrained=load_codec),
-            AutoModelForCausalLM=SimpleNamespace(from_pretrained=lambda *_args, **_kwargs: Model()),
-            AutoTokenizer=SimpleNamespace(from_pretrained=lambda *_args, **_kwargs: object()),
+            AutoModel = SimpleNamespace(from_pretrained = load_codec),
+            AutoModelForCausalLM = SimpleNamespace(from_pretrained = lambda *_args, **_kwargs: Model()),
+            AutoTokenizer = SimpleNamespace(from_pretrained = lambda *_args, **_kwargs: object()),
         ),
     )
     backend = NativeAudioBackend.__new__(NativeAudioBackend)
@@ -772,6 +772,6 @@ def test_higgs_tts3_loader_uses_the_approved_codec_target_and_token(monkeypatch)
 
 
 def test_minimax_requires_a_separate_description():
-    backend = _backend("minimax_music3", pipeline=object(), sample_rate=44100)
-    with pytest.raises(RuntimeError, match="music description"):
+    backend = _backend("minimax_music3", pipeline = object(), sample_rate = 44100)
+    with pytest.raises(RuntimeError, match = "music description"):
         backend.generate_audio_response("lyrics only")

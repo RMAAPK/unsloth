@@ -36,7 +36,7 @@ _WORKER_DRAIN_TIMEOUT_SECONDS = 5.0
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class ApiUsageReceipt:
     """Terminal scalar usage only. Prompts, replies and credentials never enter it."""
 
@@ -74,12 +74,12 @@ def _canonical_text(value: object, limit: int) -> Optional[str]:
         encoded = value.encode("utf-8")
     except UnicodeEncodeError:
         # json accepts unpaired surrogates, but utf-8 storage and hashing do not.
-        encoded = value.encode("utf-8", errors="surrogatepass")
-        value = value.encode("utf-8", errors="backslashreplace").decode("utf-8")
+        encoded = value.encode("utf-8", errors = "surrogatepass")
+        value = value.encode("utf-8", errors = "backslashreplace").decode("utf-8")
         needs_digest = True
     if not needs_digest:
         return value
-    digest = hashlib.blake2s(encoded, digest_size=16).hexdigest()
+    digest = hashlib.blake2s(encoded, digest_size = 16).hexdigest()
     return f"{value[: limit - len(digest) - 1]}~{digest}"
 
 
@@ -103,15 +103,15 @@ def _sleep_after_busy(delay: float) -> None:
 
 
 def _insert_api_usage(receipt: ApiUsageReceipt) -> bool:
-    receipt_id = _bounded_text(receipt.id, MAX_RECEIPT_ID_CHARS, truncate=False)
+    receipt_id = _bounded_text(receipt.id, MAX_RECEIPT_ID_CHARS, truncate = False)
     subject = canonical_api_subject(receipt.subject)
-    endpoint = _bounded_text(receipt.endpoint, MAX_ENDPOINT_CHARS, truncate=True)
+    endpoint = _bounded_text(receipt.endpoint, MAX_ENDPOINT_CHARS, truncate = True)
     model = canonical_api_model(receipt.model)
-    status = _bounded_text(receipt.status, MAX_STATUS_CHARS, truncate=True)
+    status = _bounded_text(receipt.status, MAX_STATUS_CHARS, truncate = True)
     if receipt_id is None or not subject or endpoint is None or not model or status is None:
         return False
 
-    conn = get_connection(busy_timeout_seconds=_WRITE_BUSY_TIMEOUT_SECONDS)
+    conn = get_connection(busy_timeout_seconds = _WRITE_BUSY_TIMEOUT_SECONDS)
     try:
         cursor = conn.execute(
             """
@@ -169,12 +169,11 @@ def record_api_usage(receipt: ApiUsageReceipt) -> bool:
     if inserted:
         # Lazy import avoids making profile aggregation part of schema startup.
         from storage.profile_stats_db import invalidate_profile_stats_cache
-
         invalidate_profile_stats_cache()
     return inserted
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class _QueuedReceipt:
     account: AccountContext
     receipt: ApiUsageReceipt
@@ -190,9 +189,9 @@ class ApiUsageWriter:
         self._sink = sink
         self._queue: queue.Queue[object] = queue.Queue()
         self._thread = threading.Thread(
-            target=self._run,
-            name="api-usage-writer",
-            daemon=True,
+            target = self._run,
+            name = "api-usage-writer",
+            daemon = True,
         )
         self._state_lock = threading.Lock()
         self._stopped = False
@@ -216,7 +215,7 @@ class ApiUsageWriter:
                 self._queue.put_nowait(_STOP)
         # Production calls this through asyncio.to_thread so even the bounded wait cannot pause inference or the event
         # loop.
-        self._thread.join(timeout=max(0.0, timeout))
+        self._thread.join(timeout = max(0.0, timeout))
         drained = not self._thread.is_alive()
         if not drained:
             logger.warning(
@@ -240,7 +239,7 @@ class ApiUsageWriter:
                         break
                     except sqlite3.OperationalError as exc:
                         if not _is_busy_error(exc):
-                            logger.warning("api usage receipt persistence failed", exc_info=True)
+                            logger.warning("api usage receipt persistence failed", exc_info = True)
                             break
                         # record_api_usage already made its bounded fast retries: retain this accepted item at the head of
                         # the single writer until a long transaction releases SQLite, with the stop sentinel behind it so
@@ -252,7 +251,7 @@ class ApiUsageWriter:
                             )
                         _sleep_after_busy(_WORKER_BUSY_RETRY_SECONDS)
                     except Exception:  # noqa: BLE001 - usage accounting cannot break inference.
-                        logger.warning("api usage receipt persistence failed", exc_info=True)
+                        logger.warning("api usage receipt persistence failed", exc_info = True)
                         break
             finally:
                 self._queue.task_done()

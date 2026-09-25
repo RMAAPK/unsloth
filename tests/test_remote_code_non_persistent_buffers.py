@@ -29,7 +29,7 @@ def _load_helper():
 
 def _slopes(n):
     start = 2 ** (-(2 ** -(math.log2(n) - 3)))
-    return torch.tensor([start * start**i for i in range(n)], dtype=torch.float)
+    return torch.tensor([start * start**i for i in range(n)], dtype = torch.float)
 
 
 def _remote_module():
@@ -48,10 +48,10 @@ def _remote_module():
 
         def __init__(
             self,
-            hidden_size=16,
-            num_heads=4,
-            num_layers=2,
-            rope_theta=10000.0,
+            hidden_size = 16,
+            num_heads = 4,
+            num_layers = 2,
+            rope_theta = 10000.0,
             **kwargs,
         ):
             self.hidden_size = hidden_size
@@ -64,15 +64,15 @@ def _remote_module():
         def __init__(
             self,
             config,
-            device=None,
+            device = None,
         ):
             super().__init__()
             dim = config.hidden_size // config.num_heads
             inv_freq = 1.0 / (
-                config.rope_theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim)
+                config.rope_theta ** (torch.arange(0, dim, 2, dtype = torch.float) / dim)
             )
             self.config = config
-            self.register_buffer("inv_freq", inv_freq, persistent=False)
+            self.register_buffer("inv_freq", inv_freq, persistent = False)
             self.original_inv_freq = self.inv_freq
 
     class TinyLinearAttention(nn.Module):
@@ -80,11 +80,11 @@ def _remote_module():
             super().__init__()
             self.config = config
             self.layer_idx = layer_idx
-            self.proj = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
+            self.proj = nn.Linear(config.hidden_size, config.hidden_size, bias = False)
             slope = -_slopes(config.num_heads) * (
                 1 - (layer_idx - 1) / (config.num_layers - 1) + 1e-5
             )
-            self.register_buffer("slope", slope, persistent=False)
+            self.register_buffer("slope", slope, persistent = False)
             self.rotary_emb = TinyRotary(config)
 
     class TinyRemotePreTrainedModel(PreTrainedModel):
@@ -94,7 +94,7 @@ def _remote_module():
         def _init_weights(self, module):
             # What 4.x remote code ships: weights only, buffers assumed built in __init__.
             if isinstance(module, nn.Linear):
-                module.weight.data.normal_(mean=0.0, std=0.02)
+                module.weight.data.normal_(mean = 0.0, std = 0.02)
 
     class TinyRemoteModel(TinyRemotePreTrainedModel):
         def __init__(self, config):
@@ -118,7 +118,7 @@ def _remote_module():
 
 def _expected(layer_idx, config):
     dim = config.hidden_size // config.num_heads
-    inv_freq = 1.0 / (config.rope_theta ** (torch.arange(0, dim, 2, dtype=torch.float) / dim))
+    inv_freq = 1.0 / (config.rope_theta ** (torch.arange(0, dim, 2, dtype = torch.float) / dim))
     slope = -_slopes(config.num_heads) * (1 - (layer_idx - 1) / (config.num_layers - 1) + 1e-5)
     return slope, inv_freq
 
@@ -175,7 +175,7 @@ def test_native_modules_and_unrecoverable_constructors_are_left_alone():
     class Native(nn.Module):  # not remote code: transformers' own _init_weights owns its buffers
         def __init__(self):
             super().__init__()
-            self.register_buffer("b", torch.full((2,), 3.0), persistent=False)
+            self.register_buffer("b", torch.full((2,), 3.0), persistent = False)
 
     native = Native()
     native.b.zero_()
@@ -185,7 +185,7 @@ def test_native_modules_and_unrecoverable_constructors_are_left_alone():
     class NeedsTensor(nn.Module):
         def __init__(self, table):
             super().__init__()
-            self.register_buffer("b", table * 2, persistent=False)
+            self.register_buffer("b", table * 2, persistent = False)
 
     NeedsTensor.__module__ = "transformers_modules.unsloth_test_remote_buffers"
     module = NeedsTensor(torch.ones(2))
@@ -197,15 +197,15 @@ def test_native_modules_and_unrecoverable_constructors_are_left_alone():
     class KeepsOnlyStride(nn.Module):
         def __init__(
             self,
-            ratio=2,
-            device=None,
+            ratio = 2,
+            device = None,
         ):
             super().__init__()
             self.stride = ratio  # `ratio` itself is not kept under its own name
-            self.register_buffer("b", torch.full((2,), float(ratio)), persistent=False)
+            self.register_buffer("b", torch.full((2,), float(ratio)), persistent = False)
 
     KeepsOnlyStride.__module__ = "transformers_modules.unsloth_test_remote_buffers"
-    module = KeepsOnlyStride(ratio=4)
+    module = KeepsOnlyStride(ratio = 4)
     module.b.zero_()
     # A non-default `ratio` cannot be told from the default, so nothing is rebuilt.
     assert helper._constructor_kwargs(module) is None
@@ -219,11 +219,11 @@ def test_stored_tensor_arguments_skip_the_module():
         pytest.skip("no-op on transformers 4.x")
 
     class OptionalTable(nn.Module):
-        def __init__(self, table=None):
+        def __init__(self, table = None):
             super().__init__()
             self.table = table
             base = torch.ones(2) if table is None else table
-            self.register_buffer("b", base * 2, persistent=False)
+            self.register_buffer("b", base * 2, persistent = False)
 
     OptionalTable.__module__ = "transformers_modules.unsloth_test_remote_buffers"
     module = OptionalTable(torch.full((2,), 5.0))
@@ -242,16 +242,16 @@ def test_a_stored_meta_device_is_not_passed_back():
     class StoresDevice(nn.Module):
         def __init__(
             self,
-            scale=3.0,
-            device=None,
+            scale = 3.0,
+            device = None,
         ):
             super().__init__()
             self.scale = scale
             self.device = device
-            self.register_buffer("b", torch.full((2,), scale, device=device), persistent=False)
+            self.register_buffer("b", torch.full((2,), scale, device = device), persistent = False)
 
     StoresDevice.__module__ = "transformers_modules.unsloth_test_remote_buffers"
-    module = StoresDevice(scale=4.0, device=torch.device("meta"))
+    module = StoresDevice(scale = 4.0, device = torch.device("meta"))
     module._buffers["b"] = torch.zeros(2)
     assert helper.restore_remote_code_non_persistent_buffers(module) == 1
     torch.testing.assert_close(module.b, torch.full((2,), 4.0))
@@ -266,10 +266,10 @@ def test_variadic_constructors_are_skipped():
         def __init__(self, **kwargs):
             super().__init__()
             base = kwargs.get("base", 1.0)
-            self.register_buffer("b", torch.full((2,), float(base)), persistent=False)
+            self.register_buffer("b", torch.full((2,), float(base)), persistent = False)
 
     TakesKwargs.__module__ = "transformers_modules.unsloth_test_remote_buffers"
-    module = TakesKwargs(base=6.0)
+    module = TakesKwargs(base = 6.0)
     module.b.zero_()
     # Rebuilding without `base` would write 1.0 instead of 6.0, so the module is skipped.
     assert helper._constructor_kwargs(module) is None
@@ -285,23 +285,23 @@ def test_dtype_is_recovered_from_the_instance_or_the_module_is_skipped():
     class EpsFromDtype(nn.Module):
         def __init__(
             self,
-            dtype=torch.float32,
-            keep=True,
+            dtype = torch.float32,
+            keep = True,
         ):
             super().__init__()
             self.keep = keep
             if keep:
                 self.dtype = dtype
             eps = torch.finfo(dtype).eps
-            self.register_buffer("b", torch.full((2,), eps, dtype=torch.float32), persistent=False)
+            self.register_buffer("b", torch.full((2,), eps, dtype = torch.float32), persistent = False)
 
     EpsFromDtype.__module__ = "transformers_modules.unsloth_test_remote_buffers"
-    module = EpsFromDtype(dtype=torch.float16)
+    module = EpsFromDtype(dtype = torch.float16)
     module.b.zero_()
     assert helper.restore_remote_code_non_persistent_buffers(module) == 1
     torch.testing.assert_close(module.b, torch.full((2,), torch.finfo(torch.float16).eps))
 
-    module = EpsFromDtype(dtype=torch.float16, keep=False)
+    module = EpsFromDtype(dtype = torch.float16, keep = False)
     module.b.zero_()
     assert helper._constructor_kwargs(module) is None
     assert helper.restore_remote_code_non_persistent_buffers(module) == 0
@@ -313,15 +313,15 @@ def test_equal_but_differently_typed_arguments_do_not_share_a_rebuild():
         pytest.skip("no-op on transformers 4.x")
 
     class TypeSensitive(nn.Module):
-        def __init__(self, flag=False):
+        def __init__(self, flag = False):
             super().__init__()
             self.flag = flag
             value = 2.0 if isinstance(flag, bool) else 3.0
-            self.register_buffer("b", torch.full((2,), value), persistent=False)
+            self.register_buffer("b", torch.full((2,), value), persistent = False)
 
     TypeSensitive.__module__ = "transformers_modules.unsloth_test_remote_buffers"
     parent = nn.Module()
-    parent.first, parent.second = TypeSensitive(flag=True), TypeSensitive(flag=1)
+    parent.first, parent.second = TypeSensitive(flag = True), TypeSensitive(flag = 1)
     parent.first.b.zero_()
     parent.second.b.zero_()
     assert helper.restore_remote_code_non_persistent_buffers(parent) == 2
@@ -339,7 +339,7 @@ def test_buffers_the_remote_init_weights_fills_are_left_alone():
     class Placeholder(nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("table", torch.zeros(2), persistent=False)
+            self.register_buffer("table", torch.zeros(2), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -368,12 +368,12 @@ def test_a_module_that_did_not_keep_its_config_is_skipped():
     class ScaleFromConfig(nn.Module):
         def __init__(self, config):
             super().__init__()
-            self.register_buffer("b", torch.full((2,), float(config.scale)), persistent=False)
+            self.register_buffer("b", torch.full((2,), float(config.scale)), persistent = False)
 
     ScaleFromConfig.__module__ = "transformers_modules.unsloth_test_remote_buffers"
     model = nn.Module()
-    model.config = types.SimpleNamespace(scale=1.0)
-    model.child = ScaleFromConfig(types.SimpleNamespace(scale=9.0))
+    model.config = types.SimpleNamespace(scale = 1.0)
+    model.child = ScaleFromConfig(types.SimpleNamespace(scale = 9.0))
     model.child.b.zero_()
     assert helper._constructor_kwargs(model.child) is None
     assert helper.restore_remote_code_non_persistent_buffers(model) == 0
@@ -388,13 +388,13 @@ def test_remote_init_detection_is_scoped_to_the_class_it_names():
     class Placeholder(nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("table", torch.zeros(2), persistent=False)
+            self.register_buffer("table", torch.zeros(2), persistent = False)
 
     class ComputesTable(nn.Module):
-        def __init__(self, base=4.0):
+        def __init__(self, base = 4.0):
             super().__init__()
             self.base = base
-            self.register_buffer("table", torch.full((2,), base), persistent=False)
+            self.register_buffer("table", torch.full((2,), base), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -422,10 +422,10 @@ def test_prose_in_remote_init_weights_does_not_count_as_initialisation():
         pytest.skip("no-op on transformers 4.x")
 
     class Rotary(nn.Module):
-        def __init__(self, base=4.0):
+        def __init__(self, base = 4.0):
             super().__init__()
             self.base = base
-            self.register_buffer("inv_freq", torch.full((2,), base), persistent=False)
+            self.register_buffer("inv_freq", torch.full((2,), base), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -454,15 +454,15 @@ def test_a_buffer_name_written_for_another_class_does_not_skip_this_one():
         pytest.skip("no-op on transformers 4.x")
 
     class Rotary(nn.Module):
-        def __init__(self, base=4.0):
+        def __init__(self, base = 4.0):
             super().__init__()
             self.base = base
-            self.register_buffer("inv_freq", torch.full((2,), base), persistent=False)
+            self.register_buffer("inv_freq", torch.full((2,), base), persistent = False)
 
     class OtherRotary(nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("inv_freq", torch.zeros(2), persistent=False)
+            self.register_buffer("inv_freq", torch.zeros(2), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -492,7 +492,7 @@ def test_buffers_filled_through_a_helper_are_left_alone():
     class Placeholder(nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("table", torch.zeros(2), persistent=False)
+            self.register_buffer("table", torch.zeros(2), persistent = False)
 
     def initialize_placeholder(module):
         module.table.fill_(5.0)
@@ -522,9 +522,9 @@ def test_integer_and_bool_buffers_the_remote_init_weights_fills_are_left_alone()
     class Tables(nn.Module):
         def __init__(self):
             super().__init__()
-            self.register_buffer("index", torch.zeros(3, dtype=torch.long), persistent=False)
-            self.register_buffer("mask", torch.zeros(3, dtype=torch.bool), persistent=False)
-            self.register_buffer("steps", torch.arange(3), persistent=False)
+            self.register_buffer("index", torch.zeros(3, dtype = torch.long), persistent = False)
+            self.register_buffer("mask", torch.zeros(3, dtype = torch.bool), persistent = False)
+            self.register_buffer("steps", torch.arange(3), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -553,10 +553,10 @@ def test_a_module_whose_init_weights_raises_is_skipped():
         pytest.skip("no-op on transformers 4.x")
 
     class Rotary(nn.Module):
-        def __init__(self, base=4.0):
+        def __init__(self, base = 4.0):
             super().__init__()
             self.base = base
-            self.register_buffer("inv_freq", torch.full((2,), base), persistent=False)
+            self.register_buffer("inv_freq", torch.full((2,), base), persistent = False)
 
     class RemoteModel(nn.Module):
         def __init__(self):
@@ -581,10 +581,10 @@ def test_float64_loads_rebuild_under_float64():
         pytest.skip("no-op on transformers 4.x")
 
     class EpsOfDefaultDtype(nn.Module):
-        def __init__(self, device=None):
+        def __init__(self, device = None):
             super().__init__()
             eps = torch.finfo(torch.get_default_dtype()).eps
-            self.register_buffer("b", torch.full((2,), eps, dtype=torch.float64), persistent=False)
+            self.register_buffer("b", torch.full((2,), eps, dtype = torch.float64), persistent = False)
 
     EpsOfDefaultDtype.__module__ = "transformers_modules.unsloth_test_remote_buffers"
     model = nn.Module()
@@ -593,13 +593,13 @@ def test_float64_loads_rebuild_under_float64():
     model.child.b.zero_()
     assert helper.restore_remote_code_non_persistent_buffers(model) == 1
     torch.testing.assert_close(
-        model.child.b, torch.full((2,), torch.finfo(torch.float64).eps, dtype=torch.float64)
+        model.child.b, torch.full((2,), torch.finfo(torch.float64).eps, dtype = torch.float64)
     )
 
 
 def test_loaders_restore_right_after_from_pretrained():
     for relative, calls in (("unsloth/models/vision.py", 1), ("unsloth/models/llama.py", 2)):
-        with open(os.path.join(_ROOT, relative), encoding="utf-8") as file:
+        with open(os.path.join(_ROOT, relative), encoding = "utf-8") as file:
             source = file.read()
         assert source.count("restore_remote_code_non_persistent_buffers(model)") == calls, relative
 
@@ -619,7 +619,7 @@ def test_each_sub_model_is_probed_with_its_own_init_weights():
 
         def __init__(self, config):
             super().__init__(config)
-            self.proj = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
+            self.proj = nn.Linear(config.hidden_size, config.hidden_size, bias = False)
             self.rotary_emb = remote.TinyRotary(config)
 
         def _init_weights(self, module):

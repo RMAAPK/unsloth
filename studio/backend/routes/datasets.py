@@ -44,7 +44,7 @@ async def upload_dataset(
 
 @router.get("/local", response_model=LocalDatasetsResponse, deprecated=True)
 def list_local_datasets(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> LocalDatasetsResponse:
     result = local.list_local_datasets_response()
     return LocalDatasetsResponse.model_validate(

@@ -108,7 +108,7 @@ def merge_text_streams(
     encoder_hidden_states: Any,
     encoder_attention_mask: Any,
     encoder_hidden_states_2: Any,
-    encoder_attention_mask_2: Any
+    encoder_attention_mask_2: Any,
 ) -> tuple[Any, Any]:
     """HunyuanImage's text-stream merge without a host sync; bit-identical to the stock loop.
 

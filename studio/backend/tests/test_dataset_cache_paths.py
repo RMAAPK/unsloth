@@ -20,7 +20,7 @@ from hub.utils import (
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _known_cache_root(monkeypatch, tmp_path):
     monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda **kw: [tmp_path])
     monkeypatch.setattr(
@@ -36,7 +36,7 @@ def _dataset_repo(
 ) -> tuple[Path, Path]:
     repo_root = root / f"datasets--{repo_id.replace('/', '--')}"
     snap = repo_root / "snapshots" / snapshot
-    snap.mkdir(parents=True)
+    snap.mkdir(parents = True)
     return repo_root, snap
 
 
@@ -83,7 +83,7 @@ def test_latest_cached_dataset_snapshot_prefers_selected_cache_path(monkeypatch,
 
 def test_dataset_snapshot_rejects_foreign_paths(tmp_path):
     foreign = tmp_path / "not-a-cache" / "snapshots" / "rev"
-    foreign.mkdir(parents=True)
+    foreign.mkdir(parents = True)
     (foreign / "train.parquet").write_bytes(b"x")
 
     assert dataset_cache.dataset_snapshot_from_cache_path(str(foreign), "Org/Data") is None
@@ -104,7 +104,7 @@ def test_dataset_snapshot_ignores_symlinks_outside_cache(tmp_path):
     escaped.mkdir()
     (escaped / "train.parquet").write_bytes(b"x")
     link = repo_root / "snapshots" / "linked"
-    link.symlink_to(escaped, target_is_directory=True)
+    link.symlink_to(escaped, target_is_directory = True)
     future = time.time() + 3600
     os.utime(escaped, (future, future))
 
@@ -119,9 +119,9 @@ def test_dataset_snapshots_directory_symlink_cannot_escape_cache(tmp_path):
     repo_root.mkdir()
     external = tmp_path / "external-snapshots"
     snapshot = external / "rev"
-    snapshot.mkdir(parents=True)
+    snapshot.mkdir(parents = True)
     (snapshot / "train.parquet").write_bytes(b"x")
-    (repo_root / "snapshots").symlink_to(external, target_is_directory=True)
+    (repo_root / "snapshots").symlink_to(external, target_is_directory = True)
 
     assert dataset_cache.dataset_snapshot_from_cache_path(str(repo_root), "Org/Data") is None
 
@@ -155,9 +155,9 @@ def test_cached_snapshot_load_preserves_hf_subset_and_split(monkeypatch, tmp_pat
     result = dataset_cache.load_cached_hf_dataset(
         repo_id,
         str(repo_root),
-        subset="english",
-        split="validation",
-        token="hf_test",
+        subset = "english",
+        split = "validation",
+        token = "hf_test",
     )
 
     assert result == {"loaded": True}
@@ -191,7 +191,7 @@ def test_cached_snapshot_row_limit_streams_without_processed_cache(monkeypatch, 
     class SplitDict(dict):
         pass
 
-    copied_info = types.SimpleNamespace(splits=None)
+    copied_info = types.SimpleNamespace(splits = None)
 
     class DownloadConfig:
         def __init__(self, *, local_files_only):
@@ -200,7 +200,7 @@ def test_cached_snapshot_row_limit_streams_without_processed_cache(monkeypatch, 
     class Stream:
         def __init__(self):
             self.features = features
-            self.info = types.SimpleNamespace(copy=lambda: copied_info)
+            self.info = types.SimpleNamespace(copy = lambda: copied_info)
             self.split = split_identity
 
         def take(self, limit):
@@ -213,9 +213,9 @@ def test_cached_snapshot_row_limit_streams_without_processed_cache(monkeypatch, 
             cls,
             rows,
             *,
-            features=None,
-            info=None,
-            split=None,
+            features = None,
+            info = None,
+            split = None,
         ):
             materialized.append((rows, features, info, split))
             return {"rows": rows}
@@ -243,10 +243,10 @@ def test_cached_snapshot_row_limit_streams_without_processed_cache(monkeypatch, 
     result = dataset_cache.load_cached_hf_dataset(
         repo_id,
         str(repo_root),
-        subset="english",
-        split="train",
-        token="hf_test",
-        row_limit=2,
+        subset = "english",
+        split = "train",
+        token = "hf_test",
+        row_limit = 2,
     )
 
     assert result == {"rows": [{"text": "one"}, {"text": "two"}]}
@@ -306,9 +306,9 @@ def test_cached_snapshot_row_limit_preserves_empty_stream_schema(monkeypatch, tm
     result = dataset_cache.load_cached_hf_dataset(
         repo_id,
         str(repo_root),
-        subset=None,
-        split="train",
-        row_limit=2,
+        subset = None,
+        split = "train",
+        row_limit = 2,
     )
 
     assert result == {"rows": []}
@@ -330,9 +330,9 @@ def test_cached_snapshot_row_limit_keeps_bracketed_split_eager(monkeypatch, tmp_
     result = dataset_cache.load_cached_hf_dataset(
         repo_id,
         str(repo_root),
-        subset=None,
-        split="train[:2]",
-        row_limit=2,
+        subset = None,
+        split = "train[:2]",
+        row_limit = 2,
     )
 
     assert result == {"loaded": True}
@@ -365,17 +365,17 @@ def test_cached_snapshot_row_limit_reports_missing_split_for_hub_fallback(monkey
         dataset_cache.load_cached_hf_dataset(
             repo_id,
             str(repo_root),
-            subset=None,
-            split="validation",
-            row_limit=2,
+            subset = None,
+            split = "validation",
+            row_limit = 2,
         )
 
     assert str(raised.value) == "Unknown split \"validation\". Should be one of ['train']."
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             raised.value,
-            require_exact=False,
-            revision="dataset-commit",
+            require_exact = False,
+            revision = "dataset-commit",
         )
         is True
     )
@@ -384,13 +384,13 @@ def test_cached_snapshot_row_limit_reports_missing_split_for_hub_fallback(monkey
 
 @pytest.mark.parametrize("row_limit", [0, -1, True])
 def test_cached_dataset_row_limit_must_be_positive_integer(row_limit):
-    with pytest.raises(ValueError, match="row_limit must be a positive integer"):
+    with pytest.raises(ValueError, match = "row_limit must be a positive integer"):
         dataset_cache.load_cached_hf_dataset(
             "Org/Data",
             None,
-            subset=None,
-            split="train",
-            row_limit=row_limit,
+            subset = None,
+            split = "train",
+            row_limit = row_limit,
         )
 
 
@@ -404,15 +404,15 @@ def _metadata_manifest(
     metadata_derived: bool = True,
 ) -> download_manifest.Manifest:
     return download_manifest.Manifest(
-        repo_type="dataset",
-        repo_id=repo_id,
-        variant=None,
-        started_at="",
-        expected_files=tuple(expected_files),
-        hub_cache=str(hub_cache.resolve()),
-        version=version,
-        commit_hash=commit_hash if metadata_derived else None,
-        metadata_derived=metadata_derived,
+        repo_type = "dataset",
+        repo_id = repo_id,
+        variant = None,
+        started_at = "",
+        expected_files = tuple(expected_files),
+        hub_cache = str(hub_cache.resolve()),
+        version = version,
+        commit_hash = commit_hash if metadata_derived else None,
+        metadata_derived = metadata_derived,
     )
 
 
@@ -466,8 +466,8 @@ def test_legacy_or_disk_derived_manifest_cannot_attest_dataset(
         tmp_path,
         snapshot.name,
         [download_manifest.ExpectedFile("train.parquet", 4)],
-        version=version,
-        metadata_derived=metadata_derived,
+        version = version,
+        metadata_derived = metadata_derived,
     )
     monkeypatch.setattr(
         download_manifest,
@@ -554,7 +554,7 @@ def test_newer_download_preserves_older_complete_snapshot(monkeypatch, tmp_path)
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: types.SimpleNamespace(hub_cache=tmp_path),
+        lambda: types.SimpleNamespace(hub_cache = tmp_path),
     )
     expected = [download_manifest.ExpectedFile("train.parquet", 4)]
 
@@ -562,31 +562,31 @@ def test_newer_download_preserves_older_complete_snapshot(monkeypatch, tmp_path)
         repo_id,
         older.name,
         expected,
-        hub_cache=tmp_path,
+        hub_cache = tmp_path,
     )
     assert download_manifest.write_manifest(
         "dataset",
         repo_id,
         None,
         expected,
-        commit_hash=older.name,
-        metadata_derived=True,
-        hub_cache=tmp_path,
+        commit_hash = older.name,
+        metadata_derived = True,
+        hub_cache = tmp_path,
     )
     assert download_manifest.write_dataset_completion(
         repo_id,
         newer.name,
         expected,
-        hub_cache=tmp_path,
+        hub_cache = tmp_path,
     )
     assert download_manifest.write_manifest(
         "dataset",
         repo_id,
         None,
         expected,
-        commit_hash=newer.name,
-        metadata_derived=True,
-        hub_cache=tmp_path,
+        commit_hash = newer.name,
+        metadata_derived = True,
+        hub_cache = tmp_path,
     )
 
     assert dataset_cache.complete_dataset_snapshot_path(str(older), repo_id) == older.resolve()
@@ -605,20 +605,20 @@ def test_dataset_completion_isolated_and_purged_by_hub_cache(monkeypatch, tmp_pa
     monkeypatch.setattr(hf_cache_state, "hf_cache_roots", lambda **kw: [cache_a, cache_b])
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: types.SimpleNamespace(hub_cache=cache_a),
+        lambda: types.SimpleNamespace(hub_cache = cache_a),
     )
 
     assert download_manifest.write_dataset_completion(
         repo_id,
         snapshot_a.name,
         [download_manifest.ExpectedFile("train.parquet", 4)],
-        hub_cache=cache_a,
+        hub_cache = cache_a,
     )
     assert download_manifest.write_dataset_completion(
         repo_id,
         snapshot_b.name,
         [download_manifest.ExpectedFile("train.parquet", 5)],
-        hub_cache=cache_b,
+        hub_cache = cache_b,
     )
     assert (
         dataset_cache.complete_dataset_snapshot_path(str(snapshot_a), repo_id)
@@ -633,7 +633,7 @@ def test_dataset_completion_isolated_and_purged_by_hub_cache(monkeypatch, tmp_pa
         download_manifest.purge_all_state_for_repo(
             "dataset",
             repo_id,
-            hub_cache=cache_a,
+            hub_cache = cache_a,
         )
         > 0
     )
@@ -657,13 +657,13 @@ def test_dataset_completion_cache_ownership_uses_platform_case_rules(monkeypatch
         "Org/Data",
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 4)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=tmp_path / "case-sensitive-input",
+            hub_cache = tmp_path / "case-sensitive-input",
         )
         is not None
     )
@@ -680,7 +680,7 @@ def test_dataset_completion_bounds_long_state_filenames(monkeypatch, tmp_path):
         repo_id,
         commit_hash,
         [download_manifest.ExpectedFile("train.parquet", 1)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     paths = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
 
@@ -691,7 +691,7 @@ def test_dataset_completion_bounds_long_state_filenames(monkeypatch, tmp_path):
         download_manifest.read_dataset_completion(
             repo_id,
             commit_hash,
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is not None
     )
@@ -712,17 +712,17 @@ def test_dataset_completion_corrupt_schema_fails_closed(monkeypatch, tmp_path, p
         "Org/Data",
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 1)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     paths = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
     assert len(paths) == 1
-    paths[0].write_text(payload, encoding="utf-8")
+    paths[0].write_text(payload, encoding = "utf-8")
 
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is None
     )
@@ -736,19 +736,19 @@ def test_dataset_completion_rejects_boolean_file_size(monkeypatch, tmp_path):
         "Org/Data",
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 1)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     paths = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
     assert len(paths) == 1
-    payload = json.loads(paths[0].read_text(encoding="utf-8"))
+    payload = json.loads(paths[0].read_text(encoding = "utf-8"))
     payload["expected_files"][0]["size"] = False
-    paths[0].write_text(json.dumps(payload), encoding="utf-8")
+    paths[0].write_text(json.dumps(payload), encoding = "utf-8")
 
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is None
     )
@@ -776,12 +776,12 @@ def test_preview_snapshot_returns_immutable_revision_with_cache_pin(monkeypatch,
 def test_training_cache_pin_prefers_processed_cache_without_explicit_path(monkeypatch, tmp_path):
     repo_id = "Org/Data"
     repo_root, snapshot = _dataset_repo(tmp_path, repo_id, "commit-preview")
-    (snapshot / "README.md").write_text("metadata only", encoding="utf-8")
+    (snapshot / "README.md").write_text("metadata only", encoding = "utf-8")
     processed_root = tmp_path / "processed"
     processed = processed_root / "Org___Data"
     output = processed / "default" / "0.0.0" / "build-hash"
-    output.mkdir(parents=True)
-    (output / "dataset_info.json").write_text("{}", encoding="utf-8")
+    output.mkdir(parents = True)
+    (output / "dataset_info.json").write_text("{}", encoding = "utf-8")
     (output / "data-train.arrow").write_bytes(b"\xff\xff\xff\xff")
     monkeypatch.setenv("HF_DATASETS_CACHE", str(processed_root))
     monkeypatch.setattr(
@@ -810,8 +810,8 @@ def test_training_cache_pin_ignores_empty_processed_cache(monkeypatch, tmp_path)
     processed_root = tmp_path / "processed"
     processed = processed_root / "Org___Data"
     output = processed / "default" / "0.0.0" / "build-hash"
-    output.mkdir(parents=True)
-    (output / "dataset_info.json").write_text("{}", encoding="utf-8")
+    output.mkdir(parents = True)
+    (output / "dataset_info.json").write_text("{}", encoding = "utf-8")
     (output / "data-train.arrow").write_bytes(b"")
     monkeypatch.setenv("HF_DATASETS_CACHE", str(processed_root))
     monkeypatch.setattr(
@@ -834,8 +834,8 @@ def test_training_cache_pin_ignores_incomplete_processed_cache(monkeypatch, tmp_
     processed_root = tmp_path / "processed"
     processed = processed_root / "Org___Data"
     output = processed / "default" / "0.0.0" / "build-hash.incomplete"
-    output.mkdir(parents=True)
-    (output / "dataset_info.json").write_text("{}", encoding="utf-8")
+    output.mkdir(parents = True)
+    (output / "dataset_info.json").write_text("{}", encoding = "utf-8")
     (output / "data-train.arrow").write_bytes(b"\xff\xff\xff\xff")
     monkeypatch.setattr(
         dataset_cache,
@@ -881,14 +881,14 @@ def test_app_processed_cache_rejects_symlinked_parent(monkeypatch, tmp_path):
     external.mkdir()
     (configured_root / "hf-datasets").symlink_to(
         external,
-        target_is_directory=True,
+        target_is_directory = True,
     )
     monkeypatch.setattr(
         "utils.paths.storage_roots.cache_root",
         lambda: configured_root,
     )
 
-    with pytest.raises(OSError, match="Dataset cache root is unavailable"):
+    with pytest.raises(OSError, match = "Dataset cache root is unavailable"):
         dataset_processed_cache.prepare_app_processed_dataset_cache(
             repo_id,
             snapshot,
@@ -915,7 +915,7 @@ def test_app_processed_cache_does_not_scan_or_delete_through_parent_symlink(monk
     configured_root.mkdir()
     (configured_root / "hf-datasets").symlink_to(
         external_root / "hf-datasets",
-        target_is_directory=True,
+        target_is_directory = True,
     )
     monkeypatch.setattr(
         "utils.paths.storage_roots.cache_root",
@@ -933,7 +933,7 @@ def test_dataset_completion_v2_round_trips_metadata_commit(monkeypatch, tmp_path
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: types.SimpleNamespace(hub_cache=hub_cache),
+        lambda: types.SimpleNamespace(hub_cache = hub_cache),
     )
 
     assert download_manifest.write_dataset_completion(
@@ -941,12 +941,12 @@ def test_dataset_completion_v2_round_trips_metadata_commit(monkeypatch, tmp_path
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 4)],
         "http",
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     manifest = download_manifest.read_dataset_completion(
         "Org/Data",
         "commit-a",
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
 
     assert manifest is not None
@@ -966,18 +966,18 @@ def test_download_manifest_stays_readable_by_pre_pr_v1_reader(monkeypatch, tmp_p
         None,
         [download_manifest.ExpectedFile("train.parquet", 4)],
         "http",
-        hub_cache=hub_cache,
-        commit_hash="commit-a",
-        metadata_derived=True,
+        hub_cache = hub_cache,
+        commit_hash = "commit-a",
+        metadata_derived = True,
     )
     path = download_manifest.manifest_path(
         "dataset",
         "Org/Data",
         None,
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert path is not None
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding = "utf-8"))
 
     assert payload["version"] == 1
     assert payload["expected_files"] == [{"path": "train.parquet", "size": 4}]
@@ -986,7 +986,7 @@ def test_download_manifest_stays_readable_by_pre_pr_v1_reader(monkeypatch, tmp_p
         "dataset",
         "Org/Data",
         None,
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert manifest is not None
     assert manifest.version == 1
@@ -1002,7 +1002,7 @@ def test_startup_migrates_existing_ordinary_v2_manifests_across_cache_scopes(mon
     monkeypatch.setattr(state_dir, "cache_root", lambda: tmp_path / "state")
     monkeypatch.setattr(
         "utils.hf_cache_settings.get_hf_cache_paths",
-        lambda: types.SimpleNamespace(hub_cache=active_cache),
+        lambda: types.SimpleNamespace(hub_cache = active_cache),
     )
 
     assert download_manifest.write_manifest(
@@ -1011,8 +1011,8 @@ def test_startup_migrates_existing_ordinary_v2_manifests_across_cache_scopes(mon
         "Q4_K_M",
         [download_manifest.ExpectedFile("model.gguf", 8)],
         "http",
-        hub_cache=active_cache,
-        _schema_version=2,
+        hub_cache = active_cache,
+        _schema_version = 2,
     )
     assert download_manifest.write_manifest(
         "dataset",
@@ -1020,10 +1020,10 @@ def test_startup_migrates_existing_ordinary_v2_manifests_across_cache_scopes(mon
         None,
         [download_manifest.ExpectedFile("train.parquet", 4)],
         "http",
-        hub_cache=inactive_cache,
-        commit_hash="commit-a",
-        metadata_derived=True,
-        _schema_version=2,
+        hub_cache = inactive_cache,
+        commit_hash = "commit-a",
+        metadata_derived = True,
+        _schema_version = 2,
     )
 
     assert download_manifest.migrate_ordinary_v2_manifests_for_downgrade() == 2
@@ -1035,10 +1035,10 @@ def test_startup_migrates_existing_ordinary_v2_manifests_across_cache_scopes(mon
             repo_type,
             repo_id,
             variant,
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         assert path is not None
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding = "utf-8"))
         assert payload["version"] == 1
         assert payload["expected_files"]
 
@@ -1046,7 +1046,7 @@ def test_startup_migrates_existing_ordinary_v2_manifests_across_cache_scopes(mon
         "dataset",
         "Org/Data",
         None,
-        hub_cache=inactive_cache,
+        hub_cache = inactive_cache,
     )
     assert dataset_manifest is not None
     assert dataset_manifest.version == 1
@@ -1090,17 +1090,17 @@ def test_startup_manifest_migration_preserves_dataset_completion_v2(monkeypatch,
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 4)],
         "http",
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert download_manifest.migrate_ordinary_v2_manifests_for_downgrade() == 0
 
     [path] = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 2
+    assert json.loads(path.read_text(encoding = "utf-8"))["version"] == 2
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is not None
     )
@@ -1119,25 +1119,25 @@ def test_startup_manifest_migration_leaves_untrusted_v2_records_untouched(
         "Org/Model",
         None,
         [download_manifest.ExpectedFile("model.safetensors", 8)],
-        hub_cache=hub_cache,
-        _schema_version=2,
+        hub_cache = hub_cache,
+        _schema_version = 2,
     )
     path = download_manifest.manifest_path(
         "model",
         "Org/Model",
         None,
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert path is not None
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding = "utf-8"))
     if invalid_record == "unsafe_path":
         payload["expected_files"][0]["path"] = "../outside.safetensors"
     else:
         payload["repo_id"] = "Other/Model"
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding = "utf-8")
 
     assert download_manifest.migrate_ordinary_v2_manifests_for_downgrade() == 0
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 2
+    assert json.loads(path.read_text(encoding = "utf-8"))["version"] == 2
 
 
 def test_startup_manifest_migration_skips_oversized_record(monkeypatch, tmp_path):
@@ -1150,14 +1150,14 @@ def test_startup_manifest_migration_skips_oversized_record(monkeypatch, tmp_path
         "Org/Model",
         None,
         [download_manifest.ExpectedFile("model.safetensors", 8)],
-        hub_cache=hub_cache,
-        _schema_version=2,
+        hub_cache = hub_cache,
+        _schema_version = 2,
     )
     path = download_manifest.manifest_path(
         "model",
         "Org/Model",
         None,
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert path is not None
     monkeypatch.setattr(
@@ -1167,7 +1167,7 @@ def test_startup_manifest_migration_skips_oversized_record(monkeypatch, tmp_path
     )
 
     assert download_manifest.migrate_ordinary_v2_manifests_for_downgrade() == 0
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 2
+    assert json.loads(path.read_text(encoding = "utf-8"))["version"] == 2
 
 
 def test_startup_manifest_migration_write_failure_keeps_v2_record(monkeypatch, tmp_path):
@@ -1180,14 +1180,14 @@ def test_startup_manifest_migration_write_failure_keeps_v2_record(monkeypatch, t
         "Org/Data",
         None,
         [download_manifest.ExpectedFile("train.parquet", 4)],
-        hub_cache=hub_cache,
-        _schema_version=2,
+        hub_cache = hub_cache,
+        _schema_version = 2,
     )
     path = download_manifest.manifest_path(
         "dataset",
         "Org/Data",
         None,
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     assert path is not None
     monkeypatch.setattr(
@@ -1197,11 +1197,11 @@ def test_startup_manifest_migration_write_failure_keeps_v2_record(monkeypatch, t
     )
 
     assert download_manifest.migrate_ordinary_v2_manifests_for_downgrade() == 0
-    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 2
+    assert json.loads(path.read_text(encoding = "utf-8"))["version"] == 2
 
 
 def test_manifest_compatibility_migration_runs_after_orphan_reaping():
-    source = (Path(__file__).resolve().parent.parent / "main.py").read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parent.parent / "main.py").read_text(encoding = "utf-8")
 
     reaper = source.index("reap_hub_orphan_workers()")
     migration = source.index("migrate_ordinary_v2_manifests_for_downgrade()")
@@ -1218,18 +1218,18 @@ def test_dataset_completion_rejects_missing_recorded_hub_cache(monkeypatch, tmp_
         "Org/Data",
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 4)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     [path] = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding = "utf-8"))
     payload["hub_cache"] = None
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding = "utf-8")
 
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is None
     )
@@ -1244,18 +1244,18 @@ def test_manifest_v2_rejects_non_string_variant(monkeypatch, tmp_path, variant):
         "Org/Data",
         "commit-a",
         [download_manifest.ExpectedFile("train.parquet", 2)],
-        hub_cache=hub_cache,
+        hub_cache = hub_cache,
     )
     [path] = list((tmp_path / "state" / "hub-state" / "manifests").rglob("*.json"))
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding = "utf-8"))
     payload["variant"] = variant
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding = "utf-8")
 
     assert (
         download_manifest.read_dataset_completion(
             "Org/Data",
             "commit-a",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         is None
     )
@@ -1272,13 +1272,13 @@ def test_repo_state_purge_uses_enumerated_variant_path(monkeypatch, tmp_path, st
             "Org/Model",
             "Q4_K_M",
             [download_manifest.ExpectedFile("model.gguf", 4)],
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         path = download_manifest.manifest_path(
             "model",
             "Org/Model",
             "Q4_K_M",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
     else:
         assert download_manifest.write_cancel_marker(
@@ -1286,24 +1286,24 @@ def test_repo_state_purge_uses_enumerated_variant_path(monkeypatch, tmp_path, st
             "Org/Model",
             "Q4_K_M",
             "http",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         path = download_manifest.marker_path(
             "model",
             "Org/Model",
             "Q4_K_M",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
     assert path is not None
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding = "utf-8"))
     payload["variant"] = "Q8_0"
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding = "utf-8")
 
     assert (
         download_manifest.purge_all_state_for_repo(
             "model",
             "Org/Model",
-            hub_cache=hub_cache,
+            hub_cache = hub_cache,
         )
         == 1
     )
@@ -1335,7 +1335,7 @@ def test_processed_cache_load_uses_selected_cache_root(monkeypatch, tmp_path):
     repo_id = "Org/Data"
     processed_root = tmp_path / "processed"
     processed = processed_root / "Org___Data"
-    processed.mkdir(parents=True)
+    processed.mkdir(parents = True)
     monkeypatch.setenv("HF_DATASETS_CACHE", str(processed_root))
     calls = _fake_datasets(monkeypatch)
 
@@ -1343,9 +1343,9 @@ def test_processed_cache_load_uses_selected_cache_root(monkeypatch, tmp_path):
     result = dataset_cache.load_cached_hf_dataset(
         repo_id,
         str(resolved),
-        subset=None,
-        split="train",
-        row_limit=2,
+        subset = None,
+        split = "train",
+        row_limit = 2,
     )
 
     assert resolved == processed.resolve()
@@ -1362,8 +1362,8 @@ def test_processed_cache_is_discovered_without_selected_path(monkeypatch, tmp_pa
     processed_root = tmp_path / "processed"
     processed = processed_root / "Org___Data"
     output = processed / "default" / "0.0.0" / "build-hash"
-    output.mkdir(parents=True)
-    (output / "dataset_info.json").write_text("{}", encoding="utf-8")
+    output.mkdir(parents = True)
+    (output / "dataset_info.json").write_text("{}", encoding = "utf-8")
     (output / "data-train.arrow").write_bytes(b"\xff\xff\xff\xff")
     monkeypatch.setenv("HF_DATASETS_CACHE", str(processed_root))
 
@@ -1378,7 +1378,7 @@ def test_processed_cache_rejects_lookalike_outside_known_root(monkeypatch, tmp_p
     allowed = tmp_path / "allowed"
     allowed.mkdir()
     foreign = tmp_path / "foreign" / "Org___Data"
-    foreign.mkdir(parents=True)
+    foreign.mkdir(parents = True)
     monkeypatch.setenv("HF_DATASETS_CACHE", str(allowed))
 
     assert dataset_cache.processed_dataset_cache_path(str(foreign), "Org/Data") is None
@@ -1426,8 +1426,8 @@ def test_unknown_dataset_split_error_is_dataset_fallback_only_through_exception_
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             wrapped,
-            require_exact=False,
-            revision=None,
+            require_exact = False,
+            revision = None,
         )
         is True
     )
@@ -1447,8 +1447,8 @@ def test_unknown_dataset_split_lookalikes_are_not_retryable(message):
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             error,
-            require_exact=False,
-            revision=None,
+            require_exact = False,
+            revision = None,
         )
         is False
     )
@@ -1456,22 +1456,22 @@ def test_unknown_dataset_split_lookalikes_are_not_retryable(message):
 
 def test_unknown_dataset_split_fallback_preserves_exact_and_offline_gates(monkeypatch):
     error = ValueError("Unknown split \"validation\". Should be one of ['train'].")
-    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
-    monkeypatch.delenv("HF_DATASETS_OFFLINE", raising=False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising = False)
+    monkeypatch.delenv("HF_DATASETS_OFFLINE", raising = False)
 
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             error,
-            require_exact=False,
-            revision="dataset-commit",
+            require_exact = False,
+            revision = "dataset-commit",
         )
         is True
     )
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             error,
-            require_exact=True,
-            revision=None,
+            require_exact = True,
+            revision = None,
         )
         is False
     )
@@ -1480,8 +1480,8 @@ def test_unknown_dataset_split_fallback_preserves_exact_and_offline_gates(monkey
     assert (
         dataset_cache.dataset_cache_fallback_allowed(
             error,
-            require_exact=False,
-            revision="dataset-commit",
+            require_exact = False,
+            revision = "dataset-commit",
         )
         is False
     )

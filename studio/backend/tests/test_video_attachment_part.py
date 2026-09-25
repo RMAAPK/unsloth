@@ -116,7 +116,7 @@ def test_the_cap_admits_a_clip_of_exactly_the_composer_limit():
 
 def _inference_source() -> str:
     return (Path(__file__).resolve().parent.parent / "routes" / "inference.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
 
 
@@ -173,17 +173,17 @@ def test_a_video_backend_is_handed_the_bare_clip():
     from models.inference import ChatCompletionRequest
     from routes.inference import _VIDEO_INPUT_REFUSAL, _local_video_clip
 
-    payload = ChatCompletionRequest(model="m", messages=[], video_base64=_DATA_URI)
-    assert _local_video_clip(payload, _model_info(has_video_input=True)) == _CLIP_B64
-    payload = ChatCompletionRequest(model="m", messages=[], video_base64=_CLIP_B64)
-    assert _local_video_clip(payload, _model_info(has_video_input=True)) == _CLIP_B64
+    payload = ChatCompletionRequest(model = "m", messages = [], video_base64 = _DATA_URI)
+    assert _local_video_clip(payload, _model_info(has_video_input = True)) == _CLIP_B64
+    payload = ChatCompletionRequest(model = "m", messages = [], video_base64 = _CLIP_B64)
+    assert _local_video_clip(payload, _model_info(has_video_input = True)) == _CLIP_B64
 
     with pytest.raises(HTTPException) as exc:
         _local_video_clip(payload, _model_info())
     assert exc.value.status_code == 400 and exc.value.detail == _VIDEO_INPUT_REFUSAL
-    payload = ChatCompletionRequest(model="m", messages=[], video_base64="data:video/mp4;base64,")
+    payload = ChatCompletionRequest(model = "m", messages = [], video_base64 = "data:video/mp4;base64,")
     with pytest.raises(HTTPException) as exc:
-        _local_video_clip(payload, _model_info(has_video_input=True))
+        _local_video_clip(payload, _model_info(has_video_input = True))
     assert exc.value.status_code == 400
 
 
@@ -248,14 +248,14 @@ def test_both_video_checks_share_one_rule():
 
 def _video_url_request(
     *urls,
-    text="what happens here?",
+    text = "what happens here?",
     **kw,
 ):
     from models.inference import ChatCompletionRequest
 
     parts = [{"type": "video_url", "video_url": {"url": url}} for url in urls]
     parts.append({"type": "text", "text": text})
-    return ChatCompletionRequest(messages=[{"role": "user", "content": parts}], **kw)
+    return ChatCompletionRequest(messages = [{"role": "user", "content": parts}], **kw)
 
 
 def test_a_video_url_part_validates_as_the_openai_shape():
@@ -271,7 +271,7 @@ def test_a_message_carried_clip_counts_as_video_input():
     from routes.inference import _request_has_video
 
     assert _request_has_video(_video_url_request("data:video/mp4;base64,QUJD")) is True
-    plain = ChatCompletionRequest(messages=[{"role": "user", "content": "hi"}])
+    plain = ChatCompletionRequest(messages = [{"role": "user", "content": "hi"}])
     assert _request_has_video(plain) is False
 
 
@@ -369,9 +369,8 @@ def test_every_data_uri_part_is_sized_not_only_the_first():
 
 def test_the_legacy_field_is_sized_beside_a_message_part():
     from routes.inference import _MAX_VIDEO_B64_CHARS, _request_video_rejection
-
     req = _video_url_request(
-        "https://example.com/clip.mp4", video_base64="A" * (_MAX_VIDEO_B64_CHARS + 1)
+        "https://example.com/clip.mp4", video_base64 = "A" * (_MAX_VIDEO_B64_CHARS + 1)
     )
     assert _request_video_rejection(req) == (413, "Video file is too large (max 64 MB).")
 
@@ -391,7 +390,6 @@ def test_admission_prices_a_message_clip_as_media_not_prompt_text():
 
 def test_the_rolling_context_does_not_price_a_video_url_part():
     from core.inference.context_window import estimate_message_tokens_without_unpriced_media
-
     message = {
         "role": "user",
         "content": [
@@ -420,7 +418,7 @@ def test_a_message_clip_reaches_the_switch_as_video(monkeypatch):
 
     monkeypatch.setattr(settings, "get_openai_auto_switch_enabled", lambda: True)
     monkeypatch.setattr(inference_route, "_maybe_auto_switch_model", _capture)
-    payload = _video_url_request("data:video/mp4;base64,QUJD", model="org/B-GGUF")
+    payload = _video_url_request("data:video/mp4;base64,QUJD", model = "org/B-GGUF")
     with pytest.raises(_Reached):
         asyncio.run(inference_route.openai_chat_completions(payload, object(), "tester"))
     assert captured["require_video"] is True
@@ -483,9 +481,9 @@ def test_a_clip_on_any_non_user_role_is_refused():
         {"role": "tool", "tool_call_id": "call_1", "content": parts},
     ):
         refusal = f'not valid on role="{message["role"]}"'
-        with pytest.raises(pydantic.ValidationError, match=refusal):
-            ChatCompletionRequest(messages=[{"role": "user", "content": "go"}, message])
-    ChatCompletionRequest(messages=[{"role": "user", "content": parts}])
+        with pytest.raises(pydantic.ValidationError, match = refusal):
+            ChatCompletionRequest(messages = [{"role": "user", "content": "go"}, message])
+    ChatCompletionRequest(messages = [{"role": "user", "content": parts}])
 
 
 def test_an_oversized_message_clip_is_refused_before_the_switch(monkeypatch):
@@ -504,7 +502,7 @@ def test_an_oversized_message_clip_is_refused_before_the_switch(monkeypatch):
     monkeypatch.setattr(inference_route, "_maybe_auto_switch_model", _switch)
     payload = _video_url_request(
         "data:video/mp4;base64," + "A" * (_MAX_VIDEO_B64_CHARS + 1),
-        model="org/B-GGUF",
+        model = "org/B-GGUF",
     )
     with pytest.raises(HTTPException) as info:
         asyncio.run(inference_route.openai_chat_completions(payload, object(), "tester"))

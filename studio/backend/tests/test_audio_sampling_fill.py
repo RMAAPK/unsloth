@@ -22,7 +22,7 @@ from starlette.requests import Request
 from utils.inference import inference_config as ic
 
 
-def _request(path = "/v1/audio/speech"):
+def _request(path="/v1/audio/speech"):
     """/v1/audio/speech opens an API monitor row, so it needs a real request."""
     return Request(
         {
@@ -47,7 +47,7 @@ class _FakeLlama:
 
 
 class _FakeTransformersBackend:
-    def __init__(self, audio_type = "snac"):
+    def __init__(self, audio_type="snac"):
         self.active_model_name = "some/custom-tts"
         self.models = {"some/custom-tts": {"is_audio": True, "audio_type": audio_type}}
         self.captured = {}
@@ -57,11 +57,11 @@ class _FakeTransformersBackend:
         return (b"RIFFfake", 24000)
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _isolate(monkeypatch):
     ic._recommended_sampling.cache_clear()
     for field in ic.SAMPLING_FIELD_NAMES:
-        monkeypatch.delenv(ic._SAMPLING_FIELDS[field][0], raising = False)
+        monkeypatch.delenv(ic._SAMPLING_FIELDS[field][0], raising=False)
     yield
     ic._recommended_sampling.cache_clear()
 
@@ -69,8 +69,8 @@ def _isolate(monkeypatch):
 def _run_generate_audio(
     monkeypatch,
     *,
-    recommended = None,
-    temperature = None,
+    recommended=None,
+    temperature=None,
 ):
     backend = _FakeTransformersBackend()
     monkeypatch.setattr(inference_route, "get_llama_cpp_backend", lambda: _FakeLlama())
@@ -90,12 +90,12 @@ def _run_generate_audio(
         kwargs["temperature"] = temperature
     payload = ChatCompletionRequest(**kwargs)
 
-    asyncio.run(inference_route.generate_audio(payload, request = None, current_subject = "t"))
+    asyncio.run(inference_route.generate_audio(payload, request=None, current_subject="t"))
     return backend.captured
 
 
 def test_audio_uses_recommended_sampling_when_omitted(monkeypatch):
-    captured = _run_generate_audio(monkeypatch, recommended = {"temperature": 1.0, "top_k": 64})
+    captured = _run_generate_audio(monkeypatch, recommended={"temperature": 1.0, "top_k": 64})
     assert captured["temperature"] == 1.0
     assert captured["top_k"] == 64
 
@@ -124,12 +124,12 @@ def test_moss_uses_the_published_audio_sampling_defaults(model_id):
 
 def test_audio_operator_pin_overrides_client(monkeypatch):
     monkeypatch.setenv("UNSLOTH_SAMPLING_TEMPERATURE", "0.9")
-    captured = _run_generate_audio(monkeypatch, recommended = {"temperature": 1.0}, temperature = 0.2)
+    captured = _run_generate_audio(monkeypatch, recommended={"temperature": 1.0}, temperature=0.2)
     assert captured["temperature"] == 0.9  # operator pin wins even over an explicit client value
 
 
 def test_audio_client_explicit_preserved(monkeypatch):
-    captured = _run_generate_audio(monkeypatch, recommended = {"temperature": 1.0}, temperature = 0.2)
+    captured = _run_generate_audio(monkeypatch, recommended={"temperature": 1.0}, temperature=0.2)
     assert captured["temperature"] == 0.2  # explicit client value preserved over recommendation
 
 
@@ -143,10 +143,10 @@ def test_audio_generate_returns_the_exact_persisted_clip_id(monkeypatch):
 
     monkeypatch.setattr(inference_route, "_maybe_auto_switch_model", _noop_switch)
     payload = ChatCompletionRequest(
-        model = "some/custom-tts", messages = [{"role": "user", "content": "hi"}]
+        model="some/custom-tts", messages=[{"role": "user", "content": "hi"}]
     )
     response = asyncio.run(
-        inference_route.generate_audio(payload, request = None, current_subject = "t")
+        inference_route.generate_audio(payload, request=None, current_subject="t")
     )
     body = json.loads(response.body)
     assert body["clip_id"]
@@ -154,7 +154,7 @@ def test_audio_generate_returns_the_exact_persisted_clip_id(monkeypatch):
 
 
 def test_whisper_is_rejected_cleanly_by_both_tts_endpoints(monkeypatch):
-    backend = _FakeTransformersBackend(audio_type = "whisper")
+    backend = _FakeTransformersBackend(audio_type="whisper")
     monkeypatch.setattr(inference_route, "get_llama_cpp_backend", lambda: _FakeLlama())
     monkeypatch.setattr(inference_route, "get_inference_backend", lambda: backend)
 
@@ -163,12 +163,12 @@ def test_whisper_is_rejected_cleanly_by_both_tts_endpoints(monkeypatch):
 
     monkeypatch.setattr(inference_route, "_maybe_auto_switch_model", _noop_switch)
     payload = ChatCompletionRequest(
-        model = "some/custom-tts", messages = [{"role": "user", "content": "hi"}]
+        model="some/custom-tts", messages=[{"role": "user", "content": "hi"}]
     )
-    speech = AudioSpeechRequest(input = "hi", model = "some/custom-tts")
+    speech = AudioSpeechRequest(input="hi", model="some/custom-tts")
     for request in (
-        inference_route.generate_audio(payload, request = None, current_subject = "t"),
-        inference_route.openai_audio_speech(speech, request = _request(), current_subject = "t"),
+        inference_route.generate_audio(payload, request=None, current_subject="t"),
+        inference_route.openai_audio_speech(speech, request=_request(), current_subject="t"),
     ):
         with pytest.raises(HTTPException) as exc:
             asyncio.run(request)

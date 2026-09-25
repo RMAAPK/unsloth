@@ -25,7 +25,7 @@ from core.rag import embed_llama_server as embed_mod
 _REAL_FINDER = LlamaCppBackend.__dict__["_find_llama_server_binary"]
 
 
-def _payload(rows, source="nvml"):
+def _payload(rows, source = "nvml"):
     return {
         "source": source,
         "cuda_driver_version": [13, 0],
@@ -37,8 +37,8 @@ def _payload(rows, source="nvml"):
 def _row(
     index,
     free,
-    total=24576,
-    uuid=None,
+    total = 24576,
+    uuid = None,
 ):
     return {
         "index": str(index),
@@ -56,21 +56,21 @@ def probe_script(tmp_path, monkeypatch):
     payload_path = tmp_path / "payload.json"
     script = tmp_path / "nvidia_probe.py"
     script.write_text(
-        f"import sys; sys.stdout.write(open({str(payload_path)!r}).read())\n", encoding="utf-8"
+        f"import sys; sys.stdout.write(open({str(payload_path)!r}).read())\n", encoding = "utf-8"
     )
     monkeypatch.setenv("UNSLOTH_NVIDIA_PROBE", str(script))
-    monkeypatch.delenv("UNSLOTH_NVIDIA_LIBRARY_PROBE", raising=False)
+    monkeypatch.delenv("UNSLOTH_NVIDIA_LIBRARY_PROBE", raising = False)
     monkeypatch.setattr(mod.sys, "platform", "linux")
 
     def write(payload):
-        payload_path.write_text(json.dumps(payload), encoding="utf-8")
+        payload_path.write_text(json.dumps(payload), encoding = "utf-8")
 
     return write
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _no_other_probes(monkeypatch):
-    monkeypatch.setattr(LlamaCppBackend, "_is_vulkan_backend", staticmethod(lambda b=None: False))
+    monkeypatch.setattr(LlamaCppBackend, "_is_vulkan_backend", staticmethod(lambda b = None: False))
     monkeypatch.setattr(
         LlamaCppBackend, "_find_llama_server_binary", staticmethod(lambda: "/opt/llama-server")
     )
@@ -79,7 +79,7 @@ def _no_other_probes(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "torch", None)
     for var in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
-        monkeypatch.delenv(var, raising=False)
+        monkeypatch.delenv(var, raising = False)
 
 
 def _failing_smi(monkeypatch):
@@ -87,7 +87,7 @@ def _failing_smi(monkeypatch):
 
     def run(cmd, *args, **kwargs):
         if cmd and os.path.basename(str(cmd[0])) == "nvidia-smi":
-            return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 1, stdout = "", stderr = "")
         return real_run(cmd, *args, **kwargs)
 
     monkeypatch.setattr(mod.subprocess, "run", run)
@@ -111,7 +111,7 @@ class TestTheMemoryProbeFallsBackToNvml:
     def test_a_uuid_mask_selects_by_the_rows_own_uuid(self, monkeypatch, probe_script):
         _failing_smi(monkeypatch)
         probe_script(
-            _payload([_row(0, 8000, uuid="GPU-aaaa1111-0"), _row(1, 20000, uuid="GPU-bbbb2222-1")])
+            _payload([_row(0, 8000, uuid = "GPU-aaaa1111-0"), _row(1, 20000, uuid = "GPU-bbbb2222-1")])
         )
         # A full uuid, a prefix, mask order, and a mixed index + uuid mask, as the CUDA runtime reads them.
         for mask, expected in (
@@ -132,8 +132,8 @@ class TestTheMemoryProbeFallsBackToNvml:
 
     def test_a_mig_assignment_names_the_slice_row_the_probe_lists(self, monkeypatch, probe_script):
         _failing_smi(monkeypatch)
-        slice_row = dict(_row(0, 9000, 20480, uuid="MIG-cccc3333-0"), mig="1")
-        probe_script(_payload([_row(0, 60000, 81920, uuid="GPU-aaaa1111-0"), slice_row]))
+        slice_row = dict(_row(0, 9000, 20480, uuid = "MIG-cccc3333-0"), mig = "1")
+        probe_script(_payload([_row(0, 60000, 81920, uuid = "GPU-aaaa1111-0"), slice_row]))
         monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "MIG-cccc")
         assert LlamaCppBackend._get_gpu_memory() == [(0, 9000, 20480)]
         # An index, a GPU- entry and no mask at all name the parent, and CUDA exposes its
@@ -149,8 +149,8 @@ class TestTheMemoryProbeFallsBackToNvml:
         monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "MIG-dddd")
         assert LlamaCppBackend._get_gpu_memory() == []
         # A second slice named by the mask is that slice, not the parent's first.
-        second = dict(_row(0, 4000, 10240, uuid="MIG-dddd4444-0"), mig="1")
-        probe_script(_payload([_row(0, 60000, 81920, uuid="GPU-aaaa1111-0"), slice_row, second]))
+        second = dict(_row(0, 4000, 10240, uuid = "MIG-dddd4444-0"), mig = "1")
+        probe_script(_payload([_row(0, 60000, 81920, uuid = "GPU-aaaa1111-0"), slice_row, second]))
         assert LlamaCppBackend._get_gpu_memory() == [(0, 4000, 10240)]
         assert LlamaCppBackend._child_visibility_for([0]) == "MIG-dddd4444-0"
         # Two slices of one card: one row per physical index, the first named, and the
@@ -164,12 +164,12 @@ class TestTheMemoryProbeFallsBackToNvml:
         mask in force when the launch asks, so another query answering in between (nvidia-smi
         recovering, a concurrent preflight) neither blanks it nor leaves a stale one."""
         _failing_smi(monkeypatch)
-        slice_row = dict(_row(0, 9000, 20480, uuid="MIG-cccc3333-0"), mig="1")
+        slice_row = dict(_row(0, 9000, 20480, uuid = "MIG-cccc3333-0"), mig = "1")
         probe_script(
             _payload(
                 [
-                    _row(0, 60000, 81920, uuid="GPU-aaaa1111-0"),
-                    _row(1, 20000, uuid="GPU-bbbb2222-1"),
+                    _row(0, 60000, 81920, uuid = "GPU-aaaa1111-0"),
+                    _row(1, 20000, uuid = "GPU-bbbb2222-1"),
                     slice_row,
                 ]
             )
@@ -180,7 +180,7 @@ class TestTheMemoryProbeFallsBackToNvml:
         def smi_ok(cmd, *args, **kwargs):
             if cmd and os.path.basename(str(cmd[0])) == "nvidia-smi":
                 return types.SimpleNamespace(
-                    returncode=0, stdout="0, 60000, 81920\n1, 20000, 24576\n", stderr=""
+                    returncode = 0, stdout = "0, 60000, 81920\n1, 20000, 24576\n", stderr = ""
                 )
             raise AssertionError("no other probe should run")
 
@@ -198,12 +198,12 @@ class TestTheMemoryProbeFallsBackToNvml:
 
     def test_a_uuid_mask_is_handed_to_the_child_as_uuids(self, monkeypatch, probe_script):
         _failing_smi(monkeypatch)
-        slice_row = dict(_row(0, 9000, 20480, uuid="MIG-cccc3333-0"), mig="1")
+        slice_row = dict(_row(0, 9000, 20480, uuid = "MIG-cccc3333-0"), mig = "1")
         probe_script(
             _payload(
                 [
-                    _row(0, 60000, 81920, uuid="GPU-aaaa1111-0"),
-                    _row(1, 20000, uuid="GPU-bbbb2222-1"),
+                    _row(0, 60000, 81920, uuid = "GPU-aaaa1111-0"),
+                    _row(1, 20000, uuid = "GPU-bbbb2222-1"),
                     slice_row,
                 ]
             )
@@ -228,7 +228,7 @@ class TestTheMemoryProbeFallsBackToNvml:
 
     def test_rows_without_a_memory_reading_are_not_evidence(self, monkeypatch, probe_script):
         _failing_smi(monkeypatch)
-        probe_script(_payload([_row(0, 0, 0)], source="cuda"))
+        probe_script(_payload([_row(0, 0, 0)], source = "cuda"))
         assert LlamaCppBackend._get_gpu_memory() == []
         probe_script(_payload([_row(0, 0, 0)]))
         assert LlamaCppBackend._get_gpu_memory() == []
@@ -248,7 +248,7 @@ class TestTheMemoryProbeFallsBackToNvml:
 
         def run(cmd, *args, **kwargs):
             if cmd and os.path.basename(str(cmd[0])) == "nvidia-smi":
-                return types.SimpleNamespace(returncode=0, stdout="0, 4096, 8192\n", stderr="")
+                return types.SimpleNamespace(returncode = 0, stdout = "0, 4096, 8192\n", stderr = "")
             return real_run(cmd, *args, **kwargs)
 
         monkeypatch.setattr(mod.subprocess, "run", run)
@@ -265,7 +265,7 @@ class TestTheMemoryProbeFallsBackToNvml:
         assert LlamaCppBackend._get_gpu_memory() == []
 
     def test_the_real_script_is_found_next_to_the_installers(self, monkeypatch):
-        monkeypatch.delenv("UNSLOTH_NVIDIA_PROBE", raising=False)
+        monkeypatch.delenv("UNSLOTH_NVIDIA_PROBE", raising = False)
         script = LlamaCppBackend._nvidia_probe_script()
         assert script is not None and script.name == "nvidia_probe.py"
         assert (script.parent / "install_llama_prebuilt.py").is_file()
@@ -280,12 +280,12 @@ class TestTheEmbeddingServerKeepsTheGpu:
         monkeypatch.setattr(hardware, "is_apple_silicon", lambda: False)  # Metal answers on a Mac
         monkeypatch.setattr(embed_mod.config, "embed_device_preference", lambda: "auto")
         monkeypatch.setattr(
-            LlamaCppBackend, "_arch_gate_survivors", staticmethod(lambda binary: []), raising=False
+            LlamaCppBackend, "_arch_gate_survivors", staticmethod(lambda binary: []), raising = False
         )
         server = embed_mod.LlamaServerBackend.__new__(embed_mod.LlamaServerBackend)
         server._force_cpu = False
         assert server._use_gpu() is True
-        cmd = server._build_cmd("/opt/llama-server", "m.gguf", 9999, use_gpu=True)
+        cmd = server._build_cmd("/opt/llama-server", "m.gguf", 9999, use_gpu = True)
         assert cmd[-2:] == ["-ngl", "-1"]
         # And the misread this closes: nothing answering pins the server to the CPU.
         probe_script(_payload([]))
@@ -299,7 +299,7 @@ class TestTheEmbeddingServerKeepsTheGpu:
         )
         monkeypatch.setattr(LlamaCppBackend, "_sanitize_p2p_env", staticmethod(lambda env: None))
         monkeypatch.setattr(
-            LlamaCppBackend, "_arch_gate_survivors", staticmethod(lambda b: []), raising=False
+            LlamaCppBackend, "_arch_gate_survivors", staticmethod(lambda b: []), raising = False
         )
         monkeypatch.setattr(
             LlamaCppBackend,
@@ -310,7 +310,7 @@ class TestTheEmbeddingServerKeepsTheGpu:
         )
         monkeypatch.setattr(mod, "_llama_lib_dir", lambda binary: Path("C:/llama/build/bin"))
         server = embed_mod.LlamaServerBackend.__new__(embed_mod.LlamaServerBackend)
-        env = server._build_env("C:/llama/llama-server.exe", use_gpu=True)
+        env = server._build_env("C:/llama/llama-server.exe", use_gpu = True)
         assert env["PATH"].split(";")[:2] == [
             str(Path("C:/llama/build/bin")),
             "C:\\venv\\nvidia\\cu13\\bin",
@@ -329,9 +329,9 @@ class TestAGpuCapableBuildIsPreferred:
         made = {}
         for build, libs in layouts.items():
             bindir = root / build / "bin" / ("Release" if platform == "win32" else "")
-            bindir.mkdir(parents=True, exist_ok=True)
+            bindir.mkdir(parents = True, exist_ok = True)
             exe = bindir / name
-            exe.write_text("#!/bin/sh\n", encoding="utf-8")
+            exe.write_text("#!/bin/sh\n", encoding = "utf-8")
             exe.chmod(0o755)
             for lib in libs:
                 (bindir / lib).write_bytes(b"")
@@ -355,7 +355,7 @@ class TestAGpuCapableBuildIsPreferred:
                 "build-cuda": [f"{pre}ggml-cuda{so}", f"{pre}ggml-cpu{so}", f"{pre}ggml-base{so}"],
             },
         )
-        assert ps.resolve_llama_server_binary(tmp_path, platform=platform) == made["build-cuda"]
+        assert ps.resolve_llama_server_binary(tmp_path, platform = platform) == made["build-cuda"]
         assert ps.binary_gpu_verdict(made["build"]) == "cpu"
         assert ps.binary_gpu_verdict(made["build-cuda"]) == "gpu"
 
@@ -379,13 +379,13 @@ class TestAGpuCapableBuildIsPreferred:
             ({"nvidia"}, "build-cuda"),
             (None, "build-cuda"),
         ):
-            monkeypatch.setattr(ps, "host_gpu_vendors", lambda v=vendors: v)
+            monkeypatch.setattr(ps, "host_gpu_vendors", lambda v = vendors: v)
             assert (
-                ps.resolve_llama_server_binary(tmp_path, platform="linux") == made[winner]
+                ps.resolve_llama_server_binary(tmp_path, platform = "linux") == made[winner]
             ), vendors
         # A vendor no build targets still gets the vendor-agnostic Vulkan build.
         monkeypatch.setattr(ps, "host_gpu_vendors", lambda: {"intel"})
-        assert ps.resolve_llama_server_binary(tmp_path, platform="linux") == made["build-vulkan"]
+        assert ps.resolve_llama_server_binary(tmp_path, platform = "linux") == made["build-vulkan"]
 
     def test_host_vendors_read_the_drm_sysfs(self, tmp_path, monkeypatch):
         from utils import llama_cpp_path_settings as ps
@@ -396,11 +396,11 @@ class TestAGpuCapableBuildIsPreferred:
         monkeypatch.setattr(ps.os.path, "exists", lambda p: p in nodes)
         monkeypatch.setattr(ps, "_DRM_ROOT", str(tmp_path))
         for var in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
-            monkeypatch.delenv(var, raising=False)
+            monkeypatch.delenv(var, raising = False)
         assert ps.host_gpu_vendors() is None
         for card, vendor in (("card0", "0x1002"), ("card1", "0x10de"), ("card1-DP-1", "0x10de")):
-            (tmp_path / card / "device").mkdir(parents=True)
-            (tmp_path / card / "device" / "vendor").write_text(vendor + "\n", encoding="utf-8")
+            (tmp_path / card / "device").mkdir(parents = True)
+            (tmp_path / card / "device" / "vendor").write_text(vendor + "\n", encoding = "utf-8")
         assert ps.host_gpu_vendors() == {"amd", "nvidia"}
         # A container exposing only the AMD device node, or a mask hiding NVIDIA: not runnable.
         nodes.discard("/dev/nvidiactl")
@@ -438,7 +438,7 @@ class TestAGpuCapableBuildIsPreferred:
         nodes = {"/dev/dxg"}
         monkeypatch.setattr(ps.os.path, "exists", lambda p: p in nodes or os.path.lexists(p))
         for var in ("CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
-            monkeypatch.delenv(var, raising=False)
+            monkeypatch.delenv(var, raising = False)
         assert ps.host_gpu_vendors() is None
         rocm.mkdir()
         (rocm / "librocdxg.so.1").write_bytes(b"")
@@ -460,21 +460,20 @@ class TestAGpuCapableBuildIsPreferred:
             tmp_path, "linux", {"build-cuda": ["libggml-cuda.so"], "build-hip": ["libggml-hip.so"]}
         )
         monkeypatch.setattr(ps, "host_gpu_vendors", lambda: {"amd"})
-        assert ps.resolve_llama_server_binary(tmp_path, platform="linux") == made["build-hip"]
+        assert ps.resolve_llama_server_binary(tmp_path, platform = "linux") == made["build-hip"]
         # On the NVIDIA box, or an unknown host, the first hit stands.
         for vendors in ({"nvidia"}, None):
-            monkeypatch.setattr(ps, "host_gpu_vendors", lambda v=vendors: v)
-            assert ps.resolve_llama_server_binary(tmp_path, platform="linux") == made["build-cuda"]
+            monkeypatch.setattr(ps, "host_gpu_vendors", lambda v = vendors: v)
+            assert ps.resolve_llama_server_binary(tmp_path, platform = "linux") == made["build-cuda"]
 
     def test_a_first_hit_of_unknown_layout_keeps_its_place(self, tmp_path):
         from utils import llama_cpp_path_settings as ps
-
         made = self._tree(tmp_path, "linux", {"build": [], "build-cuda": ["libggml-cuda.so"]})
         # A static build or the installer's wrapper: not proven CPU-only, so search order holds.
-        assert ps.resolve_llama_server_binary(tmp_path, platform="linux") == made["build"]
+        assert ps.resolve_llama_server_binary(tmp_path, platform = "linux") == made["build"]
 
     @pytest.mark.skipif(
-        sys.platform == "win32" or os.geteuid() == 0, reason="needs a real permission denial"
+        sys.platform == "win32" or os.geteuid() == 0, reason = "needs a real permission denial"
     )
     def test_a_denied_candidate_ahead_of_the_gpu_build_still_stops_discovery(
         self, tmp_path, monkeypatch
@@ -484,8 +483,8 @@ class TestAGpuCapableBuildIsPreferred:
         )
         monkeypatch.setattr(LlamaCppBackend, "_find_llama_server_binary", _REAL_FINDER)
         monkeypatch.setattr(mod.sys, "platform", "linux")
-        monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
-        monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
+        monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
+        monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
         monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(tmp_path))
         # An in-flight replace or an ACL: the pinned layout's build/ cannot be read at all.
         (tmp_path / "build" / "bin").chmod(0)
@@ -503,8 +502,8 @@ class TestAGpuCapableBuildIsPreferred:
         )
         monkeypatch.setattr(LlamaCppBackend, "_find_llama_server_binary", _REAL_FINDER)
         monkeypatch.setattr(mod.sys, "platform", "linux")
-        monkeypatch.delenv("LLAMA_SERVER_PATH", raising=False)
-        monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising=False)
+        monkeypatch.delenv("LLAMA_SERVER_PATH", raising = False)
+        monkeypatch.delenv("UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH", raising = False)
         monkeypatch.setenv("UNSLOTH_LLAMA_CPP_PATH", str(tmp_path))
         assert LlamaCppBackend._find_llama_server_binary() == str(made["build-cuda"])
 
@@ -525,7 +524,7 @@ class TestAGpuCapableBuildIsPreferred:
             "UNSLOTH_LLAMA_CPP_PATH",
             "UNSLOTH_STUDIO_MANAGED_LLAMA_CPP_PATH",
         ):
-            monkeypatch.delenv(var, raising=False)
+            monkeypatch.delenv(var, raising = False)
         monkeypatch.setattr(ps, "get_stored_custom_llama_cpp_path", lambda: None)
         monkeypatch.setattr(
             LlamaCppBackend,
@@ -537,7 +536,7 @@ class TestAGpuCapableBuildIsPreferred:
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="the Linux library path is built from posix paths"
+    sys.platform == "win32", reason = "the Linux library path is built from posix paths"
 )
 class TestTheLinuxLibrarySearchPath:
     @pytest.mark.parametrize("prefix_name", ["Studio", "Studio[CUDA]"])
@@ -546,8 +545,8 @@ class TestTheLinuxLibrarySearchPath:
         site = prefix / "lib" / "python3.12" / "site-packages"
         cu = site / "nvidia" / "cu13" / "lib"
         torch_lib = site / "torch" / "lib"
-        cu.mkdir(parents=True)
-        torch_lib.mkdir(parents=True)
+        cu.mkdir(parents = True)
+        torch_lib.mkdir(parents = True)
         monkeypatch.setattr(embed_mod.sys, "platform", "linux")
         monkeypatch.setattr(embed_mod.sys, "prefix", str(prefix))
         env: dict[str, str] = {}

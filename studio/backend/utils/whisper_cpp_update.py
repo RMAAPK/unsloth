@@ -303,7 +303,7 @@ def _install_latest_while_blocked(
     set_progress,
     *,
     pin_release_tag: Optional[str],
-    model_was_active: bool
+    model_was_active: bool,
 ) -> dict:
     """Run the installer with the sidecar already in update maintenance."""
 

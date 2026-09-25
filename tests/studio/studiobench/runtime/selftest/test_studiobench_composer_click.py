@@ -36,12 +36,12 @@ class _Session:
     def window(
         self,
         name,
-        kind="action",
+        kind = "action",
     ):
         self.opened.append((name, kind))
         time.sleep(TEARDOWN_S)  # the `open` hooks
         try:
-            yield types.SimpleNamespace(note=lambda *a: None)
+            yield types.SimpleNamespace(note = lambda *a: None)
         finally:
             time.sleep(TEARDOWN_S)  # the `close` hooks
 
@@ -50,14 +50,14 @@ class _Page:
     def wait_for_selector(
         self,
         selector,
-        timeout=None,
+        timeout = None,
     ):
         return None
 
     def click(
         self,
         selector,
-        timeout=None,
+        timeout = None,
     ):
         time.sleep(CLICK_S)
 
@@ -68,16 +68,16 @@ class _Page:
         return None
 
     def query_selector(self, selector):
-        return types.SimpleNamespace(click=lambda: None)
+        return types.SimpleNamespace(click = lambda: None)
 
 
 def _run():
     runner = types.SimpleNamespace(
-        session=_Session(),
-        click_probe=False,
-        log=lambda *a: None,
-        _composer_click_ms=None,
-        _click_attribution_result=None,
+        session = _Session(),
+        click_probe = False,
+        log = lambda *a: None,
+        _composer_click_ms = None,
+        _click_attribution_result = None,
     )
     CellRunner._press_send(runner, _Page())
     return runner
@@ -109,14 +109,14 @@ class _ProbePage(_Page):
     def evaluate(
         self,
         expr,
-        arg=None,
+        arg = None,
     ):
         return 0
 
     def query_selector(self, selector):
         return types.SimpleNamespace(
-            click=lambda: None,
-            bounding_box=lambda: {"x": 0.0, "y": 0.0, "width": 10.0, "height": 10.0},
+            click = lambda: None,
+            bounding_box = lambda: {"x": 0.0, "y": 0.0, "width": 10.0, "height": 10.0},
         )
 
     def dispatch_event(self, selector, event):
@@ -127,13 +127,13 @@ class _ProbePage(_Page):
 
     @property
     def mouse(self):
-        return types.SimpleNamespace(click=lambda *a: None, move=lambda *a: None)
+        return types.SimpleNamespace(click = lambda *a: None, move = lambda *a: None)
 
 
 def test_the_probe_block_validates_against_the_payload_schema():
     from studiobench.scoring.schema import validate_payload
 
-    runner = types.SimpleNamespace(session=_Session(), log=lambda *a: None)
+    runner = types.SimpleNamespace(session = _Session(), log = lambda *a: None)
     out = CellRunner._click_attribution(runner, _ProbePage(), "textarea")
 
     assert out["code_token_spans"] == 0

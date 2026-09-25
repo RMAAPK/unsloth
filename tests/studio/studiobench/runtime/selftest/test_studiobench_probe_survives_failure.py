@@ -56,22 +56,22 @@ class _Page:
     def goto(
         self,
         url,
-        wait_until=None,
-        timeout=None,
+        wait_until = None,
+        timeout = None,
     ):
         self._maybe_fail("goto")
 
     def wait_for_selector(
         self,
         selector,
-        timeout=None,
+        timeout = None,
     ):
         return None
 
     def evaluate(
         self,
         expr,
-        arg=None,
+        arg = None,
     ):
         if "counts()" in expr:
             return dict(CENSUS)
@@ -80,7 +80,7 @@ class _Page:
     def click(
         self,
         selector,
-        timeout=None,
+        timeout = None,
     ):
         return None
 
@@ -92,8 +92,8 @@ class _Page:
 
     def query_selector(self, selector):
         return types.SimpleNamespace(
-            click=lambda: None,
-            bounding_box=lambda: {"x": 0.0, "y": 0.0, "width": 10.0, "height": 10.0},
+            click = lambda: None,
+            bounding_box = lambda: {"x": 0.0, "y": 0.0, "width": 10.0, "height": 10.0},
         )
 
     def dispatch_event(self, selector, event):
@@ -104,7 +104,7 @@ class _Page:
 
     @property
     def mouse(self):
-        return types.SimpleNamespace(click=lambda *a: None, move=lambda *a: None)
+        return types.SimpleNamespace(click = lambda *a: None, move = lambda *a: None)
 
 
 class _Pacer:
@@ -128,31 +128,31 @@ class _Seeder:
         # unconditionally, and a stub that omits it fails on the attribute rather than on the failure
         # these tests are about.
         return types.SimpleNamespace(
-            thread_id="t-1",
-            seconds=0.0,
-            messages=0,
-            first_marker=None,
-            last_marker=None,
+            thread_id = "t-1",
+            seconds = 0.0,
+            messages = 0,
+            first_marker = None,
+            last_marker = None,
         )
 
 
 def _unit() -> Unit:
     return Unit(
-        index=0,
-        kind="reasoning",
-        reasoning="thinking about it ",
-        content="the answer ",
-        chars=29,
-        sha256="0" * 64,
+        index = 0,
+        kind = "reasoning",
+        reasoning = "thinking about it ",
+        content = "the answer ",
+        chars = 29,
+        sha256 = "0" * 64,
     )
 
 
 def _plan() -> RungPlan:
     return RungPlan(
-        rung="500K",
-        target_tokens=500_000,
-        target_chars=2_000_000,
-        streamed_unit=_unit(),
+        rung = "500K",
+        target_tokens = 500_000,
+        target_chars = 2_000_000,
+        streamed_unit = _unit(),
     )
 
 
@@ -165,36 +165,36 @@ def _runner(
     paths = Paths.under(tmp_path / "out")
     recorder = Recorder(paths.payload_jsonl, "sess-1")
     ctx = BenchContext(
-        page=_Page(fail_on=fail_on),
-        base_url="http://127.0.0.1:65535",
-        session_id="sess-1",
-        paths=paths,
-        recorder=recorder,
-        log=lambda *_a: None,
+        page = _Page(fail_on = fail_on),
+        base_url = "http://127.0.0.1:65535",
+        session_id = "sess-1",
+        paths = paths,
+        recorder = recorder,
+        log = lambda *_a: None,
     )
     runner = CellRunner(
-        session=Session(ctx=ctx),
-        pacer=_Pacer(),
-        seeder=_Seeder(),
-        corpus=None,
-        base_url=ctx.base_url,
-        model_id="m",
-        tier="quick",
-        paths=paths,
-        log=lambda *_a: None,
-        click_probe=click_probe,
+        session = Session(ctx = ctx),
+        pacer = _Pacer(),
+        seeder = _Seeder(),
+        corpus = None,
+        base_url = ctx.base_url,
+        model_id = "m",
+        tier = "quick",
+        paths = paths,
+        log = lambda *_a: None,
+        click_probe = click_probe,
     )
     return runner, paths, recorder
 
 
 def _cell(cell_id: str = "r500K.A0.rep0") -> Cell:
-    return Cell(cell_id=cell_id, rung="500K", rung_tokens=500_000, session_id="sess-1")
+    return Cell(cell_id = cell_id, rung = "500K", rung_tokens = 500_000, session_id = "sess-1")
 
 
 def _cell_rows(paths) -> list[dict]:
     rows = [
         json.loads(line)
-        for line in paths.payload_jsonl.read_text(encoding="utf-8").splitlines()
+        for line in paths.payload_jsonl.read_text(encoding = "utf-8").splitlines()
         if line
     ]
     return [r for r in rows if r.get("row_type") == "cell"]
@@ -203,7 +203,7 @@ def _cell_rows(paths) -> list[dict]:
 def test_a_cell_that_dies_after_the_probe_still_reports_the_attribution(tmp_path):
     """REGRESSION. The probe ran, the send did not, and the numbers must not go with it."""
 
-    runner, paths, recorder = _runner(tmp_path, click_probe=True)
+    runner, paths, recorder = _runner(tmp_path, click_probe = True)
     row = runner.run(_cell(), _plan())
     recorder.close()
 
@@ -229,11 +229,11 @@ def test_the_attribution_of_one_cell_never_lands_on_the_next(tmp_path):
     another's.
     """
 
-    runner, paths, recorder = _runner(tmp_path, click_probe=True)
+    runner, paths, recorder = _runner(tmp_path, click_probe = True)
     runner.run(_cell(), _plan())
 
     # The same runner, and this time the page is gone before the probe can run.
-    runner.session.ctx.page = _Page(fail_on="goto")
+    runner.session.ctx.page = _Page(fail_on = "goto")
     runner.run(_cell("r500K.A0.rep1"), _plan())
     recorder.close()
 
@@ -247,7 +247,7 @@ def test_a_cell_that_never_asked_for_the_probe_reports_none(tmp_path):
     """CONTROL. Without `--click-probe` there is nothing to preserve, and the failed cell says so
     by carrying no attribution at all rather than an empty one."""
 
-    runner, paths, recorder = _runner(tmp_path, click_probe=False)
+    runner, paths, recorder = _runner(tmp_path, click_probe = False)
     runner.run(_cell(), _plan())
     recorder.close()
 

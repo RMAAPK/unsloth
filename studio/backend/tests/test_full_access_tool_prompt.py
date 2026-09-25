@@ -63,7 +63,7 @@ def test_sandboxed_descriptions_are_unchanged():
 @pytest.mark.parametrize(
     "tool",
     [PYTHON_TOOL_FULL_ACCESS, TERMINAL_TOOL_FULL_ACCESS],
-    ids=["python", "terminal"],
+    ids = ["python", "terminal"],
 )
 def test_full_access_descriptions_drop_the_isolation_claim(tool):
     description = _desc(tool)
@@ -228,19 +228,19 @@ def test_swap_is_a_no_op_without_the_sandboxed_builtins():
 
 def _select(**payload_kwargs) -> list[dict]:
     payload = ChatCompletionRequest(
-        model="test-model",
-        messages=[{"role": "user", "content": "hi"}],
-        enable_tools=True,
-        enabled_tools=["python", "terminal", "web_search"],
-        stream=True,
+        model = "test-model",
+        messages = [{"role": "user", "content": "hi"}],
+        enable_tools = True,
+        enabled_tools = ["python", "terminal", "web_search"],
+        stream = True,
         **payload_kwargs,
     )
-    return asyncio.run(_select_request_tools(payload, tools_on=True, mcp_allowed=False))
+    return asyncio.run(_select_request_tools(payload, tools_on = True, mcp_allowed = False))
 
 
 @pytest.mark.parametrize("mode", ["ask", "auto", "off"])
 def test_non_full_modes_keep_the_sandboxed_schemas(mode):
-    tools = _select(permission_mode=mode)
+    tools = _select(permission_mode = mode)
     assert _desc(_named(tools, "python")) == _desc(PYTHON_TOOL)
     assert _desc(_named(tools, "terminal")) == _desc(TERMINAL_TOOL)
 
@@ -253,7 +253,7 @@ def test_omitted_mode_keeps_the_sandboxed_schemas():
 @pytest.mark.parametrize(
     "payload_kwargs",
     [{"permission_mode": "full"}, {"bypass_permissions": True}],
-    ids=["permission_mode", "legacy_bypass_flag"],
+    ids = ["permission_mode", "legacy_bypass_flag"],
 )
 def test_full_access_selection_swaps_the_schemas(payload_kwargs):
     """Both spellings fold to bypass_permissions=True, so both must swap."""
@@ -270,16 +270,16 @@ _WEB_ONLY = [t for t in ALL_TOOLS if t["function"]["name"] == "web_search"]
 
 
 def test_nudge_is_unchanged_without_full_access():
-    plain = _build_tool_action_nudge(tools=_CODE_TOOLS, model_name="test-8B")
+    plain = _build_tool_action_nudge(tools = _CODE_TOOLS, model_name = "test-8B")
     assert "sandbox" not in plain
     assert "code execution" in plain
     assert plain == _build_tool_action_nudge(
-        tools=_CODE_TOOLS, model_name="test-8B", full_access=False
+        tools = _CODE_TOOLS, model_name = "test-8B", full_access = False
     )
 
 
 def test_nudge_states_the_environment_under_full_access():
-    nudge = _build_tool_action_nudge(tools=_CODE_TOOLS, model_name="test-8B", full_access=True)
+    nudge = _build_tool_action_nudge(tools = _CODE_TOOLS, model_name = "test-8B", full_access = True)
     assert "where Unsloth Studio is running" in nudge
     assert "code sandbox and the approval prompts disabled" in nudge
     # Containerized Unsloth sees only its mounts, so the claim is scoped to what
@@ -302,13 +302,13 @@ def test_nudge_states_the_environment_under_full_access():
         # Order comes from _LOCAL_CODE_TOOLS, not from the caller's list.
         (["terminal", "python"], "The python and terminal tools run where"),
     ],
-    ids=["python_only", "terminal_only", "both", "reversed"],
+    ids = ["python_only", "terminal_only", "both", "reversed"],
 )
 def test_the_tip_names_only_the_selected_code_tools(enabled, expected):
     """enabled_tools=["python"] leaves terminal out of the request's schemas, so
     naming it would advertise a tool the loop would refuse to run."""
     tools = [t for t in ALL_TOOLS if t["function"]["name"] in enabled]
-    nudge = _build_tool_action_nudge(tools=tools, model_name="test-8B", full_access=True)
+    nudge = _build_tool_action_nudge(tools = tools, model_name = "test-8B", full_access = True)
     assert expected in nudge
     for absent in {"python", "terminal"} - set(enabled):
         assert f"The {absent} tool runs where" not in nudge
@@ -325,7 +325,7 @@ def test_full_access_only_returns_the_sentence_alone():
     """The Codex studio-tools path has never carried the general tool nudge, so
     it takes the Full access sentence without the date or the base guidance."""
     only = _build_tool_action_nudge(
-        tools=_CODE_TOOLS, model_name="test-8B", full_access=True, full_access_only=True
+        tools = _CODE_TOOLS, model_name = "test-8B", full_access = True, full_access_only = True
     )
     assert only == _full_access_tip(["python", "terminal"])
     assert "The current date is" not in only
@@ -335,12 +335,12 @@ def test_full_access_only_returns_the_sentence_alone():
 @pytest.mark.parametrize(
     "kwargs",
     [{"full_access": False}, {"full_access": True, "tools": _WEB_ONLY}],
-    ids=["not_full_access", "no_code_tool"],
+    ids = ["not_full_access", "no_code_tool"],
 )
 def test_full_access_only_is_empty_when_it_does_not_apply(kwargs):
     tools = kwargs.pop("tools", _CODE_TOOLS)
     assert (
-        _build_tool_action_nudge(tools=tools, model_name="test-8B", full_access_only=True, **kwargs)
+        _build_tool_action_nudge(tools = tools, model_name = "test-8B", full_access_only = True, **kwargs)
         == ""
     )
 
@@ -348,13 +348,13 @@ def test_full_access_only_is_empty_when_it_does_not_apply(kwargs):
 def test_full_access_tip_needs_a_code_tool():
     """web_search alone runs nothing locally, so the sandbox sentence would be
     noise (and false)."""
-    nudge = _build_tool_action_nudge(tools=_WEB_ONLY, model_name="test-8B", full_access=True)
+    nudge = _build_tool_action_nudge(tools = _WEB_ONLY, model_name = "test-8B", full_access = True)
     assert "where Unsloth Studio is running" not in nudge
-    assert nudge == _build_tool_action_nudge(tools=_WEB_ONLY, model_name="test-8B")
+    assert nudge == _build_tool_action_nudge(tools = _WEB_ONLY, model_name = "test-8B")
 
 
 def test_full_access_tip_needs_tools_at_all():
-    assert _build_tool_action_nudge(tools=[], model_name="test-8B", full_access=True) == ""
+    assert _build_tool_action_nudge(tools = [], model_name = "test-8B", full_access = True) == ""
 
 
 # ── Token count parity ────────────────────────────────────────────────
@@ -362,10 +362,10 @@ def test_full_access_tip_needs_tools_at_all():
 
 def _count_request(**kwargs) -> ChatCountTokensRequest:
     return ChatCountTokensRequest(
-        model="test-model",
-        messages=[{"role": "user", "content": "hi"}],
-        enable_tools=True,
-        enabled_tools=["python", "terminal"],
+        model = "test-model",
+        messages = [{"role": "user", "content": "hi"}],
+        enable_tools = True,
+        enabled_tools = ["python", "terminal"],
         **kwargs,
     )
 
@@ -410,7 +410,7 @@ def test_count_request_reads_the_flag_when_omitted():
 @pytest.mark.parametrize(
     "kwargs",
     [{"permission_mode": "full"}, {"bypass_permissions": True}],
-    ids=["permission_mode", "legacy_bypass_flag"],
+    ids = ["permission_mode", "legacy_bypass_flag"],
 )
 def test_count_request_folds_full_access(kwargs):
     request = _count_request(**kwargs)
@@ -420,7 +420,7 @@ def test_count_request_folds_full_access(kwargs):
 
 @pytest.mark.parametrize("mode", ["ask", "auto", "off"])
 def test_count_request_leaves_other_modes_alone(mode):
-    assert _count_request(permission_mode=mode).bypass_permissions is None
+    assert _count_request(permission_mode = mode).bypass_permissions is None
 
 
 def test_count_request_selection_matches_the_completion():
@@ -428,7 +428,7 @@ def test_count_request_selection_matches_the_completion():
     the completion will render."""
     counted = asyncio.run(
         _select_request_tools(
-            _count_request(permission_mode="full"), tools_on=True, mcp_allowed=False
+            _count_request(permission_mode = "full"), tools_on = True, mcp_allowed = False
         )
     )
     assert _desc(_named(counted, "python")) == _desc(PYTHON_TOOL_FULL_ACCESS)
@@ -436,17 +436,16 @@ def test_count_request_selection_matches_the_completion():
 
 def _sandbox_site_dir():
     from pathlib import Path
-
     return Path(tools.__file__).resolve().parent / "sandbox_site"
 
 
 # hasattr, not the win32 marker above: a marker's argument is evaluated when the decorator
 # is applied, so os.geteuid() runs at import on a platform that has no geteuid and takes the
 # whole module down at collection, every test in it, not just this one.
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX directory modes")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX directory modes")
 @pytest.mark.skipif(
     hasattr(os, "geteuid") and os.geteuid() == 0,
-    reason="root ignores a mode-500 directory",
+    reason = "root ignores a mode-500 directory",
 )
 def test_the_mkdir_clause_promises_an_attempt_not_a_created_directory(tmp_path):
     """The unrewritten mkdir path is an attempt, and the clause may not promise more.
@@ -487,11 +486,11 @@ def test_the_mkdir_clause_promises_an_attempt_not_a_created_directory(tmp_path):
                 "                  'workdir': sorted(os.listdir('.'))}))\n",
                 str(readonly),
             ],
-            cwd=workdir,
-            env={**os.environ, "PYTHONPATH": str(_sandbox_site_dir())},
-            capture_output=True,
-            text=True,
-            timeout=120,
+            cwd = workdir,
+            env = {**os.environ, "PYTHONPATH": str(_sandbox_site_dir())},
+            capture_output = True,
+            text = True,
+            timeout = 120,
         )
     finally:
         readonly.chmod(0o700)
@@ -513,8 +512,8 @@ def test_the_mkdir_clause_promises_an_attempt_not_a_created_directory(tmp_path):
     assert "attempts the real host path" in full
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="POSIX directory modes")
-@pytest.mark.skipif(os.path.exists("/mnt/data"), reason="a real mount is never shadowed")
+@pytest.mark.skipif(sys.platform == "win32", reason = "POSIX directory modes")
+@pytest.mark.skipif(os.path.exists("/mnt/data"), reason = "a real mount is never shadowed")
 def test_the_mkdir_clause_is_scoped_to_parents_outside_the_convention_prefixes(tmp_path):
     """Inside a convention prefix, makedirs IS rewritten, so the clause cannot be flat.
 
@@ -544,11 +543,11 @@ def test_the_mkdir_clause_is_scoped_to_parents_outside_the_convention_prefixes(t
             "print(json.dumps({'outcome': outcome, 'host': os.path.exists(target),\n"
             "                  'workdir': sorted(os.listdir('.'))}))\n",
         ],
-        cwd=workdir,
-        env={**os.environ, "PYTHONPATH": str(_sandbox_site_dir())},
-        capture_output=True,
-        text=True,
-        timeout=120,
+        cwd = workdir,
+        env = {**os.environ, "PYTHONPATH": str(_sandbox_site_dir())},
+        capture_output = True,
+        text = True,
+        timeout = 120,
     )
     assert probe.returncode == 0, probe.stderr
     measured = json.loads(probe.stdout.strip().splitlines()[-1])

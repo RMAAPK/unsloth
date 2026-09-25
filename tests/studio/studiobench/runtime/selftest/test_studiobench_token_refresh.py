@@ -151,7 +151,7 @@ def studio():
     state = _State()
     handler = type("_Bound", (_Handler,), {"state": state})
     server = HTTPServer(("127.0.0.1", 0), handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(target = server.serve_forever, daemon = True)
     thread.start()
     try:
         yield f"http://127.0.0.1:{server.server_port}", state
@@ -167,13 +167,13 @@ def test_the_token_a_run_was_handed_stops_working(studio):
     request for the rest of the run -- reproduced at six seconds instead of sixty minutes.
     """
     base_url, _state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     frozen = auth.access_token
 
-    assert request_json(f"{base_url}/api/chat/threads", method="POST", token=frozen, body={})
+    assert request_json(f"{base_url}/api/chat/threads", method = "POST", token = frozen, body = {})
     time.sleep(TOKEN_TTL_S + 0.5)
     with pytest.raises(HttpError) as caught:
-        request_json(f"{base_url}/api/chat/threads", method="POST", token=frozen, body={})
+        request_json(f"{base_url}/api/chat/threads", method = "POST", token = frozen, body = {})
     assert caught.value.status == 401
 
 
@@ -186,8 +186,8 @@ def test_the_seeder_keeps_working_after_its_token_expires(studio, monkeypatch):
     """
     monkeypatch.setattr(lifecycle, "TOKEN_REFRESH_MARGIN_S", TEST_MARGIN_S)
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
-    seeder = Seeder(base_url=base_url, auth=auth, model_id="m", log=lambda *_a: None)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
+    seeder = Seeder(base_url = base_url, auth = auth, model_id = "m", log = lambda *_a: None)
 
     assert seeder.create_thread()
     assert auth.rotations == 0
@@ -214,11 +214,11 @@ def test_the_token_is_replaced_before_it_expires_not_after_it_fails(studio, monk
     """
     monkeypatch.setattr(lifecycle, "TOKEN_REFRESH_MARGIN_S", TEST_MARGIN_S)
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     # Inside the margin and NOT yet expired: the server would still accept the old token, and it is replaced anyway.
     time.sleep(TOKEN_TTL_S - TEST_MARGIN_S / 2)
 
-    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert auth.rotations == 1
     assert state.rejections == 0
 
@@ -228,12 +228,12 @@ def test_a_401_that_arrives_anyway_is_recovered(studio):
     offset against the server, or an Unsloth restarted underneath the run. One retry, then the
     refusal is real and is raised."""
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     # Fresh by this process's reckoning, and refused by the server regardless.
     auth.expires_at = time.time() + 10_000
     state.reject_next = 1
 
-    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert auth.rotations == 1
     assert state.rejections == 1
 
@@ -241,12 +241,12 @@ def test_a_401_that_arrives_anyway_is_recovered(studio):
 def test_a_refusal_that_survives_a_fresh_login_is_raised(studio):
     """Not looped on. Two refusals in a row is a real 401 and the caller has to see it."""
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     auth.expires_at = time.time() + 10_000
     state.reject_next = 2
 
     with pytest.raises(HttpError) as caught:
-        auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+        auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert caught.value.status == 401
 
 
@@ -260,13 +260,13 @@ def test_a_login_that_is_refused_is_not_retried_as_if_it_were_the_request(studio
     429 that says nothing about the password.
     """
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     auth.password = "not-the-password"
     auth.expires_at = time.time() - 1
     attempts_before = state.login_attempts
 
     with pytest.raises(HttpError) as caught:
-        auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+        auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert caught.value.status == 401
     assert state.login_attempts == attempts_before + 1
 
@@ -280,16 +280,16 @@ def test_a_clock_that_makes_every_token_look_stale_stops_the_proactive_half(stud
     and append another init script to the browser context. One rotation is enough to find that out.
     """
     base_url, state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     assert auth.proactive is True
 
-    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert auth.rotations == 1
     assert auth.proactive is False
 
     # And it does not keep doing it. The token is valid, so the request goes out on it untouched.
     logins = state.logins
-    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert state.logins == logins
     assert auth.rotations == 1
 
@@ -300,7 +300,7 @@ def test_a_failing_rotation_hook_does_not_fail_the_request(studio):
     replaced by then and the request has to go out."""
     monkeypatch_error = RuntimeError("Target page, context or browser has been closed")
     base_url, _state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
 
     def _boom(_auth):
         raise monkeypatch_error
@@ -308,7 +308,7 @@ def test_a_failing_rotation_hook_does_not_fail_the_request(studio):
     auth.on_rotate = _boom
     auth.expires_at = time.time() - 1
 
-    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method="POST", body={})
+    assert auth_request_json(auth, f"{base_url}/api/chat/threads", method = "POST", body = {})
     assert auth.rotations == 1
     assert "Target page" in (auth.hook_error or "")
 
@@ -330,7 +330,7 @@ def test_rotating_notifies_whoever_seeded_the_browser(studio):
     """The page's localStorage is seeded from a SNAPSHOT of these values, and an init script
     re-runs on every navigation, so the owner of that context is told when they go stale."""
     base_url, _state = studio
-    auth = authenticate(base_url, "bench", PASSWORD, new_password=PASSWORD)
+    auth = authenticate(base_url, "bench", PASSWORD, new_password = PASSWORD)
     seen: list[str] = []
     auth.on_rotate = lambda a: seen.append(a.access_token)
 
@@ -343,13 +343,13 @@ def test_an_opaque_token_falls_back_to_the_documented_lifetime():
     from studiobench.runtime.lifecycle import ACCESS_TOKEN_TTL_S
 
     auth = StudioAuth(
-        access_token="not-a-jwt",
-        refresh_token="",
-        base_url="http://127.0.0.1:1",
-        username="bench",
-        password=PASSWORD,
+        access_token = "not-a-jwt",
+        refresh_token = "",
+        base_url = "http://127.0.0.1:1",
+        username = "bench",
+        password = PASSWORD,
     )
-    assert auth.seconds_left() == pytest.approx(ACCESS_TOKEN_TTL_S, abs=5)
+    assert auth.seconds_left() == pytest.approx(ACCESS_TOKEN_TTL_S, abs = 5)
 
 
 def test_the_page_is_seeded_with_the_refresh_key_the_app_actually_reads():
@@ -369,18 +369,18 @@ def test_the_page_is_seeded_with_the_refresh_key_the_app_actually_reads():
     if not session_ts.exists():
         pytest.skip("the frontend source is not in this tree")
     key = ""
-    for line in session_ts.read_text(encoding="utf-8").splitlines():
+    for line in session_ts.read_text(encoding = "utf-8").splitlines():
         if "AUTH_REFRESH_TOKEN_KEY" in line and "=" in line:
             key = line.split('"')[1]
             break
     assert key, "AUTH_REFRESH_TOKEN_KEY was not found in session.ts"
 
     auth = StudioAuth(
-        access_token="access-token",
-        refresh_token="refresh-token",
-        base_url="http://127.0.0.1:1",
-        username="bench",
-        password=PASSWORD,
+        access_token = "access-token",
+        refresh_token = "refresh-token",
+        base_url = "http://127.0.0.1:1",
+        username = "bench",
+        password = PASSWORD,
     )
     script = seed_init_script(auth, [])
     assert f'"{key}": "refresh-token"' in script or f'"{key}":"refresh-token"' in script
@@ -390,11 +390,11 @@ def _seed_script_for(exp: float, label: str) -> str:
     """A seed script carrying a JWT that expires at `exp`."""
     token = f"{_b64({'alg': 'HS256'})}.{_b64({'sub': 'bench', 'exp': exp})}.{label}"
     auth = StudioAuth(
-        access_token=token,
-        refresh_token=f"refresh-{label}",
-        base_url="http://127.0.0.1:1",
-        username="bench",
-        password=PASSWORD,
+        access_token = token,
+        refresh_token = f"refresh-{label}",
+        base_url = "http://127.0.0.1:1",
+        username = "bench",
+        password = PASSWORD,
     )
     return seed_init_script(auth, [])
 
@@ -417,7 +417,7 @@ def _run_in_node(scripts: list) -> dict:
         + "\nconsole.log(JSON.stringify(Object.fromEntries(store)));\n"
     )
     out = subprocess.run(
-        ["node", "-e", harness], capture_output=True, text=True, timeout=60, check=True
+        ["node", "-e", harness], capture_output = True, text = True, timeout = 60, check = True
     )
     return _json.loads(out.stdout.strip().splitlines()[-1])
 

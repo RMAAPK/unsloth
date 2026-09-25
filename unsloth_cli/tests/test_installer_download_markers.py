@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.skipif(os.name == "nt", reason = "drives install.sh under /bin/sh")
+pytestmark = pytest.mark.skipif(os.name == "nt", reason="drives install.sh under /bin/sh")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _INSTALL_SH = _REPO_ROOT / "install.sh"
@@ -68,7 +68,7 @@ def _expected(short: list[str]) -> list[str]:
 
 
 def _extract(name: str) -> str:
-    source = _INSTALL_SH.read_text(encoding = "utf-8")
+    source = _INSTALL_SH.read_text(encoding="utf-8")
     match = re.search(rf"^{name}\(\) \{{.*?^\}}", source, re.MULTILINE | re.DOTALL)
     assert match, f"install.sh no longer defines {name}"
     return match.group(0)
@@ -84,7 +84,7 @@ _redact_install_output() { cat "$@"; }
 
 def _extract_default() -> str:
     """install.sh's own threshold default, so changing the shipped value changes the test."""
-    source = _INSTALL_SH.read_text(encoding = "utf-8")
+    source = _INSTALL_SH.read_text(encoding="utf-8")
     match = re.search(r'^: "\$\{UNSLOTH_DL_MARKER_MIN_BYTES:=\d+\}"$', source, re.MULTILINE)
     assert match, "install.sh no longer defaults UNSLOTH_DL_MARKER_MIN_BYTES"
     return match.group(0)
@@ -111,7 +111,7 @@ def _run(
     path: str | None = None,
 ):
     """Drive the real run_install_cmd, with only its collaborators stubbed."""
-    env = dict(_ENV, UV_OUTPUT = output)
+    env = dict(_ENV, UV_OUTPUT=output)
     if path:
         env["PATH"] = path
     # Left unset by default so install.sh's own shipped threshold is what runs.
@@ -123,10 +123,10 @@ def _run(
         env["VERBOSE_MODE"] = "1"
     done = subprocess.run(
         ["/bin/sh", "-c", _sh_harness(f'printf "%s" "$UV_OUTPUT"; exit {exit_code}')],
-        capture_output = True,
-        text = True,
-        env = env,
-        timeout = 60,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
     )
     assert done.returncode == 0, done.stderr
     # Markers ride stderr so the verbose path's block-buffering redactor cannot delay them.
@@ -158,14 +158,14 @@ def test_only_downloads_worth_waiting_for_become_markers(options, expected):
 
 def test_a_failure_still_shows_the_childs_whole_output():
     # The added pipe must not cost the failure path the log it exists to print.
-    _, rc, shown = _run(exit_code = 42)
+    _, rc, shown = _run(exit_code=42)
     assert rc == "42"
     assert _UV_OUTPUT.strip() in shown
 
 
 @pytest.mark.parametrize("exit_code", [0, 42])
 def test_the_exit_code_survives_the_added_pipe(exit_code):
-    _, rc, _ = _run(exit_code = exit_code)
+    _, rc, _ = _run(exit_code=exit_code)
     assert rc == str(exit_code)
 
 
@@ -181,9 +181,9 @@ def test_a_host_without_awk_still_installs(verbose):
             found = shutil.which(tool)
             if found:
                 (stub / tool).symlink_to(found)
-        assert shutil.which("awk", path = str(stub)) is None, "the sandbox must still have no awk"
-        ok_markers, ok_rc, ok_shown = _run(path = str(stub), verbose = verbose)
-        markers, rc, shown = _run(exit_code = 42, path = str(stub), verbose = verbose)
+        assert shutil.which("awk", path=str(stub)) is None, "the sandbox must still have no awk"
+        ok_markers, ok_rc, ok_shown = _run(path=str(stub), verbose=verbose)
+        markers, rc, shown = _run(exit_code=42, path=str(stub), verbose=verbose)
     assert (ok_rc, rc) == ("0", "42"), "a missing awk turned into SIGPIPE"
     assert markers == [] and ok_markers == [], "markers cannot be produced without awk"
     assert _UV_OUTPUT.strip() in shown, "the failure path lost the child's output"
@@ -197,11 +197,11 @@ def test_a_marker_arrives_while_its_download_is_still_running():
     # too late. Verbose is the arm with the block-buffering redactor.
     proc = subprocess.Popen(
         ["/bin/sh", "-c", _sh_harness('printf "Downloading torch (2.4GiB)\\n"; sleep 30')],
-        stdout = subprocess.DEVNULL,
-        stderr = subprocess.PIPE,
-        text = True,
-        env = dict(_ENV, TAURI_MODE = "true", VERBOSE_MODE = "1"),
-        start_new_session = True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=dict(_ENV, TAURI_MODE="true", VERBOSE_MODE="1"),
+        start_new_session=True,
     )
     try:
         assert select.select([proc.stderr], [], [], 15)[0], "no marker while the download ran"
@@ -217,7 +217,7 @@ _PWSH = shutil.which("pwsh") or shutil.which("powershell")
 
 def _ps1_block(first: str, last: str) -> str:
     """install.ps1 source, from the definition of `first` through the end of `last`."""
-    ps1 = _INSTALL_PS1.read_text(encoding = "utf-8")
+    ps1 = _INSTALL_PS1.read_text(encoding="utf-8")
     start = ps1.find(f"    function {first} {{")
     tail = ps1.find(f"    function {last} {{")
     assert start >= 0 and tail >= start, f"install.ps1 no longer defines {first}..{last}"
@@ -252,19 +252,19 @@ def _run_ps1(
         env["UNSLOTH_DL_MARKER_MIN_BYTES"] = min_bytes
     with tempfile.TemporaryDirectory() as tmp:
         script = Path(tmp) / "probe.ps1"
-        script.write_text(probe, encoding = "utf-8")
+        script.write_text(probe, encoding="utf-8")
         done = subprocess.run(
             [_PWSH, "-NoProfile", "-File", str(script)],
-            capture_output = True,
-            text = True,
-            env = env,
-            timeout = 120,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=120,
         )
     assert done.returncode == 0, done.stderr
     return [line for line in done.stdout.splitlines() if line.startswith("[TAURI:DL")]
 
 
-@pytest.mark.skipif(_PWSH is None, reason = "needs PowerShell to run install.ps1")
+@pytest.mark.skipif(_PWSH is None, reason="needs PowerShell to run install.ps1")
 @pytest.mark.parametrize(
     "options",
     [
@@ -285,5 +285,5 @@ def test_both_installers_ship_the_same_threshold():
     # Execution only brackets the default between two fixture sizes; the literal pins it exactly, and
     # pins the two installers to each other so they cannot drift apart.
     assert _extract_default() == f': "${{UNSLOTH_DL_MARKER_MIN_BYTES:={_THRESHOLD}}}"'
-    ps1 = _INSTALL_PS1.read_text(encoding = "utf-8")
+    ps1 = _INSTALL_PS1.read_text(encoding="utf-8")
     assert f"$script:UvDownloadMarkerMinBytes = {_THRESHOLD}" in ps1

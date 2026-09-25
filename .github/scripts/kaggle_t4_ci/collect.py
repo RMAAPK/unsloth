@@ -101,7 +101,7 @@ STATUS_CONTEXTS = {
 
 
 def _log(msg: str) -> None:
-    print(f"[collect] {msg}", flush=True)
+    print(f"[collect] {msg}", flush = True)
 
 
 def _out(key: str, value: str) -> None:
@@ -109,7 +109,7 @@ def _out(key: str, value: str) -> None:
     if not path:
         return
     try:
-        with open(path, "a", encoding="utf-8") as fh:
+        with open(path, "a", encoding = "utf-8") as fh:
             fh.write(f"{key}={value}\n")
     except OSError:
         pass
@@ -146,14 +146,14 @@ def find_ours(
     ends at the first page entirely older than ``horizon_hours`` carrying none
     of ours, at ``deadline``, or at ``max_pages``.
     """
-    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    now = now or datetime.now(timezone.utc).replace(tzinfo = None)
     found: list[dict] = []
     for page in range(1, max_pages + 1):
         if deadline is not None and time.time() >= deadline:
             _log(f"listing stopped at page {page}: out of budget")
             break
         kernels = (
-            api.kernels_list(mine=True, page=page, page_size=page_size, sort_by="dateRun") or []
+            api.kernels_list(mine = True, page = page, page_size = page_size, sort_by = "dateRun") or []
         )
         if not kernels:
             break
@@ -245,7 +245,7 @@ def _evidence_lines(dest: Path):
     """Every line of driver output in the collected evidence, notebooks first."""
     for nb_path in sorted(dest.rglob(f"*{launch.OUTPUT_SUFFIX}")):
         try:
-            nb = json.loads(nb_path.read_text(encoding="utf-8", errors="replace"))
+            nb = json.loads(nb_path.read_text(encoding = "utf-8", errors = "replace"))
         except Exception:  # noqa: BLE001
             continue
         # Valid JSON that is not a notebook is skipped, not raised on: this
@@ -265,7 +265,7 @@ def _evidence_lines(dest: Path):
                 if isinstance(text, str):
                     yield from text.splitlines()
     for log_path in sorted(dest.rglob("kernel.log")):
-        raw = log_path.read_text(encoding="utf-8", errors="replace")
+        raw = log_path.read_text(encoding = "utf-8", errors = "replace")
         yield from launch.flatten_kernel_log(raw).splitlines()
 
 
@@ -350,7 +350,7 @@ def collect_one(
                 "quota and would not have produced a result"
             )
             if delete:
-                record["deleted"] = launch.delete_kernel(slug, deadline=deadline)
+                record["deleted"] = launch.delete_kernel(slug, deadline = deadline)
                 if record["deleted"]:
                     record["reason"] = record["reason"].replace(
                         "is released for deletion", "was deleted"
@@ -390,7 +390,7 @@ def collect_one(
         evidence_deadline = time.time() + EVIDENCE_BUDGET_SEC
         if deadline is not None:
             evidence_deadline = min(evidence_deadline, deadline)
-        evidence = launch.fetch_evidence(slug, dest, deadline=evidence_deadline)
+        evidence = launch.fetch_evidence(slug, dest, deadline = evidence_deadline)
     except Exception as exc:  # noqa: BLE001
         record["evidence"] = None
         if _gone(exc):
@@ -460,7 +460,7 @@ def collect_one(
     record["verdict"] = verdict
     record["reason"] = reason
     if delete:
-        record["deleted"] = launch.delete_kernel(slug, deadline=deadline)
+        record["deleted"] = launch.delete_kernel(slug, deadline = deadline)
         if not record["deleted"]:
             _log(f"could not delete {slug}; it may keep billing")
     _log(f"collected {slug}: {verdict} ({reason})")
@@ -532,9 +532,9 @@ def delete_collected(result_path: Path, posted_path: Path | None) -> int:
     gone. A refused post KEEPS its kernel, the only retry there is. A gone
     commit releases it; holding it only bills.
     """
-    data = json.loads(result_path.read_text(encoding="utf-8"))
+    data = json.loads(result_path.read_text(encoding = "utf-8"))
     posted = (
-        json.loads(posted_path.read_text(encoding="utf-8"))
+        json.loads(posted_path.read_text(encoding = "utf-8"))
         if posted_path and posted_path.exists()
         else {}
     )
@@ -562,73 +562,73 @@ def delete_collected(result_path: Path, posted_path: Path | None) -> int:
             outcome["kept"].append(slug)
             _log(f"kept {slug}: release budget spent; the next pass releases it")
             continue
-        if launch.delete_kernel(slug, deadline=deadline):
+        if launch.delete_kernel(slug, deadline = deadline):
             outcome["deleted"].append(slug)
             _log(f"deleted {slug}")
         else:
             outcome["failed_delete"].append(slug)
             print(f"::warning title=Kaggle kernel not deleted::{slug} may keep billing")
     result_path.with_name("delete_result.json").write_text(
-        json.dumps(outcome, indent=2), encoding="utf-8"
+        json.dumps(outcome, indent = 2), encoding = "utf-8"
     )
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--outdir", required=True, help="where evidence is downloaded")
+    ap.add_argument("--outdir", required = True, help = "where evidence is downloaded")
     ap.add_argument(
         "--expect",
-        type=int,
-        default=1,
-        help="payload reports a collected kernel should carry",
+        type = int,
+        default = 1,
+        help = "payload reports a collected kernel should carry",
     )
-    ap.add_argument("--max-age-hours", type=float, default=DEFAULT_MAX_AGE_HOURS)
+    ap.add_argument("--max-age-hours", type = float, default = DEFAULT_MAX_AGE_HOURS)
     ap.add_argument(
         "--sha",
-        default="",
-        help="when given, report whether a kernel for THIS commit is already in "
+        default = "",
+        help = "when given, report whether a kernel for THIS commit is already in "
         "flight, so the caller can skip dispatching a second one",
     )
     ap.add_argument(
         "--kind",
-        default="",
-        choices=("", *launch.KIND_CODES),
-        help="narrow --sha to one workflow's kernels",
+        default = "",
+        choices = ("", *launch.KIND_CODES),
+        help = "narrow --sha to one workflow's kernels",
     )
     ap.add_argument(
         "--slot",
-        default="1",
-        help="narrow --sha to one session slot's kernels: slot 2 runs beside slot 1 on "
+        default = "1",
+        help = "narrow --sha to one session slot's kernels: slot 2 runs beside slot 1 on "
         "the same commit by design, and only its own retry is a duplicate",
     )
-    ap.add_argument("--target-url", default="", help="run URL to attach to each status")
+    ap.add_argument("--target-url", default = "", help = "run URL to attach to each status")
     ap.add_argument(
         "--no-delete",
-        action="store_true",
-        help="collect and report without deleting. The workflows always pass "
+        action = "store_true",
+        help = "collect and report without deleting. The workflows always pass "
         "this and delete afterwards with --delete-collected, once the statuses "
         "are posted; a kernel left up after that keeps billing",
     )
     ap.add_argument(
         "--require-auth",
-        action="store_true",
-        help="fail rather than skip when Kaggle authentication fails. The "
+        action = "store_true",
+        help = "fail rather than skip when Kaggle authentication fails. The "
         "scheduled reaper passes this: it runs with the repository's own "
         "secrets, so an auth failure there is a broken token, not a fork",
     )
     ap.add_argument(
         "--delete-collected",
-        default="",
-        metavar="COLLECT_RESULT_JSON",
-        help="delete the kernels a previous --no-delete pass collected, except "
+        default = "",
+        metavar = "COLLECT_RESULT_JSON",
+        help = "delete the kernels a previous --no-delete pass collected, except "
         "those whose status did not post (see --posted). Nothing else runs",
     )
     ap.add_argument(
         "--posted",
-        default="",
-        metavar="POSTED_JSON",
-        help="post_statuses.py's record of which statuses were delivered",
+        default = "",
+        metavar = "POSTED_JSON",
+        help = "post_statuses.py's record of which statuses were delivered",
     )
     args = ap.parse_args()
 
@@ -639,11 +639,11 @@ def main() -> int:
 
     socket.setdefaulttimeout(SOCKET_TIMEOUT_SEC)
     outdir = Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
+    outdir.mkdir(parents = True, exist_ok = True)
     result: dict = {"owner": None, "kernels": [], "statuses": [], "in_flight_for_sha": False}
 
     def finish(code: int = 0) -> int:
-        (outdir / "collect_result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+        (outdir / "collect_result.json").write_text(json.dumps(result, indent = 2), encoding = "utf-8")
         _out("in_flight", "true" if result["in_flight_for_sha"] else "false")
         _out(
             "collected",
@@ -701,7 +701,7 @@ def main() -> int:
     # timeout are minutes, and a deadline started after them is that much later
     # than the job timeout was sized for.
     deadline = time.time() + BUDGET_SEC
-    ours = find_ours(api, max_age_hours=args.max_age_hours, deadline=deadline)
+    ours = find_ours(api, max_age_hours = args.max_age_hours, deadline = deadline)
     _log(f"{len(ours)} kernel(s) of ours on this account")
 
     for entry in ours:
@@ -717,8 +717,8 @@ def main() -> int:
                 outdir,
                 args.expect,
                 args.max_age_hours,
-                delete=not args.no_delete,
-                deadline=deadline,
+                delete = not args.no_delete,
+                deadline = deadline,
             )
         )
 

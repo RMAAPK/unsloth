@@ -2308,7 +2308,7 @@ class TestBashBlocklistPosition:
         third_expected,
         third_command,
         fourth_expected,
-        fourth_command
+        fourth_command,
     ):
         assert "rm" in self._find()(rm_command)
         assert second_expected in self._find()(second_command)

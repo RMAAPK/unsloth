@@ -111,7 +111,7 @@ def test_qwen3_moe(
     dtype: torch.dtype,
     permute_x: bool,
     permute_y: bool,
-    autotune: bool
+    autotune: bool,
 ):
     torch.manual_seed(
         SEED

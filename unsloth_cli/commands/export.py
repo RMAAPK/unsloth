@@ -16,7 +16,7 @@ GGUF_QUANTS = ["q4_k_m", "q5_k_m", "q8_0", "f16"]
 def list_checkpoints(
     outputs_dir: Path = typer.Option(
         Path("./outputs"), "--outputs-dir", help = "Directory that holds training runs."
-    )
+    ),
 ):
     """List checkpoints detected in the outputs directory."""
     with studio_backend_imports("unsloth list-checkpoints"):

@@ -45,7 +45,7 @@ def bootstrap_deadline_remaining_seconds() -> Optional[int]:
     return max(0, int(round(_deadline_at - time.monotonic())))
 
 
-def bootstrap_timeout_seconds(env = None) -> int:
+def bootstrap_timeout_seconds(env=None) -> int:
     """Resolve the deadline in seconds. ``0`` (or invalid/negative) disables it. A malformed value falls back to
     the default rather than disabling, so a typo cannot silently remove the protection.
     """
@@ -114,7 +114,7 @@ def enforce_bootstrap_password_deadline(
     trigger_shutdown,
     *,
     timeout_seconds: int,
-    logger = None,
+    logger=None,
 ) -> bool:
     """Deadline handler: shut down iff the seeded admin password is still unchanged. Returns True if it
     shut Unsloth down, False if it left it running (the password was changed in time)."""
@@ -134,7 +134,7 @@ def enforce_bootstrap_password_deadline(
     )
     if logger is not None:
         logger.warning(message)
-    print(message, file = sys.stderr, flush = True)
+    print(message, file=sys.stderr, flush=True)
     try:
         trigger_shutdown()
     except Exception as e:  # shutdown is best-effort; never raise from the timer
@@ -148,15 +148,15 @@ def arm_bootstrap_timeout(
     trigger_shutdown,
     *,
     timeout_seconds: int,
-    logger = None,
+    logger=None,
 ) -> "threading.Timer":
     """Start a daemon timer that enforces the deadline. Returns the Timer."""
     record_bootstrap_deadline(timeout_seconds)
     timer = threading.Timer(
         timeout_seconds,
         enforce_bootstrap_password_deadline,
-        args = (storage, trigger_shutdown),
-        kwargs = {"timeout_seconds": timeout_seconds, "logger": logger},
+        args=(storage, trigger_shutdown),
+        kwargs={"timeout_seconds": timeout_seconds, "logger": logger},
     )
     timer.daemon = True
     timer.start()

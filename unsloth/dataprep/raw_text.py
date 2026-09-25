@@ -36,9 +36,9 @@ class RawTextDataLoader:
     def __init__(
         self,
         tokenizer,
-        chunk_size = 2048,
-        stride = 512,
-        return_tokenized = True,
+        chunk_size=2048,
+        stride=512,
+        return_tokenized=True,
     ):
         if chunk_size <= 0:
             raise ValueError(f"chunk_size must be positive, got {chunk_size}")
@@ -59,7 +59,7 @@ class RawTextDataLoader:
     def load_from_file(
         self,
         file_path,
-        return_tokenized = None,
+        return_tokenized=None,
     ):
         """Load raw text and convert to dataset"""
         if return_tokenized is None:
@@ -74,7 +74,7 @@ class RawTextDataLoader:
     def load_from_files(
         self,
         file_paths,
-        return_tokenized = None,
+        return_tokenized=None,
     ):
         """Load multiple text files"""
         if return_tokenized is None:
@@ -96,7 +96,7 @@ class RawTextDataLoader:
     def chunk_text(
         self,
         text,
-        return_tokenized = None,
+        return_tokenized=None,
     ):
         """Split text into overlapping chunks"""
         if return_tokenized is None:
@@ -125,7 +125,7 @@ class RawTextDataLoader:
         text,
         chunk_size,
         stride,
-        return_tokenized = True,
+        return_tokenized=True,
     ):
         """
         Intelligent chunking that:
@@ -152,7 +152,7 @@ class RawTextDataLoader:
             return []
 
         # Tokenize the whole text once for accurate token counts
-        tokenized = self.tokenizer(text, return_tensors = "pt", add_special_tokens = False)
+        tokenized = self.tokenizer(text, return_tensors="pt", add_special_tokens=False)
         tokens = tokenized["input_ids"]
 
         # Normalise tokenizer return formats
@@ -199,7 +199,7 @@ class RawTextDataLoader:
 
                 chunks.append({"input_ids": chunk_tokens_list, "attention_mask": attention_mask})
             else:
-                chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens = True)
+                chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
 
                 if end_idx == len(tokens):
                     eos_token = self.tokenizer.eos_token if self.tokenizer.eos_token else ""
@@ -218,7 +218,7 @@ class RawTextDataLoader:
         """Read file content based on detected format."""
         # utf-8-sig: Windows tooling (PowerShell Out-File, Excel "CSV UTF-8") prepends a BOM that plain
         # utf-8 keeps as a leading character. Without a BOM it decodes exactly like utf-8.
-        with open(file_path, "r", encoding = "utf-8-sig") as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             if file_format == "plain_text" or file_format == "markdown":
                 return f.read()
             elif file_format == "json_lines":
@@ -295,7 +295,7 @@ def _iter_column(dataset, column):
     """
     batched = getattr(dataset, "iter", None)
     if callable(batched):
-        for batch in batched(batch_size = 256):
+        for batch in batched(batch_size=256):
             yield from batch[column]
     else:
         yield from dataset[column]
@@ -388,7 +388,7 @@ class TextPreprocessor:
     def validate_dataset(
         self,
         dataset,
-        tokenizer = None,
+        tokenizer=None,
     ):
         """
         Check for:
@@ -422,7 +422,7 @@ class TextPreprocessor:
                 )
             # Generator, not a list: decoded text is consumed once by the loop below.
             texts = (
-                tokenizer.decode(ids, skip_special_tokens = True)
+                tokenizer.decode(ids, skip_special_tokens=True)
                 for ids in _iter_column(dataset, "input_ids")
             )
 

@@ -536,7 +536,7 @@ def test_a_failed_watcher_root_is_dropped_from_the_coverage_set() -> None:
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions only; see the note above.")
 def test_an_inaccessible_directory_is_recorded_not_mistaken_for_a_deleted_one(
-    tmp_path: pathlib.Path
+    tmp_path: pathlib.Path,
 ) -> None:
     """An ACL denial must not read as "the directory is gone".
 

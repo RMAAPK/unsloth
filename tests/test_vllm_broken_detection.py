@@ -57,14 +57,14 @@ class _FakeVllmFinder(importlib.abc.MetaPathFinder):
     def find_spec(
         self,
         fullname,
-        path=None,
-        target=None,
+        path = None,
+        target = None,
     ):
         if fullname in self.present:
             return importlib.machinery.ModuleSpec(
-                name=fullname,
-                loader=_ExtensionLoader(broken=fullname in self.broken, error=self.error),
-                is_package=False,
+                name = fullname,
+                loader = _ExtensionLoader(broken = fullname in self.broken, error = self.error),
+                is_package = False,
             )
         return None  # absent -> ModuleNotFoundError, which the guard ignores
 
@@ -73,7 +73,7 @@ class _FakeVllmFinder(importlib.abc.MetaPathFinder):
 def _fake_vllm(
     present,
     broken,
-    error=_LIBCUDART_ERROR,
+    error = _LIBCUDART_ERROR,
 ):
     """Install a synthetic lazy vLLM, restoring VLLM_BROKEN, find_spec,
     meta_path, and the vllm* sys.modules entries on exit."""
@@ -88,7 +88,7 @@ def _fake_vllm(
         import_fixes.VLLM_BROKEN = False
         fake_vllm = types.ModuleType("vllm")
         fake_vllm.__path__ = []
-        fake_vllm.__spec__ = importlib.machinery.ModuleSpec("vllm", loader=None, is_package=True)
+        fake_vllm.__spec__ = importlib.machinery.ModuleSpec("vllm", loader = None, is_package = True)
         sys.modules["vllm"] = fake_vllm
         for name in submodules:
             sys.modules.pop(name, None)
@@ -108,12 +108,12 @@ def _fake_vllm(
 @pytest.mark.parametrize(
     "broken_ext",
     ["vllm._C", "vllm._C_stable_libtorch"],
-    ids=["core_C", "sibling_C_stable_libtorch"],
+    ids = ["core_C", "sibling_C_stable_libtorch"],
 )
 def test_disable_broken_vllm_detects_lazy_loaded_broken_extension(broken_ext):
     # A CUDA-major mismatch breaks every ext; whichever one loads first must trip detection.
     present = {"vllm._C", "vllm._C_stable_libtorch"}
-    with _fake_vllm(present=present, broken={broken_ext}) as import_fixes:
+    with _fake_vllm(present = present, broken = {broken_ext}) as import_fixes:
         detected = import_fixes.disable_broken_vllm()
 
         assert detected is True, (
@@ -131,12 +131,12 @@ def test_disable_broken_vllm_detects_lazy_loaded_broken_extension(broken_ext):
         "libnccl.so.2: cannot open shared object file: No such file or directory",
         "libcuda.so.1: cannot open shared object file: No such file or directory",
     ],
-    ids=["libnccl", "libcuda"],
+    ids = ["libnccl", "libcuda"],
 )
 def test_disable_broken_vllm_detects_non_cudart_so_failure(error):
     # A CUDA mismatch can surface through a non-libcudart .so (libnccl, libcuda), which the old
     # libcudart/libcublas/libnvrtc allow-list let slip through.
-    with _fake_vllm(present={"vllm._C"}, broken={"vllm._C"}, error=error) as import_fixes:
+    with _fake_vllm(present = {"vllm._C"}, broken = {"vllm._C"}, error = error) as import_fixes:
         detected = import_fixes.disable_broken_vllm()
 
         assert detected is True, (
@@ -149,12 +149,12 @@ def test_disable_broken_vllm_detects_non_cudart_so_failure(error):
 @pytest.mark.parametrize(
     "present",
     [{"vllm._C"}, {"vllm._C", "vllm._C_stable_libtorch", "vllm._moe_C"}],
-    ids=["core_only", "all_present"],
+    ids = ["core_only", "all_present"],
 )
 def test_disable_broken_vllm_keeps_healthy_vllm_enabled(present):
     # Healthy install: an absent sibling (ModuleNotFoundError) or an extra present
     # ext that loads cleanly must NOT be mistaken for an ABI break.
-    with _fake_vllm(present=present, broken=set()) as import_fixes:
+    with _fake_vllm(present = present, broken = set()) as import_fixes:
         detected = import_fixes.disable_broken_vllm()
 
         assert detected is False

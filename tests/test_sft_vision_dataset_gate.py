@@ -24,7 +24,7 @@ RL_PY = REPO_ROOT / "unsloth" / "models" / "rl.py"
 
 def _load_backport():
     """Grab the helper without importing rl.py (which needs trl at import)."""
-    src = RL_PY.read_text(encoding="utf-8")
+    src = RL_PY.read_text(encoding = "utf-8")
     tree = ast.parse(src)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "_backport_vision_dataset_gate":
@@ -103,10 +103,10 @@ def _installed_trl_sft_source():
         return None
     if spec is None or not spec.origin:
         return None
-    return Path(spec.origin).read_text(encoding="utf-8")
+    return Path(spec.origin).read_text(encoding = "utf-8")
 
 
-@pytest.mark.skipif(_installed_trl_sft_source() is None, reason="trl not installed")
+@pytest.mark.skipif(_installed_trl_sft_source() is None, reason = "trl not installed")
 def test_installed_trl_source_survives_the_patch():
     src = _installed_trl_sft_source()
     out = backport(src)

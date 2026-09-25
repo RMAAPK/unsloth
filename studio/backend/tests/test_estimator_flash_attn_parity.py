@@ -81,7 +81,7 @@ _QWEN3_FIELDS = {
 }
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _clear_flash_attn_parity_caches():
     ri._estimate_files_cache.clear()
     ri._estimate_config_cache.clear()
@@ -135,8 +135,8 @@ def _estimate_through_route(**kwargs):
         asyncio.run(
             ri.estimate_memory(
                 EstimateMemoryRequest(**kwargs),
-                fastapi_request=None,
-                current_subject="test",
+                fastapi_request = None,
+                current_subject = "test",
             )
         )
     except RuntimeError:
@@ -147,7 +147,7 @@ def _kv_bytes(
     path,
     ctx,
     cache_type,
-    slots=1,
+    slots = 1,
 ):
     return ri._gguf_runtime_bytes(path, ctx, None, slots, cache_type, False).kv_bytes
 
@@ -162,7 +162,7 @@ def test_a_quantized_cache_shrinks_both_axes_not_only_k(qwen3_shaped_gguf, cache
     quantized = _kv_bytes(qwen3_shaped_gguf, n_ctx, cache_type)
     expected_ratio = _kv_bytes_per_elem(cache_type) / _kv_bytes_per_elem("f16")
 
-    assert quantized == pytest.approx(f16 * expected_ratio, rel=1e-6), (
+    assert quantized == pytest.approx(f16 * expected_ratio, rel = 1e-6), (
         f"{cache_type} at {n_ctx} priced {quantized} bytes against an f16 price of "
         f"{f16}: ratio {quantized / f16:.4f}, expected {expected_ratio:.4f}. A ratio "
         f"near the midpoint means V is still being charged at f16, which is the "
@@ -181,7 +181,7 @@ def test_the_measured_llama_cpp_reservations_are_reproduced(qwen3_shaped_gguf):
         (32768, "q4_0", 1008.0),
     ):
         priced = _kv_bytes(qwen3_shaped_gguf, n_ctx, cache_type) / mib
-        assert priced == pytest.approx(allocated_mib, rel=1e-6), (
+        assert priced == pytest.approx(allocated_mib, rel = 1e-6), (
             f"{cache_type} at {n_ctx}: priced {priced:.1f} MiB, llama-server b10632 "
             f"allocated {allocated_mib} MiB"
         )
@@ -239,10 +239,10 @@ def test_a_cpu_only_manual_launch_is_not_charged_for_a_pinned_card(monkeypatch, 
     device count, not in the device count itself. Asserting the two helpers in
     isolation passes on the unfixed tree."""
     one = ri._gguf_runtime_bytes(
-        qwen3_shaped_gguf, 32768, None, 4, "f16", False, None, None, n_devices=1
+        qwen3_shaped_gguf, 32768, None, 4, "f16", False, None, None, n_devices = 1
     )
     two = ri._gguf_runtime_bytes(
-        qwen3_shaped_gguf, 32768, None, 4, "f16", False, None, None, n_devices=2
+        qwen3_shaped_gguf, 32768, None, 4, "f16", False, None, None, n_devices = 2
     )
     assert (
         two.compute_bytes > one.compute_bytes
@@ -259,23 +259,23 @@ def test_a_cpu_only_manual_launch_is_not_charged_for_a_pinned_card(monkeypatch, 
         ri,
         "_cached_estimate_config",
         lambda *a, **kw: SimpleNamespace(
-            identifier="local",
-            gguf_file=qwen3_shaped_gguf,
-            is_gguf=True,
-            gguf_variant=None,
-            gguf_mmproj_file=None,
-            gguf_mtp_file=None,
-            gguf_dspark_file=None,
-            gguf_dflash_file=None,
+            identifier = "local",
+            gguf_file = qwen3_shaped_gguf,
+            is_gguf = True,
+            gguf_variant = None,
+            gguf_mmproj_file = None,
+            gguf_mtp_file = None,
+            gguf_dspark_file = None,
+            gguf_dflash_file = None,
         ),
     )
     for layers, expected in ((0, 1), (40, 2)):
         seen.clear()
         _estimate_through_route(
-            model_path=qwen3_shaped_gguf,
-            gpu_memory_mode="manual",
-            gpu_layers=layers,
-            selected_gpu_ids=[0, 1],
+            model_path = qwen3_shaped_gguf,
+            gpu_memory_mode = "manual",
+            gpu_layers = layers,
+            selected_gpu_ids = [0, 1],
         )
         assert seen.get("n_devices") == expected, (
             f"--gpu-layers {layers} with a two-card pin priced "
@@ -287,7 +287,7 @@ def test_an_inherited_gpu_layer_count_is_read_in_auto(monkeypatch, qwen3_shaped_
     """Auto emits no -ngl on the fitting path, so LLAMA_ARG_N_GPU_LAYERS is the only
     layer policy the child sees and llama.cpp's fitter will not overrule it
     (common/fit.cpp:463, "n_gpu_layers already set by user")."""
-    monkeypatch.delenv("LLAMA_ARG_N_GPU_LAYERS", raising=False)
+    monkeypatch.delenv("LLAMA_ARG_N_GPU_LAYERS", raising = False)
     assert ri._gguf_offloaded_layer_fraction("auto", None, 27, None) == 1.0
 
     monkeypatch.setenv("LLAMA_ARG_N_GPU_LAYERS", "0")
@@ -334,18 +334,18 @@ def test_pass_through_adapters_are_charged_and_follow_the_base_placement(
     # The helper pre-dates this; what is new is that the panel asks it. Driven through
     # the breakdown so the test fails on a tree where the term is computed and dropped.
     config = SimpleNamespace(
-        identifier="local",
-        gguf_file=qwen3_shaped_gguf,
-        is_gguf=True,
-        gguf_variant=None,
-        gguf_mmproj_file=None,
-        gguf_mtp_file=None,
-        gguf_dspark_file=None,
-        gguf_dflash_file=None,
+        identifier = "local",
+        gguf_file = qwen3_shaped_gguf,
+        is_gguf = True,
+        gguf_variant = None,
+        gguf_mmproj_file = None,
+        gguf_mtp_file = None,
+        gguf_dspark_file = None,
+        gguf_dflash_file = None,
     )
-    bare = ri._gguf_memory_breakdown(config, qwen3_shaped_gguf, n_ctx=4096)
+    bare = ri._gguf_memory_breakdown(config, qwen3_shaped_gguf, n_ctx = 4096)
     with_lora = ri._gguf_memory_breakdown(
-        config, qwen3_shaped_gguf, n_ctx=4096, llama_extra_args=["--lora", str(lora)]
+        config, qwen3_shaped_gguf, n_ctx = 4096, llama_extra_args = ["--lora", str(lora)]
     )
     assert bare is not None and with_lora is not None
     assert with_lora.weights_bytes - bare.weights_bytes == size, (
@@ -357,15 +357,15 @@ def test_pass_through_adapters_are_charged_and_follow_the_base_placement(
     missing = ri._gguf_memory_breakdown(
         config,
         qwen3_shaped_gguf,
-        n_ctx=4096,
-        llama_extra_args=["--lora", str(tmp_path / "missing.gguf")],
+        n_ctx = 4096,
+        llama_extra_args = ["--lora", str(tmp_path / "missing.gguf")],
     )
     assert (
         missing is not None and missing.adapters_unsized
     ), "an unsizable adapter has to mark the total a floor rather than vanish"
 
 
-def _runtime(path, extras=None):
+def _runtime(path, extras = None):
     runtime = ri._gguf_runtime_bytes(path, 32768, extras, 1, None, False)
     return runtime.kv_bytes, runtime.compute_bytes
 
@@ -374,7 +374,7 @@ def _flash_attn_caps(monkeypatch, supported):
     monkeypatch.setattr(
         ri.LlamaCppBackend,
         "probe_server_capabilities",
-        classmethod(lambda cls, binary=None: {"found": True, "supports_flash_attn": supported}),
+        classmethod(lambda cls, binary = None: {"found": True, "supports_flash_attn": supported}),
     )
 
 
@@ -383,7 +383,7 @@ def test_flash_attention_follows_the_launch_argv_not_the_inherited_env(
 ):
     """The managed --flash-attn on is parsed after LLAMA_ARG_FLASH_ATTN, so only the
     extras can turn it off; a build without the flag drops both flag and env."""
-    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising=False)
+    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising = False)
     _flash_attn_caps(monkeypatch, True)
     on = _runtime(qwen3_shaped_gguf)
     off = _runtime(qwen3_shaped_gguf, ["--flash-attn", "off"])
@@ -399,7 +399,7 @@ def test_flash_attention_follows_the_launch_argv_not_the_inherited_env(
 
 def test_grok_is_priced_without_flash_attention(monkeypatch, qwen3_shaped_gguf):
     """llama.cpp forces flash attention off for Grok whatever the launch asks for."""
-    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising=False)
+    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising = False)
     _flash_attn_caps(monkeypatch, True)
     off = _runtime(qwen3_shaped_gguf, ["--flash-attn", "off"])
     real_read = ri.LlamaCppBackend._read_gguf_metadata
@@ -422,12 +422,12 @@ def test_the_admission_estimate_keeps_the_no_flash_reserve(monkeypatch, ragged_s
     A ragged-SWA shape with an f16 cache: a quantized V forces flash attention on, and an
     equal-width f16 cache does not move with the state, so on either of those the control
     below could not fail."""
-    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising=False)
-    monkeypatch.delenv("LLAMA_ARG_FIT", raising=False)
-    monkeypatch.delenv("LLAMA_ARG_N_GPU_LAYERS", raising=False)
+    monkeypatch.delenv("LLAMA_ARG_FLASH_ATTN", raising = False)
+    monkeypatch.delenv("LLAMA_ARG_FIT", raising = False)
+    monkeypatch.delenv("LLAMA_ARG_N_GPU_LAYERS", raising = False)
     _flash_attn_caps(monkeypatch, True)
 
-    def kv(extras=None, tensor_parallel=False):
+    def kv(extras = None, tensor_parallel = False):
         return ri._gguf_runtime_bytes(
             ragged_swa_gguf,
             32768,
@@ -435,10 +435,10 @@ def test_the_admission_estimate_keeps_the_no_flash_reserve(monkeypatch, ragged_s
             1,
             "f16",
             tensor_parallel,
-            reserve_no_flash_respawn=True,
+            reserve_no_flash_respawn = True,
         ).kv_bytes
 
-    def panel(extras=None):
+    def panel(extras = None):
         """What the panel shows: the plan, not the reserve."""
         return ri._gguf_runtime_bytes(ragged_swa_gguf, 32768, extras, 1, "f16", False).kv_bytes
 
@@ -462,7 +462,7 @@ def test_the_admission_estimate_keeps_the_no_flash_reserve(monkeypatch, ragged_s
     assert kv() == managed
 
     # Tensor mode is exempt, because llama.cpp has no flash-attention-off respawn there.
-    assert kv(["--fit", "off"], tensor_parallel=True) == managed
+    assert kv(["--fit", "off"], tensor_parallel = True) == managed
 
     # And the panel is untouched: its total is what the launch uses, and an existing pin
     # holds it placement-independent (test_memory_estimate's extras -ngl case).

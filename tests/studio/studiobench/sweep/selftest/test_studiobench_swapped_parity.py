@@ -44,7 +44,7 @@ CELLS = ("r100K.base.rep0", "r100K.treatment.rep0", "r100K.base.rep1", "r100K.tr
 
 
 def _load(name: str) -> list[dict]:
-    with gzip.open(TESTDATA / name, "rt", encoding="utf-8") as fh:
+    with gzip.open(TESTDATA / name, "rt", encoding = "utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]
 
 
@@ -53,8 +53,8 @@ def _recorded() -> tuple[list[dict], list[dict]]:
 
 
 def _write(rows: list[dict], path: Path) -> Path:
-    path.mkdir(parents=True, exist_ok=True)
-    with open(path / "payload.jsonl", "w", encoding="utf-8") as fh:
+    path.mkdir(parents = True, exist_ok = True)
+    with open(path / "payload.jsonl", "w", encoding = "utf-8") as fh:
         for row in rows:
             fh.write(json.dumps(row) + "\n")
     return path
@@ -73,7 +73,7 @@ def _run(
     capsys,
     result,
     null,
-    min_reps=2,
+    min_reps = 2,
 ) -> tuple[int, str]:
     """The workflow's verdict step, flag for flag: (exit code, what it printed)."""
     rdir = _write(result, tmp_path / "parity-result")
@@ -138,7 +138,7 @@ def test_the_recorded_repetitions_are_one_pair_of_renderings_swapped(action, ext
     # About 2000 characters of scaffold and nothing else: every message row agrees across all four.
     sizes = sorted({c["chars_scaffold"] for c in cap.values()})
     assert sizes[1] - sizes[0] == extra
-    assert len({json.dumps(c["messages"], sort_keys=True) for c in cap.values()}) == 1
+    assert len({json.dumps(c["messages"], sort_keys = True) for c in cap.values()}) == 1
 
 
 def test_the_extra_scaffold_follows_whether_image_upload_ran_in_that_cell():
@@ -185,7 +185,7 @@ def test_the_evidence_step_does_not_illustrate_a_swap(tmp_path):
     result, null = _recorded()
     rdir = _write(result, tmp_path / "parity-result")
     ndir = _write(null, tmp_path / "parity-null-control")
-    assert S.differing_actions(U.shards_of(str(rdir)), U.shards_of(str(ndir)), min_reps=2) == []
+    assert S.differing_actions(U.shards_of(str(rdir)), U.shards_of(str(ndir)), min_reps = 2) == []
 
 
 # ── (b) a consistent difference in both repetitions stays firm ───────────────────────────────
@@ -370,7 +370,7 @@ def test_a_payload_whose_captures_carry_no_digest_fails_as_it_always_did(tmp_pat
 def test_min_reps_one_still_counts_every_difference(tmp_path, capsys):
     """`--min-reps 1` asks for every difference to count, so the swap is not consulted."""
     result, null = _recorded()
-    rc, out = _run(tmp_path, capsys, result, null, min_reps=1)
+    rc, out = _run(tmp_path, capsys, result, null, min_reps = 1)
     assert rc == 1, out
     assert _swapped(out) == ""
     for action in SWAPPED:

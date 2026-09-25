@@ -140,7 +140,7 @@ def refuse_collisions(records: list[dict]) -> None:
     guilty: set[str] = set()
     for sessions in collided.values():
         guilty |= sessions
-    verdict, both = concurrent_sessions(records, only=guilty)
+    verdict, both = concurrent_sessions(records, only = guilty)
     if verdict == "sequential":
         # The caller supersedes through `latest_attempt_rows`, which keeps the LAST attempt that wrote
         # anything, so a resume that was itself hard-killed drops out rather than resurrecting the
@@ -259,14 +259,14 @@ def concurrent_sessions(
     it got before this distinction existed.
     """
     spans = {k: v for k, v in session_spans(records).items() if only is None or k in only}
-    order = sorted(spans.items(), key=lambda kv: kv[1][0])
+    order = sorted(spans.items(), key = lambda kv: kv[1][0])
     for (first, a), (second, b) in zip(order, order[1:]):
         if a[1] >= b[0]:
             return "interleaved", (first, second)
     clocks = {k: v for k, v in session_clocks(records).items() if only is None or k in only}
     if set(clocks) != set(spans) or len(clocks) < 2:
         return "unknown", None
-    by_start = sorted(clocks.items(), key=lambda kv: kv[1][0])
+    by_start = sorted(clocks.items(), key = lambda kv: kv[1][0])
     for (first, a), (second, b) in zip(by_start, by_start[1:]):
         if a[1] > b[0]:
             return "overlap", (first, second)
@@ -425,7 +425,7 @@ def paired(records: list[dict], shard: str = "") -> dict[str, list[tuple[float, 
         dict
     )
     for sess in sorted(sessions_in(records)) or [None]:
-        for cid, vals in cell_metrics(records, session=sess).items():
+        for cid, vals in cell_metrics(records, session = sess).items():
             rung = cid.split(".", 1)[0]
             by_key[(shard, str(sess), rung, rep_of(cid))][arm_of(cid)] = vals
     out: dict[str, list[tuple[float, float]]] = collections.defaultdict(list)
@@ -491,7 +491,7 @@ def corpus_of(records: list[dict]) -> str:
 
 def read_rows(path: Path) -> list[dict]:
     return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        json.loads(line) for line in path.read_text(encoding = "utf-8").splitlines() if line.strip()
     ]
 
 
@@ -515,7 +515,7 @@ def load(paths: list[Path]) -> tuple[dict[str, list[tuple[float, float]]], set[s
         refuse_if_probed(records, str(path))
         tiers |= tiers_of(records)
         corpora.add(corpus_of(records))
-        for metric, rows in paired(records, shard=str(path.parent.name)).items():
+        for metric, rows in paired(records, shard = str(path.parent.name)).items():
             pooled[metric].extend(rows)
     if len(tiers) > 1:
         raise SystemExit(
@@ -760,7 +760,7 @@ def render(
     survivors = 0
     censored_notes: list[str] = []
     marked = False
-    for metric in sorted(stats, key=lambda m: (m in METRICS, m)):
+    for metric in sorted(stats, key = lambda m: (m in METRICS, m)):
         s = stats[metric]
         # TWO INDEPENDENT CAVEATS, BOTH CARRIED IN THE NAME COLUMN, neither allowed to hide the other:
         # `(abs)` says what the delta MEANS, `[*]` says which rungs it covers, and a metric can need
@@ -839,18 +839,18 @@ def shards_of(pattern: str) -> list[Path]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        prog="studiobench.sweep.floor_table",
-        description="Per-metric detection floor and the three verdict gates.",
+        prog = "studiobench.sweep.floor_table",
+        description = "Per-metric detection floor and the three verdict gates.",
     )
     ap.add_argument(
         "payloads",
-        nargs="+",
-        help="studiobench output directories or payload paths (globs allowed)",
+        nargs = "+",
+        help = "studiobench output directories or payload paths (globs allowed)",
     )
     ap.add_argument(
         "--floor",
-        metavar="OUTDIR",
-        help="the null control (base vs base) whose spread sets the floor. Without "
+        metavar = "OUTDIR",
+        help = "the null control (base vs base) whose spread sets the floor. Without "
         "it this prints deltas and REFUSES to call any of them a result",
     )
     args = ap.parse_args(argv)

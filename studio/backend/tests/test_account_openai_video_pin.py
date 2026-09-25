@@ -22,12 +22,12 @@ BOB = AccountContext("b" * 32, "bob")
 PUBLIC = {"org/public-video"}
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def isolated(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
     monkeypatch.setattr(access, "_resident_accounts", {})
-    monkeypatch.setattr(access, "_resident_components", {}, raising = False)
+    monkeypatch.setattr(access, "_resident_components", {}, raising=False)
     monkeypatch.setattr(access, "_generation_accounts", {})
     monkeypatch.setattr(access, "repo_is_public", lambda repo_id, *a, **k: repo_id in PUBLIC)
     monkeypatch.setattr(gpu_arbiter, "_owner", "video")
@@ -49,7 +49,7 @@ def client_for(account):
 
     app.dependency_overrides[get_current_subject] = subject
     app.dependency_overrides[allow_ambient_hf_token] = lambda: False
-    app.include_router(video.openai_router, prefix = "/v1")
+    app.include_router(video.openai_router, prefix="/v1")
     return TestClient(app)
 
 
@@ -68,8 +68,8 @@ def test_openai_video_resident_replaced_after_authorization(monkeypatch):
     from core.inference import video as video_module
     from core.inference.video_families import VIDEO_MODEL_CHANGED_MSG
 
-    resident = SimpleNamespace(repo_id = "org/public-video", family = "wan")
-    replacement = SimpleNamespace(repo_id = "bob/private-video", family = "wan")
+    resident = SimpleNamespace(repo_id="org/public-video", family="wan")
+    replacement = SimpleNamespace(repo_id="bob/private-video", family="wan")
     box = {"state": resident, "reads": 0}
     reserved = []
 
@@ -110,15 +110,15 @@ def test_openai_video_resident_replaced_after_authorization(monkeypatch):
         return {"width": 320, "height": 320, "num_frames": 17, "fps": 16}
 
     backend = SimpleNamespace(
-        status = status,
-        generation_snapshot = generation_snapshot,
-        begin_generate = begin_generate,
-        generate_progress = lambda: {"active": False},
+        status=status,
+        generation_snapshot=generation_snapshot,
+        begin_generate=begin_generate,
+        generate_progress=lambda: {"active": False},
     )
     monkeypatch.setattr(video_module, "get_video_backend", lambda: backend)
     body, content_type = _multipart({"prompt": "a sloth", "size": "320x320"})
     with client_for(ALICE) as client:
-        response = client.post("/v1/videos", content = body, headers = {"Content-Type": content_type})
+        response = client.post("/v1/videos", content=body, headers={"Content-Type": content_type})
     print("STATUS", response.status_code, response.json())
     print("RESERVED", reserved)
     assert response.status_code == 404, response.json()

@@ -47,7 +47,7 @@ from . import register_instrument
 from .pagejs import _PageInstrument
 
 
-@register_instrument(name="stream_cost", level=0)
+@register_instrument(name = "stream_cost", level = 0)
 def _stream_cost():
     return StreamCostInstrument()
 

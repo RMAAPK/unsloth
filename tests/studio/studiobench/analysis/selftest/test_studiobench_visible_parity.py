@@ -136,8 +136,8 @@ def test_a_message_seen_mid_action_but_unmounted_by_capture_is_not_counted_as_ag
     The residue is still reported, and the verdict is now the third outcome rather than the
     strongest one.
     """
-    base = _cap({14: "a"}, ever=[3, 14])
-    treat = _cap({14: "a"}, ever=[3, 14])
+    base = _cap({14: "a"}, ever = [3, 14])
+    treat = _cap({14: "a"}, ever = [3, 14])
     got = P.compare_visible(base, treat)
     assert got["verdict"] == P.NOT_COMPARABLE, got
     assert got["verdict"] != P.MATCH
@@ -151,7 +151,7 @@ def test_the_messages_that_could_be_digested_agreeing_is_not_the_claim_this_mode
     That is a real observation and it is not the printed claim, which is about every message the
     viewport showed. The reason says which ordinal went uncompared so the reader can decide."""
     seen = {10: "a", 11: "b", 12: "c", 13: "d", 14: "e"}
-    got = P.compare_visible(_cap(seen, ever=[3, *seen]), _cap(seen, ever=[3, *seen]))
+    got = P.compare_visible(_cap(seen, ever = [3, *seen]), _cap(seen, ever = [3, *seen]))
     assert got["verdict"] == P.NOT_COMPARABLE, got
     assert got["not_digested"] == [3]
     assert "1 of the 6 message(s)" in got["reason"], got["reason"]
@@ -169,8 +169,8 @@ def test_a_pair_with_nothing_left_undigested_still_matches_with_an_empty_residue
 def test_an_undigested_ordinal_never_downgrades_a_difference_that_was_found():
     """A residue withholds a pass; it does not withdraw a finding. Ordinal 3 could not be digested
     and ordinal 15 rendered differently, and the second of those is still the verdict."""
-    base = _cap({14: "a", 15: "b"}, ever=[3, 14, 15])
-    treat = _cap({14: "a", 15: "CHANGED"}, ever=[3, 14, 15])
+    base = _cap({14: "a", 15: "b"}, ever = [3, 14, 15])
+    treat = _cap({14: "a", 15: "CHANGED"}, ever = [3, 14, 15])
     got = P.compare_visible(base, treat)
     assert got["verdict"] == P.DIFFER, got
     assert got["not_digested"] == [3], got
@@ -180,7 +180,7 @@ def test_an_undigested_ordinal_never_downgrades_a_difference_that_was_found():
 def test_a_pair_where_nothing_visible_could_be_digested_is_not_a_pass():
     """Every ordinal the viewport showed had been unmounted by capture time, so the comparison
     observed the visibility but none of the content. That is not agreement."""
-    got = P.compare_visible(_cap({}, ever=[3, 4]), _cap({}, ever=[3, 4]))
+    got = P.compare_visible(_cap({}, ever = [3, 4]), _cap({}, ever = [3, 4]))
     # The zero-length scan control fires first, and either refusal is correct; what must not happen is a MATCH.
     assert got["verdict"] == P.NOT_COMPARABLE, got
 
@@ -228,8 +228,8 @@ def test_one_viewport_ending_empty_is_a_difference_not_a_refusal():
     per-ordinal digest was simply absent on one side -- which the union comparison reported as NOT
     COMPARABLE. A refusal, for one arm losing the entire conversation.
     """
-    base = _cap({14: "a", 15: "b"}, ever=[14, 15])
-    treat = _cap({}, ever=[14, 15])
+    base = _cap({14: "a", 15: "b"}, ever = [14, 15])
+    treat = _cap({}, ever = [14, 15])
     got = P.compare_visible(base, treat)
     assert got["verdict"] == P.DIFFER, got
     assert "ended this action EMPTY" in got["reason"]
@@ -238,7 +238,7 @@ def test_one_viewport_ending_empty_is_a_difference_not_a_refusal():
 
 def test_both_viewports_ending_empty_is_still_only_a_refusal():
     """Symmetric loss is not evidence about the arm under test; it is an unusable pair."""
-    got = P.compare_visible(_cap({}, ever=[14, 15]), _cap({}, ever=[14, 15]))
+    got = P.compare_visible(_cap({}, ever = [14, 15]), _cap({}, ever = [14, 15]))
     assert got["verdict"] == P.NOT_COMPARABLE, got
 
 
@@ -293,7 +293,7 @@ def test_the_policy_line_is_printed_next_to_every_claim_line():
     from pathlib import Path
 
     source = (Path(__file__).resolve().parents[2] / "sweep" / "ui_parity.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     claims = sorted(name for name in vars(P) if name.startswith("CLAIM_"))
     assert len(claims) == 3, claims
@@ -318,7 +318,7 @@ def test_the_mode_names_the_pull_request_template_uses_are_accepted():
     from studiobench.sweep import ui_parity
 
     source = ui_parity.__file__
-    with open(source, encoding="utf-8") as handle:
+    with open(source, encoding = "utf-8") as handle:
         text = handle.read()
     for name in ("auto", "digest", "structural", "visible", "behaviour", "behavior"):
         assert f'"{name}"' in text, name

@@ -41,7 +41,7 @@ class Scene:
 
     @property
     def duration_ms(self) -> int:
-        return max((s.t_start_ms + s.budget_ms for s in self.slots), default=0)
+        return max((s.t_start_ms + s.budget_ms for s in self.slots), default = 0)
 
     def scaled(self, factor: float) -> "Scene":
         """A scene of the same SHAPE over a longer film.
@@ -51,14 +51,14 @@ class Scene:
         than two different films.
         """
         return Scene(
-            name=self.name,
-            slots=[
+            name = self.name,
+            slots = [
                 Slot(
-                    action=s.action,
-                    t_start_ms=int(s.t_start_ms * factor),
-                    budget_ms=int(s.budget_ms * factor),
-                    args=s.args,
-                    required=s.required,
+                    action = s.action,
+                    t_start_ms = int(s.t_start_ms * factor),
+                    budget_ms = int(s.budget_ms * factor),
+                    args = s.args,
+                    required = s.required,
                 )
                 for s in self.slots
             ],
@@ -68,9 +68,9 @@ class Scene:
 def _slots(spec: list[tuple[str, int, Optional[int]]]) -> list[Slot]:
     return [
         Slot(
-            action=name,
-            t_start_ms=start,
-            budget_ms=budget if budget is not None else default_budget_ms(name),
+            action = name,
+            t_start_ms = start,
+            budget_ms = budget if budget is not None else default_budget_ms(name),
         )
         for name, start, budget in spec
     ]
@@ -80,8 +80,8 @@ def _slots(spec: list[tuple[str, int, Optional[int]]]) -> list[Slot]:
 # ones needing a finished reply, then the destructive ones last, since delete and reopen change
 # the thread. Timings are offsets from the send button press.
 STANDARD = Scene(
-    name="standard",
-    slots=_slots(
+    name = "standard",
+    slots = _slots(
         [
             # ── during generation ────────────────────────────────────────
             ("scroll_during_generation", 3_000, 8_000),
@@ -119,8 +119,8 @@ STANDARD = Scene(
 # The quick film: the SAME fifteen actions in the same order, since a tier that drops actions
 # cannot be compared with one that does not, on a shorter clock for the small rungs.
 QUICK = Scene(
-    name="quick",
-    slots=_slots(
+    name = "quick",
+    slots = _slots(
         [
             # BUDGETS ARE SIZED FROM MEASURED ACTION COST: at 100K, the largest rung this film is used for,
             # every action finished inside 2.5 s (select_all_copy 2,476 ms, thread_reopen 2,234 ms,
@@ -169,8 +169,8 @@ QUICK = Scene(
 # between 8 s and 19 s below is that constraint, and shrinking it means shrinking the streamed
 # tail, which changes the load being measured.
 FAST = Scene(
-    name="fast",
-    slots=_slots(
+    name = "fast",
+    slots = _slots(
         [
             # 18.4 s, not 8 s: `stop_generation` starts and stops its OWN turn, so opening it while the
             # opening tail is still draining truncates the reply being measured, the defect that made the
@@ -235,7 +235,7 @@ class SceneRunner:
     recorder: Any
     open_window: Callable[[str, str], Any]
     log: Callable[[str], None]
-    base_args: dict = field(default_factory=dict)
+    base_args: dict = field(default_factory = dict)
 
     def run(self, scene: Scene, t0: float) -> list[dict]:
         """`t0` is the driver monotonic time the film started, i.e. when send was pressed."""
@@ -324,8 +324,8 @@ class SceneRunner:
         name = f"{self.cell.cell_id}__{action}__{label}.png"
         path = Path(out) / name
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            self.page.screenshot(path=str(path))
+            path.parent.mkdir(parents = True, exist_ok = True)
+            self.page.screenshot(path = str(path))
         except Exception as exc:  # noqa: BLE001
             return {"shot_error": f"{type(exc).__name__}: {exc}"}
         return {"shot": name, "shot_scroll_top": scroll}
@@ -358,7 +358,7 @@ class SceneRunner:
         window_name = f"action:{slot.action}"
         if entry is None:
             return ActionResult(
-                ran=False, reason=f"no action named {slot.action!r} is registered"
+                ran = False, reason = f"no action named {slot.action!r} is registered"
             ).row(slot.action, window_name, self.cell.cell_id)
 
         now_ms = (time.monotonic() - t0) * 1000
@@ -378,26 +378,26 @@ class SceneRunner:
                 f"(due at {slot.t_start_ms}ms, reached at {now_ms:.0f}ms)"
             )
             return ActionResult(
-                ran=False,
-                slot_missed=True,
-                reason=(
+                ran = False,
+                slot_missed = True,
+                reason = (
                     f"the slot opened at {slot.t_start_ms}ms and this machine reached it at "
                     f"{now_ms:.0f}ms, past its {slot.budget_ms}ms budget"
                 ),
-                expect={"t_start_ms": slot.t_start_ms, "reached_at_ms": round(now_ms, 1)},
+                expect = {"t_start_ms": slot.t_start_ms, "reached_at_ms": round(now_ms, 1)},
             ).row(slot.action, window_name, self.cell.cell_id)
 
         self._watch_visible()
         with self.open_window(window_name, "action") as window:
             ctx = ActionContext(
-                page=self.page,
-                cdp=self.cdp,
-                cell=self.cell,
-                window=window,
-                args={**self.base_args, **slot.args},
-                budget_ms=int(remaining),
-                dom=self.dom,
-                log=self.log,
+                page = self.page,
+                cdp = self.cdp,
+                cell = self.cell,
+                window = window,
+                args = {**self.base_args, **slot.args},
+                budget_ms = int(remaining),
+                dom = self.dom,
+                log = self.log,
             )
             try:
                 result = entry.fn(ctx)

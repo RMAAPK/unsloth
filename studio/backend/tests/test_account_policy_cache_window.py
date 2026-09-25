@@ -39,7 +39,7 @@ def _auth_client():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     app = FastAPI()
-    app.include_router(module.router, prefix="/api/auth")
+    app.include_router(module.router, prefix = "/api/auth")
     return TestClient(app)
 
 
@@ -88,14 +88,14 @@ def test_desktop_login_while_the_first_account_is_created_is_not_granted(auth_db
     client = _auth_client()
 
     # A single-user install answers desktop-login from the cached owner-only count.
-    granted = client.post("/api/auth/desktop-login", json={"secret": raw})
+    granted = client.post("/api/auth/desktop-login", json = {"secret": raw})
     assert granted.status_code == 200 and granted.json().get("access_token")
 
     seen = _observe_when_the_write_commits(
         monkeypatch,
-        lambda: client.post("/api/auth/desktop-login", json={"secret": raw}).json(),
+        lambda: client.post("/api/auth/desktop-login", json = {"secret": raw}).json(),
     )
-    storage.issue_account_setup_code(username="alice")
+    storage.issue_account_setup_code(username = "alice")
 
     assert seen["counts"] == (2, 1), "the managed account must already be durable"
     assert seen["observed"] == {"login_required": True, "login_mode": "multi"}
@@ -105,7 +105,7 @@ def test_the_policy_verdict_follows_the_committed_row_while_creating(auth_db, mo
     assert policy.installation_is_multi_user() is False
 
     seen = _observe_when_the_write_commits(monkeypatch, policy.installation_is_multi_user)
-    storage.issue_account_setup_code(username="alice")
+    storage.issue_account_setup_code(username = "alice")
 
     assert seen["counts"] == (2, 1)
     assert seen["observed"] is True
@@ -113,7 +113,7 @@ def test_the_policy_verdict_follows_the_committed_row_while_creating(auth_db, mo
 
 
 def test_the_policy_verdict_follows_the_committed_row_while_reactivating(auth_db, monkeypatch):
-    account = storage.issue_account_setup_code(username="alice")["account"]
+    account = storage.issue_account_setup_code(username = "alice")["account"]
     storage.set_account_active(account["account_id"], False)
     assert policy.installation_is_multi_user() is False
 

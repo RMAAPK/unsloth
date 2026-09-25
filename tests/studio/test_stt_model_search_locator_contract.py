@@ -33,14 +33,14 @@ TAB_TEST_ID = "data-testid={`settings-tab-${tab.id}`}"
 
 @pytest.mark.parametrize("test_id", sorted(TEST_IDS))
 def test_the_element_carries_the_test_id(test_id):
-    source = VOICE_TAB.read_text(encoding="utf-8")
+    source = VOICE_TAB.read_text(encoding = "utf-8")
     assert f'data-testid="{test_id}"' in source, (test_id, VOICE_TAB)
 
 
 @pytest.mark.parametrize("test_id,key", sorted(TEST_IDS.items()))
 def test_the_test_id_sits_on_the_right_element(test_id, key):
     """A test id on the wrong element still passes above, so require it beside its key."""
-    source = VOICE_TAB.read_text(encoding="utf-8")
+    source = VOICE_TAB.read_text(encoding = "utf-8")
     index = source.index(f'data-testid="{test_id}"')
     block = source[max(0, index - 400) : index + 400]
     assert key in block, (test_id, block)
@@ -48,16 +48,16 @@ def test_the_test_id_sits_on_the_right_element(test_id, key):
 
 @pytest.mark.parametrize("test_id", sorted(TEST_IDS))
 def test_the_driver_uses_it(test_id):
-    source = EXTRA_UI.read_text(encoding="utf-8")
+    source = EXTRA_UI.read_text(encoding = "utf-8")
     assert f'get_by_test_id("{test_id}")' in source, (test_id, EXTRA_UI)
 
 
 def test_the_voice_settings_tab_is_reachable_by_test_id():
     """The step's first click is the Voice tab, whose label is translated too."""
-    source = SETTINGS_DIALOG.read_text(encoding="utf-8")
+    source = SETTINGS_DIALOG.read_text(encoding = "utf-8")
     assert TAB_TEST_ID in source, SETTINGS_DIALOG
     assert 'id: "voice"' in source, SETTINGS_DIALOG
-    assert 'get_by_test_id("settings-tab-voice")' in EXTRA_UI.read_text(encoding="utf-8")
+    assert 'get_by_test_id("settings-tab-voice")' in EXTRA_UI.read_text(encoding = "utf-8")
 
 
 # Locators that resolve through user-visible copy (get_by_role only with a name).
@@ -101,7 +101,7 @@ def line_range(source, start, end):
 
 def test_the_dictation_step_binds_to_no_translated_copy_at_all():
     """The whole step, not just the input: a reword anywhere in it repeats the outage."""
-    source = EXTRA_UI.read_text(encoding="utf-8")
+    source = EXTRA_UI.read_text(encoding = "utf-8")
     start = source.index("Voice model picker: real mouse-wheel scrolling")
     end = source.index("results.hover()", start)
     offenders = copy_locator_calls(source, *line_range(source, start, end))
@@ -136,7 +136,7 @@ def test_the_guard_ignores_calls_outside_the_range():
 
 def test_no_playwright_step_locates_this_input_by_its_copy():
     """The regression itself: one copy edit away from taking the job down again."""
-    source = EXTRA_UI.read_text(encoding="utf-8")
+    source = EXTRA_UI.read_text(encoding = "utf-8")
     offenders = [
         line.strip()
         for line in source.splitlines()
@@ -147,12 +147,12 @@ def test_no_playwright_step_locates_this_input_by_its_copy():
 
 def test_ci_actually_runs_this_file():
     """Repo-root pytest discovery skips this file, so a workflow must name it."""
-    workflow = (REPO / ".github/workflows/studio-ui-smoke.yml").read_text(encoding="utf-8")
+    workflow = (REPO / ".github/workflows/studio-ui-smoke.yml").read_text(encoding = "utf-8")
     assert f"pytest tests/studio/{Path(__file__).name}" in workflow, workflow
     assert "tests/studio/**" in workflow, "the workflow must trigger on this path"
 
 
 def test_the_english_copy_is_still_free_to_change():
     """Assert the key, not the string, so the wording stays free to change."""
-    source = EN_LOCALE.read_text(encoding="utf-8")
+    source = EN_LOCALE.read_text(encoding = "utf-8")
     assert "sttModelSearchPlaceholder:" in source, EN_LOCALE

@@ -42,8 +42,8 @@ def _shared_setup_2(monkeypatch):
 
 def _shared_setup_3(rag_home):
     source, folder = _folder(rag_home)
-    (source / "keep.txt").write_text("durable keeper", encoding="utf-8")
-    (source / "doomed.txt").write_text("removable words", encoding="utf-8")
+    (source / "keep.txt").write_text("durable keeper", encoding = "utf-8")
+    (source / "doomed.txt").write_text("removable words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
 
     (source / "doomed.txt").unlink()
@@ -52,9 +52,8 @@ def _shared_setup_3(rag_home):
 
 def _shared_setup_4():
     from routes import rag as rag_routes
-
     with _connection() as conn:
-        store.create_kb(conn, name="Knowledge", kb_id="knowledge")
+        store.create_kb(conn, name = "Knowledge", kb_id = "knowledge")
     # Only the module escapes: `_connection` is a `closing(...)`, so `conn` is shut.
     return rag_routes
 
@@ -75,12 +74,12 @@ def _shared_setup_6(payload, snapshot):
 
 
 requires_sqlite_vec = pytest.mark.skipif(
-    not rag_db.RAG_AVAILABLE, reason="sqlite-vec is not installed"
+    not rag_db.RAG_AVAILABLE, reason = "sqlite-vec is not installed"
 )
 
 
 def _run(folder_id: str, *, rebuild: bool = False) -> dict:
-    job_id = folder_sync.request_sync(folder_id, rebuild=rebuild)
+    job_id = folder_sync.request_sync(folder_id, rebuild = rebuild)
     folder_sync.reconcile_folder(job_id)
     return folder_sync.get_job(job_id)
 
@@ -89,10 +88,10 @@ def _folder(rag_home: Path, scope_type: str = "knowledge_base"):
     source = rag_home / "source"
     source.mkdir()
     row = folder_sync.create_folder(
-        scope_type=scope_type,
-        scope_id="scope-1",
-        path=str(source),
-        name="Docs",
+        scope_type = scope_type,
+        scope_id = "scope-1",
+        path = str(source),
+        name = "Docs",
     )
     return source, row
 
@@ -102,7 +101,7 @@ def _connection(*, metadata: bool = False):
     return closing(connect())
 
 
-def _row(sql: str, params=()) -> dict | None:
+def _row(sql: str, params = ()) -> dict | None:
     with _connection() as conn:
         row = conn.execute(sql, params).fetchone()
     return dict(row) if row else None
@@ -144,11 +143,11 @@ def test_startup_preserves_foreign_leased_work_until_its_lease_expires(rag_home)
     with _connection() as conn:
         document_id = store.create_document(
             conn,
-            scope=folder["scope"],
-            filename="in-flight.txt",
-            sha256="foreign",
-            linked_folder_id=folder["id"],
-            linked_relative_path="in-flight.txt",
+            scope = folder["scope"],
+            filename = "in-flight.txt",
+            sha256 = "foreign",
+            linked_folder_id = folder["id"],
+            linked_relative_path = "in-flight.txt",
         )
         ingestion_job = ingestion._new_job(conn, document_id, folder["scope"])
         conn.execute("UPDATE linked_folder_sync_jobs SET status='running' WHERE id=?", (sync_job,))
@@ -194,16 +193,16 @@ def test_failed_replacement_commit_keeps_the_prior_snapshot_readable(
     """A rollback restores the old document, so its source must still be on disk."""
     source, folder = _folder(rag_home)
     path = source / "notes.txt"
-    path.write_text("first searchable text", encoding="utf-8")
+    path.write_text("first searchable text", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
     with _connection() as conn:
         stored_path = store.get_document(conn, before["document_id"])["stored_path"]
 
-    path.write_text("second searchable text", encoding="utf-8")
+    path.write_text("second searchable text", encoding = "utf-8")
     with _connection() as conn:
         replacement = store.create_document(
-            conn, scope=folder["scope"], filename="notes.txt", sha256="second"
+            conn, scope = folder["scope"], filename = "notes.txt", sha256 = "second"
         )
     stat = path.stat()
     metadata = {
@@ -233,7 +232,7 @@ def test_failed_deletion_commit_keeps_the_snapshot_readable(rag_home, stub_embed
     """An auto_sync=0 folder may not reconcile again for a long time."""
     source, folder = _folder(rag_home)
     path = source / "notes.txt"
-    path.write_text("only searchable text", encoding="utf-8")
+    path.write_text("only searchable text", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
     with _connection() as conn:
@@ -283,13 +282,13 @@ def test_unlink_completes_when_the_queue_claimed_the_job_first(rag_home):
 
     unlinked = []
     worker = threading.Thread(
-        target=lambda: unlinked.append(folder_sync.delete_folder(folder["id"])),
-        daemon=True,
+        target = lambda: unlinked.append(folder_sync.delete_folder(folder["id"])),
+        daemon = True,
     )
     worker.start()
     time.sleep(0.1)
     folder_sync.reconcile_folder(job_id)
-    worker.join(timeout=10)
+    worker.join(timeout = 10)
 
     assert not worker.is_alive(), "unlink is still waiting on a leaked claim"
     assert unlinked == [True]
@@ -328,11 +327,11 @@ def test_periodic_scheduling_reaps_orphans_a_survivor_never_saw_at_startup(rag_h
     with _connection() as conn:
         document_id = store.create_document(
             conn,
-            scope=folder["scope"],
-            filename="orphan.txt",
-            sha256="orphan",
-            linked_folder_id=folder["id"],
-            linked_relative_path="orphan.txt",
+            scope = folder["scope"],
+            filename = "orphan.txt",
+            sha256 = "orphan",
+            linked_folder_id = folder["id"],
+            linked_relative_path = "orphan.txt",
         )
         ingestion_job = ingestion._new_job(conn, document_id, folder["scope"])
         conn.execute(
@@ -373,10 +372,10 @@ def test_normal_scheduling_reclaims_an_expired_running_job(rag_home):
 @requires_sqlite_vec
 def test_reconcile_add_rename_delete_and_skip_unsupported_and_symlinks(rag_home, stub_embeddings):
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("alpha original", encoding="utf-8")
-    (source / "ignored.exe").write_text("alpha ignored", encoding="utf-8")
+    (source / "notes.txt").write_text("alpha original", encoding = "utf-8")
+    (source / "ignored.exe").write_text("alpha ignored", encoding = "utf-8")
     outside = rag_home / "outside.txt"
-    outside.write_text("alpha outside", encoding="utf-8")
+    outside.write_text("alpha outside", encoding = "utf-8")
     try:
         (source / "escape.txt").symlink_to(outside)
     except OSError:
@@ -427,8 +426,8 @@ def test_reconcile_add_rename_delete_and_skip_unsupported_and_symlinks(rag_home,
 def test_scan_skips_revisited_directory_identity(rag_home, monkeypatch):
     source = rag_home / "cycle"
     loop = source / "loop"
-    loop.mkdir(parents=True)
-    (source / "notes.txt").write_text("alpha", encoding="utf-8")
+    loop.mkdir(parents = True)
+    (source / "notes.txt").write_text("alpha", encoding = "utf-8")
     original_scandir = os.scandir
     scanned = []
 
@@ -456,10 +455,10 @@ def test_scan_keeps_distinct_directories_with_duplicate_identity(
     source = rag_home / "duplicate-identities"
     first = source / "first"
     second = source / "second"
-    first.mkdir(parents=True)
+    first.mkdir(parents = True)
     second.mkdir()
-    (first / "first.txt").write_text("first", encoding="utf-8")
-    (second / "second.txt").write_text("second", encoding="utf-8")
+    (first / "first.txt").write_text("first", encoding = "utf-8")
+    (second / "second.txt").write_text("second", encoding = "utf-8")
     original_scandir = os.scandir
 
     class WeakIdentityEntry:
@@ -469,10 +468,10 @@ def test_scan_keeps_distinct_directories_with_duplicate_identity(
         def __getattr__(self, name):
             return getattr(self._entry, name)
 
-        def stat(self, *, follow_symlinks=True):
-            if self._entry.is_dir(follow_symlinks=follow_symlinks):
-                return SimpleNamespace(st_dev=directory_identity[0], st_ino=directory_identity[1])
-            return self._entry.stat(follow_symlinks=follow_symlinks)
+        def stat(self, *, follow_symlinks = True):
+            if self._entry.is_dir(follow_symlinks = follow_symlinks):
+                return SimpleNamespace(st_dev = directory_identity[0], st_ino = directory_identity[1])
+            return self._entry.stat(follow_symlinks = follow_symlinks)
 
     class WeakIdentityScandir:
         def __init__(self, path):
@@ -499,8 +498,8 @@ def test_scan_keeps_distinct_directories_with_duplicate_identity(
 @requires_sqlite_vec
 def test_reconcile_pins_one_embedding_model_for_every_file(rag_home, stub_embeddings, monkeypatch):
     source, folder = _folder(rag_home)
-    (source / "first.txt").write_text("first words", encoding="utf-8")
-    (source / "second.txt").write_text("second words", encoding="utf-8")
+    (source / "first.txt").write_text("first words", encoding = "utf-8")
+    (source / "second.txt").write_text("second words", encoding = "utf-8")
     resolved = []
     models = []
 
@@ -528,7 +527,7 @@ def test_reconcile_retains_mapping_when_missing_file_reappears(
 ):
     source, folder = _folder(rag_home)
     linked = source / "notes.txt"
-    linked.write_text("durable words", encoding="utf-8")
+    linked.write_text("durable words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
     linked.unlink()
@@ -536,7 +535,7 @@ def test_reconcile_retains_mapping_when_missing_file_reappears(
 
     def restore_after_scan(*args, **kwargs):
         result = original_scan(*args, **kwargs)
-        linked.write_text("durable words", encoding="utf-8")
+        linked.write_text("durable words", encoding = "utf-8")
         return result
 
     monkeypatch.setattr(folder_sync, "_scan", restore_after_scan)
@@ -556,7 +555,7 @@ def test_extension_changing_rename_reingests_with_the_new_parser(rag_home, stub_
     original = source / "notes.html"
     original.write_text(
         "<p>visible alpha</p><script>hiddenscripttoken</script>",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert _run(folder["id"])["status"] == "completed"
     with _connection() as conn:
@@ -584,14 +583,14 @@ def test_extension_changing_rename_reingests_with_the_new_parser(rag_home, stub_
 def test_rename_reuse_verifies_content_before_reusing_the_document(rag_home, stub_embeddings):
     source, folder = _folder(rag_home)
     original = source / "original.txt"
-    original.write_text("first words", encoding="utf-8")
+    original.write_text("first words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
 
     renamed = source / "renamed.txt"
     original.rename(renamed)
-    renamed.write_text("other words", encoding="utf-8")
-    os.utime(renamed, ns=(renamed.stat().st_atime_ns, before["mtime_ns"]))
+    renamed.write_text("other words", encoding = "utf-8")
+    os.utime(renamed, ns = (renamed.stat().st_atime_ns, before["mtime_ns"]))
     assert renamed.stat().st_ino == before["inode"]
     assert renamed.stat().st_size == before["size_bytes"]
 
@@ -609,13 +608,13 @@ def test_rename_reuse_verifies_content_before_reusing_the_document(rag_home, stu
 def test_edited_rename_failure_retains_the_prior_mapping(rag_home, stub_embeddings, monkeypatch):
     source, folder = _folder(rag_home)
     original = source / "original.txt"
-    original.write_text("durable prior words", encoding="utf-8")
+    original.write_text("durable prior words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
 
     renamed = source / "renamed.txt"
     original.rename(renamed)
-    renamed.write_text("replacement content that fails", encoding="utf-8")
+    renamed.write_text("replacement content that fails", encoding = "utf-8")
     assert renamed.stat().st_ino == before["inode"]
     _shared_setup_2(monkeypatch)
 
@@ -639,8 +638,8 @@ def test_rename_over_existing_path_failure_retains_both_prior_mappings(
     source, folder = _folder(rag_home)
     old = source / "old.txt"
     destination = source / "destination.txt"
-    old.write_text("durable source", encoding="utf-8")
-    destination.write_text("durable destination", encoding="utf-8")
+    old.write_text("durable source", encoding = "utf-8")
+    destination.write_text("durable destination", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     os.replace(old, destination)
     _shared_setup_2(monkeypatch)
@@ -665,13 +664,13 @@ def test_rename_over_existing_path_failure_retains_both_prior_mappings(
 def test_changed_file_failure_and_unavailable_scan_retain_prior_index(
     rag_home, stub_embeddings, monkeypatch
 ):
-    source, folder = _folder(rag_home, scope_type="project")
+    source, folder = _folder(rag_home, scope_type = "project")
     path = source / "notes.txt"
-    path.write_text("durable prior words", encoding="utf-8")
+    path.write_text("durable prior words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     prior = _mapping(folder)
 
-    path.write_text("replacement content that fails", encoding="utf-8")
+    path.write_text("replacement content that fails", encoding = "utf-8")
     _shared_setup_2(monkeypatch)
     failed = _run(folder["id"])
     assert failed["status"] == "failed"
@@ -697,7 +696,7 @@ def test_changed_file_failure_and_unavailable_scan_retain_prior_index(
 @requires_sqlite_vec
 def test_replaced_empty_root_fails_and_retains_prior_index(rag_home, stub_embeddings):
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("retained root document", encoding="utf-8")
+    (source / "notes.txt").write_text("retained root document", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     prior = _mapping(folder)
 
@@ -720,7 +719,7 @@ def test_reauthorizing_same_path_refreshes_root_identity_and_retains_mappings(
     rag_home, stub_embeddings
 ):
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("retained after remount", encoding="utf-8")
+    (source / "notes.txt").write_text("retained after remount", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     with _connection() as conn:
         mapping_before = dict(
@@ -739,18 +738,18 @@ def test_reauthorizing_same_path_refreshes_root_identity_and_retains_mappings(
     def reauthorize():
         refreshed.update(
             folder_sync.create_folder(
-                scope_type="knowledge_base",
-                scope_id="scope-1",
-                path=str(source),
+                scope_type = "knowledge_base",
+                scope_id = "scope-1",
+                path = str(source),
             )
         )
         reauthorized.set()
 
     with folder_sync._folder_lock(folder["id"]):
-        thread = threading.Thread(target=reauthorize)
+        thread = threading.Thread(target = reauthorize)
         thread.start()
         assert not reauthorized.wait(0.1)
-    thread.join(timeout=1)
+    thread.join(timeout = 1)
 
     source_stat = source.stat()
     assert reauthorized.is_set()
@@ -789,14 +788,14 @@ def test_directory_lease_contract_preserves_path_and_purpose(rag_home, source_na
     def verify(lease, **kwargs):
         calls.append((lease, kwargs))
         return SimpleNamespace(
-            canonical_path=source,
-            device_id=identity[0],
-            file_id=identity[1],
+            canonical_path = source,
+            device_id = identity[0],
+            file_id = identity[1],
         )
 
     from routes.rag import _resolve_linked_folder_path
 
-    assert _resolve_linked_folder_path("signed", verifier=verify) == (str(source), identity)
+    assert _resolve_linked_folder_path("signed", verifier = verify) == (str(source), identity)
     assert calls[0][0] == "signed"
     assert calls[0][1] == {
         "operation": "link-documents",
@@ -814,12 +813,12 @@ def test_registration_rechecks_the_signed_folder_identity(rag_home, monkeypatch)
     identities = iter((signed_identity, replacement_identity))
     monkeypatch.setattr(folder_sync, "_root_identity", lambda path: next(identities))
 
-    with pytest.raises(ValueError, match="changed after it was selected"):
+    with pytest.raises(ValueError, match = "changed after it was selected"):
         folder_sync.create_folder(
-            scope_type="project",
-            scope_id="identity-race",
-            path=str(source),
-            expected_identity=signed_identity,
+            scope_type = "project",
+            scope_id = "identity-race",
+            path = str(source),
+            expected_identity = signed_identity,
         )
 
     assert folder_sync.list_folders(store.project_scope("identity-race")) == []
@@ -833,10 +832,10 @@ def test_large_windows_root_identity_round_trips_through_sqlite(rag_home, monkey
     monkeypatch.setattr(folder_sync, "_root_identity", lambda path: identity)
 
     folder = folder_sync.create_folder(
-        scope_type="knowledge_base",
-        scope_id="large-identity",
-        path=str(source),
-        expected_identity=identity,
+        scope_type = "knowledge_base",
+        scope_id = "large-identity",
+        path = str(source),
+        expected_identity = identity,
     )
 
     assert folder_sync._load_identity(folder["root_device"], folder["root_inode"]) == identity
@@ -848,11 +847,11 @@ def test_large_windows_file_identity_round_trips_through_sqlite(
 ):
     """CPython 3.12+ reads st_ino from FILE_ID_INFO, so a ReFS file id is 128-bit."""
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("large identity text", encoding="utf-8")
+    (source / "notes.txt").write_text("large identity text", encoding = "utf-8")
     identity = (1 << 63, 1 << 127)
     real_scan, real_snapshot = folder_sync._scan, folder_sync._snapshot
 
-    def scan(root, expected_identity=None):
+    def scan(root, expected_identity = None):
         found, root_identity = real_scan(root, expected_identity)
         for metadata in found.values():
             metadata["scanned"], (metadata["device"], metadata["inode"]) = (
@@ -881,7 +880,7 @@ def test_large_windows_file_identity_round_trips_through_sqlite(
 @pytest.mark.parametrize(
     "value",
     [0, 1, (1 << 63) - 2, (1 << 63) - 1, 1 << 63, (1 << 63) + 1, (1 << 64) - 1, 1 << 127],
-    ids=["zero", "one", "below-max", "at-max", "at-2-63", "above-2-63", "uint64-max", "refs-128"],
+    ids = ["zero", "one", "below-max", "at-max", "at-2-63", "above-2-63", "uint64-max", "refs-128"],
 )
 def test_identities_round_trip_across_the_sqlite_integer_boundary(value):
     """os.stat ids are unsigned, SQLite INTEGER is signed, and the encoding straddles that edge."""
@@ -912,16 +911,16 @@ def test_reauthorizing_encodes_a_root_identity_above_the_sqlite_maximum(
     real st_dev on this host is far too small to reach the encoding at all.
     """
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("kept across the remount", encoding="utf-8")
+    (source / "notes.txt").write_text("kept across the remount", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     identity = (0xAC8C2FEF8C2FB32E, 1 << 127)
 
     monkeypatch.setattr(folder_sync, "_root_identity", lambda path: identity)
 
     refreshed = folder_sync.create_folder(
-        scope_type="knowledge_base",
-        scope_id="scope-1",
-        path=str(source),
+        scope_type = "knowledge_base",
+        scope_id = "scope-1",
+        path = str(source),
     )
 
     assert refreshed["id"] == folder["id"]
@@ -938,16 +937,16 @@ def test_validate_folder_rejects_symlink_root(rag_home):
     source.mkdir()
     alias = rag_home / "alias"
     try:
-        alias.symlink_to(source, target_is_directory=True)
+        alias.symlink_to(source, target_is_directory = True)
     except OSError:
         pytest.skip("directory symlinks are unavailable")
-    with pytest.raises(ValueError, match="Symbolic-link"):
+    with pytest.raises(ValueError, match = "Symbolic-link"):
         folder_sync.validate_folder_path(str(alias))
 
 
 def test_snapshot_copy_is_bounded_to_the_validated_size():
     target = io.BytesIO()
-    with pytest.raises(RuntimeError, match="changed while it was copied"):
+    with pytest.raises(RuntimeError, match = "changed while it was copied"):
         folder_sync._copy_exact(io.BytesIO(b"validated-and-growing"), target, 9)
     assert target.getvalue() == b"validated"
 
@@ -983,7 +982,7 @@ def test_snapshot_accepts_a_source_the_scan_could_not_identify(rag_home):
     document = source / "notes.md"
     payload = b"windows scandir reports no identity\n"
     document.write_bytes(payload)
-    metadata = _snapshot_metadata(document, device=0, inode=0)
+    metadata = _snapshot_metadata(document, device = 0, inode = 0)
 
     snapshot = folder_sync._snapshot(str(source), metadata)
 
@@ -995,10 +994,10 @@ def test_snapshot_still_rejects_a_changed_source_without_an_identity(rag_home):
     source.mkdir()
     document = source / "notes.md"
     document.write_bytes(b"original")
-    metadata = _snapshot_metadata(document, device=0, inode=0)
+    metadata = _snapshot_metadata(document, device = 0, inode = 0)
     document.write_bytes(b"replaced with a longer body")
 
-    with pytest.raises(RuntimeError, match="changed during reconciliation"):
+    with pytest.raises(RuntimeError, match = "changed during reconciliation"):
         folder_sync._snapshot(str(source), metadata)
 
 
@@ -1008,7 +1007,7 @@ def test_snapshot_rejects_a_source_swapped_mid_copy_without_an_identity(rag_home
     source.mkdir()
     document = source / "notes.md"
     document.write_bytes(b"stable body")
-    metadata = _snapshot_metadata(document, device=0, inode=0)
+    metadata = _snapshot_metadata(document, device = 0, inode = 0)
     real_copy = folder_sync._copy_exact
 
     def copy_then_touch(src, dst, size):
@@ -1018,7 +1017,7 @@ def test_snapshot_rejects_a_source_swapped_mid_copy_without_an_identity(rag_home
 
     monkeypatch.setattr(folder_sync, "_copy_exact", copy_then_touch)
 
-    with pytest.raises(RuntimeError, match="changed while it was copied"):
+    with pytest.raises(RuntimeError, match = "changed while it was copied"):
         folder_sync._snapshot(str(source), metadata)
 
 
@@ -1027,9 +1026,9 @@ def test_snapshot_compares_the_identity_when_the_scan_recorded_one(rag_home):
     source.mkdir()
     document = source / "notes.md"
     document.write_bytes(b"same size body")
-    metadata = _snapshot_metadata(document, inode=os.stat(document).st_ino + 1)
+    metadata = _snapshot_metadata(document, inode = os.stat(document).st_ino + 1)
 
-    with pytest.raises(RuntimeError, match="changed during reconciliation"):
+    with pytest.raises(RuntimeError, match = "changed during reconciliation"):
         folder_sync._snapshot(str(source), metadata)
 
 
@@ -1041,7 +1040,7 @@ def test_snapshot_ignores_a_path_recovered_identity_os_fstat_disagrees_with(rag_
     payload = b"the scan recovered an id os.fstat will not repeat\n"
     document.write_bytes(payload)
     metadata = _snapshot_metadata(
-        document, inode=os.stat(document).st_ino + 1, identity_from_path=True
+        document, inode = os.stat(document).st_ino + 1, identity_from_path = True
     )
 
     snapshot = folder_sync._snapshot(str(source), metadata)
@@ -1053,13 +1052,13 @@ def test_snapshot_ignores_a_path_recovered_identity_os_fstat_disagrees_with(rag_
 def test_linked_folders_cannot_overlap_within_a_scope(rag_home):
     parent = rag_home / "parent"
     child = parent / "child"
-    child.mkdir(parents=True)
-    folder_sync.create_folder(scope_type="project", scope_id="one", path=str(parent))
+    child.mkdir(parents = True)
+    folder_sync.create_folder(scope_type = "project", scope_id = "one", path = str(parent))
 
-    with pytest.raises(ValueError, match="cannot overlap"):
-        folder_sync.create_folder(scope_type="project", scope_id="one", path=str(child))
+    with pytest.raises(ValueError, match = "cannot overlap"):
+        folder_sync.create_folder(scope_type = "project", scope_id = "one", path = str(child))
 
-    other_scope = folder_sync.create_folder(scope_type="project", scope_id="two", path=str(child))
+    other_scope = folder_sync.create_folder(scope_type = "project", scope_id = "two", path = str(child))
     assert other_scope["path"] == str(child)
 
 
@@ -1071,8 +1070,8 @@ def test_linked_folder_rejects_managed_rag_uploads_overlap(rag_home):
     uploads_child = uploads / "child"
     uploads_child.mkdir()
     for path in [uploads.parent, uploads, uploads_child]:
-        with pytest.raises(ValueError, match="managed RAG uploads"):
-            folder_sync.create_folder(scope_type="project", scope_id="one", path=str(path))
+        with pytest.raises(ValueError, match = "managed RAG uploads"):
+            folder_sync.create_folder(scope_type = "project", scope_id = "one", path = str(path))
 
 
 def test_backend_routes_match_linked_folder_client_contract():
@@ -1096,13 +1095,13 @@ def test_backend_routes_match_linked_folder_client_contract():
 def test_same_size_same_mtime_inode_replacement_is_reconciled(rag_home, stub_embeddings):
     source, folder = _folder(rag_home)
     path = source / "notes.txt"
-    path.write_text("first text", encoding="utf-8")
+    path.write_text("first text", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
 
     replacement = source / "replacement.txt"
-    replacement.write_text("other text", encoding="utf-8")
-    os.utime(replacement, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns))
+    replacement.write_text("other text", encoding = "utf-8")
+    os.utime(replacement, ns = (path.stat().st_atime_ns, path.stat().st_mtime_ns))
     replacement.replace(path)
     assert path.stat().st_size == before["size_bytes"]
     assert path.stat().st_mtime_ns == before["mtime_ns"]
@@ -1133,8 +1132,8 @@ class _IdentitylessEntry:
     def __init__(self, entry):
         self._entry = entry
 
-    def stat(self, *, follow_symlinks=True):
-        return _IdentitylessStat(self._entry.stat(follow_symlinks=follow_symlinks))
+    def stat(self, *, follow_symlinks = True):
+        return _IdentitylessStat(self._entry.stat(follow_symlinks = follow_symlinks))
 
     def __getattr__(self, name):
         return getattr(self._entry, name)
@@ -1160,14 +1159,14 @@ def test_same_size_same_mtime_replacement_is_reconciled_without_a_scandir_identi
     """The scan must recover the identity itself, or Windows indexes go stale forever."""
     source, folder = _folder(rag_home)
     path = source / "notes.txt"
-    path.write_text("first text", encoding="utf-8")
+    path.write_text("first text", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
     assert before["inode"] not in (None, 0, "0")
 
     replacement = source / "replacement.txt"
-    replacement.write_text("other text", encoding="utf-8")
-    os.utime(replacement, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns))
+    replacement.write_text("other text", encoding = "utf-8")
+    os.utime(replacement, ns = (path.stat().st_atime_ns, path.stat().st_mtime_ns))
     replacement.replace(path)
     assert path.stat().st_size == before["size_bytes"]
     assert path.stat().st_mtime_ns == before["mtime_ns"]
@@ -1186,12 +1185,12 @@ def test_content_identical_touch_updates_metadata_without_reembedding(
 ):
     source, folder = _folder(rag_home)
     path = source / "notes.txt"
-    path.write_text("stable searchable text", encoding="utf-8")
+    path.write_text("stable searchable text", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     before = _mapping(folder)
     assert before["content_hash"]
 
-    os.utime(path, ns=(path.stat().st_atime_ns, path.stat().st_mtime_ns + 1_000_000))
+    os.utime(path, ns = (path.stat().st_atime_ns, path.stat().st_mtime_ns + 1_000_000))
     monkeypatch.setattr(
         folder_sync.ingestion,
         "start_ingestion",
@@ -1217,7 +1216,7 @@ def test_sync_requests_are_atomically_deduplicated_and_history_is_pruned(rag_hom
         barrier.wait()
         results.append(folder_sync.request_sync(folder["id"]))
 
-    threads = [threading.Thread(target=request) for _ in range(2)]
+    threads = [threading.Thread(target = request) for _ in range(2)]
     for thread in threads:
         thread.start()
     barrier.wait()
@@ -1264,7 +1263,7 @@ def test_rebuild_requested_during_running_sync_queues_a_successor(rag_home):
         conn.execute("UPDATE linked_folder_sync_jobs SET status='running' WHERE id=?", (sync_job,))
         conn.commit()
 
-    assert folder_sync.request_sync(folder["id"], rebuild=True) == sync_job
+    assert folder_sync.request_sync(folder["id"], rebuild = True) == sync_job
     folder_sync.reconcile_folder(sync_job)
 
     with _connection() as conn:
@@ -1320,7 +1319,7 @@ def test_pending_rebuild_promotion_clears_a_recovered_successor_flag(rag_home):
         )
         conn.commit()
 
-    assert folder_sync.request_sync(folder["id"], rebuild=True) == job_id
+    assert folder_sync.request_sync(folder["id"], rebuild = True) == job_id
     with _connection() as conn:
         job = conn.execute(
             "SELECT kind, successor_kind FROM linked_folder_sync_jobs WHERE id=?", (job_id,)
@@ -1365,11 +1364,11 @@ def test_global_folder_list_resolves_scope_name(rag_home, monkeypatch):
     monkeypatch.setattr(studio_db, "list_chat_projects", lambda **kwargs: [])
 
     with _connection() as conn:
-        store.create_kb(conn, name="Knowledge One", kb_id="kb1")
+        store.create_kb(conn, name = "Knowledge One", kb_id = "kb1")
     source = rag_home / "source"
     source.mkdir()
-    folder_sync.create_folder(scope_type="knowledge_base", scope_id="kb1", path=str(source))
-    result = list_linked_folders(scope_type=None, scope_id=None, subject="test")
+    folder_sync.create_folder(scope_type = "knowledge_base", scope_id = "kb1", path = str(source))
+    result = list_linked_folders(scope_type = None, scope_id = None, subject = "test")
     assert result["linkedFolders"][0]["scopeName"] == "Knowledge One"
 
 
@@ -1412,7 +1411,7 @@ def test_reconcile_errors_do_not_persist_native_paths(rag_home, monkeypatch):
 @requires_sqlite_vec
 def test_shutdown_requeues_a_scan_before_it_mutates_mappings(rag_home, monkeypatch):
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("pending shutdown", encoding="utf-8")
+    (source / "notes.txt").write_text("pending shutdown", encoding = "utf-8")
     original_scan = folder_sync._scan
 
     def stop_after_scan(*args, **kwargs):
@@ -1453,7 +1452,7 @@ def test_start_auto_sync_queues_replacement_for_retired_live_worker(monkeypatch)
         blocker.wait()
         released.set()
 
-    thread = threading.Thread(target=parked)
+    thread = threading.Thread(target = parked)
     thread.start()
     original_thread = folder_sync._thread
     original_thread_stop = folder_sync._thread_stop
@@ -1470,9 +1469,9 @@ def test_start_auto_sync_queues_replacement_for_retired_live_worker(monkeypatch)
         assert folder_sync._thread.is_alive()
     finally:
         blocker.set()
-        thread.join(timeout=1)
+        thread.join(timeout = 1)
         folder_sync._worker_lock.release()
-        folder_sync.stop_auto_sync(timeout=1)
+        folder_sync.stop_auto_sync(timeout = 1)
         if not original_stop:
             folder_sync._stop.clear()
         folder_sync._thread = original_thread
@@ -1565,10 +1564,10 @@ def test_unlink_does_not_wait_to_signal_a_locally_syncing_folder(rag_home):
 
     with folder_sync._folder_lock(folder["id"]):
         thread = threading.Thread(
-            target=lambda: (folder_sync.delete_folder(folder["id"]), deleted.set())
+            target = lambda: (folder_sync.delete_folder(folder["id"]), deleted.set())
         )
         thread.start()
-        thread.join(timeout=1)
+        thread.join(timeout = 1)
 
     assert deleted.is_set()
     assert folder_sync.get_folder(folder["id"]) is None
@@ -1577,7 +1576,7 @@ def test_unlink_does_not_wait_to_signal_a_locally_syncing_folder(rag_home):
 @requires_sqlite_vec
 def test_unlink_keeps_snapshot_cleanup_retryable(rag_home, stub_embeddings, monkeypatch):
     source, folder = _folder(rag_home)
-    (source / "notes.txt").write_text("durable unlink", encoding="utf-8")
+    (source / "notes.txt").write_text("durable unlink", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
     with _connection() as conn:
         document = conn.execute(
@@ -1591,7 +1590,7 @@ def test_unlink_keeps_snapshot_cleanup_retryable(rag_home, stub_embeddings, monk
         lambda path: (_ for _ in ()).throw(OSError("snapshot is busy")),
     )
 
-    with pytest.raises(OSError, match="snapshot is busy"):
+    with pytest.raises(OSError, match = "snapshot is busy"):
         folder_sync.delete_folder(folder["id"])
 
     assert folder_sync.get_folder(folder["id"])["status"] == "retired"
@@ -1617,7 +1616,7 @@ def test_unlink_waits_for_a_foreign_sync_lease(rag_home):
         )
         conn.commit()
 
-    deletion = threading.Thread(target=folder_sync.delete_folder, args=(folder["id"],))
+    deletion = threading.Thread(target = folder_sync.delete_folder, args = (folder["id"],))
     deletion.start()
     deadline = time.time() + 2
     while time.time() < deadline and folder_sync.get_folder(folder["id"])["status"] != "retired":
@@ -1658,7 +1657,7 @@ def test_project_delete_runs_before_best_effort_rag_cleanup(monkeypatch):
 
     event_loop_thread = threading.get_ident()
     result = asyncio.run(
-        chat_history.delete_project("p1", SimpleNamespace(), current_subject="test")
+        chat_history.delete_project("p1", SimpleNamespace(), current_subject = "test")
     )
 
     assert result.id == "p1"
@@ -1692,8 +1691,8 @@ def test_project_post_commit_file_failure_still_retires_rag(monkeypatch):
     monkeypatch.setattr(chat_history, "delete_chat_project", delete)
     monkeypatch.setattr(chat_history, "_delete_project_rag_sources", cleanup)
 
-    with pytest.raises(OSError, match="workspace cleanup failed"):
-        asyncio.run(chat_history.delete_project("p1", SimpleNamespace(), current_subject="test"))
+    with pytest.raises(OSError, match = "workspace cleanup failed"):
+        asyncio.run(chat_history.delete_project("p1", SimpleNamespace(), current_subject = "test"))
 
     assert calls == ["delete", "cleanup:p1"]
 
@@ -1704,12 +1703,12 @@ def test_project_cleanup_persists_retirement_when_rag_is_unavailable(rag_home, m
 
     source = rag_home / "unavailable-project"
     source.mkdir()
-    folder = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    folder = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
     monkeypatch.setattr(rag_db, "rag_available", lambda: False)
 
     chat_history._delete_project_rag_sources("p1")
 
-    with _connection(metadata=True) as metadata:
+    with _connection(metadata = True) as metadata:
         retired = metadata.execute(
             "SELECT purged_at FROM linked_folder_retired_scopes WHERE scope=?",
             (store.project_scope("p1"),),
@@ -1727,9 +1726,9 @@ def test_startup_retires_and_deletes_an_orphaned_project_scope(rag_home, stub_em
     scope = store.project_scope("deleted-project")
     source = rag_home / "deleted-project"
     source.mkdir()
-    (source / "notes.txt").write_text("managed snapshot", encoding="utf-8")
+    (source / "notes.txt").write_text("managed snapshot", encoding = "utf-8")
     folder = folder_sync.create_folder(
-        scope_type="project", scope_id="deleted-project", path=str(source)
+        scope_type = "project", scope_id = "deleted-project", path = str(source)
     )
     assert _run(folder["id"])["status"] == "completed"
     with _connection() as conn:
@@ -1762,7 +1761,7 @@ def test_retired_scope_waits_for_manual_ingestion_before_purging(
 
     scope = store.project_scope("uploading-project")
     upload = ensure_dir(rag_uploads_root()) / "in-flight.txt"
-    upload.write_text("durable in-flight words", encoding="utf-8")
+    upload.write_text("durable in-flight words", encoding = "utf-8")
     parsing = threading.Event()
     release = threading.Event()
     original_parse = ingestion.parsers.parse
@@ -1774,7 +1773,7 @@ def test_retired_scope_waits_for_manual_ingestion_before_purging(
 
     monkeypatch.setattr(ingestion.parsers, "parse", blocked_parse)
     document_id, job_id = ingestion.start_ingestion(
-        scope, None, None, upload.name, str(upload), project_id="uploading-project"
+        scope, None, None, upload.name, str(upload), project_id = "uploading-project"
     )
     assert parsing.wait(5)
     folder_sync.retire_scope(scope)
@@ -1805,9 +1804,9 @@ def test_retired_scope_cleanup_keeps_retry_state_when_file_removal_fails(
     scope = store.project_scope("retry-project")
     source = rag_home / "retry-project"
     source.mkdir()
-    (source / "notes.txt").write_text("managed snapshot", encoding="utf-8")
+    (source / "notes.txt").write_text("managed snapshot", encoding = "utf-8")
     folder = folder_sync.create_folder(
-        scope_type="project", scope_id="retry-project", path=str(source)
+        scope_type = "project", scope_id = "retry-project", path = str(source)
     )
     assert _run(folder["id"])["status"] == "completed"
     folder_sync.retire_scope(scope)
@@ -1817,7 +1816,7 @@ def test_retired_scope_cleanup_keeps_retry_state_when_file_removal_fails(
         lambda path: (_ for _ in ()).throw(OSError("snapshot is busy")),
     )
 
-    with pytest.raises(OSError, match="snapshot is busy"):
+    with pytest.raises(OSError, match = "snapshot is busy"):
         folder_sync.delete_retired_scope(scope)
 
     assert folder_sync.scope_retired(scope) is True
@@ -1848,7 +1847,7 @@ def test_project_writer_contention_does_not_retire_a_live_project(rag_home, monk
     source = rag_home / "locked-project-delete"
     source.mkdir()
     folder = folder_sync.create_folder(
-        scope_type="project", scope_id=project["id"], path=str(source)
+        scope_type = "project", scope_id = project["id"], path = str(source)
     )
     blocker = studio_db.get_connection()
     original_get_connection = studio_db.get_connection
@@ -1861,10 +1860,10 @@ def test_project_writer_contention_does_not_retire_a_live_project(rag_home, monk
     blocker.execute("BEGIN IMMEDIATE")
     monkeypatch.setattr(studio_db, "get_connection", short_timeout_connection)
     try:
-        with pytest.raises(sqlite3.OperationalError, match="database is locked"):
+        with pytest.raises(sqlite3.OperationalError, match = "database is locked"):
             asyncio.run(
                 chat_history.delete_project(
-                    project["id"], SimpleNamespace(), current_subject="test"
+                    project["id"], SimpleNamespace(), current_subject = "test"
                 )
             )
         assert folder_sync.scope_retired(store.project_scope(project["id"])) is False
@@ -1886,7 +1885,7 @@ def test_project_upload_cleans_saved_file_when_scope_retires_after_save(rag_home
 
     def resolve_upload(*args, **kwargs):
         nonlocal retired
-        saved_path.write_text("saved", encoding="utf-8")
+        saved_path.write_text("saved", encoding = "utf-8")
         retired = True
         return str(saved_path), "race.txt", "0" * 64
 
@@ -1905,7 +1904,7 @@ def test_project_upload_cleans_saved_file_when_scope_retires_after_save(rag_home
     )
 
     with pytest.raises(Exception) as exc_info:
-        rag_routes.upload_project_document(project_id, subject="test")
+        rag_routes.upload_project_document(project_id, subject = "test")
 
     assert getattr(exc_info.value, "status_code", None) == 409
     assert not saved_path.exists()
@@ -1924,7 +1923,7 @@ def test_upload_rechecks_owner_after_saving_file(rag_home, monkeypatch, scope_ty
 
     def resolve_upload(*args, **kwargs):
         nonlocal owner_exists
-        saved_path.write_text("saved", encoding="utf-8")
+        saved_path.write_text("saved", encoding = "utf-8")
         owner_exists = False
         return str(saved_path), saved_path.name, "0" * 64
 
@@ -1942,14 +1941,14 @@ def test_upload_rechecks_owner_after_saving_file(rag_home, monkeypatch, scope_ty
             "get_kb",
             lambda conn, value: {"id": value} if owner_exists else None,
         )
-        upload = partial(rag_routes.upload_kb_document, owner_id, subject="test")
+        upload = partial(rag_routes.upload_kb_document, owner_id, subject = "test")
     else:
         monkeypatch.setattr(
             studio_db,
             "get_chat_project",
             lambda value: {"id": value} if owner_exists else None,
         )
-        upload = partial(rag_routes.upload_project_document, owner_id, subject="test")
+        upload = partial(rag_routes.upload_project_document, owner_id, subject = "test")
 
     with pytest.raises(Exception) as exc_info:
         upload()
@@ -1972,7 +1971,7 @@ def test_linked_folder_rechecks_owner_after_resolving_lease(rag_home, monkeypatc
 
     def require_owner(kind, owner_id):
         if not owner_exists:
-            raise HTTPException(status_code=404, detail="Owner not found")
+            raise HTTPException(status_code = 404, detail = "Owner not found")
 
     monkeypatch.setattr(rag_routes, "_resolve_linked_folder_path", resolve_path)
     monkeypatch.setattr(rag_routes, "_require_scope_owner", require_owner)
@@ -1986,7 +1985,7 @@ def test_linked_folder_rechecks_owner_after_resolving_lease(rag_home, monkeypatc
         rag_routes._create_linked_folder(
             scope_type,
             "owner",
-            rag_routes.LinkFolderRequest(nativePathLease="lease"),
+            rag_routes.LinkFolderRequest(nativePathLease = "lease"),
         )
 
     assert exc_info.value.status_code == 404
@@ -2002,7 +2001,7 @@ def test_project_rag_cleanup_atomically_removes_retired_scope(rag_home):
         source = rag_home / name
         source.mkdir()
         folders.append(
-            folder_sync.create_folder(scope_type="project", scope_id="project", path=str(source))
+            folder_sync.create_folder(scope_type = "project", scope_id = "project", path = str(source))
         )
     chat_history._delete_project_rag_sources("project")
 
@@ -2010,11 +2009,11 @@ def test_project_rag_cleanup_atomically_removes_retired_scope(rag_home):
     assert folder_sync.scope_retired(scope) is True
     replacement = rag_home / "replacement"
     replacement.mkdir()
-    with pytest.raises(ValueError, match="no longer exists"):
+    with pytest.raises(ValueError, match = "no longer exists"):
         folder_sync.create_folder(
-            scope_type="project",
-            scope_id="project",
-            path=str(replacement),
+            scope_type = "project",
+            scope_id = "project",
+            path = str(replacement),
         )
 
 
@@ -2029,10 +2028,10 @@ def test_kb_deletion_retries_retired_scope_cleanup_after_failure(
         source.mkdir()
         folders.append(
             folder_sync.create_folder(
-                scope_type="knowledge_base", scope_id="knowledge", path=str(source)
+                scope_type = "knowledge_base", scope_id = "knowledge", path = str(source)
             )
         )
-    (rag_home / "kb-first" / "notes.txt").write_text("managed snapshot", encoding="utf-8")
+    (rag_home / "kb-first" / "notes.txt").write_text("managed snapshot", encoding = "utf-8")
     assert _run(folders[0]["id"])["status"] == "completed"
     with _connection() as conn:
         document = conn.execute(
@@ -2046,23 +2045,23 @@ def test_kb_deletion_retries_retired_scope_cleanup_after_failure(
         "delete_retired_scope",
         lambda scope, **kwargs: (_ for _ in ()).throw(sqlite3.OperationalError("database is busy")),
     )
-    assert rag_routes.delete_knowledge_base("knowledge", subject="test") == {"ok": True}
+    assert rag_routes.delete_knowledge_base("knowledge", subject = "test") == {"ok": True}
 
     remaining = folder_sync.list_folders(store.kb_scope("knowledge"))
     assert {folder["id"] for folder in remaining} == {folder["id"] for folder in folders}
     assert {folder["status"] for folder in remaining} == {"retired"}
     assert folder_sync.scope_retired(store.kb_scope("knowledge")) is True
     assert os.path.exists(stored_path)
-    assert rag_routes.list_kb_documents("knowledge", subject="test") == {"documents": []}
-    assert rag_routes.list_all_uploaded_documents(subject="test") == {"documents": []}
+    assert rag_routes.list_kb_documents("knowledge", subject = "test") == {"documents": []}
+    assert rag_routes.list_all_uploaded_documents(subject = "test") == {"documents": []}
     with pytest.raises(Exception) as exc_info:
         rag_routes.search(
-            rag_routes.SearchRequest(query="managed", kb_id="knowledge", mode="lexical"),
-            subject="test",
+            rag_routes.SearchRequest(query = "managed", kb_id = "knowledge", mode = "lexical"),
+            subject = "test",
         )
     assert getattr(exc_info.value, "status_code", None) == 404
     with pytest.raises(Exception) as exc_info:
-        rag_routes.preview_target(document["id"], subject="test")
+        rag_routes.preview_target(document["id"], subject = "test")
     assert getattr(exc_info.value, "status_code", None) == 404
     with _connection() as conn:
         assert (
@@ -2093,10 +2092,10 @@ def test_kb_deletion_rolls_back_scope_before_any_folder_cleanup_on_failure(rag_h
     source = rag_home / "failed-kb-delete"
     source.mkdir()
     folder = folder_sync.create_folder(
-        scope_type="knowledge_base",
-        scope_id="knowledge",
-        path=str(source),
-        auto_sync=False,
+        scope_type = "knowledge_base",
+        scope_id = "knowledge",
+        path = str(source),
+        auto_sync = False,
     )
     cleaned = []
     monkeypatch.setattr(
@@ -2110,8 +2109,8 @@ def test_kb_deletion_rolls_back_scope_before_any_folder_cleanup_on_failure(rag_h
         lambda folder_id: cleaned.append(folder_id),
     )
 
-    with pytest.raises(sqlite3.OperationalError, match="database is busy"):
-        rag_routes.delete_knowledge_base("knowledge", subject="test")
+    with pytest.raises(sqlite3.OperationalError, match = "database is busy"):
+        rag_routes.delete_knowledge_base("knowledge", subject = "test")
 
     assert cleaned == []
     assert folder_sync.scope_retired(store.kb_scope("knowledge")) is False
@@ -2128,7 +2127,7 @@ def test_kb_writer_contention_cannot_commit_retirement_without_deletion(rag_home
     source = rag_home / "locked-kb-delete"
     source.mkdir()
     folder = folder_sync.create_folder(
-        scope_type="knowledge_base", scope_id="knowledge", path=str(source)
+        scope_type = "knowledge_base", scope_id = "knowledge", path = str(source)
     )
     blocker = rag_db.get_metadata_connection()
     original_get_connection = rag_db.get_connection
@@ -2141,8 +2140,8 @@ def test_kb_writer_contention_cannot_commit_retirement_without_deletion(rag_home
     blocker.execute("BEGIN IMMEDIATE")
     monkeypatch.setattr(rag_db, "get_connection", short_timeout_connection)
     try:
-        with pytest.raises(sqlite3.OperationalError, match="database is locked"):
-            rag_routes.delete_knowledge_base("knowledge", subject="test")
+        with pytest.raises(sqlite3.OperationalError, match = "database is locked"):
+            rag_routes.delete_knowledge_base("knowledge", subject = "test")
         assert (
             blocker.execute("SELECT 1 FROM knowledge_bases WHERE id='knowledge'").fetchone()
             is not None
@@ -2174,7 +2173,7 @@ def test_kb_upload_rejects_retired_scope_before_saving(rag_home, monkeypatch):
     )
 
     with pytest.raises(Exception) as exc_info:
-        rag_routes.upload_kb_document("knowledge", subject="test")
+        rag_routes.upload_kb_document("knowledge", subject = "test")
     assert getattr(exc_info.value, "status_code", None) == 409
 
 
@@ -2184,10 +2183,10 @@ def test_preview_containment_is_component_aware(rag_home):
 
     uploads = ensure_dir(rag_uploads_root())
     inside = uploads / "doc.txt"
-    inside.write_text("inside", encoding="utf-8")
+    inside.write_text("inside", encoding = "utf-8")
     prefix_sibling = uploads.parent / f"{uploads.name}-evil" / "doc.txt"
     prefix_sibling.parent.mkdir()
-    prefix_sibling.write_text("outside", encoding="utf-8")
+    prefix_sibling.write_text("outside", encoding = "utf-8")
 
     assert _is_managed_preview_path(str(inside))
     assert not _is_managed_preview_path(str(prefix_sibling))
@@ -2198,7 +2197,7 @@ def test_unrelated_ingest_failure_still_removes_deleted_sources(
     rag_home, stub_embeddings, monkeypatch
 ):
     folder, source = _shared_setup_3(rag_home)
-    (source / "poison.txt").write_text("never indexes", encoding="utf-8")
+    (source / "poison.txt").write_text("never indexes", encoding = "utf-8")
     real_start = folder_sync.ingestion.start_ingestion
     monkeypatch.setattr(
         folder_sync.ingestion,
@@ -2254,7 +2253,7 @@ def test_a_queued_rebuild_is_not_downgraded_by_a_later_sync_request(rag_home):
         conn.execute("UPDATE linked_folder_sync_jobs SET status='running' WHERE id=?", (running,))
         conn.commit()
 
-    folder_sync.request_sync(folder["id"], rebuild=True)
+    folder_sync.request_sync(folder["id"], rebuild = True)
     folder_sync.request_sync(folder["id"])
 
     assert (
@@ -2280,12 +2279,12 @@ def test_a_rewritten_rename_retains_the_prior_document_until_it_reindexes(
 ):
     source, folder = _folder(rag_home)
     original = source / "report.txt"
-    original.write_text("durable travelling words", encoding="utf-8")
+    original.write_text("durable travelling words", encoding = "utf-8")
     assert _run(folder["id"])["status"] == "completed"
 
     # an atomic re-save after a rename shares neither inode nor content with the original
     renamed = source / "report-final.txt"
-    renamed.write_text("rewritten content that fails", encoding="utf-8")
+    renamed.write_text("rewritten content that fails", encoding = "utf-8")
     original.unlink()
     _shared_setup_2(monkeypatch)
 
@@ -2302,7 +2301,7 @@ def test_an_unreadable_file_stops_withholding_removals_after_one_pass(
     rag_home, stub_embeddings, monkeypatch
 ):
     folder, source = _shared_setup_3(rag_home)
-    (source / "unreadable.txt").write_text("cannot be copied", encoding="utf-8")
+    (source / "unreadable.txt").write_text("cannot be copied", encoding = "utf-8")
     monkeypatch.setattr(
         folder_sync,
         "_snapshot",
@@ -2322,9 +2321,9 @@ def test_a_failing_file_that_keeps_changing_cannot_block_removals(
     folder, source = _shared_setup_3(rag_home)
     churn = source / "churn.txt"
     _shared_setup_2(monkeypatch)
-    churn.write_text("attempt one", encoding="utf-8")
+    churn.write_text("attempt one", encoding = "utf-8")
     assert _run(folder["id"])["deleted"] == 0
-    churn.write_text("attempt two, a different size entirely", encoding="utf-8")
+    churn.write_text("attempt two, a different size entirely", encoding = "utf-8")
 
     assert _run(folder["id"])["deleted"] == 1
     with _connection() as conn:
@@ -2383,7 +2382,7 @@ def test_the_purge_is_skipped_for_a_project_recreated_after_the_ownership_check(
         seen["checks"] += 1
         return None if seen["checks"] == 1 else {"id": project_id}
 
-    folder = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    folder = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
     monkeypatch.setattr(chat_history, "get_chat_project", recreated_after_the_check)
 
     chat_history._delete_project_rag_sources("p1")
@@ -2406,7 +2405,7 @@ def test_reconciliation_restores_a_scope_whose_project_came_back(rag_home):
     scope = store.project_scope("p1")
     source = rag_home / "recreated-project"
     source.mkdir()
-    folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
     folder_sync.retire_scope(scope)
     assert folder_sync.scope_retired(scope) is True
 
@@ -2422,7 +2421,7 @@ def test_periodic_retirement_checks_ownership_under_the_scope_lock(rag_home):
     scope = store.project_scope("p1")
     source = rag_home / "recreated-under-lock"
     source.mkdir()
-    folder = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    folder = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
     held = []
 
     def project_exists(project_id):
@@ -2430,7 +2429,7 @@ def test_periodic_retirement_checks_ownership_under_the_scope_lock(rag_home):
         # stops a project recreated mid-pass from having its new folders retired
         lock = folder_sync._scope_lock(scope)
         acquired = []
-        probe = threading.Thread(target=lambda: acquired.append(lock.acquire(blocking=False)))
+        probe = threading.Thread(target = lambda: acquired.append(lock.acquire(blocking = False)))
         probe.start()
         probe.join()
         held.append(not acquired[0])
@@ -2451,12 +2450,12 @@ def test_retirement_leaves_a_folder_linked_after_the_ownership_check(rag_home):
     scope = store.project_scope("p1")
     source = rag_home / "before-check"
     source.mkdir()
-    existing = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    existing = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
     owned = folder_sync.linked_folder_ids(scope)
     # a second backend process links this one after the check and before the write
     later = rag_home / "after-check"
     later.mkdir()
-    fresh = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(later))
+    fresh = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(later))
 
     folder_sync.retire_scope(scope, owned)
 
@@ -2479,11 +2478,11 @@ def test_the_ownership_bound_survives_a_clock_that_cannot_separate_the_two(rag_h
     for name in ("before-check", "after-check"):
         (rag_home / name).mkdir()
     existing = folder_sync.create_folder(
-        scope_type="project", scope_id="p1", path=str(rag_home / "before-check")
+        scope_type = "project", scope_id = "p1", path = str(rag_home / "before-check")
     )
     owned = folder_sync.linked_folder_ids(scope)
     fresh = folder_sync.create_folder(
-        scope_type="project", scope_id="p1", path=str(rag_home / "after-check")
+        scope_type = "project", scope_id = "p1", path = str(rag_home / "after-check")
     )
     assert existing["created_at"] == fresh["created_at"]
 
@@ -2499,7 +2498,7 @@ def test_an_empty_ownership_snapshot_retires_nothing_but_still_tombstones(rag_ho
     scope = store.project_scope("p1")
     (rag_home / "linked-late").mkdir()
     fresh = folder_sync.create_folder(
-        scope_type="project", scope_id="p1", path=str(rag_home / "linked-late")
+        scope_type = "project", scope_id = "p1", path = str(rag_home / "linked-late")
     )
 
     folder_sync.retire_scope(scope, [])
@@ -2518,7 +2517,7 @@ def test_the_ownership_bound_is_applied_past_the_sqlite_parameter_cap(rag_home, 
         source = rag_home / f"folder-{index}"
         source.mkdir()
         folders.append(
-            folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+            folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
         )
     owned = folder_sync.linked_folder_ids(scope)
     assert len(owned) == len(folders)
@@ -2534,7 +2533,7 @@ def test_the_ownership_snapshot_survives_an_unloadable_vector_extension(rag_home
     scope = store.project_scope("p1")
     source = rag_home / "linked"
     source.mkdir()
-    folder = folder_sync.create_folder(scope_type="project", scope_id="p1", path=str(source))
+    folder = folder_sync.create_folder(scope_type = "project", scope_id = "p1", path = str(source))
 
     def unavailable():
         raise sqlite3.OperationalError("cannot load sqlite-vec")

@@ -1132,7 +1132,7 @@ class TestEnsureRocmTorch:
         mock_gpu,
         mock_nvidia,
         mock_pip,
-        capsys
+        capsys,
     ):
         """ROCm detected but version unreadable should print warning and skip."""
         with patch("os.path.isdir", return_value = True):
@@ -5673,7 +5673,7 @@ class TestWindowsRocmTorchaoGuard:
         mock_rocm,
         mock_anyio,
         mock_accelerate,
-        tmp_path
+        tmp_path,
     ):
         unstructured_plugin = tmp_path / "unstructured"
         github_plugin = tmp_path / "github"

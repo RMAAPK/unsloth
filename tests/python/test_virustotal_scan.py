@@ -63,7 +63,7 @@ class FakeTransport:
         url,
         headers,
         body,
-        timeout=None,
+        timeout = None,
     ):
         self.timeouts.append(timeout)
         self.calls.append((method, url, headers, len(body or b"")))
@@ -77,9 +77,9 @@ def _client(routes):
     transport = FakeTransport(routes)
     client = vt.VirusTotalClient(
         "fake-key",
-        transport=transport,
-        request_interval=0.0,
-        sleep=lambda _seconds: None,
+        transport = transport,
+        request_interval = 0.0,
+        sleep = lambda _seconds: None,
     )
     return client, transport
 
@@ -122,7 +122,7 @@ class TestParseDetections:
 
 class TestThreshold:
     def _reports(self, flagged):
-        return [vt.FileReport(name="a.exe", stats=vt.ScanStats(malicious=flagged))]
+        return [vt.FileReport(name = "a.exe", stats = vt.ScanStats(malicious = flagged))]
 
     def test_zero_threshold_is_advisory_only(self):
         # The shipped default. Detections must never fail the release.
@@ -134,7 +134,7 @@ class TestThreshold:
         assert vt.exceeds_threshold(self._reports(2), 3) is False
 
     def test_rows_without_stats_never_trip_the_gate(self):
-        assert vt.exceeds_threshold([vt.FileReport(name="a.exe")], 1) is False
+        assert vt.exceeds_threshold([vt.FileReport(name = "a.exe")], 1) is False
 
 
 class TestSelectScanTargets:
@@ -159,7 +159,7 @@ class TestSelectScanTargets:
 
 class TestMissingKey:
     def test_missing_key_skips_without_failing(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.delenv(vt.API_KEY_ENV, raising=False)
+        monkeypatch.delenv(vt.API_KEY_ENV, raising = False)
         (tmp_path / "a.exe").write_bytes(b"x")
         summary = tmp_path / "summary.md"
         rc = vt.main([str(tmp_path), "--output-markdown", str(summary)])
@@ -229,7 +229,7 @@ class TestHashLookupFirst:
                 ),
             }
         )
-        report = vt.scan_file(client, bundle, deadline=float("inf"))
+        report = vt.scan_file(client, bundle, deadline = float("inf"))
         assert report.source == "known to VirusTotal (no upload)"
         assert report.stats.malicious == 1
         assert report.detections == ["AlphaAV (X)"]
@@ -252,7 +252,7 @@ class TestHashLookupFirst:
                 "/files/": (404, b"{}"),
             }
         )
-        report = vt.scan_file(client, bundle, deadline=float("inf"))
+        report = vt.scan_file(client, bundle, deadline = float("inf"))
         assert report.source == "uploaded"
         assert report.stats.malicious == 0
 
@@ -262,7 +262,7 @@ class TestFailureDegradation:
         bundle = tmp_path / "a.exe"
         bundle.write_bytes(b"payload")
         client, _transport = _client({"/files/": (500, b"")})
-        report = vt.scan_file(client, bundle, deadline=float("inf"))
+        report = vt.scan_file(client, bundle, deadline = float("inf"))
         assert report.source == "unavailable"
         assert report.note
         assert report.stats is None
@@ -293,7 +293,7 @@ class TestSignedUrlMasking:
         assert out.index("::add-mask::") == 0
 
     def test_no_workflow_commands_off_the_runner(self, tmp_path, monkeypatch, capsys):
-        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        monkeypatch.delenv("GITHUB_ACTIONS", raising = False)
         bundle = tmp_path / "big.exe"
         bundle.write_bytes(b"payload")
         client, _transport = _client(
@@ -330,7 +330,7 @@ class TestSingleUseUploadUrl:
                 url,
                 headers,
                 body,
-                timeout=None,
+                timeout = None,
             ):
                 if url.endswith("/files/upload_url"):
                     token = f"https://up.example/{len(seen_upload_urls)}"
@@ -343,7 +343,7 @@ class TestSingleUseUploadUrl:
 
         transport = Transport()
         client = vt.VirusTotalClient(
-            "k", transport=transport, request_interval=0.0, sleep=lambda _s: None
+            "k", transport = transport, request_interval = 0.0, sleep = lambda _s: None
         )
         assert client.upload(bundle) == "an-2"
         # Two distinct signed URLs were fetched: the failed POST was not replayed.
@@ -358,16 +358,16 @@ class TestSingleUseUploadUrl:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             calls.append(url)
             return 500, b""
 
         client = vt.VirusTotalClient(
-            "k", transport=transport, request_interval=0.0, sleep=lambda _s: None
+            "k", transport = transport, request_interval = 0.0, sleep = lambda _s: None
         )
         with pytest.raises(RuntimeError):
-            client.request("POST", "https://up.example/x", max_attempts=1)
+            client.request("POST", "https://up.example/x", max_attempts = 1)
         assert len(calls) == 1
 
 
@@ -384,20 +384,20 @@ class TestDeadlineEnforcement:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             calls.append(url)
             return 200, b"{}"
 
         client = vt.VirusTotalClient(
             "k",
-            transport=transport,
-            request_interval=0.0,
-            sleep=lambda _s: None,
-            clock=lambda: 1000.0,
+            transport = transport,
+            request_interval = 0.0,
+            sleep = lambda _s: None,
+            clock = lambda: 1000.0,
         )
         with pytest.raises(TimeoutError):
-            client.request("GET", "https://api.example/x", deadline=999.0)
+            client.request("GET", "https://api.example/x", deadline = 999.0)
         assert calls == []
 
     def test_wait_for_analysis_stops_at_the_deadline(self):
@@ -406,33 +406,33 @@ class TestDeadlineEnforcement:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             return 200, b'{"data": {"attributes": {"status": "queued"}}}'
 
         now = [0.0]
         client = vt.VirusTotalClient(
             "k",
-            transport=transport,
-            request_interval=0.0,
-            sleep=lambda _s: None,
-            clock=lambda: now[0],
+            transport = transport,
+            request_interval = 0.0,
+            sleep = lambda _s: None,
+            clock = lambda: now[0],
         )
         with pytest.raises(TimeoutError):
             now[0] = 100.0
-            client.wait_for_analysis("an-1", deadline=50.0)
+            client.wait_for_analysis("an-1", deadline = 50.0)
 
     def test_scan_file_reports_a_timeout_row_rather_than_raising(self, tmp_path):
         bundle = tmp_path / "a.exe"
         bundle.write_bytes(b"payload")
         client = vt.VirusTotalClient(
             "k",
-            transport=lambda *a: (200, b"{}"),
-            request_interval=0.0,
-            sleep=lambda _s: None,
-            clock=lambda: 1000.0,
+            transport = lambda *a: (200, b"{}"),
+            request_interval = 0.0,
+            sleep = lambda _s: None,
+            clock = lambda: 1000.0,
         )
-        report = vt.scan_file(client, bundle, deadline=0.0)
+        report = vt.scan_file(client, bundle, deadline = 0.0)
         assert report.source == "timed out"
         assert report.note
 
@@ -458,20 +458,20 @@ class TestDeadlineEnforcement:
 class TestRenderMarkdown:
     def test_advisory_footer_when_threshold_disabled(self):
         text = vt.render_markdown(
-            [vt.FileReport(name="a.exe", stats=vt.ScanStats(), sha256="ab")], 0
+            [vt.FileReport(name = "a.exe", stats = vt.ScanStats(), sha256 = "ab")], 0
         )
         assert "Advisory only" in text
         assert "never fail the release" in text
 
     def test_threshold_footer_when_enabled(self):
-        text = vt.render_markdown([vt.FileReport(name="a.exe", stats=vt.ScanStats())], 4)
+        text = vt.render_markdown([vt.FileReport(name = "a.exe", stats = vt.ScanStats())], 4)
         assert "Failure threshold: 4" in text
 
     def test_flagging_engines_are_listed(self):
         text = vt.render_markdown(
             [
                 vt.FileReport(
-                    name="a.exe", stats=vt.ScanStats(malicious=1), detections=["AlphaAV (Trojan)"]
+                    name = "a.exe", stats = vt.ScanStats(malicious = 1), detections = ["AlphaAV (Trojan)"]
                 )
             ],
             0,
@@ -485,11 +485,11 @@ class TestRenderMarkdown:
         text = vt.render_markdown(
             [
                 vt.FileReport(
-                    name="Unsloth-Desktop-Linux.AppImage",
-                    sha256="e3aa9b36",
-                    size=46193144,
-                    stats=vt.ScanStats(malicious=1, undetected=62),
-                    detections=["Microsoft (Trojan:Script/Wacatac.B!ml)"],
+                    name = "Unsloth-Desktop-Linux.AppImage",
+                    sha256 = "e3aa9b36",
+                    size = 46193144,
+                    stats = vt.ScanStats(malicious = 1, undetected = 62),
+                    detections = ["Microsoft (Trojan:Script/Wacatac.B!ml)"],
                 )
             ],
             0,
@@ -506,11 +506,11 @@ class TestRenderMarkdown:
         text = vt.render_markdown(
             [
                 vt.FileReport(
-                    name="a.exe",
-                    sha256="ab",
-                    size=10,
-                    stats=vt.ScanStats(malicious=1, undetected=60),
-                    detections=[],
+                    name = "a.exe",
+                    sha256 = "ab",
+                    size = 10,
+                    stats = vt.ScanStats(malicious = 1, undetected = 60),
+                    detections = [],
                 )
             ],
             0,
@@ -520,7 +520,7 @@ class TestRenderMarkdown:
 
     def test_a_clean_run_gets_no_submission_packet(self):
         text = vt.render_markdown(
-            [vt.FileReport(name="a.exe", sha256="ab", stats=vt.ScanStats(undetected=60))], 0
+            [vt.FileReport(name = "a.exe", sha256 = "ab", stats = vt.ScanStats(undetected = 60))], 0
         )
         assert "False-positive submission packet" not in text
 
@@ -542,14 +542,14 @@ class TestFailClosedOnMalformedLookup:
                 "/files/": (200, b"<html>proxy error page</html>"),
             }
         )
-        report = vt.scan_file(client, bundle, deadline=float("inf"))
+        report = vt.scan_file(client, bundle, deadline = float("inf"))
         assert report.source == "unavailable"
         assert "malformed" in report.note
         assert not any("up.example" in url for _m, url, _h, _n in transport.calls)
 
     def test_malformed_200_is_distinguishable_from_404(self, tmp_path):
         client, _ = _client({"/files/": (200, b"not json")})
-        with pytest.raises(RuntimeError, match="malformed"):
+        with pytest.raises(RuntimeError, match = "malformed"):
             client.lookup_hash("a" * 64)
 
         client, _ = _client({"/files/": (404, b"{}")})
@@ -562,7 +562,7 @@ class TestDeadlineIsNotOverrunByThrottling:
     def _clocked_client(
         self,
         routes,
-        interval=20.0,
+        interval = 20.0,
     ):
         now = [1000.0]
         transport = FakeTransport(routes)
@@ -572,10 +572,10 @@ class TestDeadlineIsNotOverrunByThrottling:
 
         client = vt.VirusTotalClient(
             "k",
-            transport=transport,
-            request_interval=interval,
-            sleep=sleep,
-            clock=lambda: now[0],
+            transport = transport,
+            request_interval = interval,
+            sleep = sleep,
+            clock = lambda: now[0],
         )
         return client, transport, now
 
@@ -583,8 +583,8 @@ class TestDeadlineIsNotOverrunByThrottling:
         client, transport, now = self._clocked_client({"x.example": (200, b"{}")})
         client._last_request_at = now[0]  # force a full interval of pacing
         deadline = now[0] + 5.0  # less budget than the pacing needs
-        with pytest.raises(TimeoutError, match="pacing"):
-            client.request("GET", "https://x.example/y", deadline=deadline)
+        with pytest.raises(TimeoutError, match = "pacing"):
+            client.request("GET", "https://x.example/y", deadline = deadline)
         assert transport.calls == []
 
     def test_throttle_sleep_is_capped_by_the_deadline(self):
@@ -598,7 +598,7 @@ class TestDeadlineIsNotOverrunByThrottling:
     def test_a_request_with_budget_left_still_proceeds(self):
         client, transport, now = self._clocked_client({"x.example": (200, b"{}")})
         client._last_request_at = now[0]
-        status, _payload = client.request("GET", "https://x.example/y", deadline=now[0] + 600.0)
+        status, _payload = client.request("GET", "https://x.example/y", deadline = now[0] + 600.0)
         assert status == 200
         assert len(transport.calls) == 1
 
@@ -612,12 +612,12 @@ class TestSocketBudgetIsClampedToTheDeadline:
 
     def test_socket_timeout_is_clamped_to_remaining_budget(self):
         client, transport = _client({"x.example": (200, b"{}")})
-        client.request("GET", "https://x.example/y", deadline=time.monotonic() + 30.0)
+        client.request("GET", "https://x.example/y", deadline = time.monotonic() + 30.0)
         assert transport.timeouts[0] <= 30.0
 
     def test_socket_timeout_is_the_default_when_budget_is_large(self):
         client, transport = _client({"x.example": (200, b"{}")})
-        client.request("GET", "https://x.example/y", deadline=time.monotonic() + 100000.0)
+        client.request("GET", "https://x.example/y", deadline = time.monotonic() + 100000.0)
         assert transport.timeouts[0] == vt._SOCKET_TIMEOUT
 
     def test_socket_timeout_without_a_deadline_is_the_default(self):
@@ -628,7 +628,7 @@ class TestSocketBudgetIsClampedToTheDeadline:
     def test_clamp_never_goes_to_zero_or_negative(self):
         # A non-positive urlopen timeout would fail instantly rather than try.
         client, transport = _client({"x.example": (200, b"{}")})
-        client.request("GET", "https://x.example/y", deadline=time.monotonic() + 0.001)
+        client.request("GET", "https://x.example/y", deadline = time.monotonic() + 0.001)
         assert transport.timeouts[0] >= 1.0
 
 
@@ -649,7 +649,7 @@ class TestMalformedUploadAcknowledgement:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             if "/files/upload_url" in url:
                 state["n"] += 1
@@ -660,7 +660,7 @@ class TestMalformedUploadAcknowledgement:
             return (200, b'{"data": {"id": "an-2"}}')
 
         client = vt.VirusTotalClient(
-            "k", transport=transport, request_interval=0.0, sleep=lambda _s: None
+            "k", transport = transport, request_interval = 0.0, sleep = lambda _s: None
         )
         assert client.upload(bundle) == "an-2"
         assert state["n"] == 2  # a second, fresh signed URL was fetched
@@ -674,16 +674,16 @@ class TestMalformedUploadAcknowledgement:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             if "/files/upload_url" in url:
                 return (200, b'{"data": "https://up.example/x"}')
             return (200, b"not json")
 
         client = vt.VirusTotalClient(
-            "k", transport=transport, request_interval=0.0, sleep=lambda _s: None
+            "k", transport = transport, request_interval = 0.0, sleep = lambda _s: None
         )
-        with pytest.raises(RuntimeError, match="analysis id"):
+        with pytest.raises(RuntimeError, match = "analysis id"):
             client.upload(bundle)
 
 
@@ -694,21 +694,21 @@ class TestNoCompletedAnalysis:
     def _report(
         self,
         attributes,
-        completed=False,
+        completed = False,
     ):
-        report = vt.FileReport(name="a.exe")
-        vt._record(report, "known to VirusTotal (no upload)", *attributes, completed=completed)
+        report = vt.FileReport(name = "a.exe")
+        vt._record(report, "known to VirusTotal (no upload)", *attributes, completed = completed)
         return report
 
     def test_a_completed_analysis_is_trusted_without_engine_counts(self):
         # The upload path polls until status == "completed", so a stats dict is authoritative there even if the counts
         # are all zero.
-        report = self._report(({"malicious": 0}, {}), completed=True)
+        report = self._report(({"malicious": 0}, {}), completed = True)
         assert report.stats is not None
         assert report.source == "known to VirusTotal (no upload)"
 
     def test_a_completed_analysis_still_needs_a_stats_object(self):
-        assert self._report((None, {}), completed=True).stats is None
+        assert self._report((None, {}), completed = True).stats is None
 
     def test_missing_stats_is_not_reported_as_clean(self):
         report = self._report((None, None))
@@ -748,9 +748,9 @@ class TestMarkdownEscaping:
 
     def test_a_newline_cannot_break_out_of_a_table_row(self):
         report = vt.FileReport(
-            name="a.exe",
-            stats=vt.ScanStats(malicious=1, undetected=1),
-            detections=["Evil\n| fake | row |"],
+            name = "a.exe",
+            stats = vt.ScanStats(malicious = 1, undetected = 1),
+            detections = ["Evil\n| fake | row |"],
         )
         body = self._summary(report)
         bullet = [line for line in body.splitlines() if "Evil" in line]
@@ -760,20 +760,20 @@ class TestMarkdownEscaping:
         assert "| fake | row |" not in body
 
     def test_html_is_neutralised(self):
-        report = vt.FileReport(name="a.exe", note="<img src=x onerror=alert(1)>")
+        report = vt.FileReport(name = "a.exe", note = "<img src=x onerror=alert(1)>")
         body = self._summary(report)
         assert "&lt;img" in body
         assert "<img" not in body
 
     def test_a_backtick_cannot_close_the_code_span(self):
-        report = vt.FileReport(name="a`.exe")
+        report = vt.FileReport(name = "a`.exe")
         assert "`a'.exe`" in self._summary(report)
 
     def test_clean_text_renders_unchanged(self):
         report = vt.FileReport(
-            name="a.exe",
-            stats=vt.ScanStats(undetected=70),
-            detections=["AlphaAV (Trojan.Gen)"],
+            name = "a.exe",
+            stats = vt.ScanStats(undetected = 70),
+            detections = ["AlphaAV (Trojan.Gen)"],
         )
         assert "- `a.exe`: AlphaAV (Trojan.Gen)" in self._summary(report)
 
@@ -793,9 +793,9 @@ class TestAnnotationEscaping:
 
     def test_detection_annotation_stays_on_one_line(self, capsys):
         report = vt.FileReport(
-            name="a.exe",
-            stats=vt.ScanStats(malicious=1),
-            detections=["Evil\nAV (Tro%jan)"],
+            name = "a.exe",
+            stats = vt.ScanStats(malicious = 1),
+            detections = ["Evil\nAV (Tro%jan)"],
         )
         vt._emit(report)
         annotation = [
@@ -805,7 +805,7 @@ class TestAnnotationEscaping:
         assert "Evil%0AAV (Tro%25jan)" in annotation[0]
 
     def test_note_annotation_is_escaped(self, capsys):
-        vt._emit(vt.FileReport(name="a.exe", note="HTTP 500\r\nbody: 50%"))
+        vt._emit(vt.FileReport(name = "a.exe", note = "HTTP 500\r\nbody: 50%"))
         annotation = [
             line for line in capsys.readouterr().out.splitlines() if line.startswith("::warning")
         ]
@@ -823,39 +823,39 @@ class TestRetryBackoffRespectsTheDeadline:
             url,
             headers,
             body,
-            timeout=None,
+            timeout = None,
         ):
             return status, b""
 
         # The retry backoff is seeded from the request interval.
         return vt.VirusTotalClient(
             "k",
-            transport=transport,
-            request_interval=interval,
-            sleep=slept.append,
-            clock=lambda: now[0],
+            transport = transport,
+            request_interval = interval,
+            sleep = slept.append,
+            clock = lambda: now[0],
         )
 
     @pytest.mark.parametrize("status", [429, 503])
     def test_backoff_never_sleeps_past_the_deadline(self, status):
         slept = []
-        client = self._client(status, [0.0], slept, interval=20.0)
+        client = self._client(status, [0.0], slept, interval = 20.0)
         # 5s of budget left, but an uncapped backoff would sleep 20s, then 40s.
         with pytest.raises((RuntimeError, TimeoutError)):
-            client.request("GET", "https://api.example/x", deadline=5.0)
+            client.request("GET", "https://api.example/x", deadline = 5.0)
         assert slept, "expected the retry path to sleep at all"
         assert max(slept) <= 5.0, slept
 
     def test_no_remaining_budget_means_no_sleep_at_all(self):
         slept = []
-        client = self._client(429, [10.0], slept, interval=20.0)
+        client = self._client(429, [10.0], slept, interval = 20.0)
         with pytest.raises((RuntimeError, TimeoutError)):
-            client.request("GET", "https://api.example/x", deadline=10.0)
+            client.request("GET", "https://api.example/x", deadline = 10.0)
         assert slept == []
 
     def test_backoff_is_unbounded_when_no_deadline_is_set(self):
         slept = []
-        client = self._client(429, [0.0], slept, interval=2.0)
+        client = self._client(429, [0.0], slept, interval = 2.0)
         with pytest.raises(RuntimeError):
             client.request("GET", "https://api.example/x")
         # Full exponential backoff is preserved when there is no budget to respect.
@@ -881,7 +881,7 @@ class TestWorkflowOrdering:
     def _workflow(self):
         yaml = pytest.importorskip("yaml")
         workflow = REPO_ROOT / ".github" / "workflows" / "release-desktop.yml"
-        return yaml.safe_load(workflow.read_text(encoding="utf-8"))
+        return yaml.safe_load(workflow.read_text(encoding = "utf-8"))
 
     def _publish_step_list(self):
         return self._workflow()["jobs"]["publish-release"]["steps"]
@@ -1064,7 +1064,7 @@ class TestWorkflowOrdering:
     def test_every_public_mutation_is_gated_on_a_real_release(self):
         yaml = pytest.importorskip("yaml")
         workflow = REPO_ROOT / ".github" / "workflows" / "release-desktop.yml"
-        data = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+        data = yaml.safe_load(workflow.read_text(encoding = "utf-8"))
         steps = data["jobs"]["publish-release"]["steps"]
         by_name = {step.get("name"): step for step in steps}
         assert by_name["Validate versioned release state"]["id"] == "versioned_release_state"

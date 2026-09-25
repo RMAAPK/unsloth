@@ -33,7 +33,7 @@ from utils.lifespan_shutdown import run_lifespan_shutdown  # noqa: E402
 
 
 def _stub_hardware(*, with_event: bool = True) -> types.SimpleNamespace:
-    stub = types.SimpleNamespace(DEVICE="cuda:0")
+    stub = types.SimpleNamespace(DEVICE = "cuda:0")
     if with_event:
         stub.DETECTION_COMPLETE = threading.Event()
         stub.DETECTION_COMPLETE.set()
@@ -52,7 +52,7 @@ def test_shutdown_clears_the_detection_completion_signal():
 
 def test_shutdown_still_clears_device_without_the_event():
     """Negative control: a hardware module with no event must not break shutdown."""
-    hw = _stub_hardware(with_event=False)
+    hw = _stub_hardware(with_event = False)
     asyncio.run(run_lifespan_shutdown(lambda: None, lambda: None, hw))
     assert hw.DEVICE is None
 
@@ -80,12 +80,12 @@ def test_shutdown_runs_the_later_steps_even_if_clearing_raises():
 
 def _restore(monkeypatch) -> None:
     """Put the module-level warm bookkeeping back after a test mutates it."""
-    monkeypatch.setattr(warmup, "_thread", None, raising=False)
+    monkeypatch.setattr(warmup, "_thread", None, raising = False)
     monkeypatch.setattr(
         warmup,
         "_status",
         {"started": False, "finished": False, "stages": {}},
-        raising=False,
+        raising = False,
     )
 
 
@@ -187,7 +187,7 @@ def test_the_lifespan_resets_the_warm_after_shutdown():
     """Guard the wiring, not just the helper: the reset has to be reachable."""
     import ast
 
-    tree = ast.parse((_BACKEND / "main.py").read_text(encoding="utf-8"))
+    tree = ast.parse((_BACKEND / "main.py").read_text(encoding = "utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.AsyncFunctionDef) and node.name == "lifespan":
             break

@@ -1228,7 +1228,7 @@ async def list_local_models(
 @router.get("/scan-folders")
 async def get_scan_folders(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     """List all registered custom model scan folders. Redacted like ``/api/hub/scan-folders``."""
     from storage.studio_db import list_scan_folders
@@ -2922,7 +2922,7 @@ async def scan_diffusion_loras(
     family: Optional[str] = Query(
         default = None, description = "Filter to LoRAs compatible with this diffusion family"
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     """List diffusion image LoRA adapters for the Images workflow.
 
@@ -2958,7 +2958,7 @@ async def scan_diffusion_controlnets(
     family: Optional[str] = Query(
         default = None, description = "Filter to ControlNets compatible with this diffusion family"
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     """List diffusion ControlNet models for the Images workflow.
 
@@ -4952,7 +4952,7 @@ def _preferred_gguf_copy(
 @router.get("/cached-gguf")
 async def list_cached_gguf(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     """List GGUF repos downloaded to HF cache, legacy Unsloth cache, and HF default cache."""
     try:
@@ -5486,7 +5486,7 @@ async def list_checkpoints(
         default = str(outputs_root()),
         description = "Directory to scan for checkpoints",
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     """List checkpoints in the outputs directory.
 

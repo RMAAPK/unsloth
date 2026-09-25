@@ -93,7 +93,7 @@ def _igpu_flags_and_names(base, lib, count: int) -> tuple[list[bool], list[str],
                 continue
             if raw_name:
                 # Tabs/newlines would corrupt the line protocol; spaces are safe.
-                name = raw_name.decode("utf-8", errors="replace")
+                name = raw_name.decode("utf-8", errors = "replace")
                 names[i] = name.replace("\t", " ").replace("\r", " ").replace("\n", " ").strip()
                 break
     return flags, names, known
@@ -107,7 +107,7 @@ def main() -> int:
     # Device names can be non-ASCII (localized drivers); the platform-default stdout encoding (e.g. cp1252) would raise
     # on them and lose the whole inventory. The reader decodes UTF-8 with the same error mode.
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding = "utf-8", errors = "replace")
     except Exception:
         pass
 
@@ -139,13 +139,13 @@ def main() -> int:
     base_path = _find_lib(bindir, base_name)
     vk_path = _find_lib(bindir, vk_name)
     if not base_path or not vk_path:
-        print(f"ggml-vulkan load failed: library not found in {bindir}", file=sys.stderr)
+        print(f"ggml-vulkan load failed: library not found in {bindir}", file = sys.stderr)
         return 1
     try:
-        base = ctypes.CDLL(base_path, mode=_rtld_global)
-        lib = ctypes.CDLL(vk_path, mode=_rtld_global)
+        base = ctypes.CDLL(base_path, mode = _rtld_global)
+        lib = ctypes.CDLL(vk_path, mode = _rtld_global)
     except OSError as e:
-        print(f"ggml-vulkan load failed: {e}", file=sys.stderr)
+        print(f"ggml-vulkan load failed: {e}", file = sys.stderr)
         return 1
 
     lib.ggml_backend_vk_get_device_count.restype = ctypes.c_int

@@ -45,7 +45,6 @@ MUSE_GLIMMER_IDS = [
 
 def _resolve(model_id):
     from utils.inference.inference_config import load_inference_config
-
     return load_inference_config(model_id)
 
 
@@ -62,7 +61,7 @@ def test_family_entry_is_registered_in_patterns():
     import json
 
     path = _backend_root / "assets" / "configs" / "inference_defaults.json"
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding = "utf-8"))
     assert "muse-glimmer" in data["families"]
     assert "muse-glimmer" in data["patterns"]
 

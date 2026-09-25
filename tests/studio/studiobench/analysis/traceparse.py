@@ -64,9 +64,9 @@ class Task:
     dur: int
     pid: int
     tid: int
-    args: dict[str, Any] = field(default_factory=dict)
-    children: list["Task"] = field(default_factory=list)
-    parent: "Task | None" = field(default=None, repr=False)
+    args: dict[str, Any] = field(default_factory = dict)
+    children: list["Task"] = field(default_factory = list)
+    parent: "Task | None" = field(default = None, repr = False)
 
     @property
     def end(self) -> int:
@@ -104,9 +104,9 @@ class Thread:
     pid: int
     tid: int
     name: str
-    roots: list[Task] = field(default_factory=list)
+    roots: list[Task] = field(default_factory = list)
     # Every event on this thread, including phases that do not nest.
-    events: list[dict[str, Any]] = field(default_factory=list)
+    events: list[dict[str, Any]] = field(default_factory = list)
 
     def tasks_named(self, name: str) -> list[Task]:
         return [t for r in self.roots for t in r.walk() if t.name == name]
@@ -178,10 +178,9 @@ class Trace:
         p = str(path)
         if p.endswith(".gz"):
             import gzip
-
-            with gzip.open(p, "rt", encoding="utf-8") as fh:
+            with gzip.open(p, "rt", encoding = "utf-8") as fh:
                 return cls.from_json_text(fh.read())
-        with open(p, "r", encoding="utf-8") as fh:
+        with open(p, "r", encoding = "utf-8") as fh:
             return cls.from_json_text(fh.read())
 
     # ---------------------------------------------------------------- threads
@@ -195,7 +194,7 @@ class Trace:
         if cached is not None:
             return cached
         own = [e for e in self.events if e.get("pid") == pid and e.get("tid") == tid]
-        th = Thread(pid=pid, tid=tid, name=self.thread_name(pid, tid), events=own)
+        th = Thread(pid = pid, tid = tid, name = self.thread_name(pid, tid), events = own)
         th.roots = build_tree(own)
         self._threads[key] = th
         return th
@@ -232,7 +231,7 @@ class Trace:
             for t in root.walk():
                 if t.name == "RunTask" and not _has_runtask_ancestor(t):
                     out.append(t)
-        out.sort(key=lambda t: t.ts)
+        out.sort(key = lambda t: t.ts)
         return out
 
     def total_run_task_ms(self, thread: Thread | None = None) -> float:
@@ -267,13 +266,13 @@ def build_tree(events: Iterable[dict[str, Any]]) -> list[Task]:
                 dur = 0
             complete.append(
                 Task(
-                    name=str(e.get("name", "")),
-                    cat=str(e.get("cat", "")),
-                    ts=int(e["ts"]),
-                    dur=int(dur),
-                    pid=int(e.get("pid", 0)),
-                    tid=int(e.get("tid", 0)),
-                    args=dict(e.get("args") or {}),
+                    name = str(e.get("name", "")),
+                    cat = str(e.get("cat", "")),
+                    ts = int(e["ts"]),
+                    dur = int(dur),
+                    pid = int(e.get("pid", 0)),
+                    tid = int(e.get("tid", 0)),
+                    args = dict(e.get("args") or {}),
                 )
             )
         elif ph == _PHASE_BEGIN:
@@ -286,17 +285,17 @@ def build_tree(events: Iterable[dict[str, Any]]) -> list[Task]:
             args.update(e.get("args") or {})
             complete.append(
                 Task(
-                    name=str(b.get("name", "")),
-                    cat=str(b.get("cat", "")),
-                    ts=int(b["ts"]),
-                    dur=max(0, int(e["ts"]) - int(b["ts"])),
-                    pid=int(b.get("pid", 0)),
-                    tid=int(b.get("tid", 0)),
-                    args=args,
+                    name = str(b.get("name", "")),
+                    cat = str(b.get("cat", "")),
+                    ts = int(b["ts"]),
+                    dur = max(0, int(e["ts"]) - int(b["ts"])),
+                    pid = int(b.get("pid", 0)),
+                    tid = int(b.get("tid", 0)),
+                    args = args,
                 )
             )
 
-    complete.sort(key=lambda t: (t.ts, -t.dur, _OUTERMOST_FIRST.get(t.name, 50)))
+    complete.sort(key = lambda t: (t.ts, -t.dur, _OUTERMOST_FIRST.get(t.name, 50)))
 
     roots: list[Task] = []
     stack: list[Task] = []

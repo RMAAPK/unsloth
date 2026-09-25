@@ -46,7 +46,7 @@ def _called_names(body: list[ast.stmt]) -> list[str]:
 
 
 def test_conftest_defines_the_bitsandbytes_preimport():
-    tree = ast.parse(CONFTEST.read_text(encoding="utf-8"))
+    tree = ast.parse(CONFTEST.read_text(encoding = "utf-8"))
     defined = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
     assert "_preimport_bitsandbytes" in defined, (
         "tests/conftest.py must define _preimport_bitsandbytes(); without it a "
@@ -56,7 +56,7 @@ def test_conftest_defines_the_bitsandbytes_preimport():
 
 
 def test_bitsandbytes_is_preimported_before_the_cuda_spoof():
-    tree = ast.parse(CONFTEST.read_text(encoding="utf-8"))
+    tree = ast.parse(CONFTEST.read_text(encoding = "utf-8"))
     called = _called_names(_accelerator_guard_body(tree))
 
     assert "_preimport_bitsandbytes" in called, (
@@ -73,7 +73,7 @@ def test_bitsandbytes_is_preimported_before_the_cuda_spoof():
 
 def test_preimport_swallows_a_genuinely_missing_wheel():
     """An absent bitsandbytes stays unsloth's own degradation path, not a collection error."""
-    tree = ast.parse(CONFTEST.read_text(encoding="utf-8"))
+    tree = ast.parse(CONFTEST.read_text(encoding = "utf-8"))
     fn = next(
         n
         for n in tree.body

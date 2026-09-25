@@ -84,16 +84,16 @@ class Snapshot:
     found: bool = False
     size: int = 0
     first_seen: str = ""
-    engines: list[str] = field(default_factory = list)
+    engines: list[str] = field(default_factory=list)
     # Every engine that returned a verdict of ANY kind. Needed because an engine missing from the
     # candidate's results has not cleared it -- it did not look -- and a set difference against the
     # flagging engines alone cannot tell those two apart.
-    responders: set[str] = field(default_factory = set)
+    responders: set[str] = field(default_factory=set)
     malicious: int = 0
     suspicious: int = 0
     total_engines: int = 0
-    sigma: dict[str, int] = field(default_factory = dict)
-    yara: list[str] = field(default_factory = list)
+    sigma: dict[str, int] = field(default_factory=dict)
+    yara: list[str] = field(default_factory=list)
     note: str = ""
 
     @property
@@ -195,7 +195,7 @@ def parse_yara(raw: object) -> list[str]:
 
 def snapshot_from_payload(label: str, sha256: str, payload: object) -> Snapshot:
     """Build a snapshot from a `GET /files/{sha256}` body."""
-    snap = Snapshot(label = label, sha256 = sha256)
+    snap = Snapshot(label=label, sha256=sha256)
     attributes = {}
     if isinstance(payload, dict):
         data = payload.get("data")
@@ -244,23 +244,23 @@ def fetch(
         status, payload = client.request(
             "GET",
             f"{API_ROOT}/files/{sha256}",
-            allow_status = (404,),
-            deadline = deadline,
+            allow_status=(404,),
+            deadline=deadline,
         )
     except (RuntimeError, TimeoutError) as exc:
         # The retry budget or the deadline is spent. VOID, not clean and not a crash: we did not
         # find out, and the summary has to say so while there is still time to write it.
         # Both are needed: a spent retry budget raises RuntimeError, but a spent deadline raises
         # TimeoutError, which is an OSError and would otherwise walk straight past this handler.
-        snap = Snapshot(label = label, sha256 = sha256)
+        snap = Snapshot(label=label, sha256=sha256)
         snap.note = f"the lookup did not complete within its budget: {exc}"
         return snap
     if status == 404:
-        snap = Snapshot(label = label, sha256 = sha256)
+        snap = Snapshot(label=label, sha256=sha256)
         snap.note = "not present on VirusTotal"
         return snap
     if status != 200:
-        snap = Snapshot(label = label, sha256 = sha256)
+        snap = Snapshot(label=label, sha256=sha256)
         snap.note = f"VirusTotal answered {status}"
         return snap
     return snapshot_from_payload(label, sha256, payload)
@@ -273,10 +273,10 @@ def fetch(
 
 @dataclass
 class Delta:
-    void: list[str] = field(default_factory = list)
-    worse: list[str] = field(default_factory = list)
-    better: list[str] = field(default_factory = list)
-    same: list[str] = field(default_factory = list)
+    void: list[str] = field(default_factory=list)
+    worse: list[str] = field(default_factory=list)
+    better: list[str] = field(default_factory=list)
+    same: list[str] = field(default_factory=list)
 
     def exit_code(self) -> int:
         # 3 = could not measure, 2 = worse than baseline, 0 = same or better. Distinct, because a
@@ -543,7 +543,7 @@ def self_test() -> list[str]:
             "possible change 'no difference'."
         )
 
-    missing = Snapshot(label = "candidate", sha256 = "f" * 64, note = "not present on VirusTotal")
+    missing = Snapshot(label="candidate", sha256="f" * 64, note="not present on VirusTotal")
     delta = compare(baseline, missing)
     if delta.exit_code() != 3 or not delta.void:
         failures.append("an unknown candidate hash was not reported as VOID")
@@ -577,26 +577,26 @@ def self_test() -> list[str]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description = __doc__)
-    parser.add_argument("--candidate", type = Path, help = "a file to hash and look up")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", type=Path, help="a file to hash and look up")
     parser.add_argument(
-        "--candidate-sha256", default = "", help = "look up this hash instead of hashing a file"
+        "--candidate-sha256", default="", help="look up this hash instead of hashing a file"
     )
-    parser.add_argument("--baseline-sha256", default = BASELINE_SHA256)
+    parser.add_argument("--baseline-sha256", default=BASELINE_SHA256)
     parser.add_argument(
         "--summary",
-        type = Path,
-        default = None,
-        help = "write the markdown report here as well as to stdout",
+        type=Path,
+        default=None,
+        help="write the markdown report here as well as to stdout",
     )
     parser.add_argument(
-        "--self-test", action = "store_true", help = "check the comparison logic offline and exit"
+        "--self-test", action="store_true", help="check the comparison logic offline and exit"
     )
     parser.add_argument(
         "--request-interval",
-        type = float,
-        default = 20.0,
-        help = "seconds between API calls; the public tier allows 4 per minute",
+        type=float,
+        default=20.0,
+        help="seconds between API calls; the public tier allows 4 per minute",
     )
     return parser
 
@@ -638,22 +638,22 @@ def main(argv: list[str] | None = None) -> int:
         print("::warning::COULD NOT MEASURE. This is a missing key, not a clean result.")
         return 3
 
-    client = VirusTotalClient(api_key, request_interval = args.request_interval)
+    client = VirusTotalClient(api_key, request_interval=args.request_interval)
     # One budget shared across both lookups, so a slow baseline cannot leave the candidate with the
     # whole remaining job timeout and still overrun it.
     deadline = time.monotonic() + LOOKUP_BUDGET_SECONDS
-    baseline = fetch(client, args.baseline_sha256, "baseline", deadline = deadline)
-    candidate = fetch(client, candidate_sha, "candidate", deadline = deadline)
+    baseline = fetch(client, args.baseline_sha256, "baseline", deadline=deadline)
+    candidate = fetch(client, candidate_sha, "candidate", deadline=deadline)
     delta = compare(baseline, candidate)
 
     report = render(baseline, candidate, delta)
     print(report)
     if args.summary:
-        args.summary.parent.mkdir(parents = True, exist_ok = True)
-        args.summary.write_text(report, encoding = "utf-8")
+        args.summary.parent.mkdir(parents=True, exist_ok=True)
+        args.summary.write_text(report, encoding="utf-8")
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
-        with open(summary_path, "a", encoding = "utf-8") as handle:
+        with open(summary_path, "a", encoding="utf-8") as handle:
             handle.write(report + "\n")
 
     code = delta.exit_code()

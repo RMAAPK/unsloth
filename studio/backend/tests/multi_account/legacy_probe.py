@@ -63,7 +63,7 @@ def main() -> None:
             "login_mode": "single",
             "full_access": True,
         }
-        login = client.post("/api/auth/login", json={"username": "unsloth", "password": PASSWORD})
+        login = client.post("/api/auth/login", json = {"username": "unsloth", "password": PASSWORD})
         assert login.status_code == 200, login.text
         assert login.json()["access_token"]
     finally:

@@ -33,21 +33,21 @@ DIGEST_B = "758b9df442bf57eb68f1aee566a9c6582601386703dc993ecc68b8fa91a5e3bc"
 
 def _host(**overrides) -> HostInfo:
     base = dict(
-        system="Darwin",
-        machine="arm64",
-        is_windows=False,
-        is_linux=False,
-        is_macos=True,
-        is_x86_64=False,
-        is_arm64=True,
-        nvidia_smi=None,
-        driver_cuda_version=None,
-        compute_caps=[],
-        visible_cuda_devices=None,
-        has_physical_nvidia=False,
-        has_usable_nvidia=False,
-        has_rocm=False,
-        rocm_gfx_target=None,
+        system = "Darwin",
+        machine = "arm64",
+        is_windows = False,
+        is_linux = False,
+        is_macos = True,
+        is_x86_64 = False,
+        is_arm64 = True,
+        nvidia_smi = None,
+        driver_cuda_version = None,
+        compute_caps = [],
+        visible_cuda_devices = None,
+        has_physical_nvidia = False,
+        has_usable_nvidia = False,
+        has_rocm = False,
+        rocm_gfx_target = None,
     )
     base.update(overrides)
     return HostInfo(**base)
@@ -55,12 +55,12 @@ def _host(**overrides) -> HostInfo:
 
 def _linux_cpu(**overrides) -> HostInfo:
     return _host(
-        system="Linux",
-        machine="x86_64",
-        is_linux=True,
-        is_macos=False,
-        is_x86_64=True,
-        is_arm64=False,
+        system = "Linux",
+        machine = "x86_64",
+        is_linux = True,
+        is_macos = False,
+        is_x86_64 = True,
+        is_arm64 = False,
         **overrides,
     )
 
@@ -174,7 +174,7 @@ class TestWebReleaseTags:
             monkeypatch,
             {"releases.atom": _atom(UPSTREAM, [f"b{n}" for n in range(11070, 11060, -1)])},
         )
-        assert MOD.web_release_tags(UPSTREAM, limit=3) == ["b11070", "b11069", "b11068"]
+        assert MOD.web_release_tags(UPSTREAM, limit = 3) == ["b11070", "b11069", "b11068"]
 
 
 # ── the release page ──
@@ -244,7 +244,7 @@ class TestWebReleasePayload:
             f'llama-b11070-bin-macos-arm64.tar.gz" value="sha256:{DIGEST_B}"></clipboard-copy>'
         )
         _install_web(monkeypatch, {"expanded_assets/b11070": page})
-        with pytest.raises(RuntimeError, match="no digest-bearing assets"):
+        with pytest.raises(RuntimeError, match = "no digest-bearing assets"):
             MOD.web_release_payload(UPSTREAM, "b11070")
 
     def test_ignores_a_link_belonging_to_another_release(self, monkeypatch):
@@ -252,7 +252,7 @@ class TestWebReleasePayload:
             UPSTREAM, "b11069", {"llama-b11069-bin-macos-arm64.tar.gz": DIGEST_A}
         )
         _install_web(monkeypatch, {"expanded_assets/b11070": page})
-        with pytest.raises(RuntimeError, match="no digest-bearing assets"):
+        with pytest.raises(RuntimeError, match = "no digest-bearing assets"):
             MOD.web_release_payload(UPSTREAM, "b11070")
 
     def test_a_digest_without_a_published_asset_is_not_invented(self, monkeypatch):
@@ -261,12 +261,12 @@ class TestWebReleasePayload:
             f'value="sha256:{DIGEST_A}"></clipboard-copy>'
         )
         _install_web(monkeypatch, {"expanded_assets/b11070": page})
-        with pytest.raises(RuntimeError, match="no digest-bearing assets"):
+        with pytest.raises(RuntimeError, match = "no digest-bearing assets"):
             MOD.web_release_payload(UPSTREAM, "b11070")
 
     def test_refuses_an_implausibly_large_page(self, monkeypatch):
         monkeypatch.setattr(CORE, "download_bytes", lambda ops, url, **kw: b"x" * (8 * 1024 * 1024))
-        with pytest.raises(RuntimeError, match="implausibly large"):
+        with pytest.raises(RuntimeError, match = "implausibly large"):
             MOD.web_release_payload(UPSTREAM, "b11070")
 
     def test_never_sends_an_authorization_header(self, monkeypatch):
@@ -391,14 +391,14 @@ class TestIterReleasePayloads:
     def test_the_fork_never_uses_the_upstream_web_path(self, monkeypatch):
         monkeypatch.setattr(MOD, "github_releases", _rest_403)
         monkeypatch.setattr(MOD, "web_release_tags", _boom)
-        with pytest.raises(RuntimeError, match="403"):
+        with pytest.raises(RuntimeError, match = "403"):
             list(MOD.iter_release_payloads_by_time(MOD.DEFAULT_PUBLISHED_REPO, "", "latest"))
 
     def test_the_escape_hatch_disables_the_web_path(self, monkeypatch):
         monkeypatch.setenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", "1")
         monkeypatch.setattr(MOD, "github_releases", _rest_403)
         monkeypatch.setattr(MOD, "web_release_tags", _boom)
-        with pytest.raises(RuntimeError, match="403"):
+        with pytest.raises(RuntimeError, match = "403"):
             list(MOD.iter_release_payloads_by_time(UPSTREAM, "", "latest"))
 
     def test_both_paths_failing_reports_both_causes(self, monkeypatch):
@@ -413,7 +413,7 @@ class TestIterReleasePayloads:
 # ── end to end, through the real planner ──
 
 
-def _plans(host, requested="latest"):
+def _plans(host, requested = "latest"):
     return MOD.resolve_simple_install_release_plans(requested, host, UPSTREAM, "")
 
 
@@ -502,7 +502,7 @@ class TestPrereleaseStatus:
                     UPSTREAM, "b11070", {"llama-b11070-bin-macos-arm64.tar.gz": DIGEST_A}
                 )
             },
-            prerelease=True,
+            prerelease = True,
         )
         assert MOD.web_release_payload(UPSTREAM, "b11070")["prerelease"] is True
 
@@ -514,7 +514,7 @@ class TestPrereleaseStatus:
                     UPSTREAM, "b11070", {"llama-b11070-bin-macos-arm64.tar.gz": DIGEST_A}
                 )
             },
-            prerelease=False,
+            prerelease = False,
         )
         assert MOD.web_release_payload(UPSTREAM, "b11070")["prerelease"] is False
 
@@ -554,7 +554,7 @@ class TestPrereleaseStatus:
                     UPSTREAM, "b11070", {"llama-b11070-bin-macos-arm64.tar.gz": DIGEST_A}
                 ),
             },
-            prerelease=True,
+            prerelease = True,
         )
         got = list(MOD.iter_release_payloads_by_time(UPSTREAM, "", "latest"))
         assert [release["tag_name"] for release in got] == ["b11070"]
@@ -595,7 +595,7 @@ class TestPinnedPublishedRelease:
     def test_a_pinned_published_release_on_the_fork_still_re_raises(self, monkeypatch):
         monkeypatch.setattr(MOD, "github_release", _rest_403)
         monkeypatch.setattr(MOD, "web_release_payload", _boom)
-        with pytest.raises(RuntimeError, match="403"):
+        with pytest.raises(RuntimeError, match = "403"):
             list(MOD.iter_release_payloads_by_time(MOD.DEFAULT_PUBLISHED_REPO, "b9415", "latest"))
 
     def test_rest_still_wins_for_a_pinned_published_release(self, monkeypatch):
@@ -833,7 +833,7 @@ class TestTheOptOutIsHonouredEverywhere:
         monkeypatch.setenv("UNSLOTH_LLAMA_DISABLE_DOWNLOAD_HOST_RESOLVE", "1")
         monkeypatch.setattr(MOD, "fetch_json", _rest_403)
         monkeypatch.setattr(MOD, "upstream_web_release_tags", _boom)
-        with pytest.raises(RuntimeError, match="403"):
+        with pytest.raises(RuntimeError, match = "403"):
             MOD.latest_upstream_release_tag()
 
 

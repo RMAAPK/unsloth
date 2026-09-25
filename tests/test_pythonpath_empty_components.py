@@ -60,7 +60,7 @@ def _stage(monkeypatch, tmp_path, pythonpath):
     # monkeypatch.setenv/delenv restores PYTHONPATH at teardown even though the function writes os.environ directly, so
     # no restore fixture is needed.
     if pythonpath is None:
-        monkeypatch.delenv("PYTHONPATH", raising=False)
+        monkeypatch.delenv("PYTHONPATH", raising = False)
     else:
         monkeypatch.setenv("PYTHONPATH", pythonpath)
 
@@ -115,11 +115,11 @@ def _probe_tree(tmp_path):
     libdir = tmp_path / "libdir"
     scriptdir = tmp_path / "scriptdir"
     for d in (cwddir, libdir, scriptdir):
-        d.mkdir(exist_ok=True)
-    (cwddir / "only_in_cwd.py").write_text("MARKER = 1\n", encoding="utf-8")
+        d.mkdir(exist_ok = True)
+    (cwddir / "only_in_cwd.py").write_text("MARKER = 1\n", encoding = "utf-8")
     (scriptdir / "probe.py").write_text(
         "import importlib.util as u\nprint(u.find_spec('only_in_cwd') is not None)\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     return cwddir, libdir, scriptdir
 
@@ -130,11 +130,11 @@ def _cwd_is_importable(cwddir, scriptdir, pythonpath):
         env["PYTHONPATH"] = pythonpath
     out = subprocess.run(
         [sys.executable, str(scriptdir / "probe.py")],
-        cwd=str(cwddir),
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=300,
+        cwd = str(cwddir),
+        env = env,
+        capture_output = True,
+        text = True,
+        timeout = 300,
     )
     assert out.returncode == 0, out.stderr
     return out.stdout.strip() == "True"

@@ -36,7 +36,7 @@ def test_the_aux_loss_fail_fast_lands_on_every_known_spelling(assignment: str):
     class MoEConfig:
         output_router_logits = False
 
-    with pytest.raises(NotImplementedError, match="router_aux_loss_coef = 0"):
+    with pytest.raises(NotImplementedError, match = "router_aux_loss_coef = 0"):
         ns["GRPOTrainer"](Args, True, MoEConfig())
     Args.router_aux_loss_coef = 0.0
     assert ns["GRPOTrainer"](Args, True, MoEConfig()).done

@@ -78,17 +78,17 @@ class Harness:
         self,
         monkeypatch,
         *,
-        downloaded_bytes=0,
-        chunk_bytes=0,
-        chatter=None,
-        fail_every=0,
-        fail_first=0,
-        unmeasured_every=0,
-        unmeasured_grows=False,
-        vanish_every=0,
-        rebound=False,
-        ready_at=None,
-        tail=KEY_LINE,
+        downloaded_bytes = 0,
+        chunk_bytes = 0,
+        chatter = None,
+        fail_every = 0,
+        fail_first = 0,
+        unmeasured_every = 0,
+        unmeasured_grows = False,
+        vanish_every = 0,
+        rebound = False,
+        ready_at = None,
+        tail = KEY_LINE,
     ):
         self.clock = FakeClock(STEP_S)
         self.log_path = None
@@ -124,9 +124,9 @@ class Harness:
         method,
         url,
         token,
-        payload=None,
-        timeout=30,
-        error=None,
+        payload = None,
+        timeout = 30,
+        error = None,
     ):
         if "gguf-variants" in url:
             return {
@@ -192,7 +192,7 @@ class Harness:
     def log_tail(
         self,
         path,
-        lines=20,
+        lines = 20,
     ):
         # The real file the child writes to, so `_ServerLogProgress` reads it for real.
         self.log_path = path
@@ -201,7 +201,7 @@ class Harness:
     def studio_healthy(
         self,
         base,
-        timeout=3.0,
+        timeout = 3.0,
     ):
         self.iterations += 1
         assert self.iterations <= MAX_ITERATIONS, (
@@ -223,8 +223,8 @@ class Harness:
 def test_a_live_download_survives_past_the_idle_cap(monkeypatch):
     harness = Harness(
         monkeypatch,
-        chunk_bytes=1024**3,
-        ready_at=40,
+        chunk_bytes = 1024**3,
+        ready_at = 40,
     )
 
     server = harness.start()
@@ -239,8 +239,8 @@ def test_a_live_download_survives_past_the_idle_cap(monkeypatch):
 def test_a_stalled_download_still_times_out(monkeypatch, capsys):
     harness = Harness(
         monkeypatch,
-        downloaded_bytes=12 * 1024**3,
-        chunk_bytes=0,
+        downloaded_bytes = 12 * 1024**3,
+        chunk_bytes = 0,
     )
 
     with pytest.raises(typer.Exit):
@@ -253,7 +253,7 @@ def test_a_stalled_download_still_times_out(monkeypatch, capsys):
 
 
 def test_a_server_that_never_downloads_still_times_out(monkeypatch, capsys):
-    harness = Harness(monkeypatch, tail="starting\n")
+    harness = Harness(monkeypatch, tail = "starting\n")
 
     with pytest.raises(typer.Exit):
         harness.start()
@@ -267,9 +267,9 @@ def test_a_server_that_never_downloads_still_times_out(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "chatter",
     [
-        pytest.param(health_poll_line, id="the loop's own health poll"),
-        pytest.param(failed_health_poll_record, id="traceback echo lines"),
-        pytest.param(load_watchdog_heartbeat, id="load watchdog heartbeat"),
+        pytest.param(health_poll_line, id = "the loop's own health poll"),
+        pytest.param(failed_health_poll_record, id = "traceback echo lines"),
+        pytest.param(load_watchdog_heartbeat, id = "load watchdog heartbeat"),
     ],
 )
 def test_a_wedged_server_that_keeps_writing_still_times_out(monkeypatch, capsys, chatter):
@@ -277,9 +277,9 @@ def test_a_wedged_server_that_keeps_writing_still_times_out(monkeypatch, capsys,
     # growth cannot stand in for progress: only fresh download bytes may move the deadline.
     harness = Harness(
         monkeypatch,
-        downloaded_bytes=EXPECTED_BYTES,
-        chunk_bytes=0,
-        chatter=chatter,
+        downloaded_bytes = EXPECTED_BYTES,
+        chunk_bytes = 0,
+        chatter = chatter,
     )
 
     with pytest.raises(typer.Exit):
@@ -295,9 +295,9 @@ def test_a_transient_progress_error_does_not_blind_the_loop(monkeypatch):
     # download with no signal at all and kill it at the cap.
     harness = Harness(
         monkeypatch,
-        chunk_bytes=1024**3,
-        fail_every=3,
-        ready_at=40,
+        chunk_bytes = 1024**3,
+        fail_every = 3,
+        ready_at = 40,
     )
 
     server = harness.start()
@@ -314,9 +314,9 @@ def test_an_unmeasured_reading_is_not_progress(monkeypatch, capsys):
     # the same cached bytes would read as fresh growth and renew the deadline forever.
     harness = Harness(
         monkeypatch,
-        downloaded_bytes=12 * 1024**3,
-        chunk_bytes=0,
-        unmeasured_every=2,
+        downloaded_bytes = 12 * 1024**3,
+        chunk_bytes = 0,
+        unmeasured_every = 2,
     )
 
     with pytest.raises(typer.Exit):
@@ -335,9 +335,9 @@ def test_polling_keeps_probing_after_a_long_burst_of_errors(monkeypatch):
     # point where the reader used to disable itself for the rest of the startup.
     harness = Harness(
         monkeypatch,
-        chunk_bytes=1024**3,
-        fail_first=6,
-        ready_at=40,
+        chunk_bytes = 1024**3,
+        fail_first = 6,
+        ready_at = 40,
     )
 
     server = harness.start()
@@ -355,10 +355,10 @@ def test_a_growing_unmeasured_reading_still_counts(monkeypatch):
     # lower bound, not an unknown, so rejecting it would kill a live transfer at the cap.
     harness = Harness(
         monkeypatch,
-        chunk_bytes=1024**3,
-        unmeasured_every=1,
-        unmeasured_grows=True,
-        ready_at=40,
+        chunk_bytes = 1024**3,
+        unmeasured_every = 1,
+        unmeasured_grows = True,
+        ready_at = 40,
     )
 
     server = harness.start()
@@ -373,7 +373,7 @@ def test_a_partial_scan_rebound_is_not_progress(monkeypatch, capsys):
     # Nothing is downloading; one cache root simply comes and goes. Letting the partial
     # scan lower the baseline would turn the next complete scan of the very same bytes
     # into growth, and a wedged server would be renewed for as long as the mount flaps.
-    harness = Harness(monkeypatch, rebound=True)
+    harness = Harness(monkeypatch, rebound = True)
 
     with pytest.raises(typer.Exit):
         harness.start()
@@ -390,9 +390,9 @@ def test_a_vanished_cache_mount_is_not_progress(monkeypatch, capsys):
     # remount as fresh growth and keep a wedged server waiting for as long as it flaps.
     harness = Harness(
         monkeypatch,
-        downloaded_bytes=12 * 1024**3,
-        chunk_bytes=0,
-        vanish_every=2,
+        downloaded_bytes = 12 * 1024**3,
+        chunk_bytes = 0,
+        vanish_every = 2,
     )
 
     with pytest.raises(typer.Exit):

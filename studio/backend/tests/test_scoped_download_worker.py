@@ -53,14 +53,14 @@ def offline(monkeypatch, tmp_path):
     return snapshot
 
 
-def _run(scope="diffusion"):
+def _run(scope = "diffusion"):
     hf_download._download_scoped_snapshot(
         "black-forest-labs/FLUX.1-dev", scope, list(FILES), None, "http"
     )
 
 
 def test_offline_scoped_download_fails_when_the_files_are_not_on_disk(offline, capsys):
-    (offline / "model_index.json").write_text("{}", encoding="utf-8")  # the cheap file only
+    (offline / "model_index.json").write_text("{}", encoding = "utf-8")  # the cheap file only
 
     with pytest.raises(SystemExit) as exit_info:
         _run()
@@ -73,17 +73,17 @@ def test_offline_scoped_download_fails_when_the_files_are_not_on_disk(offline, c
 def test_offline_scoped_download_passes_when_every_file_is_present(offline):
     for rel in FILES:
         path = offline / rel
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("weights", encoding="utf-8")
+        path.parent.mkdir(parents = True, exist_ok = True)
+        path.write_text("weights", encoding = "utf-8")
 
     _run()  # no SystemExit: everything the job asked for is on disk
 
 
 def test_a_dangling_symlink_does_not_count_as_present(offline, capsys):
     """Cache entries are symlinks into blobs/; a broken one is a missing file."""
-    (offline / "model_index.json").write_text("{}", encoding="utf-8")
+    (offline / "model_index.json").write_text("{}", encoding = "utf-8")
     target = offline / "transformer"
-    target.mkdir(parents=True, exist_ok=True)
+    target.mkdir(parents = True, exist_ok = True)
     (target / "diffusion_pytorch_model.safetensors").symlink_to(offline / "gone.bin")
 
     with pytest.raises(SystemExit) as exit_info:
@@ -98,8 +98,8 @@ def test_disk_space_refusal_reports_decimal_gigabytes(monkeypatch, tmp_path, cap
 
     monkeypatch.setattr(registry_mod, "existing_blob_bytes", lambda *a, **k: 0)
     monkeypatch.setattr(cache_state_mod, "hf_cache_root", lambda **k: tmp_path)
-    monkeypatch.setattr(shutil, "disk_usage", lambda _p: SimpleNamespace(free=1_500_000_000))
-    q8 = SimpleNamespace(size=1_834_426_944, sha256="a" * 64)
+    monkeypatch.setattr(shutil, "disk_usage", lambda _p: SimpleNamespace(free = 1_500_000_000))
+    q8 = SimpleNamespace(size = 1_834_426_944, sha256 = "a" * 64)
 
     with pytest.raises(SystemExit) as exit_info:
         hf_download._preflight_disk_space("model", "unsloth/Qwen3-1.7B-GGUF", [q8])

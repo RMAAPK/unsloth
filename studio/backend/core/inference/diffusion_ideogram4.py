@@ -65,7 +65,7 @@ def _patch_create_causal_mask() -> None:
         if "cache_position" in params and "cache_position" not in kwargs:
             embeds = kwargs.get("input_embeds", kwargs.get("inputs_embeds"))
             if embeds is not None:
-                kwargs["cache_position"] = torch.arange(embeds.shape[1], device=embeds.device)
+                kwargs["cache_position"] = torch.arange(embeds.shape[1], device = embeds.device)
         return original(*args, **kwargs)
 
     pipe_mod.create_causal_mask = create_causal_mask_compat
@@ -98,7 +98,7 @@ def _transformer_shard_paths(
         sub = local_root / subfolder
         index = sub / "diffusion_pytorch_model.safetensors.index.json"
         if index.is_file():
-            weight_map = json.loads(index.read_text(encoding="utf-8"))["weight_map"]
+            weight_map = json.loads(index.read_text(encoding = "utf-8"))["weight_map"]
             return [str(sub / name) for name in sorted(set(weight_map.values()))]
         single = sub / "diffusion_pytorch_model.safetensors"
         if single.is_file():
@@ -107,15 +107,15 @@ def _transformer_shard_paths(
 
     index_name = f"{subfolder}/diffusion_pytorch_model.safetensors.index.json"
     try:
-        index_path = hf_hub_download(repo_id, index_name, token=token)
-        weight_map = json.loads(Path(index_path).read_text(encoding="utf-8"))["weight_map"]
+        index_path = hf_hub_download(repo_id, index_name, token = token)
+        weight_map = json.loads(Path(index_path).read_text(encoding = "utf-8"))["weight_map"]
         shards = sorted(set(weight_map.values()))
     except Exception:  # noqa: BLE001 -- single-file subfolder has no index
         shards = ["diffusion_pytorch_model.safetensors"]
     paths = []
     for name in shards:
         check_cancelled()
-        paths.append(hf_hub_download(repo_id, f"{subfolder}/{name}", token=token))
+        paths.append(hf_hub_download(repo_id, f"{subfolder}/{name}", token = token))
     return paths
 
 
@@ -123,11 +123,11 @@ def _read_transformer_config(repo_id: str, subfolder: str, token: Optional[str])
     """``subfolder/config.json`` as a dict, from a local path or the Hub cache."""
     local = Path(repo_id).expanduser() / subfolder / "config.json"
     if local.is_file():
-        return json.loads(local.read_text(encoding="utf-8"))
+        return json.loads(local.read_text(encoding = "utf-8"))
     from huggingface_hub import hf_hub_download
 
-    path = hf_hub_download(repo_id, f"{subfolder}/config.json", token=token)
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    path = hf_hub_download(repo_id, f"{subfolder}/config.json", token = token)
+    return json.loads(Path(path).read_text(encoding = "utf-8"))
 
 
 def _convert_fp8_state_dict(
@@ -194,7 +194,7 @@ def _text_encoder_shard_paths(
         sub = local_root / "text_encoder"
         index = sub / "model.safetensors.index.json"
         if index.is_file():
-            weight_map = json.loads(index.read_text(encoding="utf-8"))["weight_map"]
+            weight_map = json.loads(index.read_text(encoding = "utf-8"))["weight_map"]
             return [str(sub / name) for name in sorted(set(weight_map.values()))]
         single = sub / "model.safetensors"
         if single.is_file():
@@ -203,16 +203,16 @@ def _text_encoder_shard_paths(
 
     try:
         index_path = hf_hub_download(
-            repo_id, "text_encoder/model.safetensors.index.json", token=token
+            repo_id, "text_encoder/model.safetensors.index.json", token = token
         )
-        weight_map = json.loads(Path(index_path).read_text(encoding="utf-8"))["weight_map"]
+        weight_map = json.loads(Path(index_path).read_text(encoding = "utf-8"))["weight_map"]
         shards = sorted(set(weight_map.values()))
     except Exception:  # noqa: BLE001 -- single-file text encoder has no index
         shards = ["model.safetensors"]
     paths = []
     for name in shards:
         check_cancelled()
-        paths.append(hf_hub_download(repo_id, f"text_encoder/{name}", token=token))
+        paths.append(hf_hub_download(repo_id, f"text_encoder/{name}", token = token))
     return paths
 
 
@@ -226,14 +226,14 @@ def _text_encoder_is_fp8(repo_id: str, token: Optional[str]) -> bool:
         if index.is_file():
             return any(
                 k.endswith("_scale")
-                for k in json.loads(index.read_text(encoding="utf-8"))["weight_map"]
+                for k in json.loads(index.read_text(encoding = "utf-8"))["weight_map"]
             )
     else:
         try:
             index_path = hf_hub_download(
-                repo_id, "text_encoder/model.safetensors.index.json", token=token
+                repo_id, "text_encoder/model.safetensors.index.json", token = token
             )
-            weight_map = json.loads(Path(index_path).read_text(encoding="utf-8"))["weight_map"]
+            weight_map = json.loads(Path(index_path).read_text(encoding = "utf-8"))["weight_map"]
             return any(k.endswith("_scale") for k in weight_map)
         except Exception:  # noqa: BLE001 -- single-file (nf4) text encoder, not fp8
             return False
@@ -266,7 +266,7 @@ def load_ideogram4_text_encoder(
     check_cancelled()
     if not is_fp8:
         return load_krea2_text_encoder(
-            repo_id, dtype, hf_token=token, check_cancelled=check_cancelled
+            repo_id, dtype, hf_token = token, check_cancelled = check_cancelled
         )
 
     import safetensors
@@ -283,7 +283,7 @@ def load_ideogram4_text_encoder(
     remap_rope_parameters(getattr(config, "text_config", config))
 
     raw: dict = {}
-    for path in _text_encoder_shard_paths(repo_id, token, check_cancelled=check_cancelled):
+    for path in _text_encoder_shard_paths(repo_id, token, check_cancelled = check_cancelled):
         check_cancelled()
         with safetensors.safe_open(path, "pt") as handle:
             for key in handle.keys():
@@ -314,7 +314,7 @@ def load_ideogram4_text_encoder(
     finally:
         torch.set_default_dtype(default_dtype)
     check_cancelled()
-    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    missing, unexpected = model.load_state_dict(state_dict, strict = False)
     real_missing = [k for k in missing if not k.endswith("inv_freq")]
     if real_missing or unexpected:
         raise RuntimeError(
@@ -367,7 +367,7 @@ def load_ideogram4_transformer(
     config = _read_transformer_config(repo_id, subfolder, token)
     check_cancelled()
     shard_paths = _transformer_shard_paths(
-        repo_id, subfolder, token, check_cancelled=check_cancelled
+        repo_id, subfolder, token, check_cancelled = check_cancelled
     )
 
     # Detect fp8 from shard HEADERS (keys() reads metadata only), checking all shards so a dense-first multi-shard
@@ -407,9 +407,9 @@ def load_ideogram4_transformer(
     finally:
         torch.set_default_dtype(default_dtype)
     check_cancelled()
-    state_dict = _convert_fp8_state_dict(raw, hidden_size, dtype, check_cancelled=check_cancelled)
+    state_dict = _convert_fp8_state_dict(raw, hidden_size, dtype, check_cancelled = check_cancelled)
     check_cancelled()
-    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    missing, unexpected = model.load_state_dict(state_dict, strict = False)
     # rotary_emb.inv_freq is the only expected "missing" key (built in __init__); a real gap or leftover key must fail
     # loudly rather than ship a partly random model.
     real_missing = [k for k in missing if not k.endswith("rotary_emb.inv_freq")]
@@ -445,33 +445,33 @@ def load_ideogram4_pipeline(
         model_kwargs["token"] = token
 
     text_encoder = load_ideogram4_text_encoder(
-        repo_id, dtype, hf_token=token, check_cancelled=check_cancelled
+        repo_id, dtype, hf_token = token, check_cancelled = check_cancelled
     )
     check_cancelled()
-    tokenizer = load_krea2_tokenizer(repo_id, hf_token=token, check_cancelled=check_cancelled)
+    tokenizer = load_krea2_tokenizer(repo_id, hf_token = token, check_cancelled = check_cancelled)
     check_cancelled()
     transformer = load_ideogram4_transformer(
-        repo_id, "transformer", dtype, hf_token=token, check_cancelled=check_cancelled
+        repo_id, "transformer", dtype, hf_token = token, check_cancelled = check_cancelled
     )
     check_cancelled()
     # The second DiT drives the unconditional branch of Ideogram's dual-branch CFG (same class and size, always
     # required).
     unconditional_transformer = load_ideogram4_transformer(
-        repo_id, "unconditional_transformer", dtype, hf_token=token, check_cancelled=check_cancelled
+        repo_id, "unconditional_transformer", dtype, hf_token = token, check_cancelled = check_cancelled
     )
     check_cancelled()
-    vae = diffusers.AutoencoderKLFlux2.from_pretrained(repo_id, subfolder="vae", **model_kwargs)
+    vae = diffusers.AutoencoderKLFlux2.from_pretrained(repo_id, subfolder = "vae", **model_kwargs)
     check_cancelled()
     scheduler = diffusers.FlowMatchEulerDiscreteScheduler.from_pretrained(
-        repo_id, subfolder="scheduler", token=token
+        repo_id, subfolder = "scheduler", token = token
     )
     check_cancelled()
     logger.info("diffusion.ideogram4: assembled pipeline from %s per-component", repo_id)
     return diffusers.Ideogram4Pipeline(
-        scheduler=scheduler,
-        vae=vae,
-        text_encoder=text_encoder,
-        tokenizer=tokenizer,
-        transformer=transformer,
-        unconditional_transformer=unconditional_transformer,
+        scheduler = scheduler,
+        vae = vae,
+        text_encoder = text_encoder,
+        tokenizer = tokenizer,
+        transformer = transformer,
+        unconditional_transformer = unconditional_transformer,
     )

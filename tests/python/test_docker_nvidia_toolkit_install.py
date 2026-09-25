@@ -59,7 +59,7 @@ _REAL_TOOLS = (
 
 def _isolated_path(tmp_path: Path, bindir: Path) -> str:
     sysbin = tmp_path / "sysbin"
-    sysbin.mkdir(exist_ok=True)
+    sysbin.mkdir(exist_ok = True)
     for name in _REAL_TOOLS:
         real = shutil.which(name)
         assert real, f"{name} not found on this host"
@@ -68,7 +68,7 @@ def _isolated_path(tmp_path: Path, bindir: Path) -> str:
 
 
 def _stub(path: Path, body: str) -> None:
-    path.write_text("#!/usr/bin/env bash\n" + body, encoding="utf-8")
+    path.write_text("#!/usr/bin/env bash\n" + body, encoding = "utf-8")
     path.chmod(path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
 
@@ -99,7 +99,7 @@ def _setup(
     log = tmp_path / "calls.log"
     marker = tmp_path / "configured"
     if configured:
-        marker.write_text("", encoding="utf-8")
+        marker.write_text("", encoding = "utf-8")
     rec = f'echo "$(basename "$0") $*" >> {log}\n'
     _stub(bindir / "id", f"echo {uid}\n")
     _stub(bindir / "sudo", rec + "exit 0\n")
@@ -124,7 +124,7 @@ def _setup(
     if configured or toolkit_installed:
         _stub(ctk, ctk_body)
         _stub(runtime, "exit 0\n")
-    (tmp_path / "ctk-stub-body").write_text("#!/usr/bin/env bash\n" + ctk_body, encoding="utf-8")
+    (tmp_path / "ctk-stub-body").write_text("#!/usr/bin/env bash\n" + ctk_body, encoding = "utf-8")
     _stub(
         bindir / "docker",
         rec
@@ -186,13 +186,13 @@ def _setup(
         'printf "DEARMORED:"; cat > "$out"\n',
     )
     osr = tmp_path / "os-release"
-    osr.write_text(OS_RELEASE[distro], encoding="utf-8")
+    osr.write_text(OS_RELEASE[distro], encoding = "utf-8")
     procv = tmp_path / "proc-version"
     procv.write_text(
         "Linux version 5.15.167.4-microsoft-standard-WSL2\n"
         if wsl
         else "Linux version 6.8.0-45-generic\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     env = dict(os.environ)
     env["PATH"] = _isolated_path(tmp_path, bindir)
@@ -220,17 +220,17 @@ def _run(
     cmd = ["bash", str(script)]
     if umask:
         cmd = ["bash", "-c", f'umask {umask}; exec bash "$0"', str(script)]
-    return subprocess.run(cmd, capture_output=True, text=True, env=e, timeout=60)
+    return subprocess.run(cmd, capture_output = True, text = True, env = e, timeout = 60)
 
 
 def _calls(log: Path) -> list[str]:
-    return log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+    return log.read_text(encoding = "utf-8").splitlines() if log.exists() else []
 
 
 def test_ubuntu_gets_the_apt_recipe_then_docker_is_configured_restarted_and_verified(
-    tmp_path: Path
+    tmp_path: Path,
 ):
-    root, log, env = _setup(tmp_path, distro="ubuntu")
+    root, log, env = _setup(tmp_path, distro = "ubuntu")
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     calls = _calls(log)
@@ -239,9 +239,9 @@ def test_ubuntu_gets_the_apt_recipe_then_docker_is_configured_restarted_and_veri
         c.startswith("apt-get install") and c.endswith("nvidia-container-toolkit") for c in calls
     )
     key = root / "usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
-    assert key.read_text(encoding="utf-8") == "FAKE-ARMORED-KEY\n"
+    assert key.read_text(encoding = "utf-8") == "FAKE-ARMORED-KEY\n"
     lst = (root / "etc/apt/sources.list.d/nvidia-container-toolkit.list").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     assert lst.startswith(
         "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://"
@@ -256,19 +256,19 @@ def test_ubuntu_gets_the_apt_recipe_then_docker_is_configured_restarted_and_veri
 
 @pytest.mark.parametrize("distro", ["rhel", "fedora", "amzn", "rocky"])
 def test_rpm_distributions_use_dnf_and_the_repo_file(tmp_path: Path, distro: str):
-    root, log, env = _setup(tmp_path, distro=distro)
+    root, log, env = _setup(tmp_path, distro = distro)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     calls = _calls(log)
     assert "dnf install -y nvidia-container-toolkit" in calls
-    repo = (root / "etc/yum.repos.d/nvidia-container-toolkit.repo").read_text(encoding="utf-8")
+    repo = (root / "etc/yum.repos.d/nvidia-container-toolkit.repo").read_text(encoding = "utf-8")
     assert repo.startswith("[nvidia-container-toolkit]")
     assert not any(c.startswith(("apt-get", "yum", "zypper")) for c in calls)
     assert "nvidia-ctk runtime configure --runtime=docker" in calls
 
 
 def test_yum_when_dnf_is_absent(tmp_path: Path):
-    root, log, env = _setup(tmp_path, distro="rhel")
+    root, log, env = _setup(tmp_path, distro = "rhel")
     (tmp_path / "bin" / "dnf").unlink()
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -276,7 +276,7 @@ def test_yum_when_dnf_is_absent(tmp_path: Path):
 
 
 def test_suse_uses_zypper(tmp_path: Path):
-    _, log, env = _setup(tmp_path, distro="suse")
+    _, log, env = _setup(tmp_path, distro = "suse")
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     calls = _calls(log)
@@ -288,7 +288,7 @@ def test_suse_uses_zypper(tmp_path: Path):
 
 
 def test_an_unknown_distribution_stops_before_touching_anything(tmp_path: Path):
-    _, log, env = _setup(tmp_path, distro="alpine")
+    _, log, env = _setup(tmp_path, distro = "alpine")
     res = _run(env)
     assert res.returncode == 2
     assert "unrecognised distribution" in res.stderr
@@ -299,7 +299,7 @@ def test_an_unknown_distribution_stops_before_touching_anything(tmp_path: Path):
 
 
 def test_no_driver_means_stop_and_say_how_to_get_one(tmp_path: Path):
-    _, log, env = _setup(tmp_path, driver=False)
+    _, log, env = _setup(tmp_path, driver = False)
     res = _run(env)
     assert res.returncode == 2
     assert "no NVIDIA driver found" in res.stderr
@@ -308,7 +308,7 @@ def test_no_driver_means_stop_and_say_how_to_get_one(tmp_path: Path):
 
 
 def test_an_old_driver_is_reported_after_the_toolkit_is_in_place(tmp_path: Path):
-    _, log, env = _setup(tmp_path, driver_version="550.54.15")
+    _, log, env = _setup(tmp_path, driver_version = "550.54.15")
     res = _run(env)
     assert res.returncode == 3
     assert "550.54.15 is below 570.26" in res.stderr
@@ -318,14 +318,14 @@ def test_an_old_driver_is_reported_after_the_toolkit_is_in_place(tmp_path: Path)
 
 
 def test_a_current_driver_is_confirmed(tmp_path: Path):
-    _, _, env = _setup(tmp_path, driver_version="570.26")
+    _, _, env = _setup(tmp_path, driver_version = "570.26")
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "570.26 meets the 570.26 minimum" in res.stdout
 
 
 def test_rootless_docker_is_refused_before_anything_runs(tmp_path: Path):
-    _, log, env = _setup(tmp_path, rootless=True, uid=1000)
+    _, log, env = _setup(tmp_path, rootless = True, uid = 1000)
     res = _run(env)
     assert res.returncode == 2
     assert "rootless" in res.stderr and "#rootless-mode" in res.stderr
@@ -336,9 +336,9 @@ def test_rootless_docker_is_still_caught_when_piped_into_sudo_bash(tmp_path: Pat
     """env_reset strips DOCKER_HOST but keeps SUDO_UID, so the user's socket is probed through it."""
     import socket
 
-    _, log, env = _setup(tmp_path, rootless="via_sudo_uid", uid=0)
+    _, log, env = _setup(tmp_path, rootless = "via_sudo_uid", uid = 0)
     sock_dir = tmp_path / "run-user" / "1000"
-    sock_dir.mkdir(parents=True)
+    sock_dir.mkdir(parents = True)
     s = socket.socket(socket.AF_UNIX)
     cwd = os.getcwd()
     os.chdir(sock_dir)  # AF_UNIX paths are capped at 108 bytes; bind relative
@@ -365,7 +365,7 @@ def test_without_docker_the_script_says_so(tmp_path: Path):
 
 
 def test_docker_context_wins_over_a_local_docker_host(tmp_path: Path):
-    _, log, env = _setup(tmp_path, uid=1000)
+    _, log, env = _setup(tmp_path, uid = 1000)
     env["DOCKER_HOST"] = "unix:///var/run/docker.sock"
     env["DOCKER_CONTEXT"] = "remote-gpu"
     res = _run(env)
@@ -376,7 +376,7 @@ def test_docker_context_wins_over_a_local_docker_host(tmp_path: Path):
 
 def test_nvidia_smi_is_found_in_the_wsl_library_dir_after_sudo(tmp_path: Path):
     """secure_path drops /usr/lib/wsl/lib, where the Windows driver keeps nvidia-smi."""
-    _, log, env = _setup(tmp_path, wsl=True)
+    _, log, env = _setup(tmp_path, wsl = True)
     smi = tmp_path / "bin" / "nvidia-smi"
     wsl_lib = tmp_path / "wsl-lib"
     wsl_lib.mkdir()
@@ -388,14 +388,14 @@ def test_nvidia_smi_is_found_in_the_wsl_library_dir_after_sudo(tmp_path: Path):
 
 
 def test_a_failed_source_list_download_keeps_the_existing_file(tmp_path: Path):
-    root, log, env = _setup(tmp_path, distro="ubuntu")
+    root, log, env = _setup(tmp_path, distro = "ubuntu")
     lst = root / "etc/apt/sources.list.d/nvidia-container-toolkit.list"
-    lst.parent.mkdir(parents=True)
-    lst.write_text("deb [signed-by=/usr/share/keyrings/x.gpg] https://old /\n", encoding="utf-8")
-    (tmp_path / "list-download-fails").write_text("", encoding="utf-8")
+    lst.parent.mkdir(parents = True)
+    lst.write_text("deb [signed-by=/usr/share/keyrings/x.gpg] https://old /\n", encoding = "utf-8")
+    (tmp_path / "list-download-fails").write_text("", encoding = "utf-8")
     res = _run(env)
     assert res.returncode != 0
-    assert lst.read_text(encoding="utf-8").startswith(
+    assert lst.read_text(encoding = "utf-8").startswith(
         "deb [signed-by=/usr/share/keyrings/x.gpg] https://old"
     )
     assert not any(c.startswith("nvidia-ctk") for c in _calls(log))
@@ -412,7 +412,7 @@ def test_an_unsupported_architecture_is_refused_before_any_install(tmp_path: Pat
 
 def test_an_installed_toolkit_is_only_registered(tmp_path: Path):
     """nvidia-ctk present, runtime entry gone: no repository or package work, as an offline host needs."""
-    _, log, env = _setup(tmp_path, toolkit_installed=True)
+    _, log, env = _setup(tmp_path, toolkit_installed = True)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     calls = _calls(log)
@@ -422,8 +422,8 @@ def test_an_installed_toolkit_is_only_registered(tmp_path: Path):
 
 
 def test_the_keyring_is_world_readable_under_a_strict_umask(tmp_path: Path):
-    root, _, env = _setup(tmp_path, distro="ubuntu")
-    res = _run(env, umask="077")
+    root, _, env = _setup(tmp_path, distro = "ubuntu")
+    res = _run(env, umask = "077")
     assert res.returncode == 0, res.stdout + res.stderr
     key = root / "usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
     assert oct(key.stat().st_mode & 0o777) == "0o644"
@@ -439,7 +439,7 @@ def test_an_uninspectable_context_is_an_error_not_the_local_daemon(tmp_path: Pat
 
 
 def test_no_gpu_on_wsl_points_at_the_windows_driver(tmp_path: Path):
-    _, log, env = _setup(tmp_path, driver=False, wsl=True)
+    _, log, env = _setup(tmp_path, driver = False, wsl = True)
     res = _run(env)
     assert res.returncode == 2
     assert "NVIDIA Windows driver" in res.stderr and "never a Linux driver" in res.stderr
@@ -449,7 +449,7 @@ def test_no_gpu_on_wsl_points_at_the_windows_driver(tmp_path: Path):
 
 def test_only_the_toolkit_cli_present_still_installs_the_full_package(tmp_path: Path):
     """nvidia-container-toolkit-base ships nvidia-ctk without the runtime binary."""
-    _, log, env = _setup(tmp_path, toolkit_installed=True)
+    _, log, env = _setup(tmp_path, toolkit_installed = True)
     (tmp_path / "bin" / "nvidia-container-runtime").unlink()
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -461,7 +461,7 @@ def test_only_the_toolkit_cli_present_still_installs_the_full_package(tmp_path: 
 
 
 def test_a_remote_docker_endpoint_is_refused(tmp_path: Path):
-    _, log, env = _setup(tmp_path, uid=1000)
+    _, log, env = _setup(tmp_path, uid = 1000)
     env["DOCKER_HOST"] = "tcp://gpu-box:2376"
     res = _run(env)
     assert res.returncode == 2
@@ -470,7 +470,7 @@ def test_a_remote_docker_endpoint_is_refused(tmp_path: Path):
 
 
 def test_docker_desktop_on_native_linux_is_refused(tmp_path: Path):
-    _, log, env = _setup(tmp_path, desktop=True, driver=False, uid=1000)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False, uid = 1000)
     res = _run(env)
     assert res.returncode == 2
     assert "Docker Desktop for Linux has no NVIDIA GPU support" in res.stderr
@@ -478,7 +478,7 @@ def test_docker_desktop_on_native_linux_is_refused(tmp_path: Path):
 
 
 def test_a_runtime_registered_without_nvidia_ctk_is_left_alone(tmp_path: Path):
-    _, log, env = _setup(tmp_path, configured=True)
+    _, log, env = _setup(tmp_path, configured = True)
     (tmp_path / "bin" / "nvidia-ctk").unlink()
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -488,7 +488,7 @@ def test_a_runtime_registered_without_nvidia_ctk_is_left_alone(tmp_path: Path):
 
 
 def test_a_second_daemon_on_its_own_socket_is_refused(tmp_path: Path):
-    _, log, env = _setup(tmp_path, uid=1000)
+    _, log, env = _setup(tmp_path, uid = 1000)
     env["DOCKER_HOST"] = "unix:///run/dockerd-b/docker.sock"
     res = _run(env)
     assert res.returncode == 2
@@ -500,7 +500,7 @@ def test_the_default_sockets_are_accepted(tmp_path: Path):
     for i, sock in enumerate(("unix:///var/run/docker.sock", "unix:///run/docker.sock")):
         sub = tmp_path / f"case{i}"
         sub.mkdir()
-        _, log, env = _setup(sub, uid=1000)
+        _, log, env = _setup(sub, uid = 1000)
         env["DOCKER_HOST"] = sock
         res = _run(env)
         assert "not the system daemon" not in res.stderr, sock
@@ -515,7 +515,7 @@ def test_docker_desktop_is_still_seen_when_the_daemon_answers_in_pieces(tmp_path
     is why it showed up as an intermittent CI failure (the script printed "Re-running with sudo."
     and exited 0 where the test expected the Docker Desktop refusal) rather than a steady one.
     """
-    _, log, env = _setup(tmp_path, desktop=True, driver=False, uid=1000, chunked=True)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False, uid = 1000, chunked = True)
     res = _run(env)
     assert res.returncode == 2, res.stdout + res.stderr
     assert "Docker Desktop for Linux has no NVIDIA GPU support" in res.stderr
@@ -525,7 +525,7 @@ def test_docker_desktop_is_still_seen_when_the_daemon_answers_in_pieces(tmp_path
 
 def test_a_chunked_daemon_does_not_hide_the_nvidia_runtime(tmp_path: Path):
     """Same pipeline shape in `configured()`, and the cost is a pointless reinstall."""
-    _, log, env = _setup(tmp_path, configured=True, chunked=True)
+    _, log, env = _setup(tmp_path, configured = True, chunked = True)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "already lists the nvidia runtime" in res.stdout
@@ -538,14 +538,14 @@ def test_the_driver_version_survives_a_multi_gpu_host(tmp_path: Path):
     Inside a command substitution that SIGPIPE becomes the assignment's status, and `set -e`
     then ends the script where it stands, with nothing printed for the user to act on.
     """
-    _, _, env = _setup(tmp_path, chunked=True, gpus=8)
+    _, _, env = _setup(tmp_path, chunked = True, gpus = 8)
     res = _run(env)
     assert res.returncode == 0, f"rc={res.returncode} out={res.stdout!r} err={res.stderr!r}"
     assert res.stdout.strip(), "the script exited without printing anything"
 
 
 def test_docker_desktop_on_macos_says_cpu_only(tmp_path: Path):
-    _, log, env = _setup(tmp_path, desktop=True, driver=False, uid=1000)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False, uid = 1000)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -557,9 +557,9 @@ def test_macos_says_cpu_only_whatever_runs_the_daemon(tmp_path: Path):
     """colima and Rancher Desktop keep their socket outside /var/run, which took a Mac
     to the endpoint check: it told the user to configure that daemon by hand, for a
     toolkit no Mac can use."""
-    _, _, env = _setup(tmp_path, driver=False, uid=1000)
+    _, _, env = _setup(tmp_path, driver = False, uid = 1000)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
-    res = _run(env, extra_env={"DOCKER_HOST": "unix:///Users/u/.colima/default/docker.sock"})
+    res = _run(env, extra_env = {"DOCKER_HOST": "unix:///Users/u/.colima/default/docker.sock"})
     assert res.returncode == 0, res.stdout + res.stderr
     assert "no NVIDIA GPU" in res.stdout and "UNSLOTH_ALLOW_CPU=1" in res.stdout
     assert "by hand" not in res.stderr, res.stderr
@@ -568,21 +568,21 @@ def test_macos_says_cpu_only_whatever_runs_the_daemon(tmp_path: Path):
 def test_a_mac_driving_a_remote_daemon_is_sent_to_that_host(tmp_path: Path):
     """The one Mac the toolkit concerns: a CLI pointed at a Linux box over tcp:// or
     ssh://. "Nothing to install" there is wrong; the box needs it."""
-    _, _, env = _setup(tmp_path, driver=False, uid=1000)
+    _, _, env = _setup(tmp_path, driver = False, uid = 1000)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
-    res = _run(env, extra_env={"DOCKER_HOST": "tcp://gpu-box:2376"})
+    res = _run(env, extra_env = {"DOCKER_HOST": "tcp://gpu-box:2376"})
     assert res.returncode == 2, res.stdout + res.stderr
     assert "remote daemon (tcp://gpu-box:2376)" in res.stderr
     assert "nothing to install" not in res.stdout
     # DOCKER_CONTEXT wins over DOCKER_HOST, as in the endpoint check further down
     res = _run(
         env,
-        extra_env={"DOCKER_HOST": "unix:///var/run/docker.sock", "DOCKER_CONTEXT": "remote-gpu"},
+        extra_env = {"DOCKER_HOST": "unix:///var/run/docker.sock", "DOCKER_CONTEXT": "remote-gpu"},
     )
     assert res.returncode == 2, res.stdout + res.stderr
     assert "remote daemon (tcp://gpu-box:2376)" in res.stderr
     # a bare host:port is tcp to Docker, so it is remote here too
-    res = _run(env, extra_env={"DOCKER_HOST": "gpu-box:2376"})
+    res = _run(env, extra_env = {"DOCKER_HOST": "gpu-box:2376"})
     assert res.returncode == 2, res.stdout + res.stderr
     assert "remote daemon (gpu-box:2376)" in res.stderr
 
@@ -594,9 +594,9 @@ def test_a_mac_driving_a_remote_daemon_is_sent_to_that_host(tmp_path: Path):
 def test_a_loopback_tcp_endpoint_is_this_machine(tmp_path: Path, endpoint: str):
     """Docker Desktop can expose its daemon on tcp://localhost:2375, and a socket can be
     proxied through localhost; both are the local daemon, not a box to run this on."""
-    _, _, env = _setup(tmp_path, driver=False, uid=1000)
+    _, _, env = _setup(tmp_path, driver = False, uid = 1000)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
-    res = _run(env, extra_env={"DOCKER_HOST": endpoint})
+    res = _run(env, extra_env = {"DOCKER_HOST": endpoint})
     assert res.returncode == 0, res.stdout + res.stderr
     assert "remote daemon" not in res.stderr
     assert "nothing to install" in res.stdout
@@ -609,7 +609,7 @@ def test_a_windows_shell_is_sent_to_docker_desktops_wsl2_backend(tmp_path: Path,
     """Git Bash / MSYS2 / Cygwin drive Docker Desktop, whose WSL 2 backend has the GPU
     support built in. The Linux path read Desktop as "Docker Desktop for Linux" (exit 2)
     and, with a plain daemon, tried apt on Windows."""
-    _, log, env = _setup(tmp_path, desktop=True, driver=False)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False)
     _stub(
         tmp_path / "bin" / "uname", f'if [ "$1" = -s ]; then echo {kernel}; else echo x86_64; fi\n'
     )
@@ -624,18 +624,18 @@ def test_a_windows_shell_is_sent_to_docker_desktops_wsl2_backend(tmp_path: Path,
 def test_a_windows_shell_driving_a_remote_daemon_is_sent_to_that_host(tmp_path: Path, kernel: str):
     """Same rule as on a Mac: DOCKER_HOST or a context pointing at a Linux box means that
     box may need the toolkit, so the Desktop shortcut must not answer for it."""
-    _, log, env = _setup(tmp_path, desktop=True, driver=False)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False)
     _stub(
         tmp_path / "bin" / "uname", f'if [ "$1" = -s ]; then echo {kernel}; else echo x86_64; fi\n'
     )
-    res = _run(env, extra_env={"DOCKER_HOST": "tcp://gpu-box:2376"})
+    res = _run(env, extra_env = {"DOCKER_HOST": "tcp://gpu-box:2376"})
     assert res.returncode == 2, res.stdout + res.stderr
     assert "remote daemon (tcp://gpu-box:2376)" in res.stderr
     assert "WSL 2 backend" not in res.stdout
-    res = _run(env, extra_env={"DOCKER_CONTEXT": "remote-gpu"})
+    res = _run(env, extra_env = {"DOCKER_CONTEXT": "remote-gpu"})
     assert res.returncode == 2, res.stdout + res.stderr
     assert "remote daemon (tcp://gpu-box:2376)" in res.stderr
-    res = _run(env, extra_env={"DOCKER_CONTEXT": "missing-in-root-config"})
+    res = _run(env, extra_env = {"DOCKER_CONTEXT": "missing-in-root-config"})
     assert res.returncode == 2
     assert "cannot inspect the Docker context" in res.stderr
     assert not any(c.startswith(("apt-get", "dnf", "nvidia-ctk", "systemctl")) for c in _calls(log))
@@ -645,7 +645,7 @@ def test_a_windows_shell_on_the_hyper_v_backend_is_told_to_switch(tmp_path: Path
     """Docker Desktop's GPU support is the WSL 2 backend only; the Hyper-V backend runs a
     LinuxKit VM no GPU reaches, so "nothing to install" there leaves --gpus failing at the
     daemon. The backends are told apart by the kernel `docker info` reports."""
-    _, log, env = _setup(tmp_path, desktop=True, driver=False, desktop_kernel="6.6.87.2-linuxkit")
+    _, log, env = _setup(tmp_path, desktop = True, driver = False, desktop_kernel = "6.6.87.2-linuxkit")
     _stub(
         tmp_path / "bin" / "uname",
         'if [ "$1" = -s ]; then echo MINGW64_NT-10.0-22631; else echo x86_64; fi\n',
@@ -660,7 +660,7 @@ def test_a_windows_shell_on_the_hyper_v_backend_is_told_to_switch(tmp_path: Path
 
 def test_a_windows_shell_that_cannot_reach_docker_desktop_says_so(tmp_path: Path):
     """With Desktop stopped the backend is unknowable, so neither answer can be given."""
-    _, log, env = _setup(tmp_path, driver=False, desktop_info_fails=True)
+    _, log, env = _setup(tmp_path, driver = False, desktop_info_fails = True)
     _stub(
         tmp_path / "bin" / "uname",
         'if [ "$1" = -s ]; then echo MINGW64_NT-10.0-22631; else echo x86_64; fi\n',
@@ -678,9 +678,9 @@ def test_a_windows_shell_on_a_non_desktop_daemon_is_sent_into_the_distro(tmp_pat
     be configured from a Windows shell, and neither is an error."""
     _, log, env = _setup(
         tmp_path,
-        driver=False,
-        desktop_os="Ubuntu 24.04.1 LTS",
-        desktop_kernel="5.15.167.4-microsoft-standard-WSL2",
+        driver = False,
+        desktop_os = "Ubuntu 24.04.1 LTS",
+        desktop_kernel = "5.15.167.4-microsoft-standard-WSL2",
     )
     _stub(
         tmp_path / "bin" / "uname",
@@ -696,7 +696,7 @@ def test_a_windows_shell_on_a_non_desktop_daemon_is_sent_into_the_distro(tmp_pat
 def test_a_mac_never_asks_the_daemon_which_backend_it_is(tmp_path: Path):
     """No Mac takes an NVIDIA GPU whatever the daemon is, so the backend probe added for
     Windows must not make macOS depend on a reachable daemon."""
-    _, log, env = _setup(tmp_path, driver=False, desktop_info_fails=True)
+    _, log, env = _setup(tmp_path, driver = False, desktop_info_fails = True)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -707,24 +707,24 @@ def test_a_mac_never_asks_the_daemon_which_backend_it_is(tmp_path: Path):
 def test_a_mac_with_an_uninspectable_context_gets_the_error_not_nothing_to_install(tmp_path: Path):
     """Same rule as the endpoint check further down: a context lookup failure is an
     error, not a local daemon."""
-    _, _, env = _setup(tmp_path, driver=False, uid=1000)
+    _, _, env = _setup(tmp_path, driver = False, uid = 1000)
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Darwin; else echo arm64; fi\n')
-    res = _run(env, extra_env={"DOCKER_CONTEXT": "missing-in-root-config"})
+    res = _run(env, extra_env = {"DOCKER_CONTEXT": "missing-in-root-config"})
     assert res.returncode == 2, res.stdout + res.stderr
     assert "cannot inspect the Docker context 'missing-in-root-config'" in res.stderr
     assert "nothing to install" not in res.stdout
 
 
 def test_the_old_driver_message_names_the_host_platform_even_without_verification(tmp_path: Path):
-    _, _, env = _setup(tmp_path, driver_version="550.54.15")
+    _, _, env = _setup(tmp_path, driver_version = "550.54.15")
     _stub(tmp_path / "bin" / "uname", 'if [ "$1" = -s ]; then echo Linux; else echo aarch64; fi\n')
-    res = _run(env, extra_env={"UNSLOTH_TOOLKIT_VERIFY": "0"})
+    res = _run(env, extra_env = {"UNSLOTH_TOOLKIT_VERIFY": "0"})
     assert res.returncode == 3
     assert "--platform linux/arm64" in res.stderr
 
 
 def test_a_configured_host_only_verifies(tmp_path: Path):
-    _, log, env = _setup(tmp_path, configured=True)
+    _, log, env = _setup(tmp_path, configured = True)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "already lists the nvidia runtime" in res.stdout
@@ -734,7 +734,7 @@ def test_a_configured_host_only_verifies(tmp_path: Path):
 
 
 def test_docker_desktop_on_wsl_needs_nothing(tmp_path: Path):
-    _, log, env = _setup(tmp_path, desktop=True, driver=False, uid=1000, wsl=True)
+    _, log, env = _setup(tmp_path, desktop = True, driver = False, uid = 1000, wsl = True)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "WSL 2 backend" in res.stdout and "nvidia.com" in res.stdout
@@ -746,7 +746,7 @@ def test_docker_desktop_on_wsl_needs_nothing(tmp_path: Path):
 def test_without_a_working_systemctl_the_service_command_restarts_docker(
     tmp_path: Path, systemctl: str
 ):
-    _, log, env = _setup(tmp_path, systemctl=systemctl, wsl=True)
+    _, log, env = _setup(tmp_path, systemctl = systemctl, wsl = True)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "service docker restart" in _calls(log)
@@ -754,7 +754,7 @@ def test_without_a_working_systemctl_the_service_command_restarts_docker(
 
 
 def test_a_failed_verification_is_an_error_with_a_pointer(tmp_path: Path):
-    _, _, env = _setup(tmp_path, verify_ok=False)
+    _, _, env = _setup(tmp_path, verify_ok = False)
     res = _run(env)
     assert res.returncode == 1
     assert "could not see the GPU" in res.stderr
@@ -763,28 +763,28 @@ def test_a_failed_verification_is_an_error_with_a_pointer(tmp_path: Path):
 
 
 def test_verification_can_be_skipped(tmp_path: Path):
-    _, log, env = _setup(tmp_path, verify_ok=False)
-    res = _run(env, extra_env={"UNSLOTH_TOOLKIT_VERIFY": "0"})
+    _, log, env = _setup(tmp_path, verify_ok = False)
+    res = _run(env, extra_env = {"UNSLOTH_TOOLKIT_VERIFY": "0"})
     assert res.returncode == 0, res.stdout + res.stderr
     assert not any(c.startswith("docker run") for c in _calls(log))
 
 
 def test_a_non_root_run_of_the_file_re_executes_itself_under_sudo(tmp_path: Path):
-    _, log, env = _setup(tmp_path, uid=1000)
+    _, log, env = _setup(tmp_path, uid = 1000)
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert [c for c in _calls(log) if not c.startswith("docker ")] == [f"sudo -E bash {INSTALLER}"]
 
 
 def test_a_non_root_pipe_cannot_re_execute_and_says_so(tmp_path: Path):
-    _, log, env = _setup(tmp_path, uid=1000)
+    _, log, env = _setup(tmp_path, uid = 1000)
     res = subprocess.run(
         ["bash", "-s"],
-        input=INSTALLER.read_text(encoding="utf-8"),
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=60,
+        input = INSTALLER.read_text(encoding = "utf-8"),
+        capture_output = True,
+        text = True,
+        env = env,
+        timeout = 60,
     )
     assert res.returncode == 2
     assert "sudo -E bash" in res.stderr
@@ -820,8 +820,8 @@ def _run_sh_env(
     _stub(bindir / "id", "echo 1000\n")
     _stub(bindir / "getent", "exit 2\n")
     dev_root = tmp_path / "root"
-    (dev_root / "dev").mkdir(parents=True)
-    (dev_root / "dev" / "nvidiactl").write_text("", encoding="utf-8")
+    (dev_root / "dev").mkdir(parents = True)
+    (dev_root / "dev" / "nvidiactl").write_text("", encoding = "utf-8")
     env = dict(os.environ)
     env["PATH"] = _isolated_path(tmp_path, bindir)
     env["UNSLOTH_DEV_ROOT"] = str(dev_root)
@@ -834,26 +834,26 @@ def _run_sh_env(
 def _run_run_sh(env: dict) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["bash", str(RUN_SH), "true"],
-        capture_output=True,
-        text=True,
-        env=env,
-        stdin=subprocess.DEVNULL,
-        timeout=60,
+        capture_output = True,
+        text = True,
+        env = env,
+        stdin = subprocess.DEVNULL,
+        timeout = 60,
     )
 
 
 def test_run_sh_installs_the_toolkit_when_told_to_then_runs(tmp_path: Path):
-    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime=False)
+    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime = False)
     env["UNSLOTH_INSTALL_TOOLKIT"] = "1"
     res = _run_run_sh(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert f"sudo -E bash {INSTALLER}" in _calls(log)
-    assert "--gpus\nall\n" in argv.read_text(encoding="utf-8")
+    assert "--gpus\nall\n" in argv.read_text(encoding = "utf-8")
 
 
 def test_run_sh_still_runs_the_container_when_the_installer_fails(tmp_path: Path):
     """Exit 3 (only the driver is old) and exit 1 (cancelled sudo) must not stop the docker run."""
-    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime=False)
+    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime = False)
     _stub(tmp_path / "bin" / "sudo", f'echo "$(basename "$0") $*" >> {log}\nexit 3\n')
     env["UNSLOTH_INSTALL_TOOLKIT"] = "1"
     res = _run_run_sh(env)
@@ -863,7 +863,7 @@ def test_run_sh_still_runs_the_container_when_the_installer_fails(tmp_path: Path
 
 
 def test_run_sh_without_a_terminal_prints_the_one_liner_and_still_runs(tmp_path: Path):
-    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime=False)
+    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime = False)
     res = _run_run_sh(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "-o install_nvidia_toolkit.sh && sudo -E bash install_nvidia_toolkit.sh" in res.stderr
@@ -872,7 +872,7 @@ def test_run_sh_without_a_terminal_prints_the_one_liner_and_still_runs(tmp_path:
 
 
 def test_run_sh_does_not_offer_an_install_when_docker_itself_is_unreachable(tmp_path: Path):
-    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime=False, docker_down=True)
+    log, argv, env = _run_sh_env(tmp_path, nvidia_runtime = False, docker_down = True)
     env["UNSLOTH_INSTALL_TOOLKIT"] = "1"
     res = _run_run_sh(env)
     assert res.returncode == 0, res.stdout + res.stderr
@@ -883,13 +883,13 @@ def test_run_sh_does_not_offer_an_install_when_docker_itself_is_unreachable(tmp_
 
 
 def test_run_sh_uses_no_scratch_file_for_the_daemon_probe():
-    text = RUN_SH.read_text(encoding="utf-8")
+    text = RUN_SH.read_text(encoding = "utf-8")
     assert "unsloth-docker-info" not in text and "mktemp" not in text
     assert 'DOCKER_INFO="$(docker info 2>&1)"' in text
 
 
 def test_run_sh_is_quiet_when_the_runtime_is_present(tmp_path: Path):
-    _, _, env = _run_sh_env(tmp_path, nvidia_runtime=True)
+    _, _, env = _run_sh_env(tmp_path, nvidia_runtime = True)
     res = _run_run_sh(env)
     assert res.returncode == 0, res.stdout + res.stderr
     assert "Container Toolkit" not in res.stderr
@@ -897,11 +897,11 @@ def test_run_sh_is_quiet_when_the_runtime_is_present(tmp_path: Path):
 
 def test_the_docs_point_at_the_installer():
     for doc in (REPO_ROOT / "docker" / "DOCKERHUB.md", REPO_ROOT / "README.md"):
-        text = doc.read_text(encoding="utf-8")
+        text = doc.read_text(encoding = "utf-8")
         assert (
             "install_nvidia_toolkit.sh -o install_nvidia_toolkit.sh && sudo -E bash install_nvidia_toolkit.sh"
             in text
         ), doc
         assert "| sudo" not in text, "a pipe into bash masks a failed download"
 
-    assert "Docker Desktop" in (REPO_ROOT / "docker" / "DOCKERHUB.md").read_text(encoding="utf-8")
+    assert "Docker Desktop" in (REPO_ROOT / "docker" / "DOCKERHUB.md").read_text(encoding = "utf-8")

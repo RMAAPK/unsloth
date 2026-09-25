@@ -35,16 +35,16 @@ def _route_client():
 
     app = FastAPI()
     # main.py mounts this router at /v1 for the OpenAI-compatible surface.
-    app.include_router(inference_route.router, prefix="/v1")
+    app.include_router(inference_route.router, prefix = "/v1")
     app.dependency_overrides[get_current_subject] = lambda: "test"
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions = False)
 
 
 def _body(
     part,
     *,
-    role="user",
-    stream=False,
+    role = "user",
+    stream = False,
 ):
     message = {
         "role": role,
@@ -79,11 +79,11 @@ def _part_id(case):
     return f"{part['type']}-{'+'.join(k for k in part if k != 'type') or 'bare'}"
 
 
-@pytest.mark.parametrize("case", _REFUSED_PARTS, ids=_part_id)
+@pytest.mark.parametrize("case", _REFUSED_PARTS, ids = _part_id)
 def test_the_route_answers_json_400_not_a_500(case):
     part, needle = case
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part))
+        response = client.post("/v1/responses", json = _body(part))
 
     assert response.status_code == 400, response.text
     error = response.json()["detail"]["error"]
@@ -92,12 +92,12 @@ def test_the_route_answers_json_400_not_a_500(case):
     assert error["param"] == "input"
 
 
-@pytest.mark.parametrize("case", _REFUSED_PARTS, ids=_part_id)
+@pytest.mark.parametrize("case", _REFUSED_PARTS, ids = _part_id)
 def test_a_streaming_request_is_refused_before_the_stream_opens(case):
     """A 200 text/event-stream carrying an error frame is a broken stream, not a refusal."""
     part, needle = case
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part, stream=True))
+        response = client.post("/v1/responses", json = _body(part, stream = True))
 
     assert response.status_code == 400, response.text
     assert "text/event-stream" not in response.headers.get("content-type", "")
@@ -108,7 +108,7 @@ def test_a_streaming_request_is_refused_before_the_stream_opens(case):
 def test_the_route_refuses_an_attachment_on_a_non_user_turn(role):
     part = {"type": "input_file", "filename": "r.pdf"}
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part, role=role))
+        response = client.post("/v1/responses", json = _body(part, role = role))
 
     assert response.status_code == 400, response.text
     assert "input_file" in response.json()["detail"]["error"]["message"]
@@ -119,13 +119,13 @@ def test_the_route_refuses_a_servable_image_on_a_role_that_flattens(role):
     # These roles are flattened to a string, so the image was dropped and the turn answered.
     part = {"type": "input_image", "image_url": "https://example.com/a.png"}
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part, role=role))
+        response = client.post("/v1/responses", json = _body(part, role = role))
 
     assert response.status_code == 400, response.text
     assert "only supported on user messages" in response.json()["detail"]["error"]["message"]
 
 
-@pytest.mark.parametrize("case", _REFUSED_PARTS, ids=_part_id)
+@pytest.mark.parametrize("case", _REFUSED_PARTS, ids = _part_id)
 def test_the_refusal_lands_before_the_model_switch(case, monkeypatch):
     """The route holds this for its other refusals: a 400 must not evict the model."""
     import routes.inference as inference_route
@@ -140,7 +140,7 @@ def test_the_refusal_lands_before_the_model_switch(case, monkeypatch):
 
     part, _ = case
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part))
+        response = client.post("/v1/responses", json = _body(part))
 
     assert response.status_code == 400, response.text
     assert switched == []
@@ -154,7 +154,7 @@ def test_the_refusal_lands_before_the_model_switch(case, monkeypatch):
         {"type": "input_image", "image_url": "https://example.com/a.png", "file_id": "file_abc"},
         {"type": "input_text", "text": "second line"},
     ],
-    ids=["url", "url+detail", "url+file_id", "text"],
+    ids = ["url", "url+detail", "url+file_id", "text"],
 )
 def test_a_servable_turn_is_not_refused(part):
     """The refusal must not reach past the shapes it owns.
@@ -163,7 +163,7 @@ def test_a_servable_turn_is_not_refused(part):
     assertion, since only an accepted normalisation gets that far.
     """
     with _route_client() as client:
-        response = client.post("/v1/responses", json=_body(part))
+        response = client.post("/v1/responses", json = _body(part))
 
     assert "No model loaded" in response.text, response.text
     assert "unsupported_parameter" not in response.text

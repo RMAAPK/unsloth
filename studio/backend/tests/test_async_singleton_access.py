@@ -32,7 +32,7 @@ def _async_call_sites(rel: str) -> list[str]:
     """Bare get_inference_backend() invocations inside an async def.
     `asyncio.to_thread(get_inference_backend)` passes the function object, an ast.Name and
     never an ast.Call, so only real on-loop invocations are reported."""
-    tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
     found = []
     for fn in ast.walk(tree):
         if not isinstance(fn, ast.AsyncFunctionDef):
@@ -58,7 +58,7 @@ def test_the_offload_is_actually_present():
     one of these calls across lines."""
     total = 0
     for rel in _ROUTE_FILES:
-        tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+        tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
         total += sum(
             1
             for node in ast.walk(tree)
@@ -75,7 +75,7 @@ def test_the_offload_is_actually_present():
 
 def _sync_helpers_that_build_the_singleton(rel: str) -> set[str]:
     """Sync functions in this module that call get_inference_backend() inline."""
-    tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+    tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
     names = set()
     for fn in ast.walk(tree):
         if not isinstance(fn, ast.FunctionDef):  # sync only
@@ -105,7 +105,7 @@ def test_no_async_handler_reaches_the_singleton_through_a_sync_helper():
         helpers = _sync_helpers_that_build_the_singleton(rel)
         if not helpers:
             continue
-        tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+        tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
         for fn in ast.walk(tree):
             if not isinstance(fn, ast.AsyncFunctionDef):
                 continue
@@ -132,7 +132,7 @@ def test_no_async_handler_reaches_the_singleton_through_a_sync_helper():
     def _is_llama_only(site: str) -> bool:
         rel, rest = site.split(":", 1)
         lineno = int(rest.split(" ", 1)[0])
-        tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+        tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if (
                 isinstance(node, ast.Call)
@@ -161,7 +161,7 @@ def test_the_offload_stays_at_the_call_site():
     tests/test_orchestrator_unload_cancel.py patches routes.inference.get_inference_backend.
     An accessor defined in orchestrator.py resolves orchestrator's own global, so the patch
     would not take and the test hangs on a load gate that never opens."""
-    orch = (_BACKEND / "core/inference/orchestrator.py").read_text(encoding = "utf-8")
+    orch = (_BACKEND / "core/inference/orchestrator.py").read_text(encoding="utf-8")
     assert "async def get_inference_backend_async" not in orch, (
         "an async accessor in orchestrator.py bypasses callers that patch the "
         "route module's get_inference_backend"
@@ -183,7 +183,7 @@ def test_read_only_endpoints_never_construct_the_singleton():
     """Peek, not build. A peek is a plain global read, so it needs no offload either."""
     offenders = []
     for rel, name in _READ_ONLY_SITES:
-        tree = ast.parse((_BACKEND / rel).read_text(encoding = "utf-8"))
+        tree = ast.parse((_BACKEND / rel).read_text(encoding="utf-8"))
         fn = next(
             (
                 node

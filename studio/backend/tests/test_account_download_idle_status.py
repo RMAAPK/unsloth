@@ -22,7 +22,7 @@ ALICE = AccountContext("a" * 32, "alice")
 BOB = AccountContext("b" * 32, "bob")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def isolated(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path))
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
@@ -32,7 +32,7 @@ def isolated(monkeypatch, tmp_path):
         access,
         "HfApi",
         lambda: SimpleNamespace(
-            repo_info=lambda *a, **k: (_ for _ in ()).throw(OSError("offline"))
+            repo_info = lambda *a, **k: (_ for _ in ()).throw(OSError("offline"))
         ),
     )
 
@@ -43,7 +43,7 @@ def test_status_for_a_repo_with_no_job_is_idle_for_a_managed_account():
     state, error, generation = run_as(
         BOB,
         lambda: download_lifecycle.idle_status(
-            registry, key, repo_type="model", repo_id="org/model", variant=None
+            registry, key, repo_type = "model", repo_id = "org/model", variant = None
         ),
     )
     assert (state, error, generation) == ("idle", None, 0)
@@ -54,14 +54,14 @@ def test_hydrating_after_a_restart_settles_instead_of_404ing_forever():
     persisted active download with no entry at all; its status poll must settle."""
     before = download_registry.DownloadRegistry()
     key = "org/model::"
-    before.claim(key, "http", repo_type="model", repo_id="org/model")
+    before.claim(key, "http", repo_type = "model", repo_id = "org/model")
     run_as(ALICE, download_lifecycle.record_download_account, before, key)
 
     after_restart = download_registry.DownloadRegistry()
     state, _, _ = run_as(
         ALICE,
         lambda: download_lifecycle.idle_status(
-            after_restart, key, repo_type="model", repo_id="org/model", variant=None
+            after_restart, key, repo_type = "model", repo_id = "org/model", variant = None
         ),
     )
     assert state == "idle"
@@ -88,7 +88,7 @@ def test_another_accounts_live_job_stays_hidden():
         run_as(
             BOB,
             lambda: download_lifecycle.idle_status(
-                registry, key, repo_type="model", repo_id="org/secret", variant=None
+                registry, key, repo_type = "model", repo_id = "org/secret", variant = None
             ),
         )
     assert exc.value.status_code == 404

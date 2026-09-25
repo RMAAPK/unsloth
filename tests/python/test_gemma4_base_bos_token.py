@@ -23,12 +23,12 @@ import unsloth.tokenizer_utils as tu
 class _Tok:
     def __init__(
         self,
-        add_bos_token=False,
-        bos_token_id=2,
-        processor_class=None,
-        chat_template=None,
-        eos_token="<eos>",
-        init_kwargs=None,
+        add_bos_token = False,
+        bos_token_id = 2,
+        processor_class = None,
+        chat_template = None,
+        eos_token = "<eos>",
+        init_kwargs = None,
     ):
         self.add_bos_token = add_bos_token
         self.bos_token_id = bos_token_id
@@ -43,8 +43,8 @@ class _Proc:
     def __init__(
         self,
         tokenizer,
-        processor_class="Gemma4Processor",
-        chat_template=None,
+        processor_class = "Gemma4Processor",
+        chat_template = None,
     ):
         self.tokenizer = tokenizer
         self.processor_class = processor_class
@@ -61,7 +61,7 @@ def test_gemma4_from_processor_class():
 
 
 def test_gemma4_from_init_kwargs():
-    tok = _Tok(init_kwargs={"processor_class": "Gemma4Processor"})
+    tok = _Tok(init_kwargs = {"processor_class": "Gemma4Processor"})
     assert tu._is_gemma4_tokenizer(tok) is True
 
 
@@ -71,7 +71,7 @@ def test_gemma4_from_processor_wrapper():
 
 
 def test_gemma3_processor_is_not_gemma4():
-    tok = _Tok(processor_class="Gemma3Processor")
+    tok = _Tok(processor_class = "Gemma3Processor")
     assert tu._is_gemma4_tokenizer(tok) is False
     assert tu._needs_gemma4_base_bos(tok) is False
 
@@ -81,15 +81,15 @@ def test_plain_tokenizer_is_not_gemma4():
 
 
 def test_gemma4_config_model_type():
-    config = types.SimpleNamespace(model_type="gemma4", text_config=None)
+    config = types.SimpleNamespace(model_type = "gemma4", text_config = None)
     assert tu._is_gemma4_config(config) is True
-    assert tu._needs_gemma4_base_bos(_Tok(), config=config) is True
+    assert tu._needs_gemma4_base_bos(_Tok(), config = config) is True
 
 
 def test_gemma4_config_nested_text_config():
     config = types.SimpleNamespace(
-        model_type="gemma4",
-        text_config=types.SimpleNamespace(model_type="gemma4_text"),
+        model_type = "gemma4",
+        text_config = types.SimpleNamespace(model_type = "gemma4_text"),
     )
     assert tu._is_gemma4_config(config) is True
 
@@ -102,13 +102,13 @@ def test_name_alone_does_not_trigger_fix():
 
 
 def test_fix_sets_flag_for_quant_and_local_shapes():
-    tok = _gemma4_base(add_bos_token=False)
+    tok = _gemma4_base(add_bos_token = False)
     fixed = tu._fix_gemma4_base_bos_token(tok)
     assert fixed.add_bos_token is True
 
 
 def test_fix_sets_flag_on_wrapped_processor():
-    inner = _Tok(add_bos_token=False)
+    inner = _Tok(add_bos_token = False)
     proc = _Proc(inner)
     tu._fix_gemma4_base_bos_token(proc)
     assert inner.add_bos_token is True
@@ -116,31 +116,31 @@ def test_fix_sets_flag_on_wrapped_processor():
 
 def test_fix_skips_chat_template_that_emits_bos():
     tok = _gemma4_base(
-        add_bos_token=False,
-        chat_template="{{- bos_token -}}{{ messages }}",
+        add_bos_token = False,
+        chat_template = "{{- bos_token -}}{{ messages }}",
     )
     fixed = tu._fix_gemma4_base_bos_token(tok)
     assert fixed.add_bos_token is False
 
 
 def test_fix_skips_turn_eos_instruct():
-    tok = _gemma4_base(add_bos_token=False, eos_token="<turn|>")
+    tok = _gemma4_base(add_bos_token = False, eos_token = "<turn|>")
     fixed = tu._fix_gemma4_base_bos_token(tok)
     assert fixed.add_bos_token is False
 
 
 def test_fix_honors_fix_tokenizer_false():
-    tok = _gemma4_base(add_bos_token=False)
-    fixed = tu._apply_post_load_tokenizer_fixes(tok, fix_tokenizer=False)
+    tok = _gemma4_base(add_bos_token = False)
+    fixed = tu._apply_post_load_tokenizer_fixes(tok, fix_tokenizer = False)
     assert fixed.add_bos_token is False
 
 
 def test_load_correct_tokenizer_enables_bos_for_gemma4_base():
     def from_pretrained(model_name, **kwargs):
-        return _gemma4_base(add_bos_token=False)
+        return _gemma4_base(add_bos_token = False)
 
-    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained=from_pretrained)):
-        result = tu._load_correct_tokenizer("/models/gemma-4-31B-bnb-4bit", fix_tokenizer=True)
+    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained = from_pretrained)):
+        result = tu._load_correct_tokenizer("/models/gemma-4-31B-bnb-4bit", fix_tokenizer = True)
 
     assert result.add_bos_token is True
 
@@ -148,13 +148,13 @@ def test_load_correct_tokenizer_enables_bos_for_gemma4_base():
 def test_load_correct_tokenizer_skips_instruct():
     def from_pretrained(model_name, **kwargs):
         return _gemma4_base(
-            add_bos_token=False,
-            chat_template="{{- bos_token -}}",
-            eos_token="<turn|>",
+            add_bos_token = False,
+            chat_template = "{{- bos_token -}}",
+            eos_token = "<turn|>",
         )
 
-    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained=from_pretrained)):
-        result = tu._load_correct_tokenizer("unsloth/gemma-4-E2B-it", fix_tokenizer=True)
+    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained = from_pretrained)):
+        result = tu._load_correct_tokenizer("unsloth/gemma-4-E2B-it", fix_tokenizer = True)
 
     assert result.add_bos_token is False
 
@@ -162,14 +162,14 @@ def test_load_correct_tokenizer_skips_instruct():
 def test_load_correct_tokenizer_uses_model_config_when_tokenizer_is_generic():
     # Stripped local tokenizers have no processor_class, but config.model_type is still gemma4.
     def from_pretrained(model_name, **kwargs):
-        return _Tok(add_bos_token=False)
+        return _Tok(add_bos_token = False)
 
-    config = types.SimpleNamespace(model_type="gemma4", text_config=None)
-    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained=from_pretrained)):
+    config = types.SimpleNamespace(model_type = "gemma4", text_config = None)
+    with patch.object(tu, "AutoTokenizer", types.SimpleNamespace(from_pretrained = from_pretrained)):
         result = tu._load_correct_tokenizer(
             "/models/local-gemma4-bnb-4bit",
-            fix_tokenizer=True,
-            config=config,
+            fix_tokenizer = True,
+            config = config,
         )
 
     assert result.add_bos_token is True
@@ -177,30 +177,30 @@ def test_load_correct_tokenizer_uses_model_config_when_tokenizer_is_generic():
 
 def test_fastmodel_processor_path_heals_from_config():
     # FastModel loads Gemma4Processor, then heals after the processor is final.
-    inner = _Tok(add_bos_token=False)
+    inner = _Tok(add_bos_token = False)
     processor = types.SimpleNamespace(
-        tokenizer=inner,
-        image_processor=object(),
-        chat_template=None,
+        tokenizer = inner,
+        image_processor = object(),
+        chat_template = None,
     )
-    config = types.SimpleNamespace(model_type="gemma4", text_config=None)
+    config = types.SimpleNamespace(model_type = "gemma4", text_config = None)
 
-    fixed = tu._apply_post_load_tokenizer_fixes(processor, fix_tokenizer=True, config=config)
+    fixed = tu._apply_post_load_tokenizer_fixes(processor, fix_tokenizer = True, config = config)
 
     assert fixed is processor
     assert inner.add_bos_token is True
 
 
 def test_fastmodel_processor_path_skips_instruct_template():
-    inner = _Tok(add_bos_token=False, chat_template="{{- bos_token -}}")
+    inner = _Tok(add_bos_token = False, chat_template = "{{- bos_token -}}")
     processor = types.SimpleNamespace(
-        tokenizer=inner,
-        image_processor=object(),
-        chat_template="{{- bos_token -}}{{ messages }}",
+        tokenizer = inner,
+        image_processor = object(),
+        chat_template = "{{- bos_token -}}{{ messages }}",
     )
-    config = types.SimpleNamespace(model_type="gemma4", text_config=None)
+    config = types.SimpleNamespace(model_type = "gemma4", text_config = None)
 
-    tu._apply_post_load_tokenizer_fixes(processor, fix_tokenizer=True, config=config)
+    tu._apply_post_load_tokenizer_fixes(processor, fix_tokenizer = True, config = config)
     assert inner.add_bos_token is False
 
 
@@ -210,21 +210,21 @@ def test_gemma4_e2b_hub_tokenizer_prepends_bos():
     pytest.importorskip("transformers")
     from transformers import AutoTokenizer
 
-    tok = tu.load_correct_tokenizer("unsloth/gemma-4-E2B", fix_tokenizer=True)
+    tok = tu.load_correct_tokenizer("unsloth/gemma-4-E2B", fix_tokenizer = True)
     assert tok.add_bos_token is True
     ids = tok("This book is largely concerned with Hobbits,")["input_ids"]
     assert ids[0] == tok.bos_token_id
 
     # Control: raw Hub tokenizer still omits BOS without the fix.
-    raw = AutoTokenizer.from_pretrained("unsloth/gemma-4-E2B", trust_remote_code=True)
+    raw = AutoTokenizer.from_pretrained("unsloth/gemma-4-E2B", trust_remote_code = True)
     raw_ids = raw("This book is largely concerned with Hobbits,")["input_ids"]
     assert raw_ids[0] != raw.bos_token_id
 
 
 def test_chat_template_bos_is_preserved_when_tokenizer_auto_adds():
     tok = _gemma4_base(
-        add_bos_token=True,
-        chat_template="{{ bos_token }}{% for m in messages %}{{ m }}{% endfor %}",
+        add_bos_token = True,
+        chat_template = "{{ bos_token }}{% for m in messages %}{{ m }}{% endfor %}",
     )
     tu._fix_gemma4_base_bos_token(tok)
     assert tok.add_bos_token is True
@@ -237,25 +237,25 @@ def test_real_tokenizer_chat_bos_survives_save_reload(tmp_path, prefix):
     from transformers import PreTrainedTokenizerFast
 
     backend = Tokenizer(
-        models.WordLevel({"[UNK]": 0, "[PAD]": 1, "<bos>": 2, "Hello": 3}, unk_token="[UNK]")
+        models.WordLevel({"[UNK]": 0, "[PAD]": 1, "<bos>": 2, "Hello": 3}, unk_token = "[UNK]")
     )
     backend.pre_tokenizer = pre_tokenizers.WhitespaceSplit()
     backend.post_processor = processors.TemplateProcessing(
-        single="<bos> $A", special_tokens=[("<bos>", 2)]
+        single = "<bos> $A", special_tokens = [("<bos>", 2)]
     )
-    tok = PreTrainedTokenizerFast(tokenizer_object=backend, bos_token="<bos>", unk_token="[UNK]")
+    tok = PreTrainedTokenizerFast(tokenizer_object = backend, bos_token = "<bos>", unk_token = "[UNK]")
     tok.chat_template = prefix + "{{ bos_token }}Hello"
-    config = types.SimpleNamespace(model_type="gemma4")
-    tu._fix_gemma4_base_bos_token(tok, config=config)
+    config = types.SimpleNamespace(model_type = "gemma4")
+    tu._fix_gemma4_base_bos_token(tok, config = config)
     tok.save_pretrained(tmp_path)
     tok = PreTrainedTokenizerFast.from_pretrained(tmp_path)
-    tu._fix_gemma4_base_bos_token(tok, config=config)
+    tu._fix_gemma4_base_bos_token(tok, config = config)
     messages = [{"role": "user", "content": "Hello"}]
-    encoded = tok.apply_chat_template(messages, tokenize=True)
+    encoded = tok.apply_chat_template(messages, tokenize = True)
     ids = encoded["input_ids"] if hasattr(encoded, "keys") else encoded
     assert ids == [2, 3]
-    rendered = tok.apply_chat_template(messages, tokenize=False)
-    assert tok(rendered, add_special_tokens=False)["input_ids"] == [2, 3]
+    rendered = tok.apply_chat_template(messages, tokenize = False)
+    assert tok(rendered, add_special_tokens = False)["input_ids"] == [2, 3]
     assert tok("Hello")["input_ids"] == [2, 3]
 
 
@@ -275,9 +275,9 @@ LLAMA2_TEMPLATE = (
 def _render(template, **kwargs):
     jinja2 = pytest.importorskip("jinja2")
     return jinja2.Template(template).render(
-        messages=[{"role": "user", "content": "hi"}],
-        bos_token="<s>",
-        eos_token="</s>",
+        messages = [{"role": "user", "content": "hi"}],
+        bos_token = "<s>",
+        eos_token = "</s>",
         **kwargs,
     )
 
@@ -299,7 +299,7 @@ def test_stripping_a_standalone_bos_action_is_unchanged():
 
 
 def test_dedupe_leaves_a_renderable_template_for_an_expression_bos():
-    tok = _gemma4_base(add_bos_token=True, chat_template=LLAMA2_TEMPLATE)
+    tok = _gemma4_base(add_bos_token = True, chat_template = LLAMA2_TEMPLATE)
     tu._dedupe_bos_chat_template(tok)
     assert "bos_token" not in tok.chat_template
     assert _render(tok.chat_template) == "[INST] hi [/INST]"
@@ -307,8 +307,8 @@ def test_dedupe_leaves_a_renderable_template_for_an_expression_bos():
 
 def test_export_helper_strips_dict_chat_template_without_crash():
     tok = _gemma4_base(
-        add_bos_token=True,
-        chat_template={
+        add_bos_token = True,
+        chat_template = {
             "default": "{{ bos_token }}{% for m in messages %}{{ m }}{% endfor %}",
             "tool_use": "{% for m in messages %}{{ m }}{% endfor %}",
         },
@@ -320,9 +320,9 @@ def test_export_helper_strips_dict_chat_template_without_crash():
 
 def test_instruct_template_is_not_stripped_when_tokenizer_does_not_add_bos():
     tok = _gemma4_base(
-        add_bos_token=False,
-        chat_template="{{- bos_token -}}{{ messages }}",
-        eos_token="<turn|>",
+        add_bos_token = False,
+        chat_template = "{{- bos_token -}}{{ messages }}",
+        eos_token = "<turn|>",
     )
     tu._fix_gemma4_base_bos_token(tok)
     assert tok.add_bos_token is False
@@ -338,11 +338,11 @@ def _build_fast_tokenizer():
 
     backend = tokenizers.Tokenizer(
         tokenizers.models.WordLevel(
-            {"<bos>": 0, "<eos>": 1, "hello": 2, "world": 3}, unk_token=None
+            {"<bos>": 0, "<eos>": 1, "hello": 2, "world": 3}, unk_token = None
         )
     )
     backend.pre_tokenizer = tokenizers.pre_tokenizers.Whitespace()
-    return PreTrainedTokenizerFast(tokenizer_object=backend, bos_token="<bos>", eos_token="<eos>")
+    return PreTrainedTokenizerFast(tokenizer_object = backend, bos_token = "<bos>", eos_token = "<eos>")
 
 
 def _backend_honors_add_bos_token():
@@ -358,11 +358,11 @@ def _backend_honors_add_bos_token():
 
 requires_working_add_bos_token = pytest.mark.skipif(
     not _backend_honors_add_bos_token(),
-    reason="this transformers treats add_bos_token as an inert attribute",
+    reason = "this transformers treats add_bos_token as an inert attribute",
 )
 
 
-def _real_tokenizer(add_bos=False):
+def _real_tokenizer(add_bos = False):
     tokenizer = _build_fast_tokenizer()
     # Gemma 4 is identified by its processor, not by this toy vocabulary.
     tokenizer.processor_class = "Gemma4Processor"
@@ -373,7 +373,7 @@ def _real_tokenizer(add_bos=False):
 
 def _ids(
     tokenizer,
-    text="hello world",
+    text = "hello world",
     **kwargs,
 ):
     return tokenizer(text, **kwargs)["input_ids"]
@@ -401,14 +401,14 @@ def test_real_backend_repair_is_idempotent():
 def test_real_backend_add_special_tokens_false_never_gains_bos():
     tok = _real_tokenizer()
     tu._fix_gemma4_base_bos_token(tok)
-    assert tok.bos_token_id not in _ids(tok, add_special_tokens=False)
+    assert tok.bos_token_id not in _ids(tok, add_special_tokens = False)
 
 
 @requires_working_add_bos_token
 def test_real_backend_already_correct_tokenizer_is_left_alone():
     # google base mirrors report add_bos_token = False and still prepend, so keying on the
     # attribute would rebuild a post_processor that already works.
-    tok = _real_tokenizer(add_bos=True)
+    tok = _real_tokenizer(add_bos = True)
     before = str(tok._tokenizer.post_processor)
     ids_before = _ids(tok)
     tu._fix_gemma4_base_bos_token(tok)
@@ -443,7 +443,7 @@ def test_real_backend_without_bos_token_does_not_claim_success():
     ],
 )
 def test_config_model_type_detection_is_anchored(model_type, expected):
-    config = types.SimpleNamespace(model_type=model_type, text_config=None)
+    config = types.SimpleNamespace(model_type = model_type, text_config = None)
     assert tu._is_gemma4_config(config) is expected
 
 
@@ -457,7 +457,7 @@ def test_config_model_type_detection_is_anchored(model_type, expected):
 )
 def test_config_architectures_detection_is_anchored(architecture, expected):
     config = types.SimpleNamespace(
-        model_type="unknown", text_config=None, architectures=[architecture]
+        model_type = "unknown", text_config = None, architectures = [architecture]
     )
     assert tu._is_gemma4_config(config) is expected
 
@@ -482,9 +482,9 @@ def test_processor_chat_template_is_deduped_too():
     # ProcessorMixin.save_pretrained writes the processor's own chat_template.jinja, so leaving
     # that copy alone exports a second BOS on a VLM.
     emits_bos = "{{ bos_token }}{% for m in messages %}{{ m.content }}{% endfor %}"
-    inner = _Tok(add_bos_token=True, chat_template=emits_bos)
+    inner = _Tok(add_bos_token = True, chat_template = emits_bos)
     inner.bos_token_id = None  # force the attribute fallback in _tokenizer_auto_adds_bos
-    processor = types.SimpleNamespace(tokenizer=inner, chat_template=emits_bos)
+    processor = types.SimpleNamespace(tokenizer = inner, chat_template = emits_bos)
 
     tu._dedupe_bos_chat_template(processor)
 
@@ -494,9 +494,9 @@ def test_processor_chat_template_is_deduped_too():
 
 def test_dedupe_is_a_noop_when_the_tokenizer_does_not_add_bos():
     emits_bos = "{{ bos_token }}hello"
-    inner = _Tok(add_bos_token=False, chat_template=emits_bos)
+    inner = _Tok(add_bos_token = False, chat_template = emits_bos)
     inner.bos_token_id = None
-    processor = types.SimpleNamespace(tokenizer=inner, chat_template=emits_bos)
+    processor = types.SimpleNamespace(tokenizer = inner, chat_template = emits_bos)
 
     tu._dedupe_bos_chat_template(processor)
 

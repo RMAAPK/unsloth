@@ -56,9 +56,9 @@ def test_the_scan_does_not_stall_other_requests(monkeypatch, tmp_path):
         # in the list at all and the assertion holds on the unfixed route too.
         before = len(ticks)
         await models_routes.scan_loras(
-            outputs_dir=str(tmp_path),
-            exports_dir=str(tmp_path),
-            current_subject="test-user",
+            outputs_dir = str(tmp_path),
+            exports_dir = str(tmp_path),
+            current_subject = "test-user",
         )
         during.append(len(ticks) - before)
         stop = True

@@ -167,7 +167,7 @@ def detect_custom_format_heuristic(dataset):
     def has_keyword(
         col_name,
         keywords,
-        apply_shadowing = True,
+        apply_shadowing=True,
     ):
         col_lower = col_name.lower()
         col_normalized = col_lower.replace("_", "").replace("-", "").replace(" ", "")
@@ -210,9 +210,9 @@ def detect_custom_format_heuristic(dataset):
         keywords,
         role_type,
         num_candidates,
-        apply_shadowing = True,
+        apply_shadowing=True,
     ):
-        if not has_keyword(col_name, keywords, apply_shadowing = apply_shadowing):
+        if not has_keyword(col_name, keywords, apply_shadowing=apply_shadowing):
             return 0
         score = 10
         if role_type == "user":
@@ -249,7 +249,7 @@ def detect_custom_format_heuristic(dataset):
         if (score := score_column(col, assistant_words, "assistant", len(assistant_potential))) > 0
     ]
     if assistant_candidates:
-        assistant_candidates.sort(key = lambda item: item[1], reverse = True)
+        assistant_candidates.sort(key=lambda item: item[1], reverse=True)
         assistant_col = assistant_candidates[0][0]
         mapping[assistant_col] = "assistant"
     else:
@@ -269,18 +269,18 @@ def detect_custom_format_heuristic(dataset):
         shadowed_potential = [
             col
             for col in content_columns
-            if col not in user_potential and has_keyword(col, user_words, apply_shadowing = False)
+            if col not in user_potential and has_keyword(col, user_words, apply_shadowing=False)
         ]
         for col in shadowed_potential:
             if col == assistant_col:
                 continue
             score = score_column(
-                col, user_words, "user", len(shadowed_potential), apply_shadowing = False
+                col, user_words, "user", len(shadowed_potential), apply_shadowing=False
             )
             if score > 0:
                 user_candidates.append((col, score))
     if user_candidates:
-        user_candidates.sort(key = lambda item: item[1], reverse = True)
+        user_candidates.sort(key=lambda item: item[1], reverse=True)
         user_col = user_candidates[0][0]
         mapping[user_col] = "user"
     else:
@@ -359,6 +359,7 @@ def _is_image_value(value) -> bool:
         return False
     try:
         from PIL.Image import Image as PILImage
+
         if isinstance(value, PILImage):
             return True
     except ImportError:
@@ -616,7 +617,7 @@ def detect_vlm_dataset_structure(dataset):
                 score = 0
             if score > 0:
                 image_candidates.append((col, score))
-    image_candidates.sort(key = lambda item: item[1], reverse = True)
+    image_candidates.sort(key=lambda item: item[1], reverse=True)
 
     text_candidates = []
     for col in column_names:
@@ -629,7 +630,7 @@ def detect_vlm_dataset_structure(dataset):
             text_candidates.append((col, min(len(value), 1000)))
         elif isinstance(value, list) and value and isinstance(value[0], str):
             text_candidates.append((col, min(len(value[0]), 1000) // 2))
-    text_candidates.sort(key = lambda item: item[1], reverse = True)
+    text_candidates.sort(key=lambda item: item[1], reverse=True)
 
     found_image = image_candidates[0][0] if image_candidates else None
     found_text = text_candidates[0][0] if text_candidates else None

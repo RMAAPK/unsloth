@@ -20,15 +20,15 @@ import pytest
 import routes.inference as inf
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _clean_cache():
     inf._SERVABLE_SCAN_CACHE["entry"] = None
     yield
     inf._SERVABLE_SCAN_CACHE["entry"] = None
 
 
-def _catalog(n=3):
-    return [SimpleNamespace(id=f"repo/m{i}", path=f"/models/m{i}", task=None) for i in range(n)]
+def _catalog(n = 3):
+    return [SimpleNamespace(id = f"repo/m{i}", path = f"/models/m{i}", task = None) for i in range(n)]
 
 
 @pytest.fixture

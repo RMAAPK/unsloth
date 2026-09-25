@@ -1311,7 +1311,7 @@ def _labelled_actions(
     base_padding: float,
     base_left: float,
     base_offset: float,
-    live_css: str
+    live_css: str,
 ) -> dict[int, tuple[str, float]]:
     """The row actions one variant renders: label -> whether it is the offset one.
 

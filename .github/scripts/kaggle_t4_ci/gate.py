@@ -99,15 +99,15 @@ def _looks_gone(exc: BaseException) -> bool:
 def _out(key: str, value: str) -> None:
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
-        with open(path, "a", encoding="utf-8") as fh:
+        with open(path, "a", encoding = "utf-8") as fh:
             fh.write(f"{key}={value}\n")
-    print(f"[gate] {key}={value}", flush=True)
+    print(f"[gate] {key}={value}", flush = True)
 
 
 def _summary(text: str) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
-        with open(path, "a", encoding="utf-8") as fh:
+        with open(path, "a", encoding = "utf-8") as fh:
             fh.write(text + "\n")
 
 
@@ -120,7 +120,7 @@ def _decide(
     _out("should_run", "true" if run else "false")
     _out("reason", reason)
     verdict = "RUN" if run else ("FAIL" if exit_code else "SKIP")
-    print(f"[gate] {verdict}: {reason}", flush=True)
+    print(f"[gate] {verdict}: {reason}", flush = True)
     _summary(f"### Kaggle T4 gate: {verdict}\n\n{reason}\n")
     return exit_code
 
@@ -296,7 +296,7 @@ def _as_naive_utc(value):
         return None
     if value.tzinfo is None:
         return value
-    return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value.astimezone(timezone.utc).replace(tzinfo = None)
 
 
 def survey_kernels(
@@ -306,7 +306,7 @@ def survey_kernels(
     page_size: int = KERNELS_PAGE_SIZE,
     max_pages: int = MAX_KERNEL_PAGES,
     budget_sec: float = SURVEY_BUDGET_SEC,
-    clock=time.monotonic,
+    clock = time.monotonic,
 ) -> dict:
     """Status-check every kernel that could still be in flight.
 
@@ -315,8 +315,8 @@ def survey_kernels(
     ``busy``/``own``/``foreign`` are every in-flight kernel and its two disjoint halves, a kernel being ours when its slug carries OWN_KERNEL_PREFIX. ``complete`` says the walk ran off the end of the listing or reached an entry outside the window; False means the page cap or ``budget_sec`` stopped it first. ``out_of_budget`` says it stopped on wall clock, since being killed by the job timeout costs the runner and reports red while giving up inside the deadline reports an incomplete survey, which is a skip. ``surveyed``/``unreadable``/``gone`` count how many in-window kernels were status-checked, how many left their state genuinely unknown, and how many answered 404 (a deleted kernel rather than an unknown one); one unreadable status is not evidence of an idle account, so it is counted apart from the benign kind. See GONE_MARKERS.
     """
     # Naive UTC, matching what Kaggle returns. utcnow() is the same and is deprecated from 3.12.
-    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
-    cutoff = now - timedelta(hours=lookback_hours)
+    now = now or datetime.now(timezone.utc).replace(tzinfo = None)
+    cutoff = now - timedelta(hours = lookback_hours)
     busy: list[str] = []
     own: list[str] = []
     foreign: list[str] = []
@@ -332,7 +332,7 @@ def survey_kernels(
             out_of_budget = True
             break
         kernels = (
-            api.kernels_list(mine=True, page=page, page_size=page_size, sort_by="dateRun") or []
+            api.kernels_list(mine = True, page = page, page_size = page_size, sort_by = "dateRun") or []
         )
         for kernel in kernels:
             ref = getattr(kernel, "ref", None)
@@ -353,10 +353,10 @@ def survey_kernels(
                 # A 404 is a deleted kernel, so the slot is free. Any other error leaves the state unknown, which is not evidence of an idle account. See GONE_MARKERS.
                 if _looks_gone(exc):
                     gone += 1
-                    print(f"[gate] status 404 for {ref}: already deleted", flush=True)
+                    print(f"[gate] status 404 for {ref}: already deleted", flush = True)
                     continue
                 unreadable += 1
-                print(f"[gate] status unreadable for {ref}: " f"{type(exc).__name__}", flush=True)
+                print(f"[gate] status unreadable for {ref}: " f"{type(exc).__name__}", flush = True)
                 continue
             state = status.rsplit(".", 1)[-1].upper()
             if state in BUSY_STATES:
@@ -375,7 +375,7 @@ def survey_kernels(
     if out_of_budget:
         print(
             f"[gate] survey gave up after {budget_sec}s with {surveyed} kernel(s) checked",
-            flush=True,
+            flush = True,
         )
 
     return {
@@ -445,81 +445,81 @@ def concurrency_verdict(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--percent", type=int, default=10, help="sampling rate when no override is present"
+        "--percent", type = int, default = 10, help = "sampling rate when no override is present"
     )
-    ap.add_argument("--run-id", default=os.environ.get("GITHUB_RUN_ID", "0"))
-    ap.add_argument("--run-attempt", default=os.environ.get("GITHUB_RUN_ATTEMPT", "1"))
+    ap.add_argument("--run-id", default = os.environ.get("GITHUB_RUN_ID", "0"))
+    ap.add_argument("--run-attempt", default = os.environ.get("GITHUB_RUN_ATTEMPT", "1"))
     ap.add_argument(
         "--head-sha",
-        default="",
-        help="the commit under test; the account draw is keyed on it so every run of one "
+        default = "",
+        help = "the commit under test; the account draw is keyed on it so every run of one "
         "commit lands on the account holding its kernel",
     )
     ap.add_argument(
         "--kind",
-        default="",
-        help="notebook or studio: with --head-sha, a kernel of this kind already running "
+        default = "",
+        help = "notebook or studio: with --head-sha, a kernel of this kind already running "
         "this commit on ANY account stands the run down instead of dispatching a duplicate",
     )
     ap.add_argument(
         "--slot",
-        default="1",
-        help="the workflow's session slot input. Slot 2 is an opt-in SECOND session on "
+        default = "1",
+        help = "the workflow's session slot input. Slot 2 is an opt-in SECOND session on "
         "the same commit beside slot 1: only a kernel already running this commit in "
         "the SAME slot stands the run down",
     )
-    ap.add_argument("--force", default="false", help="workflow_dispatch force input")
-    ap.add_argument("--labels", default="", help="comma or newline separated PR labels")
-    ap.add_argument("--label-name", default="kaggle-t4-ci")
+    ap.add_argument("--force", default = "false", help = "workflow_dispatch force input")
+    ap.add_argument("--labels", default = "", help = "comma or newline separated PR labels")
+    ap.add_argument("--label-name", default = "kaggle-t4-ci")
     ap.add_argument(
         "--event-action",
-        default="",
-        help="the pull_request action that started this run, if any",
+        default = "",
+        help = "the pull_request action that started this run, if any",
     )
     ap.add_argument(
         "--event-label",
-        default="",
-        help="for a `labeled` action, the ONE label that was just applied",
+        default = "",
+        help = "for a `labeled` action, the ONE label that was just applied",
     )
     ap.add_argument(
         "--budget-hours",
-        type=float,
-        required=True,
-        help="worst-case GPU hours this invocation can spend",
+        type = float,
+        required = True,
+        help = "worst-case GPU hours this invocation can spend",
     )
     ap.add_argument(
         "--reserve-hours",
-        type=float,
-        default=6.0,
-        help="quota CI refuses to dip into, left for humans. Scaled to each "
+        type = float,
+        default = 6.0,
+        help = "quota CI refuses to dip into, left for humans. Scaled to each "
         "account's own weekly total against --reserve-basis-hours",
     )
     ap.add_argument(
         "--reserve-basis-hours",
-        type=float,
-        default=DEFAULT_RESERVE_BASIS_HOURS,
-        help="the account size --reserve-hours was calibrated against, so the "
+        type = float,
+        default = DEFAULT_RESERVE_BASIS_HOURS,
+        help = "the account size --reserve-hours was calibrated against, so the "
         "reserve stays the same FRACTION of a smaller plan",
     )
     ap.add_argument(
         "--account-env",
-        action="append",
-        default=None,
-        help="env var holding an account's token; repeat for each account, in "
+        action = "append",
+        default = None,
+        help = "env var holding an account's token; repeat for each account, in "
         f"order. Default: {', '.join(DEFAULT_ACCOUNT_ENVS)}",
     )
     ap.add_argument(
         "--kernels",
-        type=int,
-        default=KERNELS_PER_INVOCATION,
-        help="how many Kaggle kernels this invocation will push. "
+        type = int,
+        default = KERNELS_PER_INVOCATION,
+        help = "how many Kaggle kernels this invocation will push. "
         "The gate refuses unless that many slots are free",
     )
     ap.add_argument(
         "--allow-foreign-in-flight",
-        type=int,
-        default=ALLOWED_IN_FLIGHT_FOREIGN_KERNELS,
-        help="kernels NOT belonging to this workflow that may "
+        type = int,
+        default = ALLOWED_IN_FLIGHT_FOREIGN_KERNELS,
+        help = "kernels NOT belonging to this workflow that may "
         "already be running and this job still launch. "
         "Default 0: the account is shared with human use and "
         "CI yields to it. See "
@@ -528,20 +528,20 @@ def main() -> int:
     # THREE states, not two, which is why this is store_const against a default of None rather than store_true. An error in the gate is a skip whether or not anyone asked, but an exhausted quota is a failure UNLESS a caller asked for soft failure, and "the flag defaults to on" would make that request unaskable: every invocation would look like it had been made and the red would never appear. So None means "nobody said", True means "asked", False means "--no-soft-fail".
     ap.add_argument(
         "--soft-fail",
-        dest="soft_fail",
-        action="store_const",
-        const=True,
-        default=None,
-        help="stand down rather than fail even when the weekly GPU quota is "
+        dest = "soft_fail",
+        action = "store_const",
+        const = True,
+        default = None,
+        help = "stand down rather than fail even when the weekly GPU quota is "
         "exhausted. For a caller already past the gate that is only "
         "re-asking; see the workflow's recheck step",
     )
     ap.add_argument(
         "--no-soft-fail",
-        dest="soft_fail",
-        action="store_const",
-        const=False,
-        help="treat an error in the gate itself as a failure too",
+        dest = "soft_fail",
+        action = "store_const",
+        const = False,
+        help = "treat an error in the gate itself as a failure too",
     )
     args = ap.parse_args()
 
@@ -565,20 +565,20 @@ def main() -> int:
                 f"would otherwise be one more draw -- or, once the opt-in label is "
                 f"present, one more forced run",
             )
-        print(f"[gate] started by the opt-in label {args.label_name!r}", flush=True)
+        print(f"[gate] started by the opt-in label {args.label_name!r}", flush = True)
 
     override = args.force.strip().lower() in ("true", "1", "yes")
     labels = [l.strip().lower() for l in args.labels.replace("\n", ",").split(",") if l.strip()]
     if label_name in labels:
         override = True
-        print(f"[gate] override: label {args.label_name!r} present", flush=True)
+        print(f"[gate] override: label {args.label_name!r} present", flush = True)
 
     # Reported even when overridden, so the log shows what the unforced answer would have been. run_attempt is excluded so a re-run cannot reroll.
     picked, draw = sampled_in(str(args.run_id), args.percent)
     print(
         f"[gate] sampling draw={draw} threshold={args.percent} "
         f"picked={picked} (run {args.run_id}, attempt {args.run_attempt})",
-        flush=True,
+        flush = True,
     )
 
     if not override and not picked:
@@ -605,15 +605,15 @@ def main() -> int:
     # Every account's quota is read BEFORE the draw, because the draw is weighted by what those calls report. Two quota calls, no session, and the weights are then a measurement rather than a number somebody typed.
     probes: dict[str, dict] = {}
     clients: dict[str, object] = {}
-    for index, env_name in enumerate(account_envs, start=1):
+    for index, env_name in enumerate(account_envs, start = 1):
         account_id = str(index)
         try:
             record, api = probe_account(
                 account_id,
                 env_name,
-                budget_hours=args.budget_hours,
-                reserve_hours=args.reserve_hours,
-                reserve_basis_hours=args.reserve_basis_hours,
+                budget_hours = args.budget_hours,
+                reserve_hours = args.reserve_hours,
+                reserve_basis_hours = args.reserve_basis_hours,
             )
         except BaseException as exc:  # noqa: BLE001
             if isinstance(exc, KeyboardInterrupt):
@@ -629,7 +629,7 @@ def main() -> int:
             )
         probes[account_id] = record
         clients[account_id] = api
-    print("[gate] accounts " + json.dumps(list(probes.values())), flush=True)
+    print("[gate] accounts " + json.dumps(list(probes.values())), flush = True)
     _out("accounts", json.dumps(list(probes.values())))
 
     # An unreadable quota means no weight but still a CANDIDATE: it costs the account its share of the traffic, not its place in the queue.
@@ -641,14 +641,14 @@ def main() -> int:
         print(
             f"[gate] account draw={account_draw:.6f} sampled={sampled_account} "
             f"p={share:.3f} weights=" + json.dumps({i: weights[i] for i in sorted(weights)}),
-            flush=True,
+            flush = True,
         )
     else:
         print(
             f"[gate] account draw={account_draw:.6f} sampled={sampled_account or '(none)'} "
             "with NO readable weights, so this is the declaration order rather "
             "than a weighted choice",
-            flush=True,
+            flush = True,
         )
 
     # Sampled account first, then declaration order. Only an account actually considered pays for a survey, the expensive call here.
@@ -662,7 +662,7 @@ def main() -> int:
         if account_id not in surveys:
             surveys[account_id] = survey_kernels(
                 clients[account_id],
-                budget_sec=max(0.0, survey_deadline - time.monotonic()),
+                budget_sec = max(0.0, survey_deadline - time.monotonic()),
             )
         return surveys[account_id]
 
@@ -712,7 +712,7 @@ def main() -> int:
                     "foreign": len(survey["foreign"]),
                 }
             ),
-            flush=True,
+            flush = True,
         )
 
         clear, why_not = concurrency_verdict(survey, args.kernels, args.allow_foreign_in_flight)
@@ -778,13 +778,13 @@ def main() -> int:
             f"{QUOTA_EXHAUSTED_MESSAGE}. "
             f"{detail}, and this run needs up to {args.budget_hours}h on top of "
             f"that reserve. Quota refreshes at {first['quota'].get('refresh_at')}",
-            exit_code=0 if exhaustion_is_soft else 1,
+            exit_code = 0 if exhaustion_is_soft else 1,
         )
 
     if not errors_are_skips and any(
         o in ("auth_failed", "username_unreadable") for o in outcomes.values()
     ):
-        print("[gate] no account could be authenticated: " + json.dumps(outcomes), flush=True)
+        print("[gate] no account could be authenticated: " + json.dumps(outcomes), flush = True)
         return 1
 
     # The per-account sentences, not the codes: these are read by whoever opened the pull request, who did not cause any of this and cannot fix it. With one account configured this reads exactly as the single-account gate did.

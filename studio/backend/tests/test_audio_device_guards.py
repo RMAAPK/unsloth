@@ -23,7 +23,7 @@ import routes.inference as ri  # noqa: E402
 from routes.training_vram import _stt_sidecar_holds_no_vram  # noqa: E402
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _neutral_audio_device_env(monkeypatch):
     """A server-wide default must not decide the outcome of these tests.
 
@@ -31,15 +31,15 @@ def _neutral_audio_device_env(monkeypatch):
     UNSLOTH_AUDIO_DEVICE would fail these on correct behaviour, and that host is
     exactly the one most likely to run them.
     """
-    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising=False)
+    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising = False)
 
 
-def _audio(audio_type="higgs_tts2", **kwargs):
-    return types.SimpleNamespace(audio_type=audio_type, is_lora=False, identifier="x/y", **kwargs)
+def _audio(audio_type = "higgs_tts2", **kwargs):
+    return types.SimpleNamespace(audio_type = audio_type, is_lora = False, identifier = "x/y", **kwargs)
 
 
-def _request(audio_device=None):
-    return types.SimpleNamespace(audio_device=audio_device)
+def _request(audio_device = None):
+    return types.SimpleNamespace(audio_device = audio_device)
 
 
 def test_only_a_native_audio_model_counts_as_a_cpu_audio_load():
@@ -51,8 +51,8 @@ def test_only_a_native_audio_model_counts_as_a_cpu_audio_load():
 def test_a_chat_model_cannot_skip_the_guards_by_sending_audio_device():
     """audio_device is documented as ignored off the audio path. If it were not
     gated here, any load could set it and walk past the training guard."""
-    assert not ri._native_audio_cpu_load(_audio(audio_type=None), _request("cpu"))
-    assert not ri._native_audio_cpu_load(_audio(audio_type="whisper"), _request("cpu"))
+    assert not ri._native_audio_cpu_load(_audio(audio_type = None), _request("cpu"))
+    assert not ri._native_audio_cpu_load(_audio(audio_type = "whisper"), _request("cpu"))
 
 
 def test_a_cpu_audio_load_is_not_refused_while_training_runs(monkeypatch):
@@ -62,18 +62,18 @@ def test_a_cpu_audio_load_is_not_refused_while_training_runs(monkeypatch):
 
     assert (
         ri._guard_chat_load_against_training(
-            _audio(is_gguf=False),
+            _audio(is_gguf = False),
             types.SimpleNamespace(
-                audio_device="cpu",
-                gpu_memory_mode="auto",
-                gpu_layers=-1,
-                tensor_parallel=False,
+                audio_device = "cpu",
+                gpu_memory_mode = "auto",
+                gpu_layers = -1,
+                tensor_parallel = False,
             ),
-            load_in_4bit=False,
-            placement=types.SimpleNamespace(
-                requested_gpu_ids=None,
-                gpu_ids_are_vulkan_ordinals=False,
-                diffusion_kind=None,
+            load_in_4bit = False,
+            placement = types.SimpleNamespace(
+                requested_gpu_ids = None,
+                gpu_ids_are_vulkan_ordinals = False,
+                diffusion_kind = None,
             ),
         )
         is None
@@ -86,18 +86,18 @@ def test_a_gpu_audio_load_is_still_refused_during_diffusion_training(monkeypatch
 
     with pytest.raises(HTTPException) as excinfo:
         ri._guard_chat_load_against_training(
-            _audio(is_gguf=False),
+            _audio(is_gguf = False),
             types.SimpleNamespace(
-                audio_device="auto",
-                gpu_memory_mode="auto",
-                gpu_layers=-1,
-                tensor_parallel=False,
+                audio_device = "auto",
+                gpu_memory_mode = "auto",
+                gpu_layers = -1,
+                tensor_parallel = False,
             ),
-            load_in_4bit=False,
-            placement=types.SimpleNamespace(
-                requested_gpu_ids=None,
-                gpu_ids_are_vulkan_ordinals=False,
-                diffusion_kind=None,
+            load_in_4bit = False,
+            placement = types.SimpleNamespace(
+                requested_gpu_ids = None,
+                gpu_ids_are_vulkan_ordinals = False,
+                diffusion_kind = None,
             ),
         )
     assert excinfo.value.status_code == 409
@@ -111,7 +111,7 @@ def test_a_cpu_load_skips_the_vram_preflight_entirely(monkeypatch):
         raise AssertionError("a CPU load must not size GPU memory")
 
     monkeypatch.setattr(ri, "_native_audio_post_handoff_free_gb", _never)
-    placement = types.SimpleNamespace(requested_gpu_ids=None)
+    placement = types.SimpleNamespace(requested_gpu_ids = None)
 
     result = asyncio.run(ri._preflight_native_audio_placement(_audio(), _request("cpu"), placement))
     assert result is placement
@@ -123,54 +123,54 @@ def test_minimax_on_cpu_is_refused_before_the_resident_model_is_evicted():
     with pytest.raises(HTTPException) as excinfo:
         asyncio.run(
             ri._preflight_native_audio_placement(
-                _audio(audio_type="minimax_music3"),
+                _audio(audio_type = "minimax_music3"),
                 _request("cpu"),
-                types.SimpleNamespace(requested_gpu_ids=None),
+                types.SimpleNamespace(requested_gpu_ids = None),
             )
         )
     assert excinfo.value.status_code == 400
     assert "CPU RAM" in excinfo.value.detail
 
 
-def _backend(audio_cpu, audio_type="higgs_tts2"):
+def _backend(audio_cpu, audio_type = "higgs_tts2"):
     entry = {"is_audio": True, "audio_type": audio_type}
     if audio_cpu is not None:
         entry["audio_cpu"] = audio_cpu
-    return types.SimpleNamespace(active_model_name="x/y", models={"x/y": entry})
+    return types.SimpleNamespace(active_model_name = "x/y", models = {"x/y": entry})
 
 
 def test_a_resident_gpu_audio_model_does_not_satisfy_a_cpu_request():
-    assert not ri._resident_audio_placement_matches(_backend(audio_cpu=False), _request("cpu"))
+    assert not ri._resident_audio_placement_matches(_backend(audio_cpu = False), _request("cpu"))
 
 
 def test_a_resident_cpu_audio_model_satisfies_the_same_request_again():
-    assert ri._resident_audio_placement_matches(_backend(audio_cpu=True), _request("cpu"))
+    assert ri._resident_audio_placement_matches(_backend(audio_cpu = True), _request("cpu"))
 
 
 def test_a_model_loaded_before_this_existed_is_read_as_gpu():
     """No recorded key means the load predates the option, which placed on GPU."""
-    assert ri._resident_audio_placement_matches(_backend(audio_cpu=None), _request("auto"))
-    assert not ri._resident_audio_placement_matches(_backend(audio_cpu=None), _request("cpu"))
+    assert ri._resident_audio_placement_matches(_backend(audio_cpu = None), _request("auto"))
+    assert not ri._resident_audio_placement_matches(_backend(audio_cpu = None), _request("cpu"))
 
 
 def test_a_non_audio_model_keeps_the_shortcut():
     assert ri._resident_audio_placement_matches(
-        _backend(audio_cpu=None, audio_type=None), _request("cpu")
+        _backend(audio_cpu = None, audio_type = None), _request("cpu")
     )
 
 
 def test_a_cpu_placed_sidecar_is_left_alone_when_training_claims_vram():
-    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="cpu"))
-    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="whisper.cpp", _forced_cpu=True))
-    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="llama.cpp", _gpu_disabled=True))
+    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "cpu"))
+    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "whisper.cpp", _forced_cpu = True))
+    assert _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "llama.cpp", _gpu_disabled = True))
 
 
 def test_anything_that_might_hold_vram_is_still_evicted():
     """Default-deny: starving the run this makes room for is the worse failure."""
-    assert not _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="cuda"))
-    assert not _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="mps"))
+    assert not _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "cuda"))
+    assert not _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "mps"))
     assert not _stt_sidecar_holds_no_vram(
-        types.SimpleNamespace(device="whisper.cpp", _forced_cpu=False)
+        types.SimpleNamespace(device = "whisper.cpp", _forced_cpu = False)
     )
     assert not _stt_sidecar_holds_no_vram(types.SimpleNamespace())
 
@@ -186,7 +186,6 @@ def test_the_shortcut_reads_the_resident_model_not_the_requested_config():
     """It runs ahead of config resolution, so reading a config there raised
     UnboundLocalError and turned every repeat safetensors load into a 500."""
     import inspect
-
     assert list(inspect.signature(ri._resident_audio_placement_matches).parameters) == [
         "backend",
         "request",
@@ -195,18 +194,18 @@ def test_the_shortcut_reads_the_resident_model_not_the_requested_config():
 
 def test_a_cpu_placed_audio_model_never_takes_the_arbiter():
     """It holds no GPU, so acquiring would cancel an image or video run for nothing."""
-    assert ri._resident_audio_holds_no_gpu(_backend(audio_cpu=True))
-    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu=False))
-    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu=None))
+    assert ri._resident_audio_holds_no_gpu(_backend(audio_cpu = True))
+    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu = False))
+    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu = None))
 
 
 def test_a_chat_model_cannot_reach_the_arbiter_skip():
     """Same audio-type gate as the writer, so a stray marker cannot skip it."""
-    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu=True, audio_type=None))
+    assert not ri._resident_audio_holds_no_gpu(_backend(audio_cpu = True, audio_type = None))
 
 
 def test_nothing_resident_reads_as_holding_the_gpu():
-    empty = types.SimpleNamespace(active_model_name=None, models={})
+    empty = types.SimpleNamespace(active_model_name = None, models = {})
     assert not ri._resident_audio_holds_no_gpu(empty)
 
 
@@ -215,7 +214,7 @@ def _inference_source() -> str:
 
     # Explicit encoding: read_text() defaults to the locale one, cp1252 on Windows,
     # and this file is UTF-8.
-    return pathlib.Path(ri.__file__).read_text(encoding="utf-8")
+    return pathlib.Path(ri.__file__).read_text(encoding = "utf-8")
 
 
 def test_the_already_loaded_branch_guards_its_acquire():
@@ -257,7 +256,7 @@ def test_the_mask_runs_before_hardware_detection():
     import pathlib
     from core.inference import worker
 
-    src = pathlib.Path(worker.__file__).read_text(encoding="utf-8")
+    src = pathlib.Path(worker.__file__).read_text(encoding = "utf-8")
     assert src.index("mask_accelerators_for_cpu_audio(os.environ)") < src.index(
         "_hw.detect_hardware()"
     )
@@ -319,16 +318,16 @@ def test_a_gpu_resident_mtmd_server_is_never_reported_as_holding_no_vram():
     let training start beside a model that holds the whole checkpoint in VRAM.
     """
     resident_on_gpu = types.SimpleNamespace(
-        device="llama.cpp",
-        _gpu_disabled=False,
-        _forced_cpu=True,
+        device = "llama.cpp",
+        _gpu_disabled = False,
+        _forced_cpu = True,
     )
     assert _stt_sidecar_holds_no_vram(resident_on_gpu) is False
 
     really_cpu = types.SimpleNamespace(
-        device="llama.cpp",
-        _gpu_disabled=True,
-        _forced_cpu=True,
+        device = "llama.cpp",
+        _gpu_disabled = True,
+        _forced_cpu = True,
     )
     assert _stt_sidecar_holds_no_vram(really_cpu) is True
 
@@ -336,11 +335,11 @@ def test_a_gpu_resident_mtmd_server_is_never_reported_as_holding_no_vram():
 def test_whisper_cpp_still_exempts_a_server_started_with_no_gpu():
     """ggml has no separate wish: _forced_cpu sits next to the spawned --no-gpu."""
     assert (
-        _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="whisper.cpp", _forced_cpu=True))
+        _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "whisper.cpp", _forced_cpu = True))
         is True
     )
     assert (
-        _stt_sidecar_holds_no_vram(types.SimpleNamespace(device="whisper.cpp", _forced_cpu=False))
+        _stt_sidecar_holds_no_vram(types.SimpleNamespace(device = "whisper.cpp", _forced_cpu = False))
         is False
     )
 
@@ -408,7 +407,7 @@ def test_decoding_happens_where_the_codec_actually_is():
 
     # 128257 opens the speech section; the seven codes after it make one frame.
     token_ids = [128257] + [128266 + i for i in range(7)]
-    mgr.decode("snac", "cuda", token_ids=token_ids)
+    mgr.decode("snac", "cuda", token_ids = token_ids)
 
     assert seen["device"] == "cpu"
 

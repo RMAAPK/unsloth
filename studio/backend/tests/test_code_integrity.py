@@ -124,23 +124,23 @@ def test_a_blocked_start_is_explained_to_the_user_not_blamed_on_the_model():
     from core.inference.llama_cpp import LlamaCppBackend
 
     message = LlamaCppBackend._classify_start_failure_text(
-        output=(
+        output = (
             r"C:\Users\x\.unsloth\llama.cpp\build\bin\Release\llama-common.dll is either "
             r"not designed to run on Windows or it contains an error. Error status 0xc0e90002."
         ),
-        gguf_path="C:\\models\\qwen.gguf",
-        model_identifier="unsloth/Qwen3.5-2B-MTP-GGUF",
-        binary=r"C:\Users\x\.unsloth\llama.cpp",
+        gguf_path = "C:\\models\\qwen.gguf",
+        model_identifier = "unsloth/Qwen3.5-2B-MTP-GGUF",
+        binary = r"C:\Users\x\.unsloth\llama.cpp",
     )
     assert "Smart App Control" in message
     assert "reinstalling" in message
     assert "out of memory" not in message.lower()
 
     by_status = LlamaCppBackend._classify_start_failure_text(
-        output="",
-        gguf_path=None,
-        model_identifier=None,
-        returncode=0xC0E90002,
-        binary=r"C:\Users\x\.unsloth\llama.cpp",
+        output = "",
+        gguf_path = None,
+        model_identifier = None,
+        returncode = 0xC0E90002,
+        binary = r"C:\Users\x\.unsloth\llama.cpp",
     )
     assert "Smart App Control" in by_status

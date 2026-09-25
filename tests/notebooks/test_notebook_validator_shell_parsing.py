@@ -667,7 +667,7 @@ def test_every_rule_reads_the_filtered_invocations():
     )
     assert nv.rule_inst_001_git_plus('x = "git+https://example.com/evil.git"', "nb.ipynb", 0) == []
 
-    source = (REPO_ROOT / "scripts" / "notebook_validator.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "scripts" / "notebook_validator.py").read_text(encoding = "utf-8")
     assert (
         source.count("in iter_pip_invocations(install_cell)") == 1
     ), "only unconditional_pip_invocations may read the raw iterator; rules take the filtered one"
@@ -1190,7 +1190,7 @@ def test_notebook_validator_expands_bundled_short_flags():
 
 
 def _one_cell_notebook(source: str) -> dict:
-    return {"cells": [{"cell_type": "code", "source": source.splitlines(keepends=True)}]}
+    return {"cells": [{"cell_type": "code", "source": source.splitlines(keepends = True)}]}
 
 
 def test_install_cell_discovery_finds_compound_commands():
@@ -1808,7 +1808,7 @@ def test_the_os_oracle_is_documented_as_feeding_marker_evaluation():
     """os-info stopped being human-only when markers began reading its Python version, so the
     workflow refreshes it with the pip snapshot. Asserted here so the two cannot drift."""
     workflow = (REPO_ROOT / ".github" / "workflows" / "notebooks-ci.yml").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     assert "refresh-colab \\\n              --all --snapshot-dir" in workflow
     assert "--out unsloth/scripts/data/colab_pip_freeze.gpu.txt \\\n            ||" not in workflow
@@ -1862,7 +1862,7 @@ def test_notebooks_ci_watches_the_oracle_that_feeds_marker_evaluation():
     """_marker_environment reads the image's Python out of colab_os_info.gpu.txt, so an OS-only
     rotation changes what the validator replays and has to run the lint and smoke jobs."""
     workflow = (REPO_ROOT / ".github" / "workflows" / "notebooks-ci.yml").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     paths = workflow.split("paths:", 1)[1].split("jobs:", 1)[0]
     assert "'scripts/data/colab_os_info.gpu.txt'" in paths
@@ -1876,7 +1876,7 @@ def test_the_marker_oracle_follows_the_selected_pip_snapshot(tmp_path, monkeypat
 
     paired = tmp_path / "snap"
     paired.mkdir()
-    (paired / "colab_os_info.gpu.txt").write_text("Python 3.11.9\n", encoding="utf-8")
+    (paired / "colab_os_info.gpu.txt").write_text("Python 3.11.9\n", encoding = "utf-8")
     nv._set_colab_oracle_dir(paired)
     assert nv._colab_python_version() == "3.11.9"
 
@@ -1893,7 +1893,7 @@ def test_the_cron_refreshes_both_oracles_not_just_the_packages():
     """The scheduled job refreshed the pip snapshot against a stale os-info, judging new
     packages with the old interpreter. The PR-time step uses --all; this one has to match."""
     workflow = (REPO_ROOT / ".github" / "workflows" / "notebooks-ci.yml").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     assert "--out unsloth/scripts/data/colab_pip_freeze.gpu.txt" not in workflow
     assert workflow.count("--all --snapshot-dir unsloth/scripts/data") >= 2
@@ -1955,13 +1955,13 @@ def test_a_conditional_only_cell_does_not_replay_the_bare_oracle(tmp_path):
     }
     nb_dir = tmp_path / "nb"
     nb_dir.mkdir()
-    (nb_dir / "Conditional_Only.ipynb").write_text(json.dumps(notebook), encoding="utf-8")
+    (nb_dir / "Conditional_Only.ipynb").write_text(json.dumps(notebook), encoding = "utf-8")
 
     args = argparse.Namespace(
-        notebooks_dir=str(tmp_path),
-        colab_pin=None,
-        no_pypi=True,
-        json=False,
+        notebooks_dir = str(tmp_path),
+        colab_pin = None,
+        no_pypi = True,
+        json = False,
     )
     findings: list = []
     original_emit = nv._emit
@@ -2021,7 +2021,7 @@ def test_exception_coverage_skips_cells_that_run_no_pip(tmp_path):
 
     (tmp_path / "nb").mkdir()
     (tmp_path / "update_all_notebooks.py").write_text(
-        'DONT_UPDATE_EXCEPTIONS = ["Doc_Only.ipynb"]\n', encoding="utf-8"
+        'DONT_UPDATE_EXCEPTIONS = ["Doc_Only.ipynb"]\n', encoding = "utf-8"
     )
 
     def write(source: str) -> None:
@@ -2042,7 +2042,7 @@ def test_exception_coverage_skips_cells_that_run_no_pip(tmp_path):
             "nbformat": 4,
             "nbformat_minor": 0,
         }
-        (tmp_path / "nb" / "Doc_Only.ipynb").write_text(json.dumps(notebook), encoding="utf-8")
+        (tmp_path / "nb" / "Doc_Only.ipynb").write_text(json.dumps(notebook), encoding = "utf-8")
 
     write('!echo "pip install peft"\n')
     assert nv.rule_l12_exceptions_coverage(tmp_path) == []
@@ -2084,7 +2084,7 @@ def test_the_cron_lint_job_installs_packaging():
     replays every marked requirement, including the ones Colab's pip skips. A bare
     setup-python environment does not provide it."""
     workflow = (REPO_ROOT / ".github" / "workflows" / "notebooks-ci.yml").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
 
     install_steps = [

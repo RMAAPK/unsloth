@@ -52,7 +52,7 @@ def _job_path(video_id: str) -> Optional[Path]:
 
 def _read_job(path: Path, video_id: str) -> Optional[dict[str, Any]]:
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding = "utf-8"))
     except (OSError, UnicodeError, ValueError, TypeError):
         return None
     return raw if isinstance(raw, dict) and raw.get("id") == video_id else None
@@ -61,10 +61,10 @@ def _read_job(path: Path, video_id: str) -> Optional[dict[str, Any]]:
 def _write_job(path: Path, job: dict[str, Any]) -> None:
     tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
-        tmp.write_text(json.dumps(job), encoding="utf-8")
+        tmp.write_text(json.dumps(job), encoding = "utf-8")
         os.replace(tmp, path)
     finally:
-        tmp.unlink(missing_ok=True)
+        tmp.unlink(missing_ok = True)
 
 
 def save_job(video_id: str, job: dict[str, Any]) -> None:
@@ -124,7 +124,7 @@ def forget_job(video_id: str) -> bool:
         return False
     with _job_lock:
         try:
-            path.unlink(missing_ok=True)
+            path.unlink(missing_ok = True)
         except OSError as exc:
             logger.warning("video_gallery.forget_job_failed: %s", exc)
             return False
@@ -148,13 +148,13 @@ def save(
     sidecar_tmp = directory / f".{video_id}.json.tmp"
     try:
         mp4_tmp.write_bytes(mp4_bytes)
-        sidecar_tmp.write_text(json.dumps(meta), encoding="utf-8")
+        sidecar_tmp.write_text(json.dumps(meta), encoding = "utf-8")
         os.replace(mp4_tmp, mp4_path)
         os.replace(sidecar_tmp, sidecar)
     except BaseException:
         for path in (mp4_tmp, sidecar_tmp, mp4_path, sidecar):
             try:
-                path.unlink(missing_ok=True)
+                path.unlink(missing_ok = True)
             except OSError:
                 pass
         raise
@@ -203,7 +203,6 @@ def thumbnail(video_id: str) -> Optional[bytes]:
 
 def _thumbnail_webp(path: Path) -> bytes:
     import io
-
     try:
         import av
         from PIL import Image
@@ -224,7 +223,7 @@ def _thumbnail_webp(path: Path) -> bytes:
                     Image.LANCZOS,
                 )
             buf = io.BytesIO()
-            image.save(buf, format="WEBP", quality=85, method=4)
+            image.save(buf, format = "WEBP", quality = 85, method = 4)
             return buf.getvalue()
     except RuntimeError:
         raise
@@ -250,7 +249,7 @@ def transcode_to_file(video_id: str, fmt: str) -> Optional[Path]:
         raise ValueError(f"Unsupported export format '{fmt}'. Use webm or gif.")
     import tempfile
 
-    fd, tmp_name = tempfile.mkstemp(prefix=f"unsloth-export-{video_id}-", suffix=f".{normalized}")
+    fd, tmp_name = tempfile.mkstemp(prefix = f"unsloth-export-{video_id}-", suffix = f".{normalized}")
     os.close(fd)
     dest = Path(tmp_name)
     try:
@@ -260,7 +259,7 @@ def transcode_to_file(video_id: str, fmt: str) -> Optional[Path]:
             # GIF is already bounded by _GIF_MAX_FRAMES / _GIF_MAX_EDGE, so it is built in memory and written out.
             dest.write_bytes(_transcode_gif(path))
     except BaseException:
-        dest.unlink(missing_ok=True)
+        dest.unlink(missing_ok = True)
         raise
     return dest
 
@@ -274,7 +273,7 @@ def transcode(video_id: str, fmt: str) -> Optional[bytes]:
     try:
         return dest.read_bytes()
     finally:
-        dest.unlink(missing_ok=True)
+        dest.unlink(missing_ok = True)
 
 
 def _transcode_webm(path: Path, dest: Path) -> None:
@@ -284,12 +283,12 @@ def _transcode_webm(path: Path, dest: Path) -> None:
     except Exception as exc:  # noqa: BLE001 -- no PyAV -> no transcode
         raise RuntimeError("WebM export needs the 'av' package (PyAV).") from exc
     try:
-        with av.open(str(path)) as src, av.open(str(dest), "w", format="webm") as dst:
+        with av.open(str(path)) as src, av.open(str(dest), "w", format = "webm") as dst:
             if not src.streams.video:
                 raise RuntimeError("WebM export failed: the clip has no video stream.")
             in_v = src.streams.video[0]
             rate = in_v.average_rate or 24
-            out_v = dst.add_stream("libvpx-vp9", rate=rate)
+            out_v = dst.add_stream("libvpx-vp9", rate = rate)
             out_v.width = in_v.codec_context.width
             out_v.height = in_v.codec_context.height
             out_v.pix_fmt = "yuv420p"
@@ -305,9 +304,9 @@ def _transcode_webm(path: Path, dest: Path) -> None:
                 try:
                     stereo = (getattr(in_a.codec_context.layout, "nb_channels", 1) or 1) > 1
                     layout = "stereo" if stereo else "mono"
-                    out_a = dst.add_stream("libopus", rate=48000, layout=layout)
+                    out_a = dst.add_stream("libopus", rate = 48000, layout = layout)
                     resampler = av.audio.resampler.AudioResampler(
-                        format=out_a.format.name, layout=layout, rate=48000
+                        format = out_a.format.name, layout = layout, rate = 48000
                     )
                     fifo = av.audio.fifo.AudioFifo()
                 except Exception:  # noqa: BLE001 -- a build without libopus still exports the video
@@ -317,7 +316,7 @@ def _transcode_webm(path: Path, dest: Path) -> None:
                 # frame_size is 0 until the container starts writing; 960 is libopus' own frame.
                 size = out_a.frame_size or 960
                 while True:
-                    frame = fifo.read(size, partial=flush)
+                    frame = fifo.read(size, partial = flush)
                     if frame is None:
                         break
                     for packet in out_a.encode(frame):
@@ -329,7 +328,7 @@ def _transcode_webm(path: Path, dest: Path) -> None:
                     continue
                 if packet.stream is in_v:
                     for frame in packet.decode():
-                        for out_packet in out_v.encode(frame.reformat(format="yuv420p")):
+                        for out_packet in out_v.encode(frame.reformat(format = "yuv420p")):
                             dst.mux(out_packet)
                     continue
                 for frame in packet.decode():
@@ -342,7 +341,7 @@ def _transcode_webm(path: Path, dest: Path) -> None:
             for packet in out_v.encode():
                 dst.mux(packet)
             if out_a is not None:
-                _drain_audio(flush=True)
+                _drain_audio(flush = True)
                 for packet in out_a.encode():
                     dst.mux(packet)
     except RuntimeError:
@@ -393,7 +392,7 @@ def _transcode_gif(path: Path) -> bytes:
                         (max(1, round(image.width * scale)), max(1, round(image.height * scale))),
                         Image.Resampling.LANCZOS,
                     )
-                frames.append(image.convert("P", palette=Image.Palette.ADAPTIVE))
+                frames.append(image.convert("P", palette = Image.Palette.ADAPTIVE))
     except RuntimeError:
         raise
     except Exception as exc:  # noqa: BLE001 -- surface as "decoder unavailable"
@@ -404,11 +403,11 @@ def _transcode_gif(path: Path) -> bytes:
     buf = io.BytesIO()
     frames[0].save(
         buf,
-        format="GIF",
-        save_all=True,
-        append_images=frames[1:],
-        duration=duration_ms,
-        loop=0,
+        format = "GIF",
+        save_all = True,
+        append_images = frames[1:],
+        duration = duration_ms,
+        loop = 0,
     )
     return buf.getvalue()
 
@@ -435,7 +434,7 @@ _REQUIRED_META = (
 
 def _read_meta(sidecar: Path) -> Optional[dict[str, Any]]:
     try:
-        raw = sidecar.read_text(encoding="utf-8")
+        raw = sidecar.read_text(encoding = "utf-8")
     except (OSError, UnicodeError):
         return None
     try:
@@ -505,11 +504,11 @@ def list_videos(
     # and leave the early break below intact.
     paths = [p for p in paths if gallery_flags.is_archived(flags, p.stem) == archived]
     paths.sort(
-        key=lambda p: (
+        key = lambda p: (
             gallery_flags.pin_rank(flags, p.stem),
             gallery_flags.order_rank(flags, p.stem, _mtime(p)),
         ),
-        reverse=True,
+        reverse = True,
     )
     # Page over READABLE records, not raw files: filtering an orphan MP4 out of an already-sliced window would drop
     # valid videos and make has_more wrong.
@@ -542,7 +541,7 @@ def set_flags(
     with gallery_flags.exclusive(gallery_dir()):
         if owned_video_path(video_id) is None:
             return None
-        gallery_flags.set_flags_locked(gallery_dir(), video_id, pinned=pinned, archived=archived)
+        gallery_flags.set_flags_locked(gallery_dir(), video_id, pinned = pinned, archived = archived)
         meta = _read_meta(_sidecar_path(video_id))
     if meta is None:  # raced a delete between the guard and the read
         return None
@@ -570,13 +569,13 @@ def move(video_id: str, after_id: Optional[str]) -> Optional[dict[str, Any]]:
             paths = []
         keyed = [(p.stem, _mtime(p)) for p in paths]
         keyed.sort(
-            key=lambda pair: (
+            key = lambda pair: (
                 gallery_flags.pin_rank(flags, pair[0]),
                 gallery_flags.order_rank(flags, pair[0], pair[1]),
             ),
-            reverse=True,
+            reverse = True,
         )
-        gallery_flags.place_locked(gallery_dir(), video_id, keyed, after_id=after_id)
+        gallery_flags.place_locked(gallery_dir(), video_id, keyed, after_id = after_id)
         meta = _read_meta(_sidecar_path(video_id))
     if meta is None:  # raced a delete between the guard and the read
         return None

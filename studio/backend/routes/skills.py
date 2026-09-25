@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 class SkillRecord(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     name: str
     description: str
@@ -31,17 +31,17 @@ class SkillRecord(BaseModel):
 
 
 class SkillEnabledRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra = "forbid")
 
     enabled: StrictBool
 
 
-@router.get("", response_model=list[SkillRecord])
+@router.get("", response_model = list[SkillRecord])
 def get_skills(current_subject: str = Depends(get_current_subject)) -> list[dict[str, Any]]:
     try:
         records = list_skills()
     except SkillError as exc:
-        raise HTTPException(status_code=500, detail="Could not read Agent Skills.") from exc
+        raise HTTPException(status_code = 500, detail = "Could not read Agent Skills.") from exc
     # The client just saw the folders; the next inference scan must not serve an older snapshot.
     from routes.inference import _invalidate_agent_skills_cache
 
@@ -49,7 +49,7 @@ def get_skills(current_subject: str = Depends(get_current_subject)) -> list[dict
     return records
 
 
-@router.put("/{name}/enabled", response_model=SkillRecord)
+@router.put("/{name}/enabled", response_model = SkillRecord)
 def update_skill_enabled(
     name: str,
     payload: SkillEnabledRequest,
@@ -62,6 +62,6 @@ def update_skill_enabled(
         _invalidate_agent_skills_cache()
         return updated
     except SkillNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code = 404, detail = str(exc)) from exc
     except SkillError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code = 400, detail = str(exc)) from exc

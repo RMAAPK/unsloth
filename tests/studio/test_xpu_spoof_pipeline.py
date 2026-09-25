@@ -47,9 +47,9 @@ def _make_fake_xpu(
     total_bytes = int(total_gb * 1024**3)
     used_bytes = int(used_gb * 1024**3)
     calls = {"synchronize": 0, "empty_cache": 0}
-    props = types.SimpleNamespace(name=device_name, total_memory=total_bytes)
+    props = types.SimpleNamespace(name = device_name, total_memory = total_bytes)
 
-    def _mem_get_info(idx=0):
+    def _mem_get_info(idx = 0):
         if mem_get_info == "raise":
             raise RuntimeError(
                 "The device (Intel(R) Arc(TM) B580 Graphics) doesn't support "
@@ -64,16 +64,16 @@ def _make_fake_xpu(
         calls["empty_cache"] += 1
 
     xpu = types.SimpleNamespace(
-        is_available=lambda: available,
-        device_count=lambda: device_count,
-        current_device=lambda: 0,
-        get_device_name=lambda idx=0: device_name,
-        get_device_properties=lambda idx=0: props,
-        memory_allocated=lambda idx=0: used_bytes,
-        memory_reserved=lambda idx=0: used_bytes,
-        is_initialized=lambda: is_initialized,
-        synchronize=_sync,
-        empty_cache=_empty,
+        is_available = lambda: available,
+        device_count = lambda: device_count,
+        current_device = lambda: 0,
+        get_device_name = lambda idx = 0: device_name,
+        get_device_properties = lambda idx = 0: props,
+        memory_allocated = lambda idx = 0: used_bytes,
+        memory_reserved = lambda idx = 0: used_bytes,
+        is_initialized = lambda: is_initialized,
+        synchronize = _sync,
+        empty_cache = _empty,
     )
     if mem_get_info != "absent":
         xpu.mem_get_info = _mem_get_info
@@ -107,7 +107,7 @@ def spoof_xpu(monkeypatch):
         cuda_visible: str = "",  # "" hides CUDA; None unsets; else passthrough
         ze_mask: str = "0,1",  # None unsets the mask
         force_xpu: bool = False,
-        xpu_version="2.7",
+        xpu_version = "2.7",
         **xpu_kwargs,
     ):
         import torch
@@ -117,27 +117,27 @@ def spoof_xpu(monkeypatch):
             monkeypatch.setattr(
                 torch.cuda,
                 "get_device_properties",
-                lambda i=0: types.SimpleNamespace(name="Stub NVIDIA GPU"),
-                raising=False,
+                lambda i = 0: types.SimpleNamespace(name = "Stub NVIDIA GPU"),
+                raising = False,
             )
         fake_xpu, calls = _make_fake_xpu(**xpu_kwargs)
-        monkeypatch.setattr(torch, "xpu", fake_xpu, raising=False)
-        monkeypatch.setattr(torch.version, "xpu", xpu_version, raising=False)
+        monkeypatch.setattr(torch, "xpu", fake_xpu, raising = False)
+        monkeypatch.setattr(torch.version, "xpu", xpu_version, raising = False)
 
         if ze_mask is None:
-            monkeypatch.delenv("ZE_AFFINITY_MASK", raising=False)
+            monkeypatch.delenv("ZE_AFFINITY_MASK", raising = False)
         else:
             monkeypatch.setenv("ZE_AFFINITY_MASK", ze_mask)
         if cuda_visible is None:
-            monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+            monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
         else:
             monkeypatch.setenv("CUDA_VISIBLE_DEVICES", cuda_visible)
         if force_xpu:
             monkeypatch.setenv("UNSLOTH_FORCE_XPU", "1")
         else:
-            monkeypatch.delenv("UNSLOTH_FORCE_XPU", raising=False)
+            monkeypatch.delenv("UNSLOTH_FORCE_XPU", raising = False)
         # FLAT is the oneAPI default; pin it so the test is host-independent.
-        monkeypatch.delenv("ZE_FLAT_DEVICE_HIERARCHY", raising=False)
+        monkeypatch.delenv("ZE_FLAT_DEVICE_HIERARCHY", raising = False)
 
         hw = _import_studio_hardware_module()
         hw._visible_gpu_count = None
@@ -157,20 +157,20 @@ def test_detect_hardware_routes_to_xpu(spoof_xpu):
 
 
 def test_force_xpu_env_routes_to_xpu_even_without_mask(spoof_xpu):
-    hw, _ = spoof_xpu(force_xpu=True, ze_mask=None, cuda_visible=None)
+    hw, _ = spoof_xpu(force_xpu = True, ze_mask = None, cuda_visible = None)
     assert hw.detect_hardware() == hw.DeviceType.XPU
 
 
 def test_bare_mask_with_cuda_present_stays_cuda(spoof_xpu):
     # Canary: a stray inherited ZE_AFFINITY_MASK must NOT steal a CUDA host.
-    hw, _ = spoof_xpu(cuda_available=True, cuda_visible=None, ze_mask="0,1")
+    hw, _ = spoof_xpu(cuda_available = True, cuda_visible = None, ze_mask = "0,1")
     assert hw.detect_hardware() == hw.DeviceType.CUDA
 
 
 def test_force_xpu_on_hybrid_hides_cuda_for_workers(spoof_xpu):
     # Forced XPU with CUDA still visible must hide CUDA: unsloth's device_type picks CUDA before XPU and ignores
     # UNSLOTH_FORCE_XPU, so workers would otherwise silently train on CUDA.
-    hw, _ = spoof_xpu(force_xpu=True, cuda_available=True, cuda_visible=None, ze_mask=None)
+    hw, _ = spoof_xpu(force_xpu = True, cuda_available = True, cuda_visible = None, ze_mask = None)
     assert hw.detect_hardware() == hw.DeviceType.XPU
     import os
 
@@ -181,11 +181,11 @@ def test_force_xpu_without_working_xpu_leaves_cuda_untouched(spoof_xpu):
     # Canary: FORCE_XPU on a CUDA host with no working XPU must fall
     # through to CUDA and must NOT hide it.
     hw, _ = spoof_xpu(
-        force_xpu=True,
-        cuda_available=True,
-        cuda_visible=None,
-        ze_mask=None,
-        available=False,
+        force_xpu = True,
+        cuda_available = True,
+        cuda_visible = None,
+        ze_mask = None,
+        available = False,
     )
     assert hw.detect_hardware() == hw.DeviceType.CUDA
     import os
@@ -199,16 +199,16 @@ def test_apply_gpu_ids_predetect_never_probes_torch(spoof_xpu, monkeypatch):
     # is written.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask=None, cuda_visible=None)
+    hw, _ = spoof_xpu(ze_mask = None, cuda_visible = None)
     assert hw.DEVICE is None
 
     def _poisoned_detect():
         raise AssertionError("apply_gpu_ids triggered detect_hardware pre-mask")
 
     monkeypatch.setattr(hw, "detect_hardware", _poisoned_detect)
-    monkeypatch.setattr(torch.cuda, "is_available", _poisoned_detect, raising=False)
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", None, raising=False)
+    monkeypatch.setattr(torch.cuda, "is_available", _poisoned_detect, raising = False)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", None, raising = False)
     hw.apply_gpu_ids([1])
     import os
 
@@ -221,16 +221,16 @@ def test_apply_gpu_ids_predetect_xpu_build_writes_ze_mask(spoof_xpu, monkeypatch
     # ZE_AFFINITY_MASK without any runtime probe.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask=None, cuda_visible=None)
+    hw, _ = spoof_xpu(ze_mask = None, cuda_visible = None)
     assert hw.DEVICE is None
 
     def _poisoned_detect():
         raise AssertionError("apply_gpu_ids triggered detect_hardware pre-mask")
 
     monkeypatch.setattr(hw, "detect_hardware", _poisoned_detect)
-    monkeypatch.setattr(torch.version, "cuda", None, raising=False)
-    monkeypatch.setattr(torch.version, "hip", None, raising=False)
-    monkeypatch.setattr(torch.version, "xpu", "2.7", raising=False)
+    monkeypatch.setattr(torch.version, "cuda", None, raising = False)
+    monkeypatch.setattr(torch.version, "hip", None, raising = False)
+    monkeypatch.setattr(torch.version, "xpu", "2.7", raising = False)
     hw.apply_gpu_ids([0])
     import os
 
@@ -243,15 +243,15 @@ def test_apply_gpu_ids_predetect_xpu_compiled_with_null_version(spoof_xpu, monke
     # torch.xpu._is_compiled() must be accepted as the build signal so the mask still goes to ZE_AFFINITY_MASK.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask=None, cuda_visible=None)
+    hw, _ = spoof_xpu(ze_mask = None, cuda_visible = None)
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
-    monkeypatch.setattr(torch.version, "cuda", None, raising=False)
-    monkeypatch.setattr(torch.version, "hip", None, raising=False)
-    monkeypatch.setattr(torch.version, "xpu", None, raising=False)
-    monkeypatch.setattr(torch.xpu, "_is_compiled", lambda: True, raising=False)
+    monkeypatch.setattr(torch.version, "cuda", None, raising = False)
+    monkeypatch.setattr(torch.version, "hip", None, raising = False)
+    monkeypatch.setattr(torch.version, "xpu", None, raising = False)
+    monkeypatch.setattr(torch.xpu, "_is_compiled", lambda: True, raising = False)
     hw.apply_gpu_ids([0])
     import os
 
@@ -264,14 +264,14 @@ def test_apply_gpu_ids_predetect_force_on_cuda_build_writes_cvd(spoof_xpu, monke
     # must go to CUDA_VISIBLE_DEVICES, not ZE_AFFINITY_MASK.
     import torch
 
-    hw, _ = spoof_xpu(force_xpu=True, ze_mask=None, cuda_visible=None)
+    hw, _ = spoof_xpu(force_xpu = True, ze_mask = None, cuda_visible = None)
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", None, raising=False)
-    monkeypatch.setattr(torch.xpu, "_is_compiled", lambda: False, raising=False)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", None, raising = False)
+    monkeypatch.setattr(torch.xpu, "_is_compiled", lambda: False, raising = False)
     hw.apply_gpu_ids([1])
     import os
 
@@ -285,13 +285,13 @@ def test_apply_gpu_ids_predetect_dual_build_honors_xpu_hint(spoof_xpu, monkeypat
     # CUDA via CUDA_VISIBLE_DEVICES. Mirrors detect_hardware's hint.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask="0,1", cuda_visible="")
+    hw, _ = spoof_xpu(ze_mask = "0,1", cuda_visible = "")
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", "2.7", raising=False)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", "2.7", raising = False)
     hw.apply_gpu_ids([0])
     import os
 
@@ -304,13 +304,13 @@ def test_apply_gpu_ids_predetect_dual_build_cuda_active_writes_cvd(spoof_xpu, mo
     # as detect_hardware picking CUDA on a hybrid host.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask="0,1", cuda_visible=None)
+    hw, _ = spoof_xpu(ze_mask = "0,1", cuda_visible = None)
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", "2.7", raising=False)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", "2.7", raising = False)
     hw.apply_gpu_ids([1])
     import os
 
@@ -324,25 +324,25 @@ def test_apply_gpu_ids_trusts_parent_backend_param(spoof_xpu, monkeypatch):
     # detect_hardware's availability check and CUDA fallback exactly.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask=None, cuda_visible=None, force_xpu=True)
+    hw, _ = spoof_xpu(ze_mask = None, cuda_visible = None, force_xpu = True)
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
     # Forced XPU + XPU build, but the parent detected CUDA (xpu had no device): backend="cuda" must route to
     # CUDA_VISIBLE_DEVICES.
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", "2.7", raising=False)
-    hw.apply_gpu_ids([1], backend="cuda")
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", "2.7", raising = False)
+    hw.apply_gpu_ids([1], backend = "cuda")
     import os
 
     assert os.environ["CUDA_VISIBLE_DEVICES"] == "1"
     assert "ZE_AFFINITY_MASK" not in os.environ
 
     # And backend="xpu" routes to ZE_AFFINITY_MASK even on a CUDA build.
-    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", None, raising=False)
-    hw.apply_gpu_ids([0], backend="xpu")
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", None, raising = False)
+    hw.apply_gpu_ids([0], backend = "xpu")
     assert os.environ["ZE_AFFINITY_MASK"] == "0"
     assert "CUDA_VISIBLE_DEVICES" not in os.environ
 
@@ -353,13 +353,13 @@ def test_apply_gpu_ids_predetect_hidden_cuda_without_mask_prefers_xpu(spoof_xpu,
     # hidden CUDA.
     import torch
 
-    hw, _ = spoof_xpu(ze_mask=None, cuda_visible="")
+    hw, _ = spoof_xpu(ze_mask = None, cuda_visible = "")
     assert hw.DEVICE is None
     monkeypatch.setattr(
         hw, "detect_hardware", lambda: (_ for _ in ()).throw(AssertionError("detect ran"))
     )
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
-    monkeypatch.setattr(torch.version, "xpu", "2.7", raising=False)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
+    monkeypatch.setattr(torch.version, "xpu", "2.7", raising = False)
     hw.apply_gpu_ids([0])
     import os
 
@@ -383,19 +383,19 @@ def test_apply_gpu_ids_writes_ze_affinity_mask(spoof_xpu, monkeypatch):
 
 
 def test_get_visible_gpu_count_uses_device_count(spoof_xpu):
-    hw, _ = spoof_xpu(ze_mask="0,1", device_count=2)
+    hw, _ = spoof_xpu(ze_mask = "0,1", device_count = 2)
     hw.detect_hardware()
     assert hw.get_visible_gpu_count() == 2
 
 
 def test_get_visible_gpu_count_empty_mask_is_zero(spoof_xpu):
-    hw, _ = spoof_xpu(ze_mask="")
+    hw, _ = spoof_xpu(ze_mask = "")
     hw.detect_hardware()
     assert hw.get_visible_gpu_count() == 0
 
 
 def test_flat_numeric_mask_reports_relative_ordinals(spoof_xpu):
-    hw, _ = spoof_xpu(ze_mask="4,7", device_count=2)
+    hw, _ = spoof_xpu(ze_mask = "4,7", device_count = 2)
     hw.detect_hardware()
 
     spec = hw._get_parent_visible_gpu_spec()
@@ -410,7 +410,7 @@ def test_flat_numeric_mask_reports_relative_ordinals(spoof_xpu):
 
 
 def test_composite_numeric_mask_reports_physical_ids(spoof_xpu, monkeypatch):
-    hw, _ = spoof_xpu(ze_mask="4,7", device_count=2)
+    hw, _ = spoof_xpu(ze_mask = "4,7", device_count = 2)
     monkeypatch.setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE")
     hw.detect_hardware()
 
@@ -426,13 +426,13 @@ def test_composite_numeric_mask_reports_physical_ids(spoof_xpu, monkeypatch):
 
 
 def test_get_device_map_multi_is_balanced(spoof_xpu):
-    hw, _ = spoof_xpu(ze_mask="0,1", device_count=2)
+    hw, _ = spoof_xpu(ze_mask = "0,1", device_count = 2)
     hw.detect_hardware()
     assert hw.get_device_map([0, 1]) == "balanced"
 
 
 def test_get_device_map_explicit_single_is_sequential(spoof_xpu):
-    hw, _ = spoof_xpu(ze_mask="0,1", device_count=2)
+    hw, _ = spoof_xpu(ze_mask = "0,1", device_count = 2)
     hw.detect_hardware()
     # Explicit gpu_ids=[0] is a deliberate single-device request.
     assert hw.get_device_map([0]) == "sequential"
@@ -453,8 +453,8 @@ def test_package_versions_survive_broken_xpu_runtime(spoof_xpu, monkeypatch):
     # A broken Intel runtime raising in is_available() must not blank the CUDA/ROCm versions on NVIDIA/AMD hosts.
     import torch
 
-    hw, _ = spoof_xpu(cuda_available=True, cuda_visible=None, ze_mask=None)
-    monkeypatch.setattr(torch.version, "cuda", "12.8", raising=False)
+    hw, _ = spoof_xpu(cuda_available = True, cuda_visible = None, ze_mask = None)
+    monkeypatch.setattr(torch.version, "cuda", "12.8", raising = False)
 
     def _broken():
         raise RuntimeError("Level Zero init failed")
@@ -466,34 +466,34 @@ def test_package_versions_survive_broken_xpu_runtime(spoof_xpu, monkeypatch):
 
 
 def test_package_versions_reports_xpu(spoof_xpu):
-    hw, _ = spoof_xpu(xpu_version="2.7")
+    hw, _ = spoof_xpu(xpu_version = "2.7")
     hw.detect_hardware()
     assert hw.get_package_versions().get("xpu") == "2.7"
 
 
 def test_package_versions_xpu_available_fallback(spoof_xpu):
-    hw, _ = spoof_xpu(xpu_version=None)
+    hw, _ = spoof_xpu(xpu_version = None)
     hw.detect_hardware()
     assert hw.get_package_versions().get("xpu") == "available"
 
 
 def test_per_device_info_mem_get_info_ok(spoof_xpu):
-    hw, _ = spoof_xpu(total_gb=16.0, used_gb=1.0)
+    hw, _ = spoof_xpu(total_gb = 16.0, used_gb = 1.0)
     hw.detect_hardware()
     info = hw._torch_get_per_device_info([0])
     assert len(info) == 1
-    assert info[0]["total_gb"] == pytest.approx(16.0, abs=0.1)
-    assert info[0]["used_gb"] == pytest.approx(1.0, abs=0.1)
+    assert info[0]["total_gb"] == pytest.approx(16.0, abs = 0.1)
+    assert info[0]["used_gb"] == pytest.approx(1.0, abs = 0.1)
 
 
 def test_mem_get_info_runtimeerror_keeps_device_with_unknown_usage(spoof_xpu):
     # Arc B580 and Lunar Lake can reject mem_get_info while remaining usable.
-    hw, _ = spoof_xpu(mem_get_info="raise", total_gb=16.0, device_count=2)
+    hw, _ = spoof_xpu(mem_get_info = "raise", total_gb = 16.0, device_count = 2)
     hw.detect_hardware()
 
     info = hw._torch_get_per_device_info([0])
     assert len(info) == 1
-    assert info[0]["total_gb"] == pytest.approx(16.0, abs=0.1)
+    assert info[0]["total_gb"] == pytest.approx(16.0, abs = 0.1)
     assert info[0]["used_gb"] is None
 
     utilization = hw.get_visible_gpu_utilization()
@@ -509,7 +509,7 @@ def test_mem_get_info_runtimeerror_keeps_device_with_unknown_usage(spoof_xpu):
 
 
 def test_per_device_info_no_mem_get_info_uses_none(spoof_xpu):
-    hw, _ = spoof_xpu(mem_get_info="absent")
+    hw, _ = spoof_xpu(mem_get_info = "absent")
     hw.detect_hardware()
     info = hw._torch_get_per_device_info([0])
     assert len(info) == 1
@@ -527,6 +527,6 @@ def test_get_torch_device_str_is_xpu(spoof_xpu):
 
 def test_dataset_map_num_proc_none_after_xpu_init(spoof_xpu):
     # os.fork() after Level-Zero init corrupts the XPU context -> force in-process.
-    hw, _ = spoof_xpu(is_initialized=True)
+    hw, _ = spoof_xpu(is_initialized = True)
     hw.detect_hardware()
     assert hw.dataset_map_num_proc(4) is None

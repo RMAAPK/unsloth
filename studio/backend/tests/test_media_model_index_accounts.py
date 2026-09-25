@@ -31,7 +31,7 @@ def home(monkeypatch, tmp_path):
 def _private_pipeline(account, home, name):
     root = home / "accounts" / account.account_id / "private_models"
     pipeline = root / name
-    pipeline.mkdir(parents=True)
+    pipeline.mkdir(parents = True)
     (pipeline / "model_index.json").write_text("{}")
 
     def _register():
@@ -55,15 +55,15 @@ def test_a_warm_index_does_not_answer_for_the_next_account(home):
     assert run_as(BOB, mas.available_media_model_ids, mas.IMAGE_TASK) == ["bob-own-flux"]
 
     bob_pick = run_as(
-        BOB, lambda: mas.resolve_local_media_model("bob-own-flux", task=mas.IMAGE_TASK)
+        BOB, lambda: mas.resolve_local_media_model("bob-own-flux", task = mas.IMAGE_TASK)
     )
     assert bob_pick is not None and bob_pick.model_path == str(bob_model)
     assert (
-        run_as(BOB, lambda: mas.resolve_local_media_model("alice-secret-flux", task=mas.IMAGE_TASK))
+        run_as(BOB, lambda: mas.resolve_local_media_model("alice-secret-flux", task = mas.IMAGE_TASK))
         is None
     )
     alice_pick = run_as(
-        ALICE, lambda: mas.resolve_local_media_model("alice-secret-flux", task=mas.IMAGE_TASK)
+        ALICE, lambda: mas.resolve_local_media_model("alice-secret-flux", task = mas.IMAGE_TASK)
     )
     assert alice_pick is not None and alice_pick.model_path == str(alice_model)
 

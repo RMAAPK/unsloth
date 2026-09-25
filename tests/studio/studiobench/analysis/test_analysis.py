@@ -263,7 +263,7 @@ def test_task_duration_cross_check_fails_on_disagreement() -> None:
 
 
 def _pts(session: str, pairs) -> list[F.Point]:
-    return [F.Point(length=x, value=y, session=session, rung=str(x)) for x, y in pairs]
+    return [F.Point(length = x, value = y, session = session, rung = str(x)) for x, y in pairs]
 
 
 def test_loglog_recovers_a_known_exponent() -> None:
@@ -275,7 +275,7 @@ def test_loglog_recovers_a_known_exponent() -> None:
 
 def test_quadratic_growth_reads_as_two() -> None:
     pairs = [(10, 1.0), (100, 100.0), (1000, 10_000.0)]
-    f = F.fit_loglog(_pts("s1", pairs), bootstrap=0)
+    f = F.fit_loglog(_pts("s1", pairs), bootstrap = 0)
     assert abs(f.b - 2.0) < 1e-6
 
 
@@ -291,7 +291,7 @@ def test_cross_session_fit_is_refused() -> None:
 
 def test_zero_values_are_dropped_not_floored() -> None:
     pts = _pts("s1", [(10, 0.0), (100, 100.0), (1000, 10_000.0), (10_000, 1_000_000.0)])
-    f = F.fit_loglog(pts, bootstrap=0)
+    f = F.fit_loglog(pts, bootstrap = 0)
     assert f.n == 3, "the zero point must be dropped, not replaced by an epsilon"
 
 
@@ -308,7 +308,7 @@ def test_ranking_reports_what_it_could_not_fit() -> None:
         ("c", "3", 0, 0): _pts("s", [(10, 1.0)]),
     }
     total = _pts("s", [(10, 10.0), (100, 100.0), (1000, 1000.0)])
-    rows, diag = F.rank_frames(series, labels, total, bootstrap=0)
+    rows, diag = F.rank_frames(series, labels, total, bootstrap = 0)
     assert rows[0].frame_label == "steep"
     assert "sparse" in diag["frames_skipped"]
     assert rows[-1].severity == 0.0
@@ -318,14 +318,14 @@ def test_ranking_reports_what_it_could_not_fit() -> None:
 
 
 def test_exact_match_is_a_naming() -> None:
-    q = O.blocks_times_renders(685, 6, source="DOM census")
+    q = O.blocks_times_renders(685, 6, source = "DOM census")
     v = O.check("cloneChildFibers", 4110, [q])
     assert v.is_naming
     assert "4110" in v.detail and "685" in v.detail
 
 
 def test_off_by_a_hair_is_not_a_naming() -> None:
-    q = O.blocks_times_renders(685, 6, source="DOM census")
+    q = O.blocks_times_renders(685, 6, source = "DOM census")
     v = O.check("cloneChildFibers", 4111, [q])
     assert not v.is_naming
     assert v.verdict == O.NEAR_MISS
@@ -333,26 +333,26 @@ def test_off_by_a_hair_is_not_a_naming() -> None:
 
 
 def test_double_invoke_is_reported_as_a_diagnosis() -> None:
-    q = O.blocks_times_renders(100, 2, source="DOM census")
+    q = O.blocks_times_renders(100, 2, source = "DOM census")
     v = O.check("f", 400, [q])
     assert v.verdict == O.NEAR_MISS
     assert "StrictMode" in (v.ratio or "")
 
 
 def test_a_frame_matching_nothing_is_unexplained_not_silent() -> None:
-    q = O.blocks_times_renders(685, 6, source="DOM census")
+    q = O.blocks_times_renders(685, 6, source = "DOM census")
     v = O.check("Zk", 91_237, [q])
     assert v.verdict == O.UNEXPLAINED
     assert v.exact_call_count == 91_237
 
 
 def test_no_count_means_not_measured_rather_than_a_guess() -> None:
-    v = O.check("Zk", None, [O.blocks_times_renders(1, 1, source="x")])
+    v = O.check("Zk", None, [O.blocks_times_renders(1, 1, source = "x")])
     assert v.verdict == O.NOT_MEASURED
 
 
 def test_check_all_reports_every_bucket() -> None:
-    q = O.blocks_times_renders(685, 6, source="DOM census")
+    q = O.blocks_times_renders(685, 6, source = "DOM census")
     out = O.check_all([("named", 4110), ("odd", 999_983), ("nocount", None)], [q])
     assert out["named_at_least_one_frame"]
     assert len(out["unexplained_hot_frames"]) == 1
@@ -424,12 +424,12 @@ def test_bridge_resolves_a_minified_name_by_count_vector() -> None:
     b = S.build_bridge(
         dev,
         prod,
-        rungs=("s", "m"),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["ThreadMessage"],
-        react_url_filter=None,
-        anchor_url_filter=None,
+        rungs = ("s", "m"),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["ThreadMessage"],
+        react_url_filter = None,
+        anchor_url_filter = None,
     )
     assert b.status == S.OK
     assert b.resolve("/assets/index-abc123.js", 0, 5) == "cloneChildFibers"
@@ -449,12 +449,12 @@ def test_bridge_refuses_to_guess_an_ambiguous_vector() -> None:
     b = S.build_bridge(
         dev,
         prod,
-        rungs=("s", "m"),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["ThreadMessage"],
-        react_url_filter=None,
-        anchor_url_filter=None,
+        rungs = ("s", "m"),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["ThreadMessage"],
+        react_url_filter = None,
+        anchor_url_filter = None,
     )
     assert b.mapping == {}
     assert b.ambiguous_prod and b.ambiguous_dev
@@ -470,12 +470,12 @@ def test_anchor_mismatch_discards_the_whole_bridge() -> None:
     b = S.build_bridge(
         dev,
         prod,
-        rungs=("s", "m"),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["ThreadMessage"],
-        react_url_filter=None,
-        anchor_url_filter=None,
+        rungs = ("s", "m"),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["ThreadMessage"],
+        react_url_filter = None,
+        anchor_url_filter = None,
     )
     assert b.status == S.FAILED
     assert b.mapping == {}, "one bad anchor must discard every mapping, not just its own"
@@ -496,12 +496,12 @@ def test_same_build_on_both_arms_is_refused() -> None:
     b = S.build_bridge(
         prod,
         prod,
-        rungs=("s", "m"),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["ThreadMessage"],
-        react_url_filter=None,
-        anchor_url_filter=None,
+        rungs = ("s", "m"),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["ThreadMessage"],
+        react_url_filter = None,
+        anchor_url_filter = None,
     )
     assert b.status == S.FAILED
     assert b.mapping == {}
@@ -521,12 +521,12 @@ def test_an_all_identity_mapping_is_refused() -> None:
     b = S.build_bridge(
         dev,
         prod,
-        rungs=("s", "m"),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["ThreadMessage"],
-        react_url_filter=None,
-        anchor_url_filter=None,
+        rungs = ("s", "m"),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["ThreadMessage"],
+        react_url_filter = None,
+        anchor_url_filter = None,
     )
     assert b.status == S.FAILED
     assert "map to their own name" in b.failure_reason
@@ -536,17 +536,17 @@ def test_single_rung_bridge_is_refused() -> None:
     b = S.build_bridge(
         [_Snap([])],
         [_Snap([])],
-        rungs=("s",),
-        react_version="19.2.4",
-        bundle_source="x",
-        anchor_names=["A"],
+        rungs = ("s",),
+        react_version = "19.2.4",
+        bundle_source = "x",
+        anchor_names = ["A"],
     )
     assert b.status == S.FAILED
     assert "single-rung" in b.failure_reason or "rung" in b.failure_reason
 
 
 def test_no_dev_millisecond_can_enter_the_artefact() -> None:
-    b = S.Bridge(status=S.OK, react_version="19.2.4", bundle_sha="abc")
+    b = S.Bridge(status = S.OK, react_version = "19.2.4", bundle_sha = "abc")
     b.to_json()  # integers only: fine
     try:
         S.assert_no_measurements({"mapping": {"a": "b"}, "dev_render_ms": 12.5})
@@ -559,7 +559,7 @@ def test_no_dev_millisecond_can_enter_the_artefact() -> None:
 def test_bridge_round_trips_through_disk(tmpdir: str = "") -> None:
     import tempfile
 
-    b = S.Bridge(status=S.OK, react_version="19.2.4", bundle_sha="deadbeefcafe0000")
+    b = S.Bridge(status = S.OK, react_version = "19.2.4", bundle_sha = "deadbeefcafe0000")
     b.mapping["react-dom.js:0:5"] = "cloneChildFibers"
     b.evidence["react-dom.js:0:5"] = [340, 3400]
     with tempfile.TemporaryDirectory() as d:
@@ -630,9 +630,9 @@ def test_short_reply_refuses_to_call_the_regime() -> None:
 
 
 def test_m3_forced_layout_is_an_exact_oracle() -> None:
-    v = O.forced_layout_per_callback(4110, 4110, source="page counters")
+    v = O.forced_layout_per_callback(4110, 4110, source = "page counters")
     assert v.is_naming
-    v2 = O.forced_layout_per_callback(4110, 2055, source="page counters")
+    v2 = O.forced_layout_per_callback(4110, 2055, source = "page counters")
     assert not v2.is_naming
 
 

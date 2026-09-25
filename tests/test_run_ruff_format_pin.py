@@ -40,7 +40,7 @@ class TestReadingThePin:
         # The pin is the contract this whole check rests on. If the hook stops
         # naming a version, or names it another way, this is where that shows up.
         assert CONFIG.exists()
-        assert pinned_ruff_version(CONFIG.read_text(encoding = "utf-8"))
+        assert pinned_ruff_version(CONFIG.read_text(encoding="utf-8"))
 
     @pytest.mark.parametrize(
         "text, expected",
@@ -136,36 +136,36 @@ class TestRuffHasToBeRunnableFirst:
         # trailing comma the pre-pass strips and ruff puts back.
         target = tmp_path / "kernel.py"
         original = "def f(\n    a,\n    b,\n):\n    return a\n"
-        target.write_text(original, encoding = "utf-8")
+        target.write_text(original, encoding="utf-8")
         monkeypatch.setattr(
             "run_ruff_format.ruff_unavailable_reason", lambda *a, **k: "No module named ruff"
         )
         assert main([str(target)]) == 1
-        assert target.read_text(encoding = "utf-8") == original
+        assert target.read_text(encoding="utf-8") == original
 
     def test_the_override_does_not_buy_a_run_without_ruff(self, tmp_path, monkeypatch):
         # ANY_VERSION_ENV waives "this is the wrong ruff". It cannot waive "there
         # is no ruff", which is not a version question.
         target = tmp_path / "sample.py"
         original = "x = f(a=1)\n"
-        target.write_text(original, encoding = "utf-8")
+        target.write_text(original, encoding="utf-8")
         monkeypatch.setattr(
             "run_ruff_format.ruff_unavailable_reason", lambda *a, **k: "No module named ruff"
         )
         monkeypatch.setenv(ANY_VERSION_ENV, "1")
         assert main([str(target)]) == 1
-        assert target.read_text(encoding = "utf-8") == original
+        assert target.read_text(encoding="utf-8") == original
 
     def test_the_message_names_the_pin_to_install(self, tmp_path, monkeypatch, capsys):
         target = tmp_path / "sample.py"
-        target.write_text("x = 1\n", encoding = "utf-8")
+        target.write_text("x = 1\n", encoding="utf-8")
         monkeypatch.setattr(
             "run_ruff_format.ruff_unavailable_reason", lambda *a, **k: "No module named ruff"
         )
         assert main([str(target)]) == 1
         err = capsys.readouterr().err
         assert "pip install ruff==" in err
-        assert pinned_ruff_version(CONFIG.read_text(encoding = "utf-8")) in err
+        assert pinned_ruff_version(CONFIG.read_text(encoding="utf-8")) in err
 
 
 class TestRefusing:
@@ -177,14 +177,14 @@ class TestRefusing:
         (pkg / "__init__.py").write_text("")
         (pkg / "__main__.py").write_text(
             f"import sys\nprint('ruff {version}')\nsys.exit(0)\n",
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         shim = tmp_path / "python_shim.py"
         shim.write_text(
             "import runpy, sys\n"
             f"sys.path.insert(0, {str(tmp_path)!r})\n"
             "runpy.run_module('ruff', run_name='__main__')\n",
-            encoding = "utf-8",
+            encoding="utf-8",
         )
         return str(shim)
 
@@ -193,7 +193,7 @@ class TestRefusing:
         # own sends people looking for a defect in their diff.
         shim = self._fake_ruff(tmp_path, "9.9.9")
         assert installed_ruff_version(sys.executable) != "9.9.9"
-        out = subprocess.run([sys.executable, shim], capture_output = True, text = True, timeout = 60)
+        out = subprocess.run([sys.executable, shim], capture_output=True, text=True, timeout=60)
         assert "ruff 9.9.9" in out.stdout
 
     def test_it_refuses_before_touching_a_file(self, tmp_path, monkeypatch):
@@ -201,15 +201,15 @@ class TestRefusing:
         # and then declines is worse than either outcome.
         target = tmp_path / "sample.py"
         original = "x = f(a = 1)\n"
-        target.write_text(original, encoding = "utf-8")
+        target.write_text(original, encoding="utf-8")
         monkeypatch.setattr("run_ruff_format.installed_ruff_version", lambda *a, **k: "9.9.9")
-        monkeypatch.delenv(ANY_VERSION_ENV, raising = False)
+        monkeypatch.delenv(ANY_VERSION_ENV, raising=False)
         assert main([str(target)]) == 1
-        assert target.read_text(encoding = "utf-8") == original
+        assert target.read_text(encoding="utf-8") == original
 
     @pytest.mark.skipif(
         installed_ruff_version() is None,
-        reason = "this one really runs the formatter, and ruff is not installed here",
+        reason="this one really runs the formatter, and ruff is not installed here",
     )
     def test_the_override_lets_it_through(self, tmp_path, monkeypatch):
         # An escape hatch, because a pin bump has to be runnable before it is merged.
@@ -219,12 +219,12 @@ class TestRefusing:
         # 1 for a reason that has nothing to do with the version gate. That is how
         # it failed on the repo-tests CI runner, which installs no ruff.
         target = tmp_path / "sample.py"
-        target.write_text("x = f(a=1)\n", encoding = "utf-8")
+        target.write_text("x = f(a=1)\n", encoding="utf-8")
         monkeypatch.setattr("run_ruff_format.installed_ruff_version", lambda *a, **k: "9.9.9")
         monkeypatch.setenv(ANY_VERSION_ENV, "1")
         assert main([str(target)]) == 0
         # And it really ran: the post-pass is what puts the spaces in.
-        assert target.read_text(encoding = "utf-8") == "x = f(a = 1)\n"
+        assert target.read_text(encoding="utf-8") == "x = f(a = 1)\n"
 
     def test_no_files_is_rejected_before_the_version_is_consulted(self, monkeypatch):
         # This used to assert `main([]) == 0`, on the premise that an unrelated
@@ -251,10 +251,10 @@ class TestArgumentsAreTakenSeriously:
         # not, and a run asked to check rewrote the file instead.
         target = tmp_path / "sample.py"
         original = "x = f(a=1)\n"
-        target.write_text(original, encoding = "utf-8")
+        target.write_text(original, encoding="utf-8")
         monkeypatch.setattr("run_ruff_format.installed_ruff_version", lambda *a, **k: "9.9.9")
         assert main(["--check", str(target)]) == 2
-        assert target.read_text(encoding = "utf-8") == original
+        assert target.read_text(encoding="utf-8") == original
 
     def test_check_says_what_the_script_actually_does(self):
         # "unsupported option" alone invites a retry without the flag, which is
@@ -297,7 +297,7 @@ class TestArgumentsAreTakenSeriously:
         # Partial credit is the whole bug: formatting the file that exists and
         # ignoring the one that does not still reports success.
         real = tmp_path / "real.py"
-        real.write_text("x = 1\n", encoding = "utf-8")
+        real.write_text("x = 1\n", encoding="utf-8")
         missing = tmp_path / "nope.py"
         monkeypatch.setattr("run_ruff_format.installed_ruff_version", lambda *a, **k: "9.9.9")
         assert main([str(real), str(missing)]) == 2
@@ -316,10 +316,10 @@ class TestTheScriptStaysRunnable:
     run it directly, and a wholesale rewrite drops the bit invisibly.
     """
 
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason = "no POSIX mode bits")
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="no POSIX mode bits")
     def test_the_formatter_is_executable(self):
         script = _ROOT / "scripts" / "run_ruff_format.py"
-        assert script.read_text(encoding = "utf-8").startswith("#!")
+        assert script.read_text(encoding="utf-8").startswith("#!")
         assert (
             script.stat().st_mode & 0o111
         ), "scripts/run_ruff_format.py lost its executable bit; git tracks it as 100755"

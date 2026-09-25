@@ -1327,7 +1327,7 @@ def _scan_payload_files(
     limit: int,
     budget_seconds: float,
     companion_names: Sequence[str],
-    scan_paths: Optional[Sequence[str]]
+    scan_paths: Optional[Sequence[str]],
 ) -> List[str]:
     """The walk itself. Bounded between calls only; see `damaged_payload_files`."""
     import csv

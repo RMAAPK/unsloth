@@ -978,7 +978,7 @@ def _tail_not_deliverable(
     source_index: int,
     deliverable: int,
     thread_chars: int,
-    target_chars: int
+    target_chars: int,
 ) -> ValueError:
     """An explicit `--stream-tail-chars` the corpus cannot actually deliver.
 

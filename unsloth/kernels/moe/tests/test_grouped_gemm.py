@@ -285,7 +285,7 @@ def test_grouped_gemm_forward_manual(
     data_config: DataConfig,
     model_config: ModelConfig,
     kernel_config: KernelConfigForward,
-    use_W1: bool
+    use_W1: bool,
 ):
     _test_grouped_gemm_forward(
         data_config = data_config,
@@ -313,7 +313,7 @@ def test_grouped_gemm_forward_manual_autograd(
     data_config: DataConfig,
     model_config: ModelConfig,
     kernel_config: KernelConfigForward,
-    use_W1: bool
+    use_W1: bool,
 ):
     _test_grouped_gemm_forward(
         data_config = data_config,
@@ -342,7 +342,7 @@ def test_grouped_gemm_forward_autotune(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     _test_grouped_gemm_forward(
         data_config = data_config,
@@ -374,7 +374,7 @@ def test_grouped_gemm_forward_autotune_autograd(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     _test_grouped_gemm_forward(
         data_config = data_config,
@@ -693,7 +693,7 @@ def test_grouped_gemm_backward_dX_manual(
     data_config: DataConfig,
     model_config: ModelConfig,
     kernel_config: KernelConfigBackward_dX,
-    use_W1: bool
+    use_W1: bool,
 ):
     _test_grouped_gemm_backward_dX(
         data_config = data_config,
@@ -722,7 +722,7 @@ def test_grouped_gemm_backward_dX_manual_autograd(
     data_config: DataConfig,
     model_config: ModelConfig,
     kernel_config: KernelConfigBackward_dX,
-    use_W1: bool
+    use_W1: bool,
 ):
     _test_grouped_gemm_backward_dX(
         data_config = data_config,
@@ -751,7 +751,7 @@ def test_grouped_gemm_backward_dX_autotune(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     # TMA loads / stores are autotuned.
     _test_grouped_gemm_backward_dX(
@@ -784,7 +784,7 @@ def test_grouped_gemm_backward_dX_autotune_autograd(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     # TMA loads / stores are autotuned.
     _test_grouped_gemm_backward_dX(
@@ -1109,7 +1109,7 @@ def test_grouped_gemm_backward_dW_autotune(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     _test_grouped_gemm_backward_dW(
         data_config = data_config,
@@ -1141,7 +1141,7 @@ def test_grouped_gemm_backward_dW_autotune_autograd(
     permute_x: bool,
     permute_y: bool,
     use_W1: bool,
-    num_autotune_configs: int
+    num_autotune_configs: int,
 ):
     _test_grouped_gemm_backward_dW(
         data_config = data_config,

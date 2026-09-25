@@ -96,7 +96,7 @@ def _code_cell(source: str) -> dict:
         "id": uuid.uuid4().hex[:8],
         "metadata": {},
         "outputs": [],
-        "source": source.splitlines(keepends = True),
+        "source": source.splitlines(keepends=True),
     }
 
 
@@ -193,7 +193,7 @@ for name, blob in FILES.items():
 print("{PAYLOAD_SENTINEL} sources " + json.dumps(sorted(FILES)), flush=True)
 """
 
-    groups = expand_install(leg, unsloth_ref = unsloth_ref, zoo_ref = zoo_ref, payload_dir = payload_dir)
+    groups = expand_install(leg, unsloth_ref=unsloth_ref, zoo_ref=zoo_ref, payload_dir=payload_dir)
     install = f"""# Install this leg's library set.
 #
 # The groups below are generated from legs.py and are the ONLY thing that
@@ -1581,16 +1581,16 @@ def studio_payloads(*, unsloth_ref: str, repo_url: str, payload_args: str) -> di
     studio = _studio_builder()
     return {
         STUDIO_INSTALL_NOTEBOOK: studio.build_payload_notebook(
-            unsloth_ref = unsloth_ref,
-            repo_url = repo_url,
-            payload_args = payload_args,
-            phase = "install",
+            unsloth_ref=unsloth_ref,
+            repo_url=repo_url,
+            payload_args=payload_args,
+            phase="install",
         ),
         STUDIO_TEST_NOTEBOOK: studio.build_payload_notebook(
-            unsloth_ref = unsloth_ref,
-            repo_url = repo_url,
-            payload_args = payload_args,
-            phase = "test",
+            unsloth_ref=unsloth_ref,
+            repo_url=repo_url,
+            payload_args=payload_args,
+            phase="test",
         ),
     }
 
@@ -1619,19 +1619,19 @@ def build_kernel(
         payloads[name] = build_payload_notebook(
             payload_dir,
             leg,
-            unsloth_ref = unsloth_ref,
-            zoo_ref = zoo_ref,
-            extra_args = extra_args,
-            reference = "" if skip_reference else None,
+            unsloth_ref=unsloth_ref,
+            zoo_ref=zoo_ref,
+            extra_args=extra_args,
+            reference="" if skip_reference else None,
         )
         isolation[name] = leg.system_site_packages
         overlays[name] = tuple(leg.overlay)
         legs_by_payload[name] = leg
         leg_groups[name] = expand_install(
             leg,
-            unsloth_ref = unsloth_ref,
-            zoo_ref = zoo_ref,
-            payload_dir = payload_dir,
+            unsloth_ref=unsloth_ref,
+            zoo_ref=zoo_ref,
+            payload_dir=payload_dir,
         )
     # The card queue is the LEGS. Studio's two halves ride the same kernel but
     # not the same queue, so expected_gpus is derived before they are added:
@@ -1674,15 +1674,15 @@ def build_kernel(
         payloads,
         per_run_timeout,
         isolation,
-        expected_gpus = expected_gpus,
-        cpu_lane = cpu_lane,
-        after_gpu = after_gpu,
-        prefetch_repos = prefetch_repos,
-        vram_source = legs_by_payload,
-        after_gpu_concurrent = after_gpu_concurrent,
-        shared_wheel_specs = shared_wheel_specs,
-        overlays = overlays,
-        all_card = all_card,
+        expected_gpus=expected_gpus,
+        cpu_lane=cpu_lane,
+        after_gpu=after_gpu,
+        prefetch_repos=prefetch_repos,
+        vram_source=legs_by_payload,
+        after_gpu_concurrent=after_gpu_concurrent,
+        shared_wheel_specs=shared_wheel_specs,
+        overlays=overlays,
+        all_card=all_card,
     )
 
 
@@ -1718,56 +1718,56 @@ def _shared_vcs_specs(leg_groups: dict[str, list[list[str]]]) -> tuple[str, ...]
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--payload-dir", required = True)
+    ap.add_argument("--payload-dir", required=True)
     ap.add_argument(
         "--out",
-        required = True,
-        help = "output notebook. With --all-kernels this is a "
+        required=True,
+        help="output notebook. With --all-kernels this is a "
         "prefix and the files are <prefix>1.ipynb, "
         "<prefix>2.ipynb, ...",
     )
     ap.add_argument(
-        "--legs", help = "comma separated leg names; one per T4 of the session. See legs.py"
+        "--legs", help="comma separated leg names; one per T4 of the session. See legs.py"
     )
     ap.add_argument(
         "--all-kernels",
-        action = "store_true",
-        help = "build every kernel in legs.KERNELS. This is what "
+        action="store_true",
+        help="build every kernel in legs.KERNELS. This is what "
         "the workflow uses, so the leg-to-kernel plan lives "
         "in one place rather than being restated in YAML",
     )
-    ap.add_argument("--unsloth-ref", default = "main")
-    ap.add_argument("--zoo-ref", default = "main")
+    ap.add_argument("--unsloth-ref", default="main")
+    ap.add_argument("--zoo-ref", default="main")
     ap.add_argument(
         "--smoke-args",
-        default = "",
-        help = "extra args appended to EVERY leg's entry script. "
+        default="",
+        help="extra args appended to EVERY leg's entry script. "
         "Shared on purpose: the control and canary legs "
         "must not differ in anything but versions",
     )
     ap.add_argument(
         "--skip-reference",
-        action = "store_true",
-        help = "build with no band check at all. Only for the one run that recaptures a reference",
+        action="store_true",
+        help="build with no band check at all. Only for the one run that recaptures a reference",
     )
-    ap.add_argument("--per-run-timeout", type = int, default = 2400)
+    ap.add_argument("--per-run-timeout", type=int, default=2400)
     ap.add_argument(
         "--shared-wheels",
-        action = "store_true",
-        help = "build unsloth and unsloth_zoo once up front and install every "
+        action="store_true",
+        help="build unsloth and unsloth_zoo once up front and install every "
         "leg from the wheel instead of resolving the git spec per leg",
     )
     ap.add_argument(
         "--studio-concurrent",
-        action = "store_true",
-        help = "let the Studio GPU half share a card with a light training leg "
+        action="store_true",
+        help="let the Studio GPU half share a card with a light training leg "
         "instead of waiting for the queue to drain. Faster, but Studio then "
         "sees one T4 rather than two, which narrows what it proves",
     )
     ap.add_argument(
         "--no-prefetch",
-        action = "store_true",
-        help = "do not warm the HF cache on a background lane. The models are "
+        action="store_true",
+        help="do not warm the HF cache on a background lane. The models are "
         "then downloaded by the legs that want them, as they were before the "
         "lane existed. Note that legs.KERNELS is ORDERED for the prefetch -- "
         "gptoss sits third to give the lane a window -- so this flag is for "
@@ -1775,21 +1775,21 @@ def main() -> int:
     )
     ap.add_argument(
         "--with-studio",
-        action = "store_true",
-        help = "also carry the Studio GPU payload in this kernel, split in two: "
+        action="store_true",
+        help="also carry the Studio GPU payload in this kernel, split in two: "
         "its checkout/install/browser half runs on a CPU lane beside the "
         "training legs and never takes a card, and its assertions run once "
         "the legs have freed both. Only valid with --all-kernels",
     )
     ap.add_argument(
         "--studio-repo-url",
-        default = "https://github.com/unslothai/unsloth",
-        help = "repository the Studio half checks out and installs",
+        default="https://github.com/unslothai/unsloth",
+        help="repository the Studio half checks out and installs",
     )
     ap.add_argument(
         "--studio-args",
-        default = "",
-        help = "extra args for tests/kaggle/studio_gpu/run_studio_gpu.py",
+        default="",
+        help="extra args for tests/kaggle/studio_gpu/run_studio_gpu.py",
     )
     args = ap.parse_args()
 
@@ -1825,23 +1825,23 @@ def main() -> int:
         driver = build_kernel(
             Path(args.payload_dir),
             names,
-            unsloth_ref = args.unsloth_ref,
-            zoo_ref = args.zoo_ref,
-            extra_args = tuple(args.smoke_args.split()),
-            per_run_timeout = args.per_run_timeout,
-            skip_reference = args.skip_reference,
-            studio = studio,
+            unsloth_ref=args.unsloth_ref,
+            zoo_ref=args.zoo_ref,
+            extra_args=tuple(args.smoke_args.split()),
+            per_run_timeout=args.per_run_timeout,
+            skip_reference=args.skip_reference,
+            studio=studio,
             # Only the kernel that CARRIES gptoss should pay for its 12 GB.
             # There is one kernel today, so this reads as "always", but naming
             # it stops a future second kernel prefetching a model it will never
             # load -- which would be pure network cost, on a lane whose entire
             # justification is that it is free.
-            prefetch_repos = () if args.no_prefetch else PREFETCH_REPOS,
-            after_gpu_concurrent = args.studio_concurrent,
-            shared_wheels = args.shared_wheels,
+            prefetch_repos=() if args.no_prefetch else PREFETCH_REPOS,
+            after_gpu_concurrent=args.studio_concurrent,
+            shared_wheels=args.shared_wheels,
         )
-        out.parent.mkdir(parents = True, exist_ok = True)
-        out.write_text(json.dumps(driver, indent = 1), encoding = "utf-8")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(driver, indent=1), encoding="utf-8")
         # Says whether Studio is aboard, because a build that quietly stopped
         # packing it looks exactly like one that never asked for it.
         print(
@@ -1877,7 +1877,7 @@ def main() -> int:
 def _github_output(key: str, value: str) -> None:
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
-        with open(path, "a", encoding = "utf-8") as fh:
+        with open(path, "a", encoding="utf-8") as fh:
             fh.write(f"{key}={value}\n")
     print(f"[build] {key}={value}")
 

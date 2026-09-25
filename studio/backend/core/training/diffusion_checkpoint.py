@@ -172,7 +172,7 @@ def _revision_repo(identity: "CheckpointIdentity") -> str:
     return str(getattr(identity, "base_revision_repo", None) or identity.base_model or "").lower()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen = True)
 class CheckpointIdentity:
     """What a checkpoint was trained as. Two bundles are interchangeable only when every field here
     agrees, so resuming can never continue a FLUX run into an SDXL adapter, or feed rank-16
@@ -280,44 +280,44 @@ class CheckpointIdentity:
             if not isinstance(targets, (list, tuple)):
                 return None
             return cls(
-                family=str(data.get("family") or ""),
-                base_model=str(data.get("base_model") or ""),
-                lora_target_modules=tuple(str(t) for t in targets),
-                lora_rank=int(data.get("lora_rank") or 0),
-                lora_alpha=int(data.get("lora_alpha") or 0),
-                lora_dropout=_optional_float(data.get("lora_dropout")),
-                cfg_dropout=_optional_float(data.get("cfg_dropout")),
-                flow_shift=_optional_str(data.get("flow_shift")),
-                weighting_scheme=_optional_str(data.get("weighting_scheme")),
-                snr_gamma=_optional_str(data.get("snr_gamma")),
-                lr_scheduler=_optional_str(data.get("lr_scheduler")),
-                lr_warmup_steps=_optional_int(data.get("lr_warmup_steps")),
-                seed=_optional_int(data.get("seed")),
-                cache_latents=_optional_str(data.get("cache_latents")),
-                cache_mode=_optional_str(data.get("cache_mode")),
-                cache_variants=_optional_int(data.get("cache_variants")),
-                center_crop=_optional_str(data.get("center_crop")),
-                random_flip=_optional_str(data.get("random_flip")),
-                enable_tf32=_optional_str(data.get("enable_tf32")),
-                train_batch_size=_optional_int(data.get("train_batch_size")),
-                gradient_accumulation_steps=_optional_int(data.get("gradient_accumulation_steps")),
-                max_grad_norm=_optional_str(data.get("max_grad_norm")),
-                ema_decay=_optional_str(data.get("ema_decay")),
-                base_precision_effective=_optional_str(data.get("base_precision_effective")),
-                precision=str(data.get("precision") or ""),
-                base_precision=str(data.get("base_precision") or ""),
-                resolution=int(data.get("resolution") or 0),
-                kind=str(data.get("kind") or "image"),
-                base_revision=_optional_str(data.get("base_revision")),
-                base_revision_repo=_optional_str(data.get("base_revision_repo")),
-                dataset_fingerprint=_optional_str(data.get("dataset_fingerprint")),
+                family = str(data.get("family") or ""),
+                base_model = str(data.get("base_model") or ""),
+                lora_target_modules = tuple(str(t) for t in targets),
+                lora_rank = int(data.get("lora_rank") or 0),
+                lora_alpha = int(data.get("lora_alpha") or 0),
+                lora_dropout = _optional_float(data.get("lora_dropout")),
+                cfg_dropout = _optional_float(data.get("cfg_dropout")),
+                flow_shift = _optional_str(data.get("flow_shift")),
+                weighting_scheme = _optional_str(data.get("weighting_scheme")),
+                snr_gamma = _optional_str(data.get("snr_gamma")),
+                lr_scheduler = _optional_str(data.get("lr_scheduler")),
+                lr_warmup_steps = _optional_int(data.get("lr_warmup_steps")),
+                seed = _optional_int(data.get("seed")),
+                cache_latents = _optional_str(data.get("cache_latents")),
+                cache_mode = _optional_str(data.get("cache_mode")),
+                cache_variants = _optional_int(data.get("cache_variants")),
+                center_crop = _optional_str(data.get("center_crop")),
+                random_flip = _optional_str(data.get("random_flip")),
+                enable_tf32 = _optional_str(data.get("enable_tf32")),
+                train_batch_size = _optional_int(data.get("train_batch_size")),
+                gradient_accumulation_steps = _optional_int(data.get("gradient_accumulation_steps")),
+                max_grad_norm = _optional_str(data.get("max_grad_norm")),
+                ema_decay = _optional_str(data.get("ema_decay")),
+                base_precision_effective = _optional_str(data.get("base_precision_effective")),
+                precision = str(data.get("precision") or ""),
+                base_precision = str(data.get("base_precision") or ""),
+                resolution = int(data.get("resolution") or 0),
+                kind = str(data.get("kind") or "image"),
+                base_revision = _optional_str(data.get("base_revision")),
+                base_revision_repo = _optional_str(data.get("base_revision_repo")),
+                dataset_fingerprint = _optional_str(data.get("dataset_fingerprint")),
             )
         except (TypeError, ValueError):
             return None
 
     def with_dataset(self, fingerprint: Optional[str]) -> "CheckpointIdentity":
         """A copy carrying the dataset fingerprint, filled in once the images are known."""
-        return replace(self, dataset_fingerprint=fingerprint)
+        return replace(self, dataset_fingerprint = fingerprint)
 
     def mismatch_reason(self, other: "CheckpointIdentity") -> Optional[str]:
         """Why ``other`` (the incoming request) cannot continue ``self`` (the checkpoint), or None
@@ -476,7 +476,7 @@ def with_cache_mode(identity: "CheckpointIdentity", used_cache: bool) -> "Checkp
     environment override and the over-budget fallback can both turn it off, and the cached and
     uncached paths consume different RNG streams for crops and flips, so a bundle written on one
     and resumed on the other restores a state that no longer reproduces the training stream."""
-    return replace(identity, cache_mode="cached" if used_cache else "in-loop")
+    return replace(identity, cache_mode = "cached" if used_cache else "in-loop")
 
 
 def with_resolved_base_precision(
@@ -491,7 +491,7 @@ def with_resolved_base_precision(
     value = str(resolved or "").strip().lower()
     if not value:
         return identity  # nothing resolved; leave it unknown rather than asserting a value
-    return replace(identity, base_precision_effective=value)
+    return replace(identity, base_precision_effective = value)
 
 
 def with_resolved_revision(identity: "CheckpointIdentity", base_model: Any) -> "CheckpointIdentity":
@@ -518,7 +518,7 @@ def with_resolved_revision(identity: "CheckpointIdentity", base_model: Any) -> "
         return identity
     # The repo travels with the revision: a SHA without the repo that produced it cannot be compared against one from
     # the other repo.
-    return replace(identity, base_revision=resolved, base_revision_repo=str(base_model or ""))
+    return replace(identity, base_revision = resolved, base_revision_repo = str(base_model or ""))
 
 
 def identity_for_config(
@@ -542,41 +542,41 @@ def identity_for_config(
     # the weights are pulled from.
     fetch_base_model = str(getattr(cfg, "fetch_base_model", None) or cfg.base_model or "")
     return CheckpointIdentity(
-        family=str(getattr(cfg, "resolved_family", "") or ""),
-        base_model=str(cfg.base_model or ""),
-        lora_target_modules=targets,
-        lora_rank=int(cfg.lora_rank),
-        lora_alpha=int(cfg.lora_alpha if cfg.lora_alpha is not None else cfg.lora_rank),
-        lora_dropout=round(float(getattr(cfg, "lora_dropout", 0.0) or 0.0), 6),
-        cfg_dropout=round(float(getattr(cfg, "cfg_dropout", 0.0) or 0.0), 6),
+        family = str(getattr(cfg, "resolved_family", "") or ""),
+        base_model = str(cfg.base_model or ""),
+        lora_target_modules = targets,
+        lora_rank = int(cfg.lora_rank),
+        lora_alpha = int(cfg.lora_alpha if cfg.lora_alpha is not None else cfg.lora_rank),
+        lora_dropout = round(float(getattr(cfg, "lora_dropout", 0.0) or 0.0), 6),
+        cfg_dropout = round(float(getattr(cfg, "cfg_dropout", 0.0) or 0.0), 6),
         # flow_shift is float | "auto" | None, so it is recorded as text: "auto" and the number it resolves to are
         # different runs, and comparing them as floats would lose that.
-        flow_shift=str(getattr(cfg, "flow_shift", None)),
-        weighting_scheme=str(getattr(cfg, "weighting_scheme", "") or "none"),
-        snr_gamma=_snr_gamma_key(getattr(cfg, "snr_gamma", None)),
-        lr_scheduler=str(getattr(cfg, "lr_scheduler", "") or "constant"),
-        lr_warmup_steps=int(getattr(cfg, "lr_warmup_steps", 0) or 0),
-        seed=int(getattr(cfg, "seed", 0) or 0),
-        cache_latents=_flag_key(getattr(cfg, "cache_latents", None)),
-        cache_variants=int(getattr(cfg, "cache_variants", 0) or 0),
-        center_crop=_flag_key(getattr(cfg, "center_crop", None)),
-        random_flip=_flag_key(getattr(cfg, "random_flip", None)),
-        enable_tf32=_flag_key(getattr(cfg, "enable_tf32", None)),
-        train_batch_size=int(getattr(cfg, "train_batch_size", 0) or 0),
-        gradient_accumulation_steps=int(getattr(cfg, "gradient_accumulation_steps", 0) or 0),
-        max_grad_norm=f"{round(float(getattr(cfg, 'max_grad_norm', 0.0) or 0.0), 6)}",
-        ema_decay=f"{round(float(getattr(cfg, 'ema_decay', 0.0) or 0.0), 6)}",
+        flow_shift = str(getattr(cfg, "flow_shift", None)),
+        weighting_scheme = str(getattr(cfg, "weighting_scheme", "") or "none"),
+        snr_gamma = _snr_gamma_key(getattr(cfg, "snr_gamma", None)),
+        lr_scheduler = str(getattr(cfg, "lr_scheduler", "") or "constant"),
+        lr_warmup_steps = int(getattr(cfg, "lr_warmup_steps", 0) or 0),
+        seed = int(getattr(cfg, "seed", 0) or 0),
+        cache_latents = _flag_key(getattr(cfg, "cache_latents", None)),
+        cache_variants = int(getattr(cfg, "cache_variants", 0) or 0),
+        center_crop = _flag_key(getattr(cfg, "center_crop", None)),
+        random_flip = _flag_key(getattr(cfg, "random_flip", None)),
+        enable_tf32 = _flag_key(getattr(cfg, "enable_tf32", None)),
+        train_batch_size = int(getattr(cfg, "train_batch_size", 0) or 0),
+        gradient_accumulation_steps = int(getattr(cfg, "gradient_accumulation_steps", 0) or 0),
+        max_grad_norm = f"{round(float(getattr(cfg, 'max_grad_norm', 0.0) or 0.0), 6)}",
+        ema_decay = f"{round(float(getattr(cfg, 'ema_decay', 0.0) or 0.0), 6)}",
         # The EFFECTIVE precision, not the request: a pre-Ampere card resolves bf16 to fp16, so recording the request
         # let an fp16 bundle resume in bf16 on a newer card.
-        precision=effective_mixed_precision(cfg),
-        base_precision=str(getattr(cfg, "base_precision", "") or ""),
-        resolution=int(cfg.resolution),
-        kind=kind,
+        precision = effective_mixed_precision(cfg),
+        base_precision = str(getattr(cfg, "base_precision", "") or ""),
+        resolution = int(cfg.resolution),
+        kind = kind,
         # Record the revision of the repo actually FETCHED: the mirror is chosen precisely because the canonical repo
         # is not cached, so reading the canonical one records "unresolved", which mismatch_reason then skips.
-        base_revision=source_revision(fetch_base_model),
-        base_revision_repo=fetch_base_model,
-        dataset_fingerprint=dataset_fingerprint(dataset_pairs) if dataset_pairs else None,
+        base_revision = source_revision(fetch_base_model),
+        base_revision_repo = fetch_base_model,
+        dataset_fingerprint = dataset_fingerprint(dataset_pairs) if dataset_pairs else None,
     )
 
 
@@ -603,7 +603,6 @@ def capture_rng_state(streams: Optional[dict[str, Any]] = None) -> dict[str, Any
             continue
     try:
         import numpy as np
-
         kind, keys, pos, has_gauss, cached = np.random.get_state()
         payload["numpy"] = {
             "bit_generator": str(kind),
@@ -618,7 +617,6 @@ def capture_rng_state(streams: Optional[dict[str, Any]] = None) -> dict[str, Any
     tensors: dict[str, Any] = {}
     try:
         import torch
-
         tensors["torch_cpu"] = torch.get_rng_state()
         if torch.cuda.is_available():
             try:
@@ -670,11 +668,10 @@ def restore_rng_state(
     if isinstance(np_state, dict):
         try:
             import numpy as np
-
             np.random.set_state(
                 (
                     str(np_state.get("bit_generator") or "MT19937"),
-                    np.array(np_state.get("keys") or [], dtype=np.uint32),
+                    np.array(np_state.get("keys") or [], dtype = np.uint32),
                     int(np_state.get("pos") or 0),
                     int(np_state.get("has_gauss") or 0),
                     float(np_state.get("cached_gaussian") or 0.0),
@@ -714,7 +711,6 @@ def _rng_accelerator() -> str:
     """The backend whose device generator a capture holds: ``cuda``, ``xpu`` or ``cpu``."""
     try:
         import torch
-
         if torch.cuda.is_available():
             return "cuda"
     except Exception:  # noqa: BLE001 -- probe failure -> no CUDA generator captured
@@ -727,7 +723,6 @@ def _xpu_available() -> bool:
     best-effort RNG capture into a raise."""
     try:
         import torch
-
         fn = getattr(getattr(torch, "xpu", None), "is_available", None)
         return bool(fn()) if callable(fn) else False
     except Exception:  # noqa: BLE001 -- probe failure -> no XPU generator to capture
@@ -803,7 +798,7 @@ def save_checkpoint(
         # checkpoint"; fail loudly at write time instead.
         raise ValueError("refusing to write a checkpoint with no adapter tensors")
     root = Path(output_dir).expanduser()
-    root.mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents = True, exist_ok = True)
     doomed: list[Path] = []
     if discard_existing:
         # Deleted only AFTER the new bundle is promoted: clearing first leaves the directory with no checkpoint at all
@@ -822,7 +817,7 @@ def save_checkpoint(
         ):
             return str(existing)
     staging = root / f"{_STAGING_PREFIX}{step}-{uuid.uuid4().hex[:8]}"
-    staging.mkdir(parents=True, exist_ok=False)
+    staging.mkdir(parents = True, exist_ok = False)
 
     try:
         _save_tensors(save_file, adapter_state, staging / ADAPTER_FILENAME)
@@ -889,25 +884,25 @@ def save_checkpoint(
             "file_sizes": _file_sizes(staging, files),
         }
         # LAST: the manifest is the completion marker, so nothing may be written after it.
-        _write_text(staging / TRAINER_STATE_FILENAME, json.dumps(manifest, indent=2))
+        _write_text(staging / TRAINER_STATE_FILENAME, json.dumps(manifest, indent = 2))
         _fsync_dir(staging)
         final = _promote(staging, root, step)
     except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(staging, ignore_errors = True)
         raise
     for stale in doomed:
         # _promote already replaced it, so removing it here would delete the new checkpoint.
         if stale != final:
-            shutil.rmtree(stale, ignore_errors=True)
+            shutil.rmtree(stale, ignore_errors = True)
     _prune_staging(root)
     # Pin the source bundle too: with keep=2 a run that resumes checkpoint-10 and saves 20 and 30 prunes 10, leaving
     # the original stopped run with no resume point.
     prune_checkpoints(
         root,
-        keep=save_total_limit,
-        protect=final,
-        also_protect=_source_bundle_path(root, source_checkpoint),
-        preexisting=preexisting,
+        keep = save_total_limit,
+        protect = final,
+        also_protect = _source_bundle_path(root, source_checkpoint),
+        preexisting = preexisting,
     )
     return str(final)
 
@@ -923,7 +918,7 @@ def _save_tensors(save_file: Any, state: dict[str, Any], path: Path) -> None:
     """safetensors refuses tensors that share storage, so detach/clone every entry onto CPU (a LoRA
     state dict is megabytes, and this runs at most once per save_steps)."""
     payload = {
-        str(k): v.detach().to("cpu", copy=True).contiguous()
+        str(k): v.detach().to("cpu", copy = True).contiguous()
         for k, v in (state or {}).items()
         if v is not None
     }
@@ -948,7 +943,7 @@ def _file_sizes(staging: Path, files: dict[str, str]) -> dict[str, int]:
 
 
 def _write_text(path: Path, text: str) -> None:
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding = "utf-8")
     _fsync_file(path)
 
 
@@ -1081,11 +1076,11 @@ def _prune_staging(root: Path) -> None:
         except OSError:
             return 0.0
 
-    for entry in sorted(entries, key=_written_at, reverse=True):
+    for entry in sorted(entries, key = _written_at, reverse = True):
         suffix = entry.name[len(_STAGING_PREFIX) :]
         if _recover_orphaned_slot(root, entry) or _REPLACED_SLOT.match(suffix):
             continue
-        shutil.rmtree(entry, ignore_errors=True)
+        shutil.rmtree(entry, ignore_errors = True)
 
 
 # A read landing in _promote's microsecond window moved the old bundle back, so the writer's os.replace failed and the
@@ -1113,7 +1108,7 @@ def _recover_orphaned_slots(
             return 0.0
 
     now = time.time()
-    for entry in sorted(entries, key=_written_at, reverse=True):
+    for entry in sorted(entries, key = _written_at, reverse = True):
         in_flight_shape = _REPLACED_SLOT.match(entry.name[len(_STAGING_PREFIX) :]) is not None
         if in_flight_shape and min_age > 0 and (now - _written_at(entry)) < min_age:
             continue  # possibly a promotion in flight; leave it to the writer
@@ -1157,7 +1152,7 @@ def _retire_replaced_slots(root: Path, *, restore: bool) -> None:
         except OSError:
             return 0.0
 
-    entries.sort(key=_written_at, reverse=True)
+    entries.sort(key = _written_at, reverse = True)
     restored_slots: set[Path] = set()
     for entry in entries:
         match = _REPLACED_SLOT.match(entry.name[len(_STAGING_PREFIX) :])
@@ -1169,7 +1164,7 @@ def _retire_replaced_slots(root: Path, *, restore: bool) -> None:
                 continue
             except OSError:
                 continue
-        shutil.rmtree(entry, ignore_errors=True)
+        shutil.rmtree(entry, ignore_errors = True)
 
 
 def _source_bundle_path(root: Path, source_checkpoint) -> Optional[Path]:
@@ -1232,7 +1227,7 @@ def prune_checkpoints(
             survivors = [c for c in survivors if c != pinned]
             keep = max(0, keep - 1)
     for stale in survivors[keep:]:
-        shutil.rmtree(stale, ignore_errors=True)
+        shutil.rmtree(stale, ignore_errors = True)
 
 
 def clear_checkpoints(output_dir: str | os.PathLike[str]) -> None:
@@ -1240,8 +1235,8 @@ def clear_checkpoints(output_dir: str | os.PathLike[str]) -> None:
     takes over an output directory that an earlier run of the same name left checkpoints in."""
     root = Path(output_dir).expanduser()
     for stale in list_checkpoints(root):
-        shutil.rmtree(stale, ignore_errors=True)
-    _retire_replaced_slots(root, restore=False)
+        shutil.rmtree(stale, ignore_errors = True)
+    _retire_replaced_slots(root, restore = False)
 
 
 def resumed_into_this_dir(cfg: Any, output_dir: "str | os.PathLike[str]") -> bool:
@@ -1296,8 +1291,8 @@ def retire_own_checkpoints(
         return
     root = Path(output_dir).expanduser()
     for stale in list_checkpoints(root):
-        shutil.rmtree(stale, ignore_errors=True)
-    _retire_replaced_slots(root, restore=False)
+        shutil.rmtree(stale, ignore_errors = True)
+    _retire_replaced_slots(root, restore = False)
 
 
 def discard_preexisting_checkpoints(
@@ -1322,8 +1317,8 @@ def discard_preexisting_checkpoints(
         # Identity, not pathname: a bundle this run wrote OVER one that was here is this run's, and deleting it would
         # throw away the stop checkpoint the user asked for.
         if stale in keep and keep[stale] == _bundle_identity(stale):
-            shutil.rmtree(stale, ignore_errors=True)
-    _retire_replaced_slots(root, restore=False)
+            shutil.rmtree(stale, ignore_errors = True)
+    _retire_replaced_slots(root, restore = False)
 
 
 def discard_named_checkpoints(paths: "Iterable[Any]") -> None:
@@ -1343,9 +1338,9 @@ def discard_named_checkpoints(paths: "Iterable[Any]") -> None:
         if checkpoint_step(path) < 0:
             continue  # not a bundle path; never delete something we cannot name
         roots.add(path.parent)
-        shutil.rmtree(path, ignore_errors=True)
+        shutil.rmtree(path, ignore_errors = True)
     for root in roots:
-        _retire_replaced_slots(root, restore=True)
+        _retire_replaced_slots(root, restore = True)
 
 
 def clear_own_checkpoints(output_dir: str | os.PathLike[str], preexisting: "Iterable[Any]") -> None:
@@ -1368,10 +1363,10 @@ def clear_own_checkpoints(output_dir: str | os.PathLike[str], preexisting: "Iter
     for stale in list_checkpoints(output_dir):
         if stale in keep and keep[stale] == _bundle_identity(stale):
             continue
-        shutil.rmtree(stale, ignore_errors=True)
+        shutil.rmtree(stale, ignore_errors = True)
     # Put the displaced original back: the replacement is not the bundle it overwrote, so the identity match cannot
     # keep it and the original was already gone.
-    _retire_replaced_slots(Path(output_dir).expanduser(), restore=True)
+    _retire_replaced_slots(Path(output_dir).expanduser(), restore = True)
 
 
 def _bundle_identity(path: Path) -> Optional[tuple]:
@@ -1381,7 +1376,7 @@ def _bundle_identity(path: Path) -> Optional[tuple]:
     or absent manifest, which compares equal to itself and so leaves an unreadable pre-existing
     directory alone."""
     try:
-        manifest = json.loads((path / TRAINER_STATE_FILENAME).read_text(encoding="utf-8"))
+        manifest = json.loads((path / TRAINER_STATE_FILENAME).read_text(encoding = "utf-8"))
     except (OSError, ValueError):
         return None
     # created_at is when THIS bundle's manifest was written, the completion marker, so it exists on every valid bundle
@@ -1409,7 +1404,7 @@ def list_checkpoints(output_dir: str | os.PathLike[str]) -> list[Path]:
         found = [p for p in root.glob(f"{CHECKPOINT_PREFIX}*") if p.is_dir()]
     except OSError:
         return []
-    return sorted((p for p in found if checkpoint_step(p) >= 0), key=checkpoint_step, reverse=True)
+    return sorted((p for p in found if checkpoint_step(p) >= 0), key = checkpoint_step, reverse = True)
 
 
 def read_checkpoint(path: str | os.PathLike[str]) -> Optional[dict[str, Any]]:
@@ -1422,7 +1417,7 @@ def read_checkpoint(path: str | os.PathLike[str]) -> Optional[dict[str, Any]]:
     if not directory.is_dir():
         return None
     try:
-        manifest = json.loads((directory / TRAINER_STATE_FILENAME).read_text(encoding="utf-8"))
+        manifest = json.loads((directory / TRAINER_STATE_FILENAME).read_text(encoding = "utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     if not isinstance(manifest, dict):
@@ -1452,7 +1447,7 @@ def read_checkpoint(path: str | os.PathLike[str]) -> Optional[dict[str, Any]]:
             return None
         # Optimizer and scheduler state can validly be tensor-free (SGD without momentum, a constant LR schedule), so
         # only the weight bundles must carry tensors.
-        if not _valid_state_file(directory / name, require_tensor=role in ("adapter", "ema")):
+        if not _valid_state_file(directory / name, require_tensor = role in ("adapter", "ema")):
             return None
         expected_size = sizes.get(role)
         if isinstance(expected_size, int) and not isinstance(expected_size, bool):
@@ -1472,9 +1467,8 @@ def _valid_state_file(path: Path, require_tensor: bool = True) -> bool:
     BadZipFile)``, so a deflate-corrupt member raises ``zlib.error`` straight out of a route
     preflight and 500s it. Anything unreadable is, by definition, not a usable checkpoint."""
     from core.training.resume import _valid_state_file as _validate
-
     try:
-        return _validate(path, require_tensor=require_tensor)
+        return _validate(path, require_tensor = require_tensor)
     except Exception:  # noqa: BLE001 -- unreadable in any way == not resumable
         return False
 
@@ -1651,11 +1645,11 @@ def describe_resume_state(
         else:
             found = latest_valid_checkpoint(
                 root,
-                not_before=started_at,
-                not_after=ended_at,
+                not_before = started_at,
+                not_after = ended_at,
                 # The exact path is sent back and treated as explicit, so the bundle named here has to be one that
                 # will actually load, not merely one whose header parses.
-                usable=_fully_loadable,
+                usable = _fully_loadable,
             )
         if found is None and source_checkpoint:
             # A run that resumed and died before its first save has a source bundle predating started_at: read it
@@ -1717,7 +1711,7 @@ def resolve_resume_dir(path_value: str) -> Path:
         raise ResumeError(message) from error
     # A name that cleans away to nothing (".", "outputs", "./.") lands on the outputs ROOT, where the scan would sweep
     # checkpoint dirs across unrelated runs. Same guard the start route applies to output_dir.
-    if resolved.resolve(strict=False) == outputs_root().resolve(strict=False):
+    if resolved.resolve(strict = False) == outputs_root().resolve(strict = False):
         # Named like a bundle, is not one, and holds no bundles either: the original message is the accurate one.
         raise ResumeError(
             f"'{path_value}' is the outputs folder itself, not a training run inside it."
@@ -1812,7 +1806,6 @@ def _assert_optimizer_buildable(path: Path, manifest: dict[str, Any]) -> None:
     else:
         try:
             import importlib.util
-
             if importlib.util.find_spec("bitsandbytes") is None:
                 reason = "bitsandbytes is not installed on this host"
         except (ImportError, ValueError):
@@ -1835,7 +1828,7 @@ def _assert_loadable(path: Path, manifest: dict[str, Any]) -> None:
     evicted, then the child died on a raw UnpicklingError. That is precisely the outcome the
     module docstring promises this preflight prevents, so pay the load here, on the one bundle a
     user actually asked to resume. These are MB-scale files and this runs in a worker thread."""
-    loaded = LoadedCheckpoint(path=path, manifest=manifest)
+    loaded = LoadedCheckpoint(path = path, manifest = manifest)
     files = manifest.get("files")
     for role in (files or {}) if isinstance(files, dict) else ():
         try:
@@ -2018,7 +2011,7 @@ class LoadedCheckpoint:
         from safetensors.torch import load_file
 
         path = self._file(role)
-        return load_file(str(path), device=device) if path is not None else {}
+        return load_file(str(path), device = device) if path is not None else {}
 
     def torch_state(self, role: str) -> Optional[Any]:
         """A ``torch.save``d state dict (``optimizer`` / ``scheduler`` / ``rng``), or None. Loaded
@@ -2031,7 +2024,7 @@ class LoadedCheckpoint:
         path = self._file(role)
         if path is None:
             return None
-        return torch.load(str(path), map_location="cpu", weights_only=True)
+        return torch.load(str(path), map_location = "cpu", weights_only = True)
 
 
 def load_checkpoint(path: str | os.PathLike[str]) -> LoadedCheckpoint:
@@ -2044,4 +2037,4 @@ def load_checkpoint(path: str | os.PathLike[str]) -> LoadedCheckpoint:
             f"The training checkpoint at '{directory}' could not be read; it may have been "
             "deleted or damaged since the run started."
         )
-    return LoadedCheckpoint(path=directory, manifest=manifest)
+    return LoadedCheckpoint(path = directory, manifest = manifest)

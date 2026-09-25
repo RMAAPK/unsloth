@@ -60,7 +60,7 @@ def test_the_windows_getch_path_decodes_a_password(monkeypatch):
         def flush(self):
             pass
 
-    assert terminal_prompt._read_password("pw: ", out=_Out()) == "pw1"
+    assert terminal_prompt._read_password("pw: ", out = _Out()) == "pw1"
     # The arrow key is swallowed, not masked: one star per character.
     assert "".join(out).count("*") == 3
 
@@ -98,11 +98,11 @@ def test_a_split_terminal_never_prompts(stdin_tty, stderr_tty):
     """Masked echo needs stderr; reading needs stdin. Half a terminal is none."""
     assert (
         terminal_prompt.should_prompt_password_change(
-            tunnel_will_start=False,
-            bind_is_exposed=True,
-            requires_change=True,
-            stdin_isatty=stdin_tty,
-            stderr_isatty=stderr_tty,
+            tunnel_will_start = False,
+            bind_is_exposed = True,
+            requires_change = True,
+            stdin_isatty = stdin_tty,
+            stderr_isatty = stderr_tty,
         )
         is False
     )
@@ -119,19 +119,19 @@ def test_an_old_caller_that_omits_bind_is_exposed_behaves_as_before():
     """
     assert (
         terminal_prompt.should_prompt_password_change(
-            tunnel_will_start=False,
-            requires_change=True,
-            stdin_isatty=True,
-            stderr_isatty=True,
+            tunnel_will_start = False,
+            requires_change = True,
+            stdin_isatty = True,
+            stderr_isatty = True,
         )
         is False
     )
     assert (
         terminal_prompt.should_prompt_password_change(
-            tunnel_will_start=True,
-            requires_change=True,
-            stdin_isatty=True,
-            stderr_isatty=True,
+            tunnel_will_start = True,
+            requires_change = True,
+            stdin_isatty = True,
+            stderr_isatty = True,
         )
         is True
     )
@@ -169,11 +169,11 @@ def test_the_password_gate_imports_no_gpu_or_torch_module():
     )
     out = subprocess.run(
         [sys.executable, "-c", probe],
-        capture_output=True,
-        text=True,
-        timeout=300,
-        cwd=str(_BACKEND),
-        env={**os.environ, "PYTHONPATH": str(_BACKEND)},
+        capture_output = True,
+        text = True,
+        timeout = 300,
+        cwd = str(_BACKEND),
+        env = {**os.environ, "PYTHONPATH": str(_BACKEND)},
     )
     assert out.returncode == 0, out.stderr
     assert (

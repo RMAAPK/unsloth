@@ -4627,7 +4627,7 @@ def _emit_resource_provenance(
     *,
     model_load_target: str,
     model_load_in_4bit: bool,
-    dataset_loaded_from_exact_snapshot: bool
+    dataset_loaded_from_exact_snapshot: bool,
 ) -> None:
     from core.training.provenance import (
         build_worker_provenance_event,
@@ -4772,7 +4772,7 @@ def _create_embedding_progress_callback(
     *,
     total_steps: int,
     training_start_time: float,
-    should_stop: Callable[[], bool]
+    should_stop: Callable[[], bool],
 ):
     """TrainerCallback that reports embedding training progress to the parent. ``should_stop`` is
     polled in on_train_begin and on_step_end, so a stop signal arriving mid-run is seen."""

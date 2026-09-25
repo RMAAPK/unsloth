@@ -21,12 +21,12 @@ from .test_account_lifecycle import auth_env, matrix  # noqa: F401
 BOB = AccountContext("bob-id", "bob")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path / "studio"))
     monkeypatch.setenv("UNSLOTH_STUDIO_PROJECTS_HOME", str(tmp_path / "projects"))
-    monkeypatch.delenv("UNSLOTH_STUDIO_SANDBOX_HOME", raising=False)
-    monkeypatch.delenv("UNSLOTH_STUDIO_ALLOW_UNCONFINED_TOOLS", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_SANDBOX_HOME", raising = False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_ALLOW_UNCONFINED_TOOLS", raising = False)
     monkeypatch.setenv("UNSLOTH_STUDIO_SANDBOX_NPROC", "4000000")
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
     monkeypatch.setattr(tools, "_workdirs", {})
@@ -40,7 +40,7 @@ def isolated(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(
     sys.platform != "linux" or tool_confinement.landlock_abi() < 6,
-    reason="needs a kernel able to apply the ABI 6 signal scope",
+    reason = "needs a kernel able to apply the ABI 6 signal scope",
 )
 @pytest.mark.parametrize("abi", (3, 4, 5))
 def test_pre_scope_landlock_abi_never_confines_a_managed_account(abi, monkeypatch):
@@ -53,7 +53,7 @@ def test_pre_scope_landlock_abi_never_confines_a_managed_account(abi, monkeypatc
 
 @pytest.mark.skipif(
     sys.platform != "linux" or tool_confinement.landlock_abi() < 6,
-    reason="needs a kernel able to apply the ABI 6 signal scope",
+    reason = "needs a kernel able to apply the ABI 6 signal scope",
 )
 def test_a_confined_managed_child_cannot_kill_a_foreign_process_on_a_pre_scope_abi(monkeypatch):
     """Same behaviour, observed: an ABI 5 host must not hand a managed tool a signal-capable box."""
@@ -72,7 +72,7 @@ def test_a_confined_managed_child_cannot_kill_a_foreign_process_on_a_pre_scope_a
             f"    os.kill({victim.pid}, signal.SIGKILL); print('KILLED_FOREIGN')\n"
             "except OSError as e:\n"
             "    print('signal denied', e.errno)\n",
-            session_id="chat",
+            session_id = "chat",
         )
         time.sleep(1)
         assert "KILLED_FOREIGN" not in out, out

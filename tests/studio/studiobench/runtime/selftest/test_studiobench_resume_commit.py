@@ -69,7 +69,7 @@ class _Pacer:
     base_url = "http://127.0.0.1:65535"
 
     def __init__(self) -> None:
-        self.state = types.SimpleNamespace(model_ids=[])
+        self.state = types.SimpleNamespace(model_ids = [])
 
     def start(self):
         return self
@@ -98,7 +98,7 @@ def studio(monkeypatch, tmp_path):
     state = {"commits": {}, "stopped": [], "out": tmp_path / "out"}
 
     def fake_install(ref, home, *args, **kwargs):
-        install = StudioInstall(home=Path(home), repo=Path(home).parent / "repo", branch=ref)
+        install = StudioInstall(home = Path(home), repo = Path(home).parent / "repo", branch = ref)
         # `setattr` rather than a constructor argument, so this fixture also builds against a
         # `StudioInstall` that has no commit field and the tests fail on the subject rather than the way
         # in.
@@ -119,11 +119,11 @@ def studio(monkeypatch, tmp_path):
         lifecycle,
         "authenticate",
         lambda base_url, username, password: StudioAuth(
-            access_token="t",
-            refresh_token="r",
-            base_url=base_url,
-            username=username,
-            password=password,
+            access_token = "t",
+            refresh_token = "r",
+            base_url = base_url,
+            username = username,
+            password = password,
         ),
     )
     monkeypatch.setattr(lifecycle, "register_provider", lambda *a, **k: "provider-1")
@@ -132,7 +132,7 @@ def studio(monkeypatch, tmp_path):
     monkeypatch.setattr(
         browser_mod,
         "install_wall_clock_watchdog",
-        lambda *a, **k: types.SimpleNamespace(cancel=lambda: None),
+        lambda *a, **k: types.SimpleNamespace(cancel = lambda: None),
     )
     monkeypatch.setattr(pacer_mod, "Pacer", _Pacer)
     monkeypatch.setattr(session_mod, "CellRunner", _Runner)
@@ -147,7 +147,7 @@ def _args(state, *extra):
 
 def _rows(state):
     path = Paths.under(state["out"]).payload_jsonl
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    return [json.loads(line) for line in path.read_text(encoding = "utf-8").splitlines() if line]
 
 
 # ── what a run records ───────────────────────────────────────────────────────────────────────
@@ -201,11 +201,11 @@ def test_the_studios_that_refusal_launched_are_released(studio):
 def test_a_resume_after_the_treatment_moved_is_refused(studio):
     """The second side gets the same rule, out of `ab_plan` rather than `run_meta`."""
 
-    assert sb.run(_args(studio, "--branch", "main", "--ab", "fix"), ab_ref="fix") == 0
+    assert sb.run(_args(studio, "--branch", "main", "--ab", "fix"), ab_ref = "fix") == 0
 
     studio["commits"]["fix"] = "c-fix-2"  # the pull request was pushed to
     with pytest.raises(SystemExit) as excinfo:
-        sb.run(_args(studio, "--branch", "main", "--ab", "fix", "--resume"), ab_ref="fix")
+        sb.run(_args(studio, "--branch", "main", "--ab", "fix", "--resume"), ab_ref = "fix")
 
     message = str(excinfo.value)
     assert "treatment_commit" in message
@@ -234,7 +234,7 @@ def test_a_payload_recorded_before_commits_were_written_still_resumes(studio):
     for row in _rows(studio):
         row.pop("studio_commit", None)
         kept.append(json.dumps(row))
-    path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+    path.write_text("\n".join(kept) + "\n", encoding = "utf-8")
 
     studio["commits"]["main"] = "c-main-2"
     assert sb.run(_args(studio, "--branch", "main", "--resume")) == 0

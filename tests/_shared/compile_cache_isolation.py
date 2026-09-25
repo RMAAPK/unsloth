@@ -60,7 +60,7 @@ def isolate_compile_caches() -> str | None:
         root = pathlib.Path(tempfile.gettempdir()) / f"torchinductor_{os.environ.get('USER', 'ci')}"
 
     mine = root / f"xdist_{worker}"
-    mine.mkdir(parents = True, exist_ok = True)
+    mine.mkdir(parents=True, exist_ok=True)
     os.environ["TORCHINDUCTOR_CACHE_DIR"] = str(mine)
     os.environ["TRITON_CACHE_DIR"] = str(mine / "triton")
     return str(mine)

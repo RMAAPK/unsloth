@@ -59,7 +59,7 @@ class _StubKaggleApi:
 
     CONFIG_NAME_USER = "username"
 
-    def __init__(self, username="someuser"):
+    def __init__(self, username = "someuser"):
         self.config_values = {self.CONFIG_NAME_USER: username}
 
 
@@ -110,9 +110,9 @@ class _Stub:
             if self.gpus < 0:
                 raise OSError("nvidia-smi is not on this box")
             out = "".join("Tesla T4, 15360 MiB\n" for _ in range(self.gpus))
-            return types.SimpleNamespace(returncode=0, stdout=out, stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = out, stderr = "")
         if cmd[0] == "which":
-            return types.SimpleNamespace(returncode=0, stdout="/usr/bin/uv\n", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "/usr/bin/uv\n", stderr = "")
         if "--report" in cmd:
             # `pip install --dry-run --report FILE` writes the resolved closure
             # to FILE and prints nothing useful, so a stub that only returns a
@@ -120,7 +120,7 @@ class _Stub:
             # handles by installing nothing, and the overlay guard would then
             # pass while proving the overlay never happened.
             report = Path(cmd[cmd.index("--report") + 1])
-            report.parent.mkdir(parents=True, exist_ok=True)
+            report.parent.mkdir(parents = True, exist_ok = True)
             report.write_text(
                 json.dumps(
                     {
@@ -130,13 +130,13 @@ class _Stub:
                         ]
                     }
                 ),
-                encoding="utf-8",
+                encoding = "utf-8",
             )
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         if "--target" in cmd:
             self.overlay_installs.append(list(cmd))
-            Path(cmd[cmd.index("--target") + 1]).mkdir(parents=True, exist_ok=True)
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            Path(cmd[cmd.index("--target") + 1]).mkdir(parents = True, exist_ok = True)
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         if "papermill" in cmd:
             env = kw.get("env") or {}
             self.papermill.append(
@@ -151,11 +151,11 @@ class _Stub:
                     "env": dict(env),
                 }
             )
-            Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding="utf-8")
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding = "utf-8")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         if not self.venv_ok:
             raise subprocess.CalledProcessError(1, cmd)
-        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
 
 
 def _drive(
@@ -173,13 +173,13 @@ def _drive(
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         leg_names,
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
     )
-    stub = _Stub(gpus=gpus, venv_ok=venv_ok)
+    stub = _Stub(gpus = gpus, venv_ok = venv_ok)
     saved = sys.modules["subprocess"]
     sys.modules["subprocess"] = stub
     namespace: dict = {}
@@ -217,13 +217,13 @@ def test_a_gpu_shortfall_stands_the_kernel_down(tmp_path):
     sees one card and passes its own visibility assertion, so a contended OOM
     came back looking like a code failure.
     """
-    driven = _drive(tmp_path, ["control", "canary"], gpus=-1)
+    driven = _drive(tmp_path, ["control", "canary"], gpus = -1)
     assert driven["stood_down"] is not None, "a 1-GPU allocation ran both payloads anyway"
     assert driven["papermill"] == []
 
 
 def test_two_gpus_still_run_both_payloads_one_per_card(tmp_path):
-    driven = _drive(tmp_path, ["control", "canary"], gpus=2)
+    driven = _drive(tmp_path, ["control", "canary"], gpus = 2)
     assert driven["stood_down"] is None
     assert sorted(p["cuda"] for p in driven["papermill"]) == ["0", "1"]
 
@@ -250,11 +250,11 @@ class _PackedStub(_Stub):
         self,
         *,
         gpus,
-        durations=None,
-        hold=0.05,
-        vram=None,
+        durations = None,
+        hold = 0.05,
+        vram = None,
     ):
-        super().__init__(gpus=gpus)
+        super().__init__(gpus = gpus)
         self.durations = durations or {}
         self.hold = hold
         self._live_on_card: dict = {}
@@ -276,7 +276,7 @@ class _PackedStub(_Stub):
             # a kernel building every venv on the 19.5 GB artifact volume ends
             # just as clean as one building them on the big overlay.
             self.venvs_created.append(Path(cmd[2]))
-            Path(cmd[2]).mkdir(parents=True, exist_ok=True)
+            Path(cmd[2]).mkdir(parents = True, exist_ok = True)
         if "papermill" in cmd:
             notebook = Path(cmd[cmd.index("papermill") + 1]).name
             card = (kw.get("env") or {}).get("CUDA_VISIBLE_DEVICES")
@@ -315,8 +315,8 @@ class _HubStub(types.ModuleType):
 
     def __init__(
         self,
-        hold=0.02,
-        fail_for=(),
+        hold = 0.02,
+        fail_for = (),
     ):
         super().__init__("huggingface_hub")
         self.calls: list = []
@@ -332,7 +332,7 @@ class _HubStub(types.ModuleType):
 
     def snapshot_download(
         self,
-        repo_id=None,
+        repo_id = None,
         **kw,
     ):
         with self._lock:
@@ -349,29 +349,29 @@ def _drive_packed(
     leg_names,
     *,
     gpus,
-    durations=None,
-    studio=None,
-    prefetch_repos=(),
-    hub=None,
-    after_gpu_concurrent=False,
-    venv_fallback=False,
+    durations = None,
+    studio = None,
+    prefetch_repos = (),
+    hub = None,
+    after_gpu_concurrent = False,
+    venv_fallback = False,
 ):
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         leg_names,
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
-        studio=studio,
-        prefetch_repos=prefetch_repos,
-        after_gpu_concurrent=after_gpu_concurrent,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
+        studio = studio,
+        prefetch_repos = prefetch_repos,
+        after_gpu_concurrent = after_gpu_concurrent,
     )
     stub = _PackedStub(
-        gpus=gpus,
-        durations=durations,
-        vram={f"t4_{n}.ipynb": LEGS[n].vram_gb for n in leg_names},
+        gpus = gpus,
+        durations = durations,
+        vram = {f"t4_{n}.ipynb": LEGS[n].vram_gb for n in leg_names},
     )
     stub.root = tmp_path
     # On the fallback path the venvs land in WORK itself, so that is where the
@@ -472,7 +472,7 @@ def test_losing_tmp_drops_the_kernel_back_to_one_leg_per_card(tmp_path):
     as it would there.
     """
     (tmp_path / "blocked").write_text("not a directory")
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, venv_fallback=True)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, venv_fallback = True)
     assert driven["stood_down"] is None
     stub = driven["stub"]
     assert stub.venv_root is not None
@@ -503,8 +503,8 @@ def test_a_seeds_seat_is_taken_before_any_worker_can_look_at_the_card(tmp_path):
     driven = _drive_packed(
         tmp_path,
         ALL_LEGS,
-        gpus=2,
-        durations={
+        gpus = 2,
+        durations = {
             "t4_canary.ipynb": 2.0,
             "t4_control.ipynb": 2.0,
             "t4_frontier.ipynb": 0.2,
@@ -534,7 +534,7 @@ def test_no_card_is_ever_asked_to_hold_more_than_it_has(tmp_path):
     Asserted on the summed GB and not on the overlap, because after this change
     an overlap is exactly what success looks like.
     """
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2)
     assert driven["stood_down"] is None
     stub = driven["stub"]
     for card, peak in stub.peak_card_gb.items():
@@ -599,7 +599,7 @@ def test_gptoss_starts_in_the_second_wave_so_the_prefetch_has_a_window(tmp_path)
     # whole ~284s: simulated at 651.1s worst case against 528.1s here.
     assert order[-1] != "gptoss", order
 
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2)
     started = [p["notebook"] for p in driven["stub"].papermill]
     assert started[0] != "t4_gptoss.ipynb", started
     assert started != sorted(started), "payloads are running in alphabetical order"
@@ -614,7 +614,7 @@ def test_each_leg_keeps_its_own_venv_compile_cache_and_ipykernel(tmp_path):
     an index reused across a wave would silently merge two legs' trees and the
     last writer would win.
     """
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2)
     calls = driven["stub"].papermill
     for field in ("kernel", "compile_location", "notebook"):
         values = [c[field] for c in calls]
@@ -635,7 +635,7 @@ def test_a_finished_leg_gives_its_virtualenv_back(tmp_path):
     for reasons that look nothing like a full disk. They go on the ~1 TB
     overlay instead, and only the evidence stays where Kaggle collects it.
     """
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2)
     stub = driven["stub"]
     ceiling = 2 * 2  # cards x MAX_LEGS_PER_CARD
     assert (
@@ -672,11 +672,11 @@ def _drive_with_studio(
     monkeypatch,
     leg_names,
     *,
-    gpus=2,
-    durations=None,
+    gpus = 2,
+    durations = None,
 ):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", AMBIENT_CUDA)
-    return _drive_packed(tmp_path, leg_names, gpus=gpus, durations=durations, studio=STUDIO)
+    return _drive_packed(tmp_path, leg_names, gpus = gpus, durations = durations, studio = STUDIO)
 
 
 def test_the_studio_install_never_takes_a_card_and_the_legs_never_wait_for_it(
@@ -693,7 +693,7 @@ def test_the_studio_install_never_takes_a_card_and_the_legs_never_wait_for_it(
         tmp_path,
         monkeypatch,
         ALL_LEGS,
-        durations={f"t4_{LEGS[n].name}.ipynb": 0.30 for n in ALL_LEGS},
+        durations = {f"t4_{LEGS[n].name}.ipynb": 0.30 for n in ALL_LEGS},
     )
     assert driven["stood_down"] is None
     calls = {c["notebook"]: c for c in driven["stub"].papermill}
@@ -768,21 +768,21 @@ def test_a_failed_studio_install_skips_its_assertions_with_the_reason(tmp_path, 
                         "compile_location": None,
                     }
                 )
-                Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding="utf-8")
-                return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+                Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding = "utf-8")
+                return types.SimpleNamespace(returncode = 1, stdout = "", stderr = "")
             return super().run(cmd, **kw)
 
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         ALL_LEGS,
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
-        studio=STUDIO,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
+        studio = STUDIO,
     )
-    stub = _InstallFails(gpus=2)
+    stub = _InstallFails(gpus = 2)
     stub.root = tmp_path
     stub.venv_root = tmp_path / "venvs"
     saved = sys.modules["subprocess"]
@@ -821,12 +821,12 @@ def test_studio_is_not_in_the_card_queue(tmp_path, monkeypatch):
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         ALL_LEGS,
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
-        studio=STUDIO,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
+        studio = STUDIO,
     )
     setup = "".join(driver["cells"][0]["source"])
     order = next(l for l in setup.splitlines() if l.startswith("ORDER = "))
@@ -848,7 +848,7 @@ def test_a_one_card_allocation_still_stands_a_packed_kernel_down(tmp_path):
     infrastructure, because one card silently serialises the whole kernel and
     doubles its wall clock while looking like a slow but healthy run.
     """
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=1)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 1)
     assert driven["stood_down"] is not None, "a 1-GPU allocation ran the packed kernel anyway"
     assert driven["stub"].papermill == []
 
@@ -860,7 +860,7 @@ def test_a_payload_whose_venv_failed_is_not_run_in_the_system_kernel(tmp_path):
     site-packages destroys the comparison rather than merely risking
     corruption, and the resulting import error reads as a code regression.
     """
-    driven = _drive(tmp_path, ["control", "canary"], gpus=2, venv_ok=False)
+    driven = _drive(tmp_path, ["control", "canary"], gpus = 2, venv_ok = False)
     assert [
         p["kernel"] for p in driven["papermill"]
     ] == [], "a payload ran in the shared system kernel after its venv failed"
@@ -876,7 +876,7 @@ def test_each_payload_compiles_into_its_own_cache(tmp_path):
     papermill children inherit, and the legs compile the same modules against
     deliberately different transformers/TRL versions.
     """
-    driven = _drive(tmp_path, ["control", "canary"], gpus=2)
+    driven = _drive(tmp_path, ["control", "canary"], gpus = 2)
     locations = [p["compile_location"] for p in driven["papermill"]]
     assert all(locations), "no per-payload UNSLOTH_COMPILE_LOCATION was set"
     assert len(set(locations)) == len(locations), f"shared compile cache: {locations}"
@@ -899,7 +899,7 @@ def test_the_prune_still_reaches_the_per_payload_directories():
 
 def _payload_cells(leg, **kw) -> list[str]:
     notebook = build_kernel.build_payload_notebook(
-        SMOKE_DIR, leg, unsloth_ref="main", zoo_ref="main", reference="", **kw
+        SMOKE_DIR, leg, unsloth_ref = "main", zoo_ref = "main", reference = "", **kw
     )
     return ["".join(cell["source"]) for cell in notebook["cells"]]
 
@@ -925,13 +925,13 @@ def test_a_shared_argument_does_not_override_a_legs_own_option():
     steps are a measured fit for a 16GB card, and argparse takes the LAST value,
     so appending the SFT legs' 10 silently retrained the 20B leg.
     """
-    run_cell = _payload_cells(LEGS["gptoss"], extra_args=("--max-steps", "10"))[3]
+    run_cell = _payload_cells(LEGS["gptoss"], extra_args = ("--max-steps", "10"))[3]
     argv = run_cell.split("cmd += [")[1].split("]")[0]
     assert argv.count('"--max-steps"') == 1, argv
     assert '"3"' in argv and '"10"' not in argv
 
     # A leg that does NOT set it still receives the shared value.
-    canary = _payload_cells(LEGS["canary"], extra_args=("--max-steps", "10"))[3]
+    canary = _payload_cells(LEGS["canary"], extra_args = ("--max-steps", "10"))[3]
     assert '"--max-steps", "10"' in canary.split("cmd += [")[1]
 
 
@@ -955,9 +955,9 @@ def test_a_probe_failure_is_reported_as_a_failed_payload(tmp_path, monkeypatch):
     outputs = []
     for index in (0, 2):
         script = tmp_path / f"cell{index}.py"
-        script.write_text(cells[index], encoding="utf-8")
+        script.write_text(cells[index], encoding = "utf-8")
         proc = subprocess.run(
-            [sys.executable, str(script)], capture_output=True, text=True, timeout=600
+            [sys.executable, str(script)], capture_output = True, text = True, timeout = 600
         )
         outputs.append(proc.stdout + proc.stderr)
     assert "KAGGLE_T4_CI_PAYLOAD MISSING" in outputs[1]
@@ -974,7 +974,7 @@ def test_a_probe_failure_is_reported_as_a_failed_payload(tmp_path, monkeypatch):
                 ]
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     reports = launch.extract_reports(evidence)
     assert reports, "the import failure produced no report at all"
@@ -1011,17 +1011,17 @@ def test_an_install_that_cannot_be_resolved_is_reported_as_a_failed_payload(tmp_
         "subprocess.run = lambda cmd, **kw: types.SimpleNamespace(\n"
         "    returncode=1, stdout='', stderr='ERROR: ResolutionImpossible')\n"
         "time.sleep = lambda _s: None\n" + install,
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     proc = subprocess.run(
-        [sys.executable, str(script)], capture_output=True, text=True, timeout=600
+        [sys.executable, str(script)], capture_output = True, text = True, timeout = 600
     )
     assert proc.returncode != 0
     assert "KAGGLE_T4_CI_PAYLOAD INSTALL FAILED" in proc.stdout
 
     evidence = tmp_path / "evidence"
     evidence.mkdir()
-    (evidence / "kernel.log").write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    (evidence / "kernel.log").write_text(proc.stdout + proc.stderr, encoding = "utf-8")
     reports = launch.extract_reports(evidence)
     assert reports, "the exhausted install produced no report at all"
     assert reports[0]["label"] == "control"
@@ -1069,7 +1069,7 @@ def test_a_report_reaches_the_launcher_through_kaggles_structured_log(tmp_path, 
     )
     kernel_dir = tmp_path / "unsloth-t4-ci-deadbeef"
     kernel_dir.mkdir()
-    (kernel_dir / "kernel.log").write_text(body, encoding="utf-8")
+    (kernel_dir / "kernel.log").write_text(body, encoding = "utf-8")
 
     reports = launch.extract_reports(tmp_path)
     assert [r["label"] for r in reports] == ["control"]
@@ -1090,7 +1090,7 @@ def test_a_log_record_that_splits_the_report_is_still_read(tmp_path):
                 {"stream_name": "stdout", "data": line[half:]},
             ]
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert [r["label"] for r in launch.extract_reports(tmp_path)] == ["canary"]
 
@@ -1117,12 +1117,12 @@ def test_every_push_attempt_gets_its_own_slug(tmp_path, monkeypatch):
         attempts.append(cmd)
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         metadata = json.loads((Path(cmd[cmd.index("-p") + 1]) / "kernel-metadata.json").read_text())
         attempts[-1] = ["push", metadata["id"]]
         if len(deleted) + 1 < 3:
-            return types.SimpleNamespace(returncode=1, stdout="", stderr="Connection reset")
-        return types.SimpleNamespace(returncode=0, stdout="Successfully pushed", stderr="")
+            return types.SimpleNamespace(returncode = 1, stdout = "", stderr = "Connection reset")
+        return types.SimpleNamespace(returncode = 0, stdout = "Successfully pushed", stderr = "")
 
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
     monkeypatch.setattr(launch.time, "sleep", lambda _s: None)
@@ -1148,8 +1148,8 @@ def _drive_main(
     *,
     push_seconds,
     pushes,
-    extra_argv=(),
-    api_seconds=0.0,
+    extra_argv = (),
+    api_seconds = 0.0,
 ):
     """Run `launch.main()` end to end with Kaggle replaced by stubs.
 
@@ -1177,8 +1177,8 @@ def _drive_main(
         notebook,
         user,
         kernel_timeout_sec,
-        accelerator="NvidiaTeslaT4",
-        attempted=None,
+        accelerator = "NvidiaTeslaT4",
+        attempted = None,
         **kwargs,
     ):
         clock["t"] += push_seconds
@@ -1200,7 +1200,7 @@ def _drive_main(
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
 
     monkeypatch.setattr(launch, "push", fake_push)
     monkeypatch.setattr(launch, "wait", fake_wait)
@@ -1213,7 +1213,7 @@ def _drive_main(
         lambda outdir: [{"label": "control", "model": "m", "passed": True}],
     )
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1232,7 +1232,7 @@ def _drive_main(
         ],
     )
     assert launch.main() == 0
-    result = json.loads((tmp_path / "launch_result.json").read_text(encoding="utf-8"))
+    result = json.loads((tmp_path / "launch_result.json").read_text(encoding = "utf-8"))
     return waits, deleted, result
 
 
@@ -1264,9 +1264,9 @@ def test_the_launcher_will_not_push_what_it_may_not_live_to_delete(monkeypatch, 
     _, deleted, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=_TWO_PUSHES,
-        extra_argv=(
+        push_seconds = 0.0,
+        pushes = _TWO_PUSHES,
+        extra_argv = (
             "--deadline-epoch",
             str(int(1_000_000 + launch.worst_case_seconds(5400, 2)) - 1),
         ),
@@ -1289,9 +1289,9 @@ def test_a_window_that_fits_still_launches(monkeypatch, tmp_path):
     waits, _, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=_TWO_PUSHES,
-        extra_argv=(
+        push_seconds = 0.0,
+        pushes = _TWO_PUSHES,
+        extra_argv = (
             "--deadline-epoch",
             str(int(1_000_000 + launch.worst_case_seconds(5400, 2))),
         ),
@@ -1315,10 +1315,10 @@ def test_the_window_is_measured_again_after_authenticating(monkeypatch, tmp_path
     _, deleted, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=_TWO_PUSHES,
-        api_seconds=float(launch.SOCKET_TIMEOUT_SEC),
-        extra_argv=(
+        push_seconds = 0.0,
+        pushes = _TWO_PUSHES,
+        api_seconds = float(launch.SOCKET_TIMEOUT_SEC),
+        extra_argv = (
             "--deadline-epoch",
             str(int(1_000_000 + launch.worst_case_seconds(5400, 2)) + 60),
         ),
@@ -1340,10 +1340,10 @@ def test_a_window_that_survives_authentication_still_launches(monkeypatch, tmp_p
     _, _, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=_TWO_PUSHES,
-        api_seconds=30.0,
-        extra_argv=(
+        push_seconds = 0.0,
+        pushes = _TWO_PUSHES,
+        api_seconds = 30.0,
+        extra_argv = (
             "--deadline-epoch",
             str(int(1_000_000 + launch.worst_case_seconds(5400, 2)) + 60),
         ),
@@ -1362,8 +1362,8 @@ def test_no_deadline_is_no_guard(monkeypatch, tmp_path):
     _, _, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=_TWO_PUSHES,
+        push_seconds = 0.0,
+        pushes = _TWO_PUSHES,
     )
     assert [k["slug"] for k in result["kernels"]] == [p["slug"] for p in _TWO_PUSHES]
 
@@ -1379,8 +1379,8 @@ def test_the_deletion_deadline_covers_the_time_spent_pushing(monkeypatch, tmp_pa
     waits, _, _ = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=1800.0,
-        pushes=[
+        push_seconds = 1800.0,
+        pushes = [
             {
                 "ok": True,
                 "slug": "someuser/unsloth-t4-ci-aaaa",
@@ -1409,8 +1409,8 @@ def test_every_slug_a_push_filed_is_deleted_on_the_way_out(monkeypatch, tmp_path
     _, deleted, result = _drive_main(
         monkeypatch,
         tmp_path,
-        push_seconds=0.0,
-        pushes=[
+        push_seconds = 0.0,
+        pushes = [
             # Accepted on the third attempt; the first two may still be up.
             {
                 "ok": True,
@@ -1445,7 +1445,7 @@ def test_the_temp_dir_is_left_alone_when_the_log_is_not_json(tmp_path):
     """A plain-text log, and a JSON object that is not a record array."""
     kernel_dir = tmp_path / "unsloth-t4-ci-beef"
     kernel_dir.mkdir()
-    (kernel_dir / "kernel.log").write_text(json.dumps({"log": "nothing here"}), encoding="utf-8")
+    (kernel_dir / "kernel.log").write_text(json.dumps({"log": "nothing here"}), encoding = "utf-8")
     assert launch.extract_reports(tmp_path) == []
 
 
@@ -1463,7 +1463,7 @@ def test_a_push_that_runs_out_of_wall_clock_is_a_recorded_failure(monkeypatch):
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         raise subprocess.TimeoutExpired(cmd, launch.PUSH_SUBPROCESS_TIMEOUT_SEC)
 
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
@@ -1496,11 +1496,11 @@ def test_a_push_that_times_out_does_not_abandon_the_kernel_already_accepted(monk
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         pushes["n"] += 1
         if pushes["n"] == 1:
             return types.SimpleNamespace(
-                returncode=0, stdout="Kernel version 1 successfully pushed", stderr=""
+                returncode = 0, stdout = "Kernel version 1 successfully pushed", stderr = ""
             )
         raise subprocess.TimeoutExpired(cmd, launch.PUSH_SUBPROCESS_TIMEOUT_SEC)
 
@@ -1516,7 +1516,7 @@ def test_a_push_that_times_out_does_not_abandon_the_kernel_already_accepted(monk
         "extract_reports",
         lambda outdir: [{"label": "control", "model": "m", "passed": True}],
     )
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1534,11 +1534,11 @@ def test_a_push_that_times_out_does_not_abandon_the_kernel_already_accepted(monk
             "2",
         ],
     )
-    (tmp_path / "k0.ipynb").write_text("{}", encoding="utf-8")
-    (tmp_path / "k1.ipynb").write_text("{}", encoding="utf-8")
+    (tmp_path / "k0.ipynb").write_text("{}", encoding = "utf-8")
+    (tmp_path / "k1.ipynb").write_text("{}", encoding = "utf-8")
 
     assert launch.main() == 0
-    result = json.loads((tmp_path / "ev" / "launch_result.json").read_text(encoding="utf-8"))
+    result = json.loads((tmp_path / "ev" / "launch_result.json").read_text(encoding = "utf-8"))
     accepted = result["kernels"][0]["slug"]
     assert accepted and accepted in deleted
     # Including every slug the timed-out push filed, any of which may be the
@@ -1559,7 +1559,7 @@ def test_a_push_that_times_out_does_not_abandon_the_kernel_already_accepted(monk
         OSError("cannot allocate memory"),
         MemoryError("the runner ran out"),
     ],
-    ids=["decode", "oserror", "memory"],
+    ids = ["decode", "oserror", "memory"],
 )
 def test_a_push_that_raises_outside_the_timeout_still_gives_up_its_slug(
     monkeypatch, tmp_path, boom
@@ -1582,11 +1582,11 @@ def test_a_push_that_raises_outside_the_timeout_still_gives_up_its_slug(
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+            return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
         pushes["n"] += 1
         if pushes["n"] == 1:
             return types.SimpleNamespace(
-                returncode=0, stdout="Kernel version 1 successfully pushed", stderr=""
+                returncode = 0, stdout = "Kernel version 1 successfully pushed", stderr = ""
             )
         raise boom
 
@@ -1594,9 +1594,9 @@ def test_a_push_that_raises_outside_the_timeout_still_gives_up_its_slug(
     monkeypatch.setattr(launch.time, "sleep", lambda _s: None)
     monkeypatch.setattr(launch, "_api", _stub_api)
     monkeypatch.setattr(launch, "wait", lambda api, slug, poll_every, max_wait: "COMPLETE")
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-    (tmp_path / "k0.ipynb").write_text("{}", encoding="utf-8")
-    (tmp_path / "k1.ipynb").write_text("{}", encoding="utf-8")
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
+    (tmp_path / "k0.ipynb").write_text("{}", encoding = "utf-8")
+    (tmp_path / "k1.ipynb").write_text("{}", encoding = "utf-8")
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1616,7 +1616,7 @@ def test_a_push_that_raises_outside_the_timeout_still_gives_up_its_slug(
     )
 
     assert launch.main() == 0
-    result = json.loads((tmp_path / "ev" / "launch_result.json").read_text(encoding="utf-8"))
+    result = json.loads((tmp_path / "ev" / "launch_result.json").read_text(encoding = "utf-8"))
     assert result["verdict"] == "infra"
     assert len(result["kernels"]) == 2, "the notebook whose push raised left no entry to reconcile"
     raised_on = result["kernels"][1]
@@ -1641,8 +1641,8 @@ def _accepting_push(slug: str):
         notebook,
         user,
         kernel_timeout_sec,
-        accelerator="NvidiaTeslaT4",
-        attempted=None,
+        accelerator = "NvidiaTeslaT4",
+        attempted = None,
         **kwargs,
     ):
         if attempted is not None:
@@ -1670,7 +1670,7 @@ def test_an_abort_anywhere_in_the_launcher_still_deletes_what_it_pushed(monkeypa
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             deleted.append(cmd[3])
-        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
 
     monkeypatch.setattr(launch, "_api", _stub_api)
     monkeypatch.setattr(launch, "push", _accepting_push("someuser/unsloth-t4-ci-abcd"))
@@ -1680,7 +1680,7 @@ def test_an_abort_anywhere_in_the_launcher_still_deletes_what_it_pushed(monkeypa
     )
     monkeypatch.setattr(launch, "extract_reports", boom)
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1699,7 +1699,7 @@ def test_an_abort_anywhere_in_the_launcher_still_deletes_what_it_pushed(monkeypa
 
     assert launch.main() == 0
     assert deleted == ["someuser/unsloth-t4-ci-abcd"]
-    result = json.loads((tmp_path / "launch_result.json").read_text(encoding="utf-8"))
+    result = json.loads((tmp_path / "launch_result.json").read_text(encoding = "utf-8"))
     assert result["verdict"] == "infra"
     assert "MemoryError" in result["reason"]
 
@@ -1726,7 +1726,7 @@ def _drive_one_kernel(monkeypatch, tmp_path, fake_run):
     )
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
     monkeypatch.setattr(launch.time, "sleep", lambda _s: None)
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
     monkeypatch.setattr(
         sys,
         "argv",
@@ -1743,7 +1743,7 @@ def _drive_one_kernel(monkeypatch, tmp_path, fake_run):
         ],
     )
     code = launch.main()
-    return code, json.loads((tmp_path / "launch_result.json").read_text(encoding="utf-8"))
+    return code, json.loads((tmp_path / "launch_result.json").read_text(encoding = "utf-8"))
 
 
 def _refusing_run(
@@ -1759,9 +1759,9 @@ def _refusing_run(
         if cmd[1:3] == ["kernels", "delete"]:
             calls.append(cmd[3])
             if len(calls) >= succeed_from:
-                return types.SimpleNamespace(returncode=0, stdout="", stderr="")
-            return types.SimpleNamespace(returncode=returncode, stdout="", stderr=message)
-        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+                return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
+            return types.SimpleNamespace(returncode = returncode, stdout = "", stderr = message)
+        return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
 
     return fake_run, calls
 
@@ -1805,7 +1805,7 @@ def test_a_refused_delete_is_retried_before_it_is_given_up_on(monkeypatch, tmp_p
 def test_a_delete_that_succeeds_on_a_retry_is_released(monkeypatch, tmp_path, capsys):
     """The other direction: the retry has to be able to end in success, or
     the check is just a slower way of always reporting a leak."""
-    fake_run, calls = _refusing_run(1, "502 Bad Gateway", succeed_from=2)
+    fake_run, calls = _refusing_run(1, "502 Bad Gateway", succeed_from = 2)
     _code, result = _drive_one_kernel(monkeypatch, tmp_path, fake_run)
 
     assert len(calls) == 2
@@ -1824,7 +1824,7 @@ def test_a_delete_that_never_ran_is_not_a_deletion(monkeypatch, tmp_path):
         cmd = [str(c) for c in cmd]
         if cmd[1:3] == ["kernels", "delete"]:
             raise subprocess.TimeoutExpired(cmd, 180)
-        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        return types.SimpleNamespace(returncode = 0, stdout = "", stderr = "")
 
     _code, result = _drive_one_kernel(monkeypatch, tmp_path, fake_run)
     assert result["kernels"][0]["released"] is False
@@ -1875,7 +1875,7 @@ def test_cleanup_reads_a_missing_kernel_in_the_gate_s_words(monkeypatch, marker)
 
     def fake_run(cmd, **kw):
         calls.append([str(c) for c in cmd])
-        return types.SimpleNamespace(returncode=1, stdout="", stderr=f"delete refused: {marker}")
+        return types.SimpleNamespace(returncode = 1, stdout = "", stderr = f"delete refused: {marker}")
 
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
     monkeypatch.setattr(launch.time, "sleep", lambda _s: None)
@@ -1895,7 +1895,7 @@ def test_a_nonzero_delete_that_is_not_a_missing_kernel_still_retries(monkeypatch
 
     def fake_run(cmd, **kw):
         calls.append([str(c) for c in cmd])
-        return types.SimpleNamespace(returncode=1, stdout="", stderr="503 Service Unavailable")
+        return types.SimpleNamespace(returncode = 1, stdout = "", stderr = "503 Service Unavailable")
 
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
     monkeypatch.setattr(launch.time, "sleep", lambda _s: None)
@@ -1935,19 +1935,19 @@ def test_a_payload_that_cannot_see_its_gpu_reports_instead_of_vanishing(tmp_path
         "    def is_available():\n"
         "        return False\n"
         "cuda = _Cuda()\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
 
     outputs = []
     for index in (0, 2):
         script = tmp_path / f"cell{index}.py"
-        script.write_text(cells[index], encoding="utf-8")
+        script.write_text(cells[index], encoding = "utf-8")
         proc = subprocess.run(
             [sys.executable, str(script)],
-            capture_output=True,
-            text=True,
-            timeout=600,
-            env={**os.environ, "PYTHONPATH": str(stubs)},
+            capture_output = True,
+            text = True,
+            timeout = 600,
+            env = {**os.environ, "PYTHONPATH": str(stubs)},
         )
         outputs.append(proc.stdout + proc.stderr)
     assert "KAGGLE_T4_CI_PAYLOAD GPU_UNUSABLE" in outputs[1]
@@ -1963,7 +1963,7 @@ def test_a_payload_that_cannot_see_its_gpu_reports_instead_of_vanishing(tmp_path
                 ]
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     reports = launch.extract_reports(evidence)
     assert reports, "an unusable GPU produced no report at all"
@@ -1983,24 +1983,24 @@ def test_a_payload_that_writes_malformed_utf8_still_reports(tmp_path, monkeypatc
     monkeypatch.setattr(build_kernel, "KERNEL_ROOT", str(tmp_path / "src"))
     leg = LEGS["control"]
     root = Path(build_kernel._kernel_root(leg))
-    root.mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents = True, exist_ok = True)
     (root / leg.entry).write_text(
         "import sys\n"
         "sys.stdout.buffer.write(b'trained \\xff\\xfe then died\\n')\n"
         "sys.stderr.buffer.write(b'terminate called \\xff\\n')\n"
         "sys.exit(134)\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
 
     run_cell = _payload_cells(leg)[3].replace("/kaggle/working", str(tmp_path))
     script = tmp_path / "run_cell.py"
-    script.write_text(run_cell, encoding="utf-8")
+    script.write_text(run_cell, encoding = "utf-8")
     proc = subprocess.run(
         [sys.executable, str(script)],
-        capture_output=True,
-        text=True,
-        errors="replace",
-        timeout=600,
+        capture_output = True,
+        text = True,
+        errors = "replace",
+        timeout = 600,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "UnicodeDecodeError" not in proc.stderr
@@ -2018,7 +2018,7 @@ def test_a_payload_that_writes_malformed_utf8_still_reports(tmp_path, monkeypatc
                 ]
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     reports = launch.extract_reports(evidence)
     assert reports, "a payload that died with undecodable output produced no report"
@@ -2049,7 +2049,7 @@ class _SlowPages:
     def __call__(
         self,
         req,
-        timeout=None,
+        timeout = None,
     ):
         self.calls.append(timeout)
         self.clock.advance(timeout)
@@ -2071,13 +2071,13 @@ class _Response:
         self.body = body
         self.pos = 0
 
-    def read(self, amt=None):
+    def read(self, amt = None):
         if amt is None or amt < 0:
             chunk, self.pos = self.body[self.pos :], len(self.body)
             return chunk
         return self.read1(amt)
 
-    def read1(self, amt=-1):
+    def read1(self, amt = -1):
         end = len(self.body) if amt is None or amt < 0 else self.pos + amt
         chunk = self.body[self.pos : end]
         self.pos += len(chunk)
@@ -2120,7 +2120,7 @@ def test_a_paginating_output_endpoint_cannot_outlast_the_evidence_budget(monkeyp
 
     started = clock()
     deadline = started + launch.EVIDENCE_BUDGET_SEC
-    listing = launch.list_outputs("someuser/k", timeout=120, deadline=deadline)
+    listing = launch.list_outputs("someuser/k", timeout = 120, deadline = deadline)
 
     spent = clock() - started
     assert (
@@ -2147,7 +2147,7 @@ def test_the_evidence_budget_is_shared_by_every_kernel(monkeypatch, tmp_path):
     started = clock()
     deadline = started + launch.EVIDENCE_BUDGET_SEC
     for slug in ("someuser/a", "someuser/b"):
-        launch.fetch_evidence(slug, tmp_path / slug.split("/")[-1], deadline=deadline)
+        launch.fetch_evidence(slug, tmp_path / slug.split("/")[-1], deadline = deadline)
     assert clock() - started <= launch.EVIDENCE_BUDGET_SEC
 
 
@@ -2167,7 +2167,7 @@ def test_a_slow_notebook_download_cannot_outlast_the_evidence_budget(monkeypatch
         for i in range(20)
     ]
 
-    def urlopen(req, timeout=None):
+    def urlopen(req, timeout = None):
         url = getattr(req, "full_url", "")
         clock.advance(timeout)
         if "kernels/output" in url:
@@ -2177,7 +2177,7 @@ def test_a_slow_notebook_download_cannot_outlast_the_evidence_budget(monkeypatch
     monkeypatch.setattr(launch.urllib.request, "urlopen", urlopen)
     started = clock()
     evidence = launch.fetch_evidence(
-        "someuser/k", tmp_path / "k", deadline=started + launch.EVIDENCE_BUDGET_SEC
+        "someuser/k", tmp_path / "k", deadline = started + launch.EVIDENCE_BUDGET_SEC
     )
     spent = clock() - started
     assert spent <= launch.EVIDENCE_BUDGET_SEC, f"downloads spent {spent}s"
@@ -2214,7 +2214,7 @@ class _Trickle:
         self.reads = 0
         self.fp = type("fp", (), {"raw": type("raw", (), {"_sock": _Socket()})()})()
 
-    def read(self, amt=None):
+    def read(self, amt = None):
         if amt is None or amt < 0:
             # The unbounded read: the socket kept feeding it, so it returned
             # only once the whole body was through.
@@ -2223,7 +2223,7 @@ class _Trickle:
             return self.body
         return self.read1(amt)
 
-    def read1(self, amt=-1):
+    def read1(self, amt = -1):
         self.reads += 1
         if self.pos >= len(self.body):
             return b""
@@ -2243,8 +2243,8 @@ class _Trickle:
 def _trickled_listing(
     clock,
     files,
-    chunks=20,
-    per_chunk=60.0,
+    chunks = 20,
+    per_chunk = 60.0,
 ):
     body = json.dumps({"files": files, "log": "x"}).encode()
     # JSON tolerates trailing whitespace, so padding buys chunks without
@@ -2265,11 +2265,11 @@ def test_a_trickling_output_listing_cannot_outlast_the_evidence_budget(monkeypat
     monkeypatch.setattr(launch.time, "time", clock)
     monkeypatch.setenv("KAGGLE_API_TOKEN", "not-a-real-token")
     resp = _trickled_listing(clock, [])
-    monkeypatch.setattr(launch.urllib.request, "urlopen", lambda req, timeout=None: resp)
+    monkeypatch.setattr(launch.urllib.request, "urlopen", lambda req, timeout = None: resp)
 
     started = clock()
     listing = launch.list_outputs(
-        "someuser/k", timeout=120, deadline=started + launch.EVIDENCE_BUDGET_SEC
+        "someuser/k", timeout = 120, deadline = started + launch.EVIDENCE_BUDGET_SEC
     )
     spent = clock() - started
     assert spent <= launch.EVIDENCE_BUDGET_SEC, f"the listing read spent {spent}s"
@@ -2280,7 +2280,7 @@ def test_a_trickling_output_listing_cannot_outlast_the_evidence_budget(monkeypat
     # past it.
     clamps = resp.fp.raw._sock.timeouts
     assert clamps and all(t <= launch.EVIDENCE_BUDGET_SEC for t in clamps), clamps
-    assert clamps == sorted(clamps, reverse=True), clamps
+    assert clamps == sorted(clamps, reverse = True), clamps
 
 
 def test_a_trickling_notebook_download_cannot_outlast_the_evidence_budget(monkeypatch, tmp_path):
@@ -2297,7 +2297,7 @@ def test_a_trickling_notebook_download_cannot_outlast_the_evidence_budget(monkey
     payload = json.dumps({"cells": []}).encode()
     download = _Trickle(clock, payload + b" " * (20 * len(payload)), 20, 60.0)
 
-    def urlopen(req, timeout=None):
+    def urlopen(req, timeout = None):
         if "kernels/output" in getattr(req, "full_url", ""):
             return _Response(json.dumps({"files": files, "log": "x"}).encode())
         return download
@@ -2305,7 +2305,7 @@ def test_a_trickling_notebook_download_cannot_outlast_the_evidence_budget(monkey
     monkeypatch.setattr(launch.urllib.request, "urlopen", urlopen)
     started = clock()
     evidence = launch.fetch_evidence(
-        "someuser/k", tmp_path / "k", deadline=started + launch.EVIDENCE_BUDGET_SEC
+        "someuser/k", tmp_path / "k", deadline = started + launch.EVIDENCE_BUDGET_SEC
     )
     spent = clock() - started
     assert spent <= launch.EVIDENCE_BUDGET_SEC, f"the download spent {spent}s"
@@ -2329,8 +2329,8 @@ def test_main_bounds_the_whole_evidence_phase_it_is_budgeted_for(monkeypatch, tm
     def fake_fetch(
         slug,
         outdir,
-        timeout=300,
-        deadline=None,
+        timeout = 300,
+        deadline = None,
     ):
         seen.append(deadline)
         # Spend the whole budget on the first kernel.
@@ -2340,7 +2340,7 @@ def test_main_bounds_the_whole_evidence_phase_it_is_budgeted_for(monkeypatch, tm
     monkeypatch.setattr(
         launch,
         "push",
-        lambda nb, user, t, accelerator="NvidiaTeslaT4", attempted=None, **kwargs: (
+        lambda nb, user, t, accelerator = "NvidiaTeslaT4", attempted = None, **kwargs: (
             attempted.append(f"{user}/s{len(attempted)}"),
             {"ok": True, "slug": attempted[-1], "attempts": list(attempted)},
         )[1],
@@ -2354,7 +2354,7 @@ def test_main_bounds_the_whole_evidence_phase_it_is_budgeted_for(monkeypatch, tm
     )
     monkeypatch.setattr(launch, "_api", _stub_api)
     monkeypatch.setattr(launch, "delete_kernel", lambda slug: True)
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising = False)
     monkeypatch.setattr(
         sys,
         "argv",
@@ -2395,7 +2395,7 @@ def test_the_merged_kernel_runs_both_reporters():
     studio-gpu label out, so its section would look complete while the payload
     that half the wall clock went on is unreported.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     assert ".github/scripts/kaggle_t4_ci/report.py" in source
     assert ".github/scripts/kaggle_studio_ci/report.py" in source
     assert ".github/scripts/kaggle_studio_ci/collect_evidence.py" in source
@@ -2450,12 +2450,12 @@ def test_the_shared_wheels_are_the_specs_every_leg_holds_in_common():
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         ALL_LEGS,
-        unsloth_ref="PRSHA",
-        zoo_ref="MAINSHA",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
-        shared_wheels=True,
+        unsloth_ref = "PRSHA",
+        zoo_ref = "MAINSHA",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
+        shared_wheels = True,
     )
     src = "".join("".join(c["source"]) for c in driver["cells"])
     specs = re.search(r"SHARED_WHEEL_SPECS = (.+)", src).group(1)
@@ -2484,7 +2484,7 @@ def test_every_leg_gets_its_own_torch_and_triton_cache(tmp_path):
     named once and handed to everybody would satisfy "is set" and reproduce the
     bug exactly.
     """
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2)
     seen: dict[str, set] = {}
     for call in driven["stub"].papermill:
         env = call.get("env") or {}
@@ -2516,7 +2516,7 @@ def test_two_dispatches_can_hold_the_two_kaggle_slots_at_once():
     Bounded by construction is the property worth guarding: the input offers
     exactly two slots, so the account can never be asked for a third session.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     workflow = yaml.safe_load(source)
     slot = workflow[True]["workflow_dispatch"]["inputs"]["slot"]
     assert slot["type"] == "choice", slot
@@ -2562,7 +2562,7 @@ def test_the_shared_wheel_build_is_opt_in():
     optimisation resting on that would be a guess wearing a measurement's
     clothes.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     workflow = yaml.safe_load(source)
     inputs = workflow[True]["workflow_dispatch"]["inputs"]
     assert inputs["shared_wheels"].get("default") is False, inputs["shared_wheels"]
@@ -2574,11 +2574,11 @@ def test_the_shared_wheel_build_is_opt_in():
     off = build_kernel.build_kernel(
         SMOKE_DIR,
         ALL_LEGS,
-        unsloth_ref="R",
-        zoo_ref="R",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
+        unsloth_ref = "R",
+        zoo_ref = "R",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
     )
     src = "".join("".join(c["source"]) for c in off["cells"])
     assert "SHARED_WHEEL_SPECS = ()" in src, (
@@ -2602,7 +2602,7 @@ def test_the_workflow_can_actually_reach_studio_concurrent():
     So the chain is asserted end to end: the input exists, something converts
     it into the flag, and the flag reaches the build command.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     workflow = yaml.safe_load(source)
     inputs = workflow[True]["workflow_dispatch"]["inputs"]
     assert "studio_concurrent" in inputs, sorted(inputs)
@@ -2631,7 +2631,7 @@ def test_the_workflow_can_actually_reach_studio_concurrent():
     # And the flag the workflow spells must be one the CLI accepts. A rename on
     # either side would otherwise land as an unrecognised argument at build
     # time, or worse, be silently ignored.
-    cli = (CI_DIR / "build_kernel.py").read_text(encoding="utf-8")
+    cli = (CI_DIR / "build_kernel.py").read_text(encoding = "utf-8")
     assert '"--studio-concurrent"' in cli, "build_kernel.py does not define the flag"
 
 
@@ -2642,7 +2642,7 @@ def test_the_t4_reporter_is_told_the_leg_count_not_the_payload_count():
     forever: it filters the studio-gpu report out and then compares what is
     left against a number that included it.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     reporter = source.split(".github/scripts/kaggle_t4_ci/report.py")[1].split("- name:")[0]
     assert "steps.build.outputs.legs" in reporter
     assert "steps.build.outputs.payloads" not in reporter
@@ -2690,8 +2690,8 @@ def test_a_failing_payload_only_reddens_the_reporter_that_owns_it(
             "--expect",
             "1",
         ],
-        capture_output=True,
-        text=True,
+        capture_output = True,
+        text = True,
     )
     assert (proc.returncode == 1) is expect_red, proc.stdout
 
@@ -2703,7 +2703,7 @@ def test_the_build_step_actually_packs_studio_in():
     Studio section reads NOT RUN with a plausible-sounding reason, and the job
     is green -- which is indistinguishable from a run whose sampling declined.
     """
-    source = NOTEBOOK_WORKFLOW.read_text(encoding="utf-8")
+    source = NOTEBOOK_WORKFLOW.read_text(encoding = "utf-8")
     build = source.split("- name: Build the kernel notebooks")[1].split("- name:")[0]
     assert "--with-studio" in build
     assert "--studio-args" in build
@@ -2721,7 +2721,7 @@ def test_the_prefetch_lane_never_takes_a_card(tmp_path):
     assumes exactly two lanes compete for two cards.
     """
     hub = _HubStub()
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, prefetch_repos=("a/big", "b/small"), hub=hub)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, prefetch_repos = ("a/big", "b/small"), hub = hub)
     assert driven["stood_down"] is None
     assert hub.calls == ["a/big", "b/small"], hub.calls
     # Every papermill call is a LEG. The prefetch is not one of them, so it
@@ -2743,7 +2743,7 @@ def test_the_leg_prefetch_does_not_redirect_hf_home(tmp_path):
     """
     hub = _HubStub()
     before = os.environ.get("HF_HOME")
-    _drive_packed(tmp_path, ALL_LEGS, gpus=2, prefetch_repos=("a/big",), hub=hub)
+    _drive_packed(tmp_path, ALL_LEGS, gpus = 2, prefetch_repos = ("a/big",), hub = hub)
     assert hub.hf_home_at_call == [before], hub.hf_home_at_call
     assert os.environ.get("HF_HOME") == before
 
@@ -2756,8 +2756,8 @@ def test_a_failing_prefetch_does_not_fail_the_kernel(tmp_path):
     fail the kernel it would be a brand new way to go red for something that
     is not under test -- on a payload that is not even the subject of the run.
     """
-    hub = _HubStub(fail_for=("a/big", "b/small"))
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, prefetch_repos=("a/big", "b/small"), hub=hub)
+    hub = _HubStub(fail_for = ("a/big", "b/small"))
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, prefetch_repos = ("a/big", "b/small"), hub = hub)
     assert driven["stood_down"] is None
     assert len(driven["stub"].papermill) == len(ALL_LEGS), driven["stub"].papermill
     assert all(r.get("returncode") == 0 for r in driven["results"].values()), driven["results"]
@@ -2767,7 +2767,7 @@ def test_no_prefetch_repos_leaves_the_schedule_exactly_as_it_was(tmp_path):
     """The lane is opt-in at the call site, and off means OFF: no thread, no
     huggingface_hub import, no behaviour change for a kernel built without it."""
     hub = _HubStub()
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, prefetch_repos=(), hub=hub)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, prefetch_repos = (), hub = hub)
     assert hub.calls == [], hub.calls
     assert driven["stood_down"] is None
     assert len(driven["stub"].papermill) == len(ALL_LEGS)
@@ -2819,8 +2819,8 @@ def test_the_prefetch_list_matches_the_models_the_legs_actually_load():
     # evidence is a resolved_checkpoint field in a kernel report. So a redirect
     # no payload mentions must CITE the kernel that measured it, which is
     # checkable, rather than being taken on trust.
-    sources = "".join(path.read_text(encoding="utf-8") for path in sorted(SMOKE_DIR.glob("*.py")))
-    legs_src = (Path(build_kernel.__file__).parent / "legs.py").read_text(encoding="utf-8")
+    sources = "".join(path.read_text(encoding = "utf-8") for path in sorted(SMOKE_DIR.glob("*.py")))
+    legs_src = (Path(build_kernel.__file__).parent / "legs.py").read_text(encoding = "utf-8")
     for declared, actual in LOAD_REDIRECTS.items():
         if actual in sources:
             continue
@@ -2850,13 +2850,13 @@ def test_the_generated_prefetch_cell_runs_not_merely_compiles():
     into a paid Kaggle session.
     """
     prefetch = build_kernel._prefetch_builder()
-    hub = _HubStub(hold=0.0)
+    hub = _HubStub(hold = 0.0)
     saved = sys.modules.get("huggingface_hub")
     sys.modules["huggingface_hub"] = hub
     try:
         for hf_home in (None, "/tmp/somewhere"):
             source = prefetch.prefetch_cell(
-                ["a/b"], hf_home=hf_home, attempt_timeout=2, total_timeout=5
+                ["a/b"], hf_home = hf_home, attempt_timeout = 2, total_timeout = 5
             )
             exec(compile(source, "<prefetch>", "exec"), {"__name__": "prefetch"})
     finally:
@@ -2878,14 +2878,14 @@ def test_a_repos_allow_patterns_reach_the_hub_and_a_bare_repo_stays_unfiltered()
     quietly acquire a filter and arrive incomplete.
     """
     prefetch = build_kernel._prefetch_builder()
-    hub = _HubStub(hold=0.0)
+    hub = _HubStub(hold = 0.0)
     saved = sys.modules.get("huggingface_hub")
     sys.modules["huggingface_hub"] = hub
     try:
         source = prefetch.prefetch_cell(
             [("big/gguf", ["*UD-Q4_K_XL*"]), "small/model"],
-            attempt_timeout=2,
-            total_timeout=5,
+            attempt_timeout = 2,
+            total_timeout = 5,
         )
         exec(compile(source, "<prefetch>", "exec"), {"__name__": "prefetch"})
     finally:
@@ -2910,7 +2910,7 @@ def test_the_last_prefetch_attempt_falls_back_to_classic_http():
     class _Recording(_HubStub):
         def snapshot_download(
             self,
-            repo_id=None,
+            repo_id = None,
             **kw,
         ):
             seen.append(os.environ.get("HF_HUB_DISABLE_XET"))
@@ -2918,9 +2918,9 @@ def test_the_last_prefetch_attempt_falls_back_to_classic_http():
 
     saved = sys.modules.get("huggingface_hub")
     before = os.environ.get("HF_HUB_DISABLE_XET")
-    sys.modules["huggingface_hub"] = _Recording(hold=0.0)
+    sys.modules["huggingface_hub"] = _Recording(hold = 0.0)
     try:
-        source = prefetch.prefetch_cell(["a/b"], attempt_timeout=1, total_timeout=30)
+        source = prefetch.prefetch_cell(["a/b"], attempt_timeout = 1, total_timeout = 30)
         exec(compile(source, "<prefetch>", "exec"), {"__name__": "prefetch"})
     finally:
         _shared_setup_1(saved)
@@ -2945,10 +2945,10 @@ def test_the_studio_prefetch_lands_in_studios_own_cache():
     """
     studio = build_kernel._studio_builder()
     notebook = studio.build_payload_notebook(
-        unsloth_ref="x",
-        repo_url="https://h/r",
-        payload_args="--max-steps 8",
-        phase="install",
+        unsloth_ref = "x",
+        repo_url = "https://h/r",
+        payload_args = "--max-steps 8",
+        phase = "install",
     )
     sources = ["".join(cell["source"]) for cell in notebook["cells"]]
     sets_home = [i for i, src in enumerate(sources) if 'os.environ["HF_HOME"]' in src]
@@ -2995,7 +2995,7 @@ def test_the_studio_prefetch_follows_the_dispatched_models():
 
     defaults = studio._models_from("--max-steps 8")
     flat = [entry[0] if isinstance(entry, tuple) else entry for entry in defaults]
-    payload = (SMOKE_DIR.parent / "studio_gpu" / "run_studio_gpu.py").read_text(encoding="utf-8")
+    payload = (SMOKE_DIR.parent / "studio_gpu" / "run_studio_gpu.py").read_text(encoding = "utf-8")
     for flag in ("--chat-model", "--train-model", "--chat-variant"):
         declared = re.search(rf'ap\.add_argument\("{flag}", default = "([^"]+)"\)', payload)
         assert declared, f"{flag} default not found in run_studio_gpu.py"
@@ -3019,7 +3019,7 @@ def test_the_report_shows_what_the_prefetch_achieved(tmp_path):
         'KAGGLE_CI_PREFETCH {"repo": "unsloth/Qwen2.5-0.5B-Instruct", "ok": false, '
         '"seconds": 9.0, "download_seconds": null, "bytes": 0, "mb_per_s": null, '
         '"transport": "http", "attempts": 3, "error": "nope"}\n',
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     lines = "\n".join(t4_report.prefetch_table(evidence))
     assert "unsloth/gpt-oss-20b" in lines
@@ -3030,7 +3030,7 @@ def test_the_report_shows_what_the_prefetch_achieved(tmp_path):
     # table of zeroes that reads like a lane that ran and achieved nothing.
     bare = tmp_path / "bare"
     bare.mkdir()
-    (bare / "kernel.log").write_text("nothing to see", encoding="utf-8")
+    (bare / "kernel.log").write_text("nothing to see", encoding = "utf-8")
     assert t4_report.prefetch_table(bare) == []
 
     # ...and it is WIRED IN. Calling the renderer directly proves it renders,
@@ -3047,17 +3047,17 @@ def test_the_report_shows_what_the_prefetch_achieved(tmp_path):
                 "reports": [{"label": "control", "passed": True, "steps": []}],
             }
         ),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     summary = tmp_path / "summary.md"
     proc = subprocess.run(
         [sys.executable, str(CI_DIR / "report.py"), "--evidence", str(evidence), "--expect", "1"],
-        capture_output=True,
-        text=True,
-        env={**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
+        capture_output = True,
+        text = True,
+        env = {**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
     )
     assert proc.returncode == 0, proc.stdout
-    rendered = summary.read_text(encoding="utf-8")
+    rendered = summary.read_text(encoding = "utf-8")
     assert "model prefetch" in rendered, rendered
     assert "unsloth/gpt-oss-20b" in rendered, rendered
 
@@ -3072,7 +3072,7 @@ def test_gptoss_never_shares_a_card(tmp_path):
     like a code failure.
     """
     durations = {f"t4_{n}.ipynb": 0.4 for n in ALL_LEGS}
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, durations=durations)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, durations = durations)
     for card, together in driven["stub"].same_card_overlaps:
         assert "t4_gptoss.ipynb" not in together, (card, together)
 
@@ -3086,7 +3086,7 @@ def test_two_small_legs_do_share_a_card(tmp_path):
     the suite would stay green.
     """
     durations = {f"t4_{n}.ipynb": 0.4 for n in ALL_LEGS}
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, durations=durations)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, durations = durations)
     assert driven[
         "stub"
     ].same_card_overlaps, "no card ever held two legs at once, so the VRAM budget bought nothing"
@@ -3112,7 +3112,7 @@ def test_the_declared_vram_matches_what_the_legs_reported():
     this test.
     """
     measured = json.loads(
-        (Path(__file__).parent / "t4_smoke" / "measured_vram.json").read_text(encoding="utf-8")
+        (Path(__file__).parent / "t4_smoke" / "measured_vram.json").read_text(encoding = "utf-8")
     )
     for name, peak in measured["peak_reserved_gb"].items():
         declared = LEGS[name].vram_gb
@@ -3138,7 +3138,7 @@ def test_studio_waits_for_the_queue_by_default(tmp_path, monkeypatch):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", AMBIENT_CUDA)
     durations = {f"t4_{n}.ipynb": 0.4 for n in ALL_LEGS}
     durations[STUDIO_INSTALL] = 0.1
-    driven = _drive_packed(tmp_path, ALL_LEGS, gpus=2, studio=STUDIO, durations=durations)
+    driven = _drive_packed(tmp_path, ALL_LEGS, gpus = 2, studio = STUDIO, durations = durations)
     calls = {c["notebook"]: c for c in driven["stub"].papermill}
     assert calls[STUDIO_TEST]["cuda"] == AMBIENT_CUDA, calls[STUDIO_TEST]
     legs = [
@@ -3167,10 +3167,10 @@ def test_studio_concurrent_takes_a_card_gptoss_is_not_on(tmp_path):
     driven = _drive_packed(
         tmp_path,
         ["gptoss"],
-        gpus=2,
-        studio=STUDIO,
-        durations={"t4_gptoss.ipynb": 4.0, STUDIO_INSTALL: 0.05},
-        after_gpu_concurrent=True,
+        gpus = 2,
+        studio = STUDIO,
+        durations = {"t4_gptoss.ipynb": 4.0, STUDIO_INSTALL: 0.05},
+        after_gpu_concurrent = True,
     )
     calls = {c["notebook"]: c for c in driven["stub"].papermill}
     assert STUDIO_TEST in calls, sorted(calls)
@@ -3205,22 +3205,22 @@ def test_studio_concurrent_still_skips_when_its_install_failed(tmp_path):
                         "compile_location": None,
                     }
                 )
-                Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding="utf-8")
-                return types.SimpleNamespace(returncode=1, stdout="", stderr="")
+                Path(cmd[cmd.index("papermill") + 2]).write_text("{}", encoding = "utf-8")
+                return types.SimpleNamespace(returncode = 1, stdout = "", stderr = "")
             return super().run(cmd, **kw)
 
     driver = build_kernel.build_kernel(
         SMOKE_DIR,
         ALL_LEGS,
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=60,
-        skip_reference=True,
-        studio=STUDIO,
-        after_gpu_concurrent=True,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 60,
+        skip_reference = True,
+        studio = STUDIO,
+        after_gpu_concurrent = True,
     )
-    stub = _InstallFails(gpus=2, durations={f"t4_{n}.ipynb": 0.3 for n in ALL_LEGS})
+    stub = _InstallFails(gpus = 2, durations = {f"t4_{n}.ipynb": 0.3 for n in ALL_LEGS})
     stub.root = tmp_path
     stub.venv_root = tmp_path / "venvs"
     saved = sys.modules["subprocess"]
@@ -3269,7 +3269,7 @@ def test_a_legs_overlay_reaches_its_payload_and_never_carries_torch(tmp_path):
     original = LEGS[leg].overlay
     object.__setattr__(LEGS[leg], "overlay", overlay)
     try:
-        stub = _drive_packed(tmp_path, [leg], gpus=2)["stub"]
+        stub = _drive_packed(tmp_path, [leg], gpus = 2)["stub"]
     finally:
         object.__setattr__(LEGS[leg], "overlay", original)
 
@@ -3301,7 +3301,7 @@ def test_a_leg_with_no_overlay_gets_no_pythonpath(tmp_path):
     empty directory, to anything -- would satisfy the first guard while giving
     every leg the same environment. The legs' whole purpose is that they differ.
     """
-    stub = _drive_packed(tmp_path, ["control"], gpus=2)["stub"]
+    stub = _drive_packed(tmp_path, ["control"], gpus = 2)["stub"]
     assert not [
         c for c in stub.overlay_installs if "--target" in c
     ], "a leg declaring no overlay had one built for it"

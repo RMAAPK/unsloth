@@ -27,20 +27,20 @@ def shared_cache(monkeypatch, tmp_path):
     monkeypatch.setattr(policy, "installation_is_multi_user", lambda: True)
     cache = tmp_path / "hub-cache"
     for repo in ("public--set", "private--set"):
-        (cache / f"datasets--{repo}" / "snapshots" / "rev").mkdir(parents=True)
+        (cache / f"datasets--{repo}" / "snapshots" / "rev").mkdir(parents = True)
     monkeypatch.setattr(hf_cache_settings, "active_hf_hub_cache", lambda: str(cache))
     monkeypatch.setattr(hf_cache_settings, "known_hf_hub_caches", lambda: [cache])
     monkeypatch.setattr(account_access, "model_grants", lambda: set())
     monkeypatch.setattr(
         account_access,
         "repo_is_public",
-        lambda repo_id, repo_type="model": not repo_id.startswith("private/"),
+        lambda repo_id, repo_type = "model": not repo_id.startswith("private/"),
     )
     # Bob already downloaded both; the cache lookup finds them for anyone.
     monkeypatch.setattr(
         dataset_cache,
         "training_dataset_cache_pin",
-        lambda repo_id, local_path=None: (
+        lambda repo_id, local_path = None: (
             cache / f"datasets--{repo_id.replace('/', '--')}" / "snapshots" / "rev",
             "rev",
         ),
@@ -53,11 +53,11 @@ def shared_cache(monkeypatch, tmp_path):
 
 def _request(dataset: str) -> TrainingStartRequest:
     return TrainingStartRequest(
-        model_name="public/model",
-        hf_dataset=dataset,
-        hf_token="not-a-real-token",
-        training_type="LoRA/QLoRA",
-        format_type="alpaca",
+        model_name = "public/model",
+        hf_dataset = dataset,
+        hf_token = "not-a-real-token",
+        training_type = "LoRA/QLoRA",
+        format_type = "alpaca",
     )
 
 

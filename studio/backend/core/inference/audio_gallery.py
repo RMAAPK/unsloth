@@ -50,13 +50,13 @@ def save(wav_bytes: bytes, meta: dict[str, Any]) -> dict[str, Any]:
     sidecar_tmp = directory / f".{audio_id}.json.tmp"
     try:
         wav_tmp.write_bytes(wav_bytes)
-        sidecar_tmp.write_text(json.dumps(meta), encoding = "utf-8")
+        sidecar_tmp.write_text(json.dumps(meta), encoding="utf-8")
         os.replace(wav_tmp, wav_path)
         os.replace(sidecar_tmp, sidecar)
     except BaseException:
         for path in (wav_tmp, sidecar_tmp, wav_path, sidecar):
             try:
-                path.unlink(missing_ok = True)
+                path.unlink(missing_ok=True)
             except OSError:
                 pass
         raise
@@ -121,10 +121,10 @@ def _prune_to_cap() -> int:
     try:
         # Select AND delete under one lock, as clear() does. Choosing victims from a snapshot and unlinking after it
         # leaves a window where an archive lands and is deleted anyway.
-        with gallery_flags.exclusive(directory, require_file_lock = True):
+        with gallery_flags.exclusive(directory, require_file_lock=True):
             # By age, not display order: a clip dragged down is not older. Pinned clips are exempt.
             entries = [e for e in _list_audio_entries() if not e[0].get("pinned")]
-            entries.sort(key = lambda e: _mtime(gallery_dir() / f"{e[0]['id']}.wav"), reverse = True)
+            entries.sort(key=lambda e: _mtime(gallery_dir() / f"{e[0]['id']}.wav"), reverse=True)
 
             # Newest first, so the index where either budget runs out is the cut point. The newest is always kept:
             # dropping what the caller just generated looks like a silent failure.
@@ -230,7 +230,7 @@ _REQUIRED_META = (
 
 def _read_meta(sidecar: Path) -> Optional[dict[str, Any]]:
     try:
-        raw = sidecar.read_text(encoding = "utf-8")
+        raw = sidecar.read_text(encoding="utf-8")
     except (OSError, UnicodeError):
         return None
     try:
@@ -293,7 +293,7 @@ def _list_audio_entries(
     flags = gallery_flags.read(gallery_dir())
     paths = [p for p in paths if gallery_flags.is_archived(flags, p.stem) == archived]
     keyed_paths = [(_sort_key(flags, path), path) for path in paths]
-    keyed_paths.sort(key = lambda item: item[0], reverse = True)
+    keyed_paths.sort(key=lambda item: item[0], reverse=True)
     want = None if limit is None else offset + limit
     entries = []
     for cursor, path in keyed_paths:
@@ -328,7 +328,7 @@ def list_audio(
     return [
         record
         for record, _ in _list_audio_entries(
-            limit, offset, before = before, valid = valid, archived = archived
+            limit, offset, before=before, valid=valid, archived=archived
         )
     ]
 
@@ -342,7 +342,7 @@ def list_audio_page(
     archived: bool = False,
 ) -> list[tuple[dict[str, Any], GalleryCursor]]:
     """Return records with their stable pagination keys for the HTTP route."""
-    return _list_audio_entries(limit, offset, before = before, valid = valid, archived = archived)
+    return _list_audio_entries(limit, offset, before=before, valid=valid, archived=archived)
 
 
 def set_flags(
@@ -355,7 +355,7 @@ def set_flags(
     with gallery_flags.exclusive(gallery_dir()):
         if owned_audio_path(audio_id) is None:
             return None
-        gallery_flags.set_flags_locked(gallery_dir(), audio_id, pinned = pinned, archived = archived)
+        gallery_flags.set_flags_locked(gallery_dir(), audio_id, pinned=pinned, archived=archived)
         meta = _read_meta(_sidecar_path(audio_id))
     if meta is None:
         return None
@@ -381,9 +381,9 @@ def move(audio_id: str, after_id: Optional[str]) -> Optional[dict[str, Any]]:
             ]
         except OSError:
             paths = []
-        paths.sort(key = lambda p: _sort_key(flags, p), reverse = True)
+        paths.sort(key=lambda p: _sort_key(flags, p), reverse=True)
         keyed = [(p.stem, _mtime(p)) for p in paths]
-        gallery_flags.place_locked(gallery_dir(), audio_id, keyed, after_id = after_id)
+        gallery_flags.place_locked(gallery_dir(), audio_id, keyed, after_id=after_id)
         meta = _read_meta(_sidecar_path(audio_id))
     if meta is None:
         return None
@@ -422,7 +422,7 @@ def clear(include_archived: bool = False) -> int:
     FlagsUnavailable when the flag store cannot be read."""
     removed = 0
     directory = gallery_dir()
-    with gallery_flags.exclusive(directory, require_file_lock = not include_archived):
+    with gallery_flags.exclusive(directory, require_file_lock=not include_archived):
         flags = {} if include_archived else gallery_flags.read_trusted(directory)
         try:
             paths = list(directory.glob("*.wav"))

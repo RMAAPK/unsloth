@@ -30,7 +30,7 @@ class _ScriptedQueue:
     def __init__(self, items):
         self._items = list(items)
 
-    def get(self, timeout = None):
+    def get(self, timeout=None):
         if self._items:
             return self._items.pop(0)
         raise queue.Empty
@@ -54,15 +54,15 @@ def test_dispatcher_survives_malformed_response_and_routes_next():
     # the following valid response must still reach its mailbox.
     o._resp_queue = _ScriptedQueue([12345, {"request_id": rid, "type": "token", "text": "hi"}])
 
-    t = threading.Thread(target = o._dispatcher_loop, daemon = True)
+    t = threading.Thread(target=o._dispatcher_loop, daemon=True)
     t.start()
     try:
-        got = mbox.get(timeout = 5)
+        got = mbox.get(timeout=5)
         assert got["text"] == "hi", "valid response must route despite the prior bad one"
         assert t.is_alive(), "dispatcher must survive a malformed response"
     finally:
         o._dispatcher_stop.set()
-        t.join(timeout = 5)
+        t.join(timeout=5)
     assert not t.is_alive()
 
 
@@ -83,22 +83,22 @@ def test_dispatcher_survives_mailbox_put_error():
         ]
     )
 
-    t = threading.Thread(target = o._dispatcher_loop, daemon = True)
+    t = threading.Thread(target=o._dispatcher_loop, daemon=True)
     t.start()
     try:
-        got = good.get(timeout = 5)
+        got = good.get(timeout=5)
         assert got["text"] == "ok"
         assert t.is_alive()
     finally:
         o._dispatcher_stop.set()
-        t.join(timeout = 5)
+        t.join(timeout=5)
     assert not t.is_alive()
 
 
 def test_route_llama_streaming_async_clients_disable_proxy_env():
     """Local llama-server streaming proxies must ignore ambient HTTP_PROXY."""
     source = (Path(__file__).resolve().parent.parent / "routes" / "inference.py").read_text(
-        encoding = "utf-8"
+        encoding="utf-8"
     )
     tree = ast.parse(source)
     calls = []
@@ -155,7 +155,7 @@ def test_rerouting_a_foreign_response_moves_worker_ownership():
     read_one, _drain, release = _direct_reader_calls(o, "mine")
     o._scripted = [{"request_id": "theirs", "type": "token", "text": "hi"}]
 
-    assert read_one(timeout = 0.1) is None, "a foreign response is routed, not returned"
+    assert read_one(timeout=0.1) is None, "a foreign response is routed, not returned"
     assert compare_mailbox.get_nowait()["text"] == "hi"
     assert o._owns_worker(theirs), "the compare request is the one the worker answered"
     assert not o._owns_worker(mine), "so a late reset from the direct request must not fire"
@@ -176,7 +176,7 @@ def test_rerouting_a_foreign_gen_done_retires_that_request():
     read_one, _drain, release = _direct_reader_calls(o, "mine")
     o._scripted = [{"request_id": "theirs", "type": "gen_done"}]
 
-    assert read_one(timeout = 0.1) is None
+    assert read_one(timeout=0.1) is None
     assert not o._owns_worker(theirs), "retired once its last response was routed"
     assert o._owns_worker(mine), "the next claim takes over"
     release()
@@ -184,7 +184,7 @@ def test_rerouting_a_foreign_gen_done_retires_that_request():
 
 def _direct_reader_calls(o, request_id):
     """_direct_reader wired to a scripted _read_resp (o._scripted, popped in order)."""
-    o._read_resp = lambda timeout = 1.0: o._scripted.pop(0) if o._scripted else None
+    o._read_resp = lambda timeout=1.0: o._scripted.pop(0) if o._scripted else None
     return o._direct_reader(request_id)
 
 
@@ -201,8 +201,8 @@ def test_direct_reader_discards_responses_from_released_requests(response_type):
     ]
     read_one, _drain, release = _direct_reader_calls(o, "current")
     try:
-        assert read_one(timeout = 0.1) is None
-        assert read_one(timeout = 0.1) == current
+        assert read_one(timeout=0.1) is None
+        assert read_one(timeout=0.1) == current
     finally:
         release()
 
@@ -214,8 +214,8 @@ def test_direct_reader_discards_only_what_is_addressed_to_someone_else():
     o._scripted = [worker_error, {"request_id": "", "type": "gen_done"}]
     read_one, _drain, release = _direct_reader_calls(o, "current")
     try:
-        assert read_one(timeout = 0.1) == worker_error
-        assert read_one(timeout = 0.1) == {"request_id": "", "type": "gen_done"}
+        assert read_one(timeout=0.1) == worker_error
+        assert read_one(timeout=0.1) == {"request_id": "", "type": "gen_done"}
     finally:
         release()
 
@@ -231,7 +231,7 @@ def test_discarding_a_released_response_leaves_worker_ownership_alone():
 
     read_one, _drain, release = _direct_reader_calls(o, "current")
     try:
-        assert read_one(timeout = 0.1) is None
+        assert read_one(timeout=0.1) is None
         assert o._owns_worker(mine), "a discarded frame must not move the executor"
         assert not o._owns_worker(theirs)
     finally:
@@ -249,7 +249,7 @@ def test_direct_reader_drain_waits_for_its_own_terminal_response():
     o._ensure_subprocess_alive = lambda: True
     _read_one, drain, release = _direct_reader_calls(o, "current")
     try:
-        assert drain(timeout = 1.0)
+        assert drain(timeout=1.0)
         assert not o._scripted, "an orphan gen_done must not end the current drain early"
     finally:
         release()

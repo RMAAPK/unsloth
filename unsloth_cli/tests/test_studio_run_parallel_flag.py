@@ -32,7 +32,6 @@ def _load_run_command():
     """Import `studio` without triggering server start; backend imports
     are lazy inside run()."""
     from unsloth_cli.commands import studio as _studio
-
     return _studio
 
 
@@ -239,20 +238,20 @@ def _invoke_run(
     monkeypatch,
     args,
     *,
-    platform="linux",
+    platform = "linux",
 ):
     import typer as _typer
 
     studio_mod = _load_run_command()
-    captured = _install_reexec_capture(monkeypatch, platform=platform)
+    captured = _install_reexec_capture(monkeypatch, platform = platform)
     app = _typer.Typer()
     app.command(
-        context_settings={
+        context_settings = {
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
     )(studio_mod.run)
-    result = CliRunner().invoke(app, args, catch_exceptions=True)
+    result = CliRunner().invoke(app, args, catch_exceptions = True)
     return result, captured
 
 
@@ -288,7 +287,7 @@ def test_reexec_hands_off_start_api_key_marker_out_of_band(monkeypatch, platform
     result, captured = _invoke_run(
         monkeypatch,
         _BASE + ["--start-api-key-marker"],
-        platform=platform,
+        platform = platform,
     )
     assert len(captured) == 1, result.output
     assert "--start-api-key-marker" not in captured[0]["argv"]
@@ -343,7 +342,7 @@ def test_in_venv_child_reports_bound_port_before_start_api_key(
 
     app = _typer.Typer()
     app.command(
-        context_settings={
+        context_settings = {
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
@@ -351,7 +350,7 @@ def test_in_venv_child_reports_bound_port_before_start_api_key(
     result = CliRunner().invoke(
         app,
         _BASE + ["--port", "8888", "--start-api-key-marker"],
-        catch_exceptions=True,
+        catch_exceptions = True,
     )
 
     assert "UNSLOTH_START_PORT: 8889\nUNSLOTH_START_API_KEY: sk-unsloth-test\n" in result.output
@@ -361,8 +360,8 @@ def test_run_default_sets_tool_call_env(monkeypatch):
     """Plain `unsloth run` enables healing and nudging via the inherited env
     (written before the re-exec so the child server picks them up at import)."""
     studio_mod = _load_run_command()
-    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising=False)
-    monkeypatch.delenv("UNSLOTH_TOOL_CALL_NUDGE", raising=False)
+    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising = False)
+    monkeypatch.delenv("UNSLOTH_TOOL_CALL_NUDGE", raising = False)
     _invoke_run(monkeypatch, _BASE)
     assert studio_mod.os.environ["UNSLOTH_DISABLE_TOOL_CALL_HEALING"] == "0"
     assert studio_mod.os.environ["UNSLOTH_TOOL_CALL_NUDGE"] == "1"
@@ -371,8 +370,8 @@ def test_run_default_sets_tool_call_env(monkeypatch):
 def test_run_disable_flags_set_tool_call_env(monkeypatch):
     """`--disable-tool-call-healing --disable-tool-call-nudging` flips both env vars."""
     studio_mod = _load_run_command()
-    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising=False)
-    monkeypatch.delenv("UNSLOTH_TOOL_CALL_NUDGE", raising=False)
+    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising = False)
+    monkeypatch.delenv("UNSLOTH_TOOL_CALL_NUDGE", raising = False)
     _invoke_run(
         monkeypatch,
         _BASE + ["--disable-tool-call-healing", "--disable-tool-call-nudging"],
@@ -387,7 +386,7 @@ def test_run_omitted_flag_respects_inherited_env(monkeypatch, inherited):
     instead of being reset to the default."""
     studio_mod = _load_run_command()
     monkeypatch.setenv("UNSLOTH_TOOL_CALL_NUDGE", inherited)
-    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising=False)
+    monkeypatch.delenv("UNSLOTH_DISABLE_TOOL_CALL_HEALING", raising = False)
     _invoke_run(monkeypatch, _BASE)
     assert studio_mod.os.environ["UNSLOTH_TOOL_CALL_NUDGE"] == inherited
 
@@ -407,7 +406,7 @@ def test_run_sampling_flags_set_env(monkeypatch):
     an omitted sampling flag leaves its env unset so the per-model recommendation stays."""
     studio_mod = _load_run_command()
     for _v in _SAMPLING_ENV_SUFFIXES:
-        monkeypatch.delenv(f"UNSLOTH_SAMPLING_{_v}", raising=False)
+        monkeypatch.delenv(f"UNSLOTH_SAMPLING_{_v}", raising = False)
     _invoke_run(monkeypatch, _BASE + ["--temperature", "0.3", "--top-k", "40"])
     assert studio_mod.os.environ["UNSLOTH_SAMPLING_TEMPERATURE"] == "0.3"
     assert studio_mod.os.environ["UNSLOTH_SAMPLING_TOP_K"] == "40"
@@ -418,7 +417,7 @@ def test_run_no_sampling_flags_leaves_env_unset(monkeypatch):
     """Plain `unsloth run` writes no UNSLOTH_SAMPLING_*; the server keeps the recommendation."""
     studio_mod = _load_run_command()
     for _v in _SAMPLING_ENV_SUFFIXES:
-        monkeypatch.delenv(f"UNSLOTH_SAMPLING_{_v}", raising=False)
+        monkeypatch.delenv(f"UNSLOTH_SAMPLING_{_v}", raising = False)
     _invoke_run(monkeypatch, _BASE)
     assert not any(k.startswith("UNSLOTH_SAMPLING_") for k in studio_mod.os.environ)
 
@@ -432,7 +431,7 @@ def test_run_rejects_out_of_range_sampling_flag(monkeypatch):
 @pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
 def test_reexec_argv_is_consistent_across_platforms(monkeypatch, platform):
     """Linux/Darwin (execvp) and Windows (Popen) must build the same argv."""
-    result, captured = _invoke_run(monkeypatch, _BASE + ["--parallel", "12"], platform=platform)
+    result, captured = _invoke_run(monkeypatch, _BASE + ["--parallel", "12"], platform = platform)
     assert len(captured) == 1
     expected_kind = "popen" if platform == "win32" else "execvp"
     assert (
@@ -563,14 +562,14 @@ def test_load_model_http_payload_for_gpu_memory_mode(monkeypatch, mode, expected
 
     monkeypatch.setattr(studio_mod, "_direct_urlopen", urlopen)
     result = studio_mod._load_model_via_http(
-        port=8888,
-        api_key="sk-test",
-        model="owner/model-GGUF",
-        gguf_variant=None,
-        max_seq_length=0,
-        load_in_4bit=True,
-        gpu_memory_mode=mode,
-        request_host="::1",
+        port = 8888,
+        api_key = "sk-test",
+        model = "owner/model-GGUF",
+        gguf_variant = None,
+        max_seq_length = 0,
+        load_in_4bit = True,
+        gpu_memory_mode = mode,
+        request_host = "::1",
     )
 
     assert result == {"model": "owner/model-GGUF"}
@@ -592,7 +591,7 @@ def test_health_poll_brackets_an_ipv6_request_host(monkeypatch):
 
     monkeypatch.setattr(studio_mod, "_direct_urlopen", _urlopen)
 
-    assert studio_mod._wait_for_server(8888, timeout=1, request_host="::1") is True
+    assert studio_mod._wait_for_server(8888, timeout = 1, request_host = "::1") is True
     assert urls == [("http://[::1]:8888/api/health", 2)]
 
 
@@ -609,7 +608,7 @@ def test_internal_request_urls_encode_an_ipv6_scope(monkeypatch):
 
     monkeypatch.setattr(studio_mod, "_direct_urlopen", _urlopen)
 
-    assert studio_mod._wait_for_server(8888, timeout=1, request_host="fe80::1234%7") is True
+    assert studio_mod._wait_for_server(8888, timeout = 1, request_host = "fe80::1234%7") is True
     assert urls == ["http://[fe80::1234%257]:8888/api/health"]
 
 
@@ -631,7 +630,7 @@ def test_process_local_http_opener_disables_proxies_and_redirects(monkeypatch):
     monkeypatch.setattr(studio_mod, "_direct_http_opener", None)
     monkeypatch.setattr(studio_mod.urllib.request, "build_opener", _build_opener)
 
-    with studio_mod._direct_urlopen("http://192.0.2.24:8888/api/health", timeout=2):
+    with studio_mod._direct_urlopen("http://192.0.2.24:8888/api/health", timeout = 2):
         pass
 
     proxy_handler = next(
@@ -647,7 +646,7 @@ def test_process_local_http_opener_disables_proxies_and_redirects(monkeypatch):
     assert proxy_handler.proxies == {}
     assert opened == [("http://192.0.2.24:8888/api/health", 2)]
     request = studio_mod.urllib.request.Request("http://192.0.2.24:8888/api/inference/load")
-    with pytest.raises(studio_mod.urllib.error.HTTPError, match="refusing redirect"):
+    with pytest.raises(studio_mod.urllib.error.HTTPError, match = "refusing redirect"):
         redirect_handler.redirect_request(
             request,
             None,
@@ -668,14 +667,14 @@ def test_load_model_http_payload_for_dspark(monkeypatch):
 
     monkeypatch.setattr(studio_mod, "_direct_urlopen", urlopen)
     studio_mod._load_model_via_http(
-        port=8888,
-        api_key="sk-test",
-        model="owner/model-GGUF",
-        gguf_variant=None,
-        max_seq_length=8192,
-        load_in_4bit=True,
-        speculative_type="dspark",
-        spec_draft_n_max=3,
+        port = 8888,
+        api_key = "sk-test",
+        model = "owner/model-GGUF",
+        gguf_variant = None,
+        max_seq_length = 8192,
+        load_in_4bit = True,
+        speculative_type = "dspark",
+        spec_draft_n_max = 3,
     )
 
     payload = json.loads(captured["request"].data)
@@ -701,12 +700,12 @@ def test_load_model_http_fails_on_a_deferred_error(monkeypatch):
     monkeypatch.setattr(studio_mod, "_direct_urlopen", urlopen)
     with pytest.raises(RuntimeError) as excinfo:
         studio_mod._load_model_via_http(
-            port=8888,
-            api_key="sk-test",
-            model="owner/model-GGUF",
-            gguf_variant=None,
-            max_seq_length=0,
-            load_in_4bit=True,
+            port = 8888,
+            api_key = "sk-test",
+            model = "owner/model-GGUF",
+            gguf_variant = None,
+            max_seq_length = 0,
+            load_in_4bit = True,
         )
     assert "HTTP 507" in str(excinfo.value)
     assert "CUDA out of memory" in str(excinfo.value)
@@ -720,12 +719,12 @@ def test_load_model_http_rejects_a_truncated_padded_body(monkeypatch, body):
     monkeypatch.setattr(studio_mod, "_direct_urlopen", lambda request, timeout: BytesIO(body))
     with pytest.raises(RuntimeError) as excinfo:
         studio_mod._load_model_via_http(
-            port=8888,
-            api_key="sk-test",
-            model="owner/model-GGUF",
-            gguf_variant=None,
-            max_seq_length=0,
-            load_in_4bit=True,
+            port = 8888,
+            api_key = "sk-test",
+            model = "owner/model-GGUF",
+            gguf_variant = None,
+            max_seq_length = 0,
+            load_in_4bit = True,
         )
     assert "did not report completion" in str(excinfo.value)
 
@@ -796,7 +795,6 @@ class _RunServerCaptured(SystemExit):
 
 def _types_module(name):
     import types as _types
-
     return _types.ModuleType(name)
 
 
@@ -808,7 +806,7 @@ def test_studio_default_rejects_parallel_when_subcommand_invoked():
     import typer as _typer
 
     app = _typer.Typer()
-    app.add_typer(studio_mod.studio_app, name="studio")
+    app.add_typer(studio_mod.studio_app, name = "studio")
 
     runner = CliRunner()
     result = runner.invoke(app, ["studio", "--parallel", "8", "run", "--model", "X"])
@@ -831,7 +829,7 @@ def test_studio_default_rejects_api_only_when_subcommand_invoked():
     import typer as _typer
 
     app = _typer.Typer()
-    app.add_typer(studio_mod.studio_app, name="studio")
+    app.add_typer(studio_mod.studio_app, name = "studio")
 
     runner = CliRunner()
     result = runner.invoke(app, ["studio", "--api-only", "run", "--model", "X"])
@@ -853,7 +851,7 @@ def test_studio_default_default_parallel_with_subcommand_does_not_error():
     import typer as _typer
 
     app = _typer.Typer()
-    app.add_typer(studio_mod.studio_app, name="studio")
+    app.add_typer(studio_mod.studio_app, name = "studio")
     runner = CliRunner()
     result = runner.invoke(app, ["studio", "--help"])
     assert result.exit_code == 0, result.output
@@ -924,12 +922,12 @@ def test_in_venv_path_passes_parallel_to_run_server(
 
     app = _typer.Typer()
     app.command(
-        context_settings={
+        context_settings = {
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
     )(studio_mod.run)
-    CliRunner().invoke(app, _BASE + ["--parallel", str(value)], catch_exceptions=True)
+    CliRunner().invoke(app, _BASE + ["--parallel", str(value)], catch_exceptions = True)
 
     assert (
         captured.get("llama_parallel_slots") == value
@@ -1016,12 +1014,12 @@ def test_in_venv_path_passes_api_only_to_run_server(
 
     app = _typer.Typer()
     app.command(
-        context_settings={
+        context_settings = {
             "allow_extra_args": True,
             "ignore_unknown_options": True,
         },
     )(studio_mod.run)
-    CliRunner().invoke(app, _BASE + extra, catch_exceptions=True)
+    CliRunner().invoke(app, _BASE + extra, catch_exceptions = True)
 
     assert (
         captured.get("api_only") is expected

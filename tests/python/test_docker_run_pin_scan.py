@@ -52,7 +52,7 @@ def _load_run(sidecar_root):
 def sidecar_root(tmp_path):
     root = tmp_path / "tf-sidecars"
     for name in ("t_5_5_0", "t_5_10_2"):
-        (root / name).mkdir(parents=True)
+        (root / name).mkdir(parents = True)
     (root / ".vllm_min_transformers").write_text("5.5.0\n")
     return root
 
@@ -88,27 +88,27 @@ GEMMA4_12B = 'model, tok = FastModel.from_pretrained("unsloth/gemma-4-12b-it")\n
     [
         pytest.param(
             "# !pip install --no-deps transformers==4.57.6\n!pip install unsloth\n",
-            id="commented-out-install",
+            id = "commented-out-install",
         ),
         pytest.param(
             "!pip install unsloth  # was transformers==4.57.6 before the 5.x bump\n",
-            id="trailing-comment",
+            id = "trailing-comment",
         ),
         pytest.param(
             '"""Colab used to need transformers==4.57.6 here."""\n!pip install unsloth\n',
-            id="docstring",
+            id = "docstring",
         ),
         pytest.param(
             'print("upgrade from transformers==4.57.6 if you hit an import error")\n',
-            id="string-literal",
+            id = "string-literal",
         ),
         pytest.param(
             "_legacy = 'transformers==4.57.6'  # no longer applied\n!pip install unsloth\n",
-            id="assigned-but-unused",
+            id = "assigned-but-unused",
         ),
         pytest.param(
             "   # !uv pip install transformers==4.57.6\n!pip install unsloth\n",
-            id="indented-comment",
+            id = "indented-comment",
         ),
     ],
 )
@@ -124,24 +124,24 @@ def test_a_mention_that_installs_nothing_is_not_a_pin(run_mod, cell):
         pytest.param(
             '!pip install --no-deps transformers==5.10.1 "tokenizers>=0.22.0"\n',
             "5.10.1",
-            id="bang-pip",
+            id = "bang-pip",
         ),
-        pytest.param("%pip install transformers==5.5.0\n", "5.5.0", id="percent-pip"),
-        pytest.param("!pip3 install transformers==5.5.0\n", "5.5.0", id="pip3"),
-        pytest.param('!uv pip install --system -qqq "transformers==5.2.0"\n', "5.2.0", id="uv-pip"),
-        pytest.param("!python -m pip install transformers==5.3.0\n", "5.3.0", id="python-m-pip"),
+        pytest.param("%pip install transformers==5.5.0\n", "5.5.0", id = "percent-pip"),
+        pytest.param("!pip3 install transformers==5.5.0\n", "5.5.0", id = "pip3"),
+        pytest.param('!uv pip install --system -qqq "transformers==5.2.0"\n', "5.2.0", id = "uv-pip"),
+        pytest.param("!python -m pip install transformers==5.3.0\n", "5.3.0", id = "python-m-pip"),
         pytest.param(
-            "!{sys.executable} -m pip install transformers==5.3.0\n", "5.3.0", id="sys-executable"
+            "!{sys.executable} -m pip install transformers==5.3.0\n", "5.3.0", id = "sys-executable"
         ),
-        pytest.param("!pip -q install transformers==5.5.0\n", "5.5.0", id="opt-before-install"),
-        pytest.param("pip install transformers==5.5.0\n", "5.5.0", id="bare-shell-cell"),
+        pytest.param("!pip -q install transformers==5.5.0\n", "5.5.0", id = "opt-before-install"),
+        pytest.param("pip install transformers==5.5.0\n", "5.5.0", id = "bare-shell-cell"),
         pytest.param(
             # the pin on a backslash continuation, several lines below the invocation
             "!uv pip install -qqq \\\n"
             '    {_torch} "triton>=3.3.0" {_numpy} torchvision bitsandbytes "transformers==4.56.2" \\\n'
             '    "unsloth[base] @ git+https://github.com/unslothai/unsloth"\n',
             "4.56.2",
-            id="backslash-continuation",
+            id = "backslash-continuation",
         ),
         pytest.param(
             # installs indented inside the Colab guard
@@ -152,7 +152,7 @@ def test_a_mention_that_installs_nothing_is_not_a_pin(run_mod, cell):
             "else:\n"
             "    !pip install --no-deps transformers==5.10.1\n",
             "5.10.1",
-            id="indented-inside-guard",
+            id = "indented-inside-guard",
         ),
     ],
 )
@@ -175,7 +175,7 @@ def _launch(run_mod, monkeypatch, tmp_path, nb, name):
 
     def fake_call(
         cmd,
-        env=None,
+        env = None,
         **kwargs,
     ):
         seen["cmd"] = cmd
@@ -184,9 +184,9 @@ def _launch(run_mod, monkeypatch, tmp_path, nb, name):
         seen["marker"] = Path(marker).read_text().strip() if marker else None
         return 0
 
-    monkeypatch.setattr(run_mod, "subprocess", SimpleNamespace(call=fake_call))
+    monkeypatch.setattr(run_mod, "subprocess", SimpleNamespace(call = fake_call))
     monkeypatch.setattr(sys, "argv", ["unsloth-run", str(src)])
-    monkeypatch.delenv("UNSLOTH_NB_TF_MARKER", raising=False)
+    monkeypatch.delenv("UNSLOTH_NB_TF_MARKER", raising = False)
     with pytest.raises(SystemExit) as exc:
         run_mod.main()
     assert exc.value.code == 0
@@ -259,14 +259,14 @@ def test_a_url_fetch_is_bounded(run_mod, monkeypatch):
     assert seen["timeout"] == run_mod.DEFAULT_FETCH_TIMEOUT
     assert seen["timeout"] is not None and seen["timeout"] > 0
 
-    run_mod._load("https://example.invalid/x.ipynb", fetch_timeout=7)
+    run_mod._load("https://example.invalid/x.ipynb", fetch_timeout = 7)
     assert seen["timeout"] == 7
 
 
 def test_the_stall_limit_is_separate_from_the_execution_budget(run_mod):
     """--timeout is nbconvert's whole-notebook budget, an hour by default; reusing it
     for the download would mean an hour of silence before the first cell."""
-    source = (REPO_ROOT / "docker" / "unsloth_run.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "docker" / "unsloth_run.py").read_text(encoding = "utf-8")
     assert "--fetch-timeout" in source
     assert run_mod.DEFAULT_FETCH_TIMEOUT < 3600
 
@@ -276,7 +276,7 @@ def test_a_local_path_is_not_given_a_timeout(run_mod, tmp_path):
     path = tmp_path / "x.ipynb"
     path.write_text(
         json.dumps({"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     assert run_mod._load(str(path)) == {
         "cells": [],
@@ -300,7 +300,7 @@ def _launch_with_inherited_marker(run_mod, monkeypatch, tmp_path, nb, caller_pin
 
     def fake_call(
         cmd,
-        env=None,
+        env = None,
         **kwargs,
     ):
         seen["env"] = dict(env or {})
@@ -309,7 +309,7 @@ def _launch_with_inherited_marker(run_mod, monkeypatch, tmp_path, nb, caller_pin
         seen["child_reads"] = Path(m).read_text().strip() if m and os.path.exists(m) else None
         return 0
 
-    monkeypatch.setattr(run_mod, "subprocess", SimpleNamespace(call=fake_call))
+    monkeypatch.setattr(run_mod, "subprocess", SimpleNamespace(call = fake_call))
     monkeypatch.setattr(sys, "argv", ["unsloth-run", str(src)])
     monkeypatch.setenv("UNSLOTH_NB_TF_MARKER", str(caller))
     with pytest.raises(SystemExit) as exc:
@@ -326,7 +326,7 @@ def test_a_run_does_not_overwrite_the_calling_kernels_marker(run_mod, monkeypatc
         monkeypatch,
         tmp_path,
         _nb("!pip install transformers==5.5.0\n"),
-        caller_pin="5.10.2",
+        caller_pin = "5.10.2",
     )
     assert seen["marker_path"] != seen["caller_path"], "the run reused the caller's marker"
     assert (
@@ -341,7 +341,7 @@ def test_an_unpinned_target_does_not_inherit_the_callers_pin(run_mod, monkeypatc
         monkeypatch,
         tmp_path,
         _nb("print('no install here')\n"),
-        caller_pin="5.10.2",
+        caller_pin = "5.10.2",
     )
     assert seen["marker_path"] != seen["caller_path"]
     assert not seen[

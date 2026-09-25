@@ -25,16 +25,16 @@ import _playwright_robust as robust  # noqa: E402
 from _playwright_robust import _WallClockWatchdog  # noqa: E402
 
 CHAT_UI = STUDIO_TESTS / "playwright_chat_ui.py"
-CHAT_UI_SRC = CHAT_UI.read_text(encoding = "utf-8")
+CHAT_UI_SRC = CHAT_UI.read_text(encoding="utf-8")
 CHAT_UI_TREE = ast.parse(CHAT_UI_SRC)
 
 
 def _fired(
     budget_s,
     *,
-    kicks = (),
-    cancel_after = None,
-    run_for = None,
+    kicks=(),
+    cancel_after=None,
+    run_for=None,
 ):
     """Run a watchdog for `run_for` seconds, kicking at each offset in `kicks`."""
     fired = threading.Event()
@@ -57,16 +57,16 @@ def _fired(
 # moves expiry to 1.8s and observation stops at 1.2s, so only a 600ms overshoot could
 # decide the result rather than the watchdog.
 def test_an_unkicked_watchdog_still_fires_at_its_budget():
-    assert _fired(0.4, run_for = 1.6)
+    assert _fired(0.4, run_for=1.6)
 
 
 def test_a_kick_restarts_the_budget():
     """The defect: setup ran before the wait, so the wait inherited what setup left."""
-    assert not _fired(1.0, kicks = (0.4, 0.8), run_for = 1.2)
+    assert not _fired(1.0, kicks=(0.4, 0.8), run_for=1.2)
 
 
 def test_a_cancelled_watchdog_does_not_fire():
-    assert not _fired(0.8, cancel_after = 0.2, run_for = 1.4)
+    assert not _fired(0.8, cancel_after=0.2, run_for=1.4)
 
 
 def test_a_watchdog_that_expires_during_start_still_exits():
@@ -75,7 +75,7 @@ def test_a_watchdog_that_expires_during_start_still_exits():
     # dies of NameError in the daemon thread and the run silently loses its watchdog.
     codes = []
     with mock.patch.object(robust.os, "_exit", codes.append):
-        robust.install_wall_clock_watchdog(0.0, label = "ui")
+        robust.install_wall_clock_watchdog(0.0, label="ui")
         time.sleep(0.5)
     assert codes == [2], codes
 
@@ -86,7 +86,7 @@ def test_a_total_cap_is_a_ceiling_no_kick_can_move():
     Without it a caller sizing a backstop has nothing to size against: every kick moves
     the deadline, so the exit lands at a wall-clock time the caller cannot predict."""
     fired = threading.Event()
-    watchdog = _WallClockWatchdog(10.0, fired.set, total_deadline_s = 0.7).start()
+    watchdog = _WallClockWatchdog(10.0, fired.set, total_deadline_s=0.7).start()
     started = time.monotonic()
     try:
         while time.monotonic() - started < 1.4:
@@ -106,7 +106,7 @@ def test_without_a_total_cap_nothing_is_at_the_ceiling():
 
 def _watchdog_message(kick):
     """The line a real `install_wall_clock_watchdog` prints on expiry, minus the exit."""
-    watchdog = robust.install_wall_clock_watchdog(30.0, label = "ui")
+    watchdog = robust.install_wall_clock_watchdog(30.0, label="ui")
     watchdog.cancel()
     if kick:
         watchdog.kick()
@@ -119,14 +119,14 @@ def _watchdog_message(kick):
 def test_the_message_names_what_actually_ran_out():
     # The scripts that never kick are measuring the whole run, not inactivity; telling
     # their reader to look for a step sends them after one that never existed.
-    assert "hit 30s wall-clock deadline" in _watchdog_message(kick = False)
-    assert "30s with no step reported" in _watchdog_message(kick = True)
+    assert "hit 30s wall-clock deadline" in _watchdog_message(kick=False)
+    assert "30s with no step reported" in _watchdog_message(kick=True)
 
 
 def _chat_ui_wall_timeout_s(
     turn_timeout_ms,
-    load_timeout_ms = 180_000,
-    fetch_timeout_ms = 30_000,
+    load_timeout_ms=180_000,
+    fetch_timeout_ms=30_000,
 ):
     """Evaluate the script's own WALL_TIMEOUT_S expression at a given set of budgets."""
     wanted = {
@@ -151,7 +151,7 @@ def _chat_ui_wall_timeout_s(
         "STUDIO_UI_FETCH_TIMEOUT_MS": str(fetch_timeout_ms),
     }
     ns = {"os": type("_os", (), {"environ": env})}
-    exec(compile(ast.Module(body = body, type_ignores = []), str(CHAT_UI), "exec"), ns)
+    exec(compile(ast.Module(body=body, type_ignores=[]), str(CHAT_UI), "exec"), ns)
     return ns["WALL_TIMEOUT_S"], ns["_LONGEST_WAIT_S"]
 
 
@@ -165,7 +165,7 @@ def test_the_wall_budget_outlasts_the_longest_single_wait():
 def test_a_raised_fetch_budget_also_raises_the_wall():
     # Every budget in the max is an env var, so none of them may be left out on the
     # grounds that no lane raises it today.
-    wall, longest_wait = _chat_ui_wall_timeout_s(180_000, fetch_timeout_ms = 900_000)
+    wall, longest_wait = _chat_ui_wall_timeout_s(180_000, fetch_timeout_ms=900_000)
     assert longest_wait == 900.0
     assert wall >= 900.0 + 120
 
@@ -173,7 +173,7 @@ def test_a_raised_fetch_budget_also_raises_the_wall():
 def test_a_raised_load_budget_also_raises_the_wall():
     # The Kaggle lane sets STUDIO_UI_LOAD_TIMEOUT_MS to 600000 and leaves the turn timeout
     # at its default, so the load fetch, not the turn, is the longest wait there.
-    wall, longest_wait = _chat_ui_wall_timeout_s(180_000, load_timeout_ms = 600_000)
+    wall, longest_wait = _chat_ui_wall_timeout_s(180_000, load_timeout_ms=600_000)
     assert longest_wait == 600.0
     assert wall >= 600.0 + 120
 

@@ -546,7 +546,7 @@ def test_a_renamed_launcher_marker_inside_unsloth_cmd_is_reported(tmp_path: Path
 
 
 def test_a_version_drift_inside_a_shortcut_is_printed_even_though_it_is_normalised(
-    tmp_path: Path
+    tmp_path: Path,
 ) -> None:
     """normalise_line runs on shortcut fields too, so a launcher retargeted at a different python
     is erased in exactly the same way a patch release is. That is the right call and the wrong one

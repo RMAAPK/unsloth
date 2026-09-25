@@ -35,7 +35,7 @@ import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 SETUP_PS1 = REPO_ROOT / "studio" / "setup.ps1"
-SETUP_SRC = SETUP_PS1.read_text(encoding="utf-8")
+SETUP_SRC = SETUP_PS1.read_text(encoding = "utf-8")
 
 sys.path.insert(0, str(REPO_ROOT / "studio"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "_shared"))
@@ -44,7 +44,7 @@ import install_llama_prebuilt as ip  # noqa: E402
 from unsloth_pwsh_runner import run_pwsh  # noqa: E402
 
 PWSH = shutil.which("pwsh") or shutil.which("powershell")
-requires_pwsh = pytest.mark.skipif(PWSH is None, reason="PowerShell is unavailable")
+requires_pwsh = pytest.mark.skipif(PWSH is None, reason = "PowerShell is unavailable")
 
 TAG = "b9334"
 
@@ -83,21 +83,21 @@ def _host(*, arm64: bool, nvidia: bool, rocm: bool) -> ip.HostInfo:
     """The interpreter's own view of the machine, which is what the selector reads: an
     emulated x64 Python on an ARM64 box reports AMD64, and is an x64 host here."""
     return ip.HostInfo(
-        system="Windows",
-        machine="ARM64" if arm64 else "AMD64",
-        is_windows=True,
-        is_linux=False,
-        is_macos=False,
-        is_x86_64=not arm64,
-        is_arm64=arm64,
-        nvidia_smi="nvidia-smi" if nvidia else None,
-        driver_cuda_version=(13, 0) if nvidia else None,
-        compute_caps=["12.1"] if nvidia else [],
-        visible_cuda_devices=None,
-        has_physical_nvidia=nvidia,
-        has_usable_nvidia=nvidia,
-        has_rocm=rocm,
-        rocm_gfx_target="gfx1201" if rocm else None,
+        system = "Windows",
+        machine = "ARM64" if arm64 else "AMD64",
+        is_windows = True,
+        is_linux = False,
+        is_macos = False,
+        is_x86_64 = not arm64,
+        is_arm64 = arm64,
+        nvidia_smi = "nvidia-smi" if nvidia else None,
+        driver_cuda_version = (13, 0) if nvidia else None,
+        compute_caps = ["12.1"] if nvidia else [],
+        visible_cuda_devices = None,
+        has_physical_nvidia = nvidia,
+        has_usable_nvidia = nvidia,
+        has_rocm = rocm,
+        rocm_gfx_target = "gfx1201" if rocm else None,
     )
 
 
@@ -138,8 +138,8 @@ def _expected_kinds(*, arm64_venv: bool, nvidia: bool, rocm: bool, opt_out: bool
     # across xdist workers kills ~1 startup in 500 before it reaches the script.
     done = run_pwsh(
         [PWSH, "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output=True,
-        timeout=120,
+        capture_output = True,
+        timeout = 120,
     )
     out = done.stdout.decode("utf-8", "replace")
     assert "<<<" in out, done.stderr.decode("utf-8", "replace")
@@ -154,7 +154,7 @@ def _installed_kinds(host: ip.HostInfo) -> list[str]:
 # nvidia and rocm together is not a host we ship to: the ROCm arm wins outright on both sides.
 COMBINATIONS = [
     (arm64_venv, nvidia, rocm, opt_out)
-    for arm64_venv, nvidia, rocm, opt_out in itertools.product([True, False], repeat=4)
+    for arm64_venv, nvidia, rocm, opt_out in itertools.product([True, False], repeat = 4)
     if not (nvidia and rocm)
 ]
 
@@ -163,7 +163,7 @@ COMBINATIONS = [
 @pytest.mark.parametrize(
     ("arm64_venv", "nvidia", "rocm", "opt_out"),
     COMBINATIONS,
-    ids=[
+    ids = [
         "{}-{}{}".format(
             "arm64" if a else "x64",
             "nvidia" if n else ("rocm" if r else "cpu"),
@@ -173,8 +173,8 @@ COMBINATIONS = [
     ],
 )
 def test_the_gate_accepts_what_the_selector_installs(arm64_venv, nvidia, rocm, opt_out):
-    expected = _expected_kinds(arm64_venv=arm64_venv, nvidia=nvidia, rocm=rocm, opt_out=opt_out)
-    installed = _installed_kinds(_host(arm64=arm64_venv, nvidia=nvidia, rocm=rocm))
+    expected = _expected_kinds(arm64_venv = arm64_venv, nvidia = nvidia, rocm = rocm, opt_out = opt_out)
+    installed = _installed_kinds(_host(arm64 = arm64_venv, nvidia = nvidia, rocm = rocm))
     assert installed, "no candidate at all, so this row proves nothing"
     assert installed[0] in expected, (
         f"the gate would delete what the selector just installed, on every update: "
@@ -188,10 +188,10 @@ def test_no_arm64_row_expects_a_kind_only_published_for_x64():
     nothing else is a delete on every update whatever the selector does. windows-vulkan counts
     as x64-only, since upstream's bundle is vulkan-x64."""
     x64_only = {"windows-cuda", "windows-rocm", "windows-hip", "windows-cpu", "windows-vulkan"}
-    for nvidia, rocm, opt_out in itertools.product([True, False], repeat=3):
+    for nvidia, rocm, opt_out in itertools.product([True, False], repeat = 3):
         if nvidia and rocm:
             continue
-        expected = set(_expected_kinds(arm64_venv=True, nvidia=nvidia, rocm=rocm, opt_out=opt_out))
+        expected = set(_expected_kinds(arm64_venv = True, nvidia = nvidia, rocm = rocm, opt_out = opt_out))
         assert expected - x64_only, (
             f"nvidia={nvidia} rocm={rocm} optout={opt_out}: the gate expects only x64 kinds "
             f"on an ARM64 venv: {sorted(expected)}"

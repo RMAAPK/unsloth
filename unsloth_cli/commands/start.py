@@ -703,7 +703,7 @@ def _subagent_model_id(
     key: str,
     entry: dict,
     requested_model: Optional[str],
-    requested_variant: Optional[str]
+    requested_variant: Optional[str],
 ) -> str:
     """Return an API model id that preserves the selected GGUF variant. Coding-agent model definitions outlive the initial load, so if Unsloth later unloads the model a bare repository id may resolve to a different cached quant; include the explicit or currently loaded variant so an automatic reload selects the same weights."""
     model_id = str(entry["id"])

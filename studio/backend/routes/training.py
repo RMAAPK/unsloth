@@ -1342,7 +1342,7 @@ async def get_training_start_request(
         max_length=128,
         pattern=TRAINING_REQUEST_ID_PATTERN,
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     backend = get_training_backend()
     record = backend.get_start_request(start_request_id)
@@ -1370,7 +1370,7 @@ async def acknowledge_training_start_request(
         max_length=128,
         pattern=TRAINING_REQUEST_ID_PATTERN,
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     backend = get_training_backend()
     if not backend.acknowledge_start_request(start_request_id):
@@ -1392,7 +1392,7 @@ async def cancel_training_start_request(
         max_length=128,
         pattern=TRAINING_REQUEST_ID_PATTERN,
     ),
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     backend = get_training_backend()
     try:
@@ -2323,7 +2323,7 @@ def _build_training_status(
 @router.get("/status")
 async def get_training_status(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     """
     Get the current training status.
@@ -3334,7 +3334,7 @@ async def start_diffusion_training(
 @router.post("/diffusion/stop")
 async def stop_diffusion_training(
     body: Optional[DiffusionTrainingStopRequest] = None,
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ):
     """Request a clean stop of the running diffusion training job. The optional body's
     ``save`` mirrors the LLM /stop: true (default, also for an empty POST) exports the

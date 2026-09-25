@@ -91,14 +91,12 @@ def _probe_dir(hub_cache: Optional[Path | str] = None) -> Optional[Path]:
     else:
         try:
             from utils.hf_cache_settings import active_hf_hub_cache
-
             root = Path(active_hf_hub_cache())
         except Exception as exc:  # noqa: BLE001 - outside Unsloth, use the library's own view
             logger.debug("resumable partials: no Unsloth cache setting (%s)", exc)
     if root is None:
         try:
             from huggingface_hub import constants
-
             root = Path(constants.HF_HUB_CACHE)
         except Exception as exc:  # noqa: BLE001 - an unreadable cache is not a lock guarantee
             logger.debug("resumable partials: no hub cache to probe (%s)", exc)
@@ -107,7 +105,7 @@ def _probe_dir(hub_cache: Optional[Path | str] = None) -> Optional[Path]:
         # Asked about a named root, so only report on one that is there: creating it would resurrect a cache the user detached, and an absent root holds no partials to judge.
         return root if root.is_dir() else None
     try:
-        root.mkdir(parents=True, exist_ok=True)
+        root.mkdir(parents = True, exist_ok = True)
         return root
     except Exception as exc:  # noqa: BLE001 - an unwritable cache is not a lock guarantee
         logger.debug("resumable partials: hub cache not writable (%s)", exc)
@@ -117,8 +115,7 @@ def _probe_dir(hub_cache: Optional[Path | str] = None) -> Optional[Path]:
 def _mounts() -> list[tuple[str, str]]:
     """``(mountpoint, fstype)`` for every mount, via psutil so macOS and Windows answer too."""
     import psutil
-
-    return [(part.mountpoint, part.fstype or "") for part in psutil.disk_partitions(all=True)]
+    return [(part.mountpoint, part.fstype or "") for part in psutil.disk_partitions(all = True)]
 
 
 class _ProbeUnavailable(Exception):
@@ -138,7 +135,7 @@ def _filesystem_is_local(directory: str) -> bool:
     return _filesystem_is_local_on(directory, _device_at(directory))
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize = 8)
 def _filesystem_is_local_on(directory: str, device: int) -> bool:
     """The cached half, keyed on the mounted device as well as the path. A probe here cannot see another client, and NFS mounted ``-o local_lock=flock`` keeps flock locks client-local, so two hosts would each take the lock and neither would be refused. A mount we cannot identify counts as not local: this decides whether to re-enable a shared writer."""
     path = Path(directory).resolve()
@@ -173,14 +170,14 @@ def _lock_is_honoured_at(directory: str) -> bool:
 
 
 # Keyed on the directory and the device, so moving the cache or swapping the mount under it re-probes instead of reusing a verdict about a filesystem that is gone.
-@lru_cache(maxsize=8)
+@lru_cache(maxsize = 8)
 def _lock_is_honoured_on(directory: str, device: int) -> bool:
     """Take the lock twice and require the second to be refused. Separate ``open()`` calls make separate open file descriptions and flock judges them independently. Only contention counts as a refusal; a filesystem that grants both, or answers anything else, leaves the stock writer in place. A probe that could not be run at all raises instead, since a full disk or a briefly unwritable cache is not a measurement to remember."""
     import fcntl
 
     # A random, exclusively created file: the cache can be shared, and a predictable name lets another user pre-place a symlink an unguarded open would follow and truncate.
     try:
-        handle, name = tempfile.mkstemp(dir=directory, prefix=".unsloth-flock-probe.")
+        handle, name = tempfile.mkstemp(dir = directory, prefix = ".unsloth-flock-probe.")
     except Exception as exc:  # noqa: BLE001 - nowhere to probe now is not nowhere to probe later
         raise _ProbeUnavailable(f"could not create the probe in {directory}: {exc}") from exc
     second = None
@@ -362,14 +359,14 @@ def restore_resumable_partials() -> bool:
         uses_xet = xet_file_data is not None and file_download.is_xet_available()
         if force_download or uses_xet:
             return stock(
-                incomplete_path=incomplete_path,
-                destination_path=destination_path,
-                url_to_download=url_to_download,
-                headers=headers,
-                expected_size=expected_size,
-                filename=filename,
-                force_download=force_download,
-                xet_file_data=xet_file_data,
+                incomplete_path = incomplete_path,
+                destination_path = destination_path,
+                url_to_download = url_to_download,
+                headers = headers,
+                expected_size = expected_size,
+                filename = filename,
+                force_download = force_download,
+                xet_file_data = xet_file_data,
                 **kwargs,
             )
 
@@ -377,14 +374,14 @@ def restore_resumable_partials() -> bool:
         opened = _open_stable_partial(incomplete_path)
         if opened is None:
             return stock(
-                incomplete_path=incomplete_path,
-                destination_path=destination_path,
-                url_to_download=url_to_download,
-                headers=headers,
-                expected_size=expected_size,
-                filename=filename,
-                force_download=force_download,
-                xet_file_data=xet_file_data,
+                incomplete_path = incomplete_path,
+                destination_path = destination_path,
+                url_to_download = url_to_download,
+                headers = headers,
+                expected_size = expected_size,
+                filename = filename,
+                force_download = force_download,
+                xet_file_data = xet_file_data,
                 **kwargs,
             )
         written = os.fstat(opened.fileno())
@@ -414,10 +411,10 @@ def restore_resumable_partials() -> bool:
             file_download.http_get(
                 url_to_download,
                 handle,
-                resume_size=resume_size,
-                headers=headers,
-                expected_size=expected_size,
-                tqdm_class=kwargs.get("tqdm_class"),
+                resume_size = resume_size,
+                headers = headers,
+                expected_size = expected_size,
+                tqdm_class = kwargs.get("tqdm_class"),
             )
         # _chmod_and_move resolves the name again, so publish only if the name still holds the file that was actually written; otherwise another account could swap something in after the last write.
         if not _still_the_written_file(incomplete_path, written):

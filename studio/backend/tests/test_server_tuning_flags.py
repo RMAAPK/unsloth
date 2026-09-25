@@ -59,7 +59,7 @@ from utils.openai_auto_switch_settings import (
 
 
 def test_load_request_defaults_are_unset():
-    request = LoadRequest(model_path = "owner/repo")
+    request = LoadRequest(model_path="owner/repo")
     assert request.load_mode is None
     assert request.spec_draft_cache_type is None
     assert request.ctx_checkpoints is None
@@ -68,23 +68,23 @@ def test_load_request_defaults_are_unset():
 
 @pytest.mark.parametrize("mode", ["auto", "none", "mmap", "mlock", "mmap+mlock", "dio"])
 def test_load_request_accepts_every_documented_mode(mode):
-    assert LoadRequest(model_path = "owner/repo", load_mode = mode).load_mode == mode
+    assert LoadRequest(model_path="owner/repo", load_mode=mode).load_mode == mode
 
 
 def test_load_request_refuses_an_unknown_mode():
     with pytest.raises(ValueError):
-        LoadRequest(model_path = "owner/repo", load_mode = "mmap + mlock")
+        LoadRequest(model_path="owner/repo", load_mode="mmap + mlock")
 
 
 def test_ctx_checkpoints_and_cache_ram_bounds():
-    assert LoadRequest(model_path = "owner/repo", ctx_checkpoints = 0).ctx_checkpoints == 0
+    assert LoadRequest(model_path="owner/repo", ctx_checkpoints=0).ctx_checkpoints == 0
     assert (
-        LoadRequest(model_path = "owner/repo", ctx_checkpoints = CTX_CHECKPOINTS_MAX).ctx_checkpoints
+        LoadRequest(model_path="owner/repo", ctx_checkpoints=CTX_CHECKPOINTS_MAX).ctx_checkpoints
         == CTX_CHECKPOINTS_MAX
     )
     # -1 is "no limit" and 0 disables the cache, so both are inside the range
-    assert LoadRequest(model_path = "owner/repo", cache_ram = -1).cache_ram == -1
-    assert LoadRequest(model_path = "owner/repo", cache_ram = 0).cache_ram == 0
+    assert LoadRequest(model_path="owner/repo", cache_ram=-1).cache_ram == -1
+    assert LoadRequest(model_path="owner/repo", cache_ram=0).cache_ram == 0
     for field, bad in (
         ("ctx_checkpoints", -1),
         ("ctx_checkpoints", CTX_CHECKPOINTS_MAX + 1),
@@ -92,7 +92,7 @@ def test_ctx_checkpoints_and_cache_ram_bounds():
         ("cache_ram", CACHE_RAM_MAX_MIB + 1),
     ):
         with pytest.raises(ValueError):
-            LoadRequest(model_path = "owner/repo", **{field: bad})
+            LoadRequest(model_path="owner/repo", **{field: bad})
 
 
 @pytest.mark.parametrize("field", ["ctx_checkpoints", "cache_ram"])
@@ -100,8 +100,8 @@ def test_integer_fields_reject_json_booleans(field):
     # bool subclasses int, so lax pydantic would turn `true` into 1 and launch the
     # child with a number nobody typed. Same guard the batch pair carries.
     with pytest.raises(ValueError):
-        LoadRequest(model_path = "owner/repo", **{field: True})
-    assert getattr(LoadRequest(model_path = "owner/repo", **{field: "16"}), field) == 16
+        LoadRequest(model_path="owner/repo", **{field: True})
+    assert getattr(LoadRequest(model_path="owner/repo", **{field: "16"}), field) == 16
 
 
 # ------------------------------------------------------------------- load mode policy
@@ -122,7 +122,7 @@ def memory_settings(monkeypatch):
 
 def test_load_mode_is_emitted_when_no_setting_objects(memory_settings):
     managed, extras = apply_load_mode_policy(
-        [], supports_load_mode = True, requested_load_mode = "mlock"
+        [], supports_load_mode=True, requested_load_mode="mlock"
     )
     assert managed == ["--load-mode", "mlock"]
     assert extras == []
@@ -131,7 +131,7 @@ def test_load_mode_is_emitted_when_no_setting_objects(memory_settings):
 def test_auto_and_unknown_modes_emit_nothing(memory_settings):
     for mode in (None, "", "auto", "AUTO", "mmap + mlock"):
         assert apply_load_mode_policy(
-            ["--top-k", "20"], supports_load_mode = True, requested_load_mode = mode
+            ["--top-k", "20"], supports_load_mode=True, requested_load_mode=mode
         ) == ([], ["--top-k", "20"])
 
 
@@ -141,8 +141,8 @@ def test_an_explicitly_typed_load_mode_still_wins(memory_settings):
     # promise. Only the route strips, and only an INHERITED copy.
     managed, extras = apply_load_mode_policy(
         ["--load-mode", "dio", "--top-k", "20"],
-        supports_load_mode = True,
-        requested_load_mode = "mmap",
+        supports_load_mode=True,
+        requested_load_mode="mmap",
     )
     assert managed == ["--load-mode", "mmap"]
     assert extras == ["--load-mode", "dio", "--top-k", "20"]
@@ -155,19 +155,19 @@ def test_the_route_strips_an_inherited_load_mode(memory_settings):
     inherited = ["--no-mmap", "--mlock", "--top-k", "20"]
     assert strip_shadowing_flags(
         inherited,
-        strip_context = False,
-        strip_cache = False,
-        strip_spec = False,
-        strip_template = False,
-        strip_split_mode = False,
-        strip_load_mode = True,
-        strip_load_mode_aliases = True,
+        strip_context=False,
+        strip_cache=False,
+        strip_spec=False,
+        strip_template=False,
+        strip_split_mode=False,
+        strip_load_mode=True,
+        strip_load_mode_aliases=True,
     ) == ["--mlock", "--top-k", "20"]
 
 
 def test_keep_resident_owns_the_mode(memory_settings):
     memory_settings["keep_resident"] = True
-    assert apply_load_mode_policy([], supports_load_mode = True, requested_load_mode = "dio") == (
+    assert apply_load_mode_policy([], supports_load_mode=True, requested_load_mode="dio") == (
         [],
         [],
     )
@@ -179,9 +179,9 @@ def test_keep_resident_releases_the_mode_when_the_weights_are_not_host_resident(
     memory_settings["keep_resident"] = True
     managed, _ = apply_load_mode_policy(
         [],
-        supports_load_mode = True,
-        weights_in_host_memory = False,
-        requested_load_mode = "dio",
+        supports_load_mode=True,
+        weights_in_host_memory=False,
+        requested_load_mode="dio",
     )
     assert managed == ["--load-mode", "dio"]
 
@@ -189,28 +189,28 @@ def test_keep_resident_releases_the_mode_when_the_weights_are_not_host_resident(
 @pytest.mark.parametrize("mode", ["none", "mlock", "mmap+mlock"])
 def test_no_ram_reserve_vetoes_the_reserving_modes(memory_settings, mode):
     memory_settings["no_ram_reserve"] = True
-    assert apply_load_mode_policy([], supports_load_mode = True, requested_load_mode = mode) == ([], [])
+    assert apply_load_mode_policy([], supports_load_mode=True, requested_load_mode=mode) == ([], [])
 
 
 @pytest.mark.parametrize("mode", ["mmap", "dio"])
 def test_no_ram_reserve_leaves_the_non_reserving_modes(memory_settings, mode):
     # Neither holds a full host copy, so there is nothing for the setting to veto.
     memory_settings["no_ram_reserve"] = True
-    managed, _ = apply_load_mode_policy([], supports_load_mode = True, requested_load_mode = mode)
+    managed, _ = apply_load_mode_policy([], supports_load_mode=True, requested_load_mode=mode)
     assert managed == ["--load-mode", mode]
 
 
 def test_a_build_without_load_mode_falls_back_to_the_deprecated_spellings(memory_settings):
-    assert apply_load_mode_policy([], supports_load_mode = False, requested_load_mode = "mmap+mlock")[
+    assert apply_load_mode_policy([], supports_load_mode=False, requested_load_mode="mmap+mlock")[
         0
     ] == ["--mlock"]
-    assert apply_load_mode_policy([], supports_load_mode = False, requested_load_mode = "none")[0] == [
+    assert apply_load_mode_policy([], supports_load_mode=False, requested_load_mode="none")[0] == [
         "--no-mmap"
     ]
     # No pre-enum spelling for these two, so they are skipped rather than approximated
     for mode in ("mmap", "dio"):
         assert (
-            apply_load_mode_policy([], supports_load_mode = False, requested_load_mode = mode)[0] == []
+            apply_load_mode_policy([], supports_load_mode=False, requested_load_mode=mode)[0] == []
         )
 
 
@@ -225,7 +225,7 @@ def test_the_panel_and_the_policy_agree_on_which_modes_no_reserve_vetoes():
         / "model-picker"
         / "components"
         / "model-config-page.tsx"
-    ).read_text(encoding = "utf-8")
+    ).read_text(encoding="utf-8")
     listed = ui.split("const RAM_RESERVING_LOAD_MODES = new Set([", 1)[1].split("]")[0]
     assert {value.strip().strip('"') for value in listed.split(",") if value.strip()} == set(
         lsa._LOAD_MODE_MLOCK_VALUES | lsa._LOAD_MODE_RESERVING_VALUES
@@ -247,9 +247,9 @@ def test_strip_shadowing_flags_tuning_toggles():
         "--top-k",
         "20",
     ]
-    assert strip_shadowing_flags(args, strip_ctx_checkpoints = True) == args[2:]
-    assert "--cache-ram=2048" not in strip_shadowing_flags(args, strip_cache_ram = True)
-    stripped = strip_shadowing_flags(args, strip_spec_draft_cache = True)
+    assert strip_shadowing_flags(args, strip_ctx_checkpoints=True) == args[2:]
+    assert "--cache-ram=2048" not in strip_shadowing_flags(args, strip_cache_ram=True)
+    stripped = strip_shadowing_flags(args, strip_spec_draft_cache=True)
     assert stripped == ["--ctx-checkpoints", "8", "--cache-ram=2048", "--top-k", "20"]
     # nothing is stripped by default, so an inherited flag survives a load that
     # sets none of these fields
@@ -258,7 +258,7 @@ def test_strip_shadowing_flags_tuning_toggles():
 
 def test_swa_checkpoints_is_the_same_setting():
     # upstream's older spelling of --ctx-checkpoints
-    assert strip_shadowing_flags(["--swa-checkpoints", "4"], strip_ctx_checkpoints = True) == []
+    assert strip_shadowing_flags(["--swa-checkpoints", "4"], strip_ctx_checkpoints=True) == []
 
 
 def test_the_effective_checkpoint_count_comes_from_the_extras():
@@ -336,10 +336,10 @@ def _loaded_backend() -> LlamaCppBackend:
 
 def _intent(**kwargs) -> GgufLoadIntent:
     return GgufLoadIntent(
-        model_identifier = "owner/repo",
-        hf_variant = "Q4_K_M",
-        n_ctx = 8192,
-        speculative_type = "auto",
+        model_identifier="owner/repo",
+        hf_variant="Q4_K_M",
+        n_ctx=8192,
+        speculative_type="auto",
         **kwargs,
     )
 
@@ -351,7 +351,7 @@ def test_dedupe_matches_the_same_tuning():
     backend._requested_cache_ram = 2048
     assert (
         backend._runtime_matches_intent(
-            _intent(load_mode = "dio", ctx_checkpoints = 8, cache_ram = 2048), None
+            _intent(load_mode="dio", ctx_checkpoints=8, cache_ram=2048), None
         )
         is True
     )
@@ -361,7 +361,7 @@ def test_dedupe_reads_auto_and_unset_as_the_same_load():
     # Both launch the same command, so picking Auto must not reload a server
     # already running it.
     backend = _loaded_backend()
-    assert backend._runtime_matches_intent(_intent(load_mode = "auto"), None) is True
+    assert backend._runtime_matches_intent(_intent(load_mode="auto"), None) is True
     assert _normalized_load_mode("AUTO ") is None
 
 
@@ -390,8 +390,8 @@ def test_dedupe_reloads_when_the_draft_cache_is_cleared():
     backend = _loaded_backend()
     backend._requested_spec_draft_cache_type = "q8_0"
     assert backend._runtime_matches_intent(_intent(), None) is False
-    assert backend._runtime_matches_intent(_intent(spec_draft_cache_type = "q8_0"), None) is True
-    assert backend._runtime_matches_intent(_intent(spec_draft_cache_type = "q4_0"), None) is False
+    assert backend._runtime_matches_intent(_intent(spec_draft_cache_type="q8_0"), None) is True
+    assert backend._runtime_matches_intent(_intent(spec_draft_cache_type="q4_0"), None) is False
     backend._requested_spec_draft_cache_type = None
     assert backend._runtime_matches_intent(_intent(), None) is True
 
@@ -402,7 +402,7 @@ def test_dedupe_ignores_the_tuning_for_diffusion():
     backend._is_diffusion = True
     backend._diffusion_requested_ngl = None
     backend._gpu_layers = -1
-    assert backend._runtime_matches_intent(_intent(load_mode = "mlock"), None) is True
+    assert backend._runtime_matches_intent(_intent(load_mode="mlock"), None) is True
 
 
 def test_the_coexistence_estimate_charges_the_requested_checkpoints():
@@ -485,8 +485,8 @@ def test_override_kwargs_are_gguf_only():
         "ctx_checkpoints": 8,
         "cache_ram": 2048,
     }
-    kwargs = model_override_load_kwargs(override, is_gguf = True)
+    kwargs = model_override_load_kwargs(override, is_gguf=True)
     for key, value in override.items():
         assert kwargs[key] == value
     # the flags are llama-server's, so a transformers load carries none of them
-    assert not set(override) & set(model_override_load_kwargs(override, is_gguf = False))
+    assert not set(override) & set(model_override_load_kwargs(override, is_gguf=False))

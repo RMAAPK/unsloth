@@ -705,7 +705,7 @@ def _drop_incompatible(
     conn: sqlite3.Connection,
     candidates: list[tuple[str, float]],
     embedding_model: str | None,
-    untagged: str | None
+    untagged: str | None,
 ) -> list[tuple[str, float]]:
     """Keep the KNN candidates whose document is still live and whose vectors this
     query can be compared against."""

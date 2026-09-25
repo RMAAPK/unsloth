@@ -46,9 +46,9 @@ class _Backend:
     def __init__(
         self,
         *,
-        respawn_ok=True,
-        mtp_handled=False,
-        stays_dead=False,
+        respawn_ok = True,
+        mtp_handled = False,
+        stays_dead = False,
     ):
         self.base_url = _DEAD
         self.context_length = 4096
@@ -112,7 +112,7 @@ class _FakeNonStreamingClient:
             raise httpx.ConnectError("connection refused")
         return httpx.Response(
             200,
-            json={
+            json = {
                 "id": "chatcmpl-1",
                 "choices": [
                     {"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}
@@ -133,23 +133,23 @@ def _install_stream_transport(monkeypatch, calls):
         )
         return httpx.Response(
             200,
-            content=content.encode(),
-            headers={"content-type": "text/event-stream"},
+            content = content.encode(),
+            headers = {"content-type": "text/event-stream"},
         )
 
     transport = httpx.MockTransport(handler)
     real_client = httpx.AsyncClient
 
     def _client(*_args, **kwargs):
-        return real_client(transport=transport, timeout=kwargs.get("timeout", 600))
+        return real_client(transport = transport, timeout = kwargs.get("timeout", 600))
 
     monkeypatch.setattr(inf_mod.httpx, "AsyncClient", _client)
 
 
 def _payload():
     return ChatCompletionRequest(
-        model="default",
-        messages=[ChatMessage(role="user", content="hi")],
+        model = "default",
+        messages = [ChatMessage(role = "user", content = "hi")],
     )
 
 
@@ -158,12 +158,12 @@ async def _run_non_streaming(backend):
         backend,
         _payload(),
         "test-model",
-        request=_Request(),
-        cancel_event=threading.Event(),
+        request = _Request(),
+        cancel_event = threading.Event(),
     )
 
 
-async def _run_stream(backend, lease=None):
+async def _run_stream(backend, lease = None):
     response = await _openai_passthrough_stream_admitted(
         _Request(),
         threading.Event(),
@@ -171,8 +171,8 @@ async def _run_stream(backend, lease=None):
         _payload(),
         "test-model",
         "chatcmpl-local",
-        admission_lease=lease or _Lease(),
-        tracker=_Tracker(),
+        admission_lease = lease or _Lease(),
+        tracker = _Tracker(),
     )
     chunks = []
     async for chunk in response.body_iterator:
@@ -212,7 +212,7 @@ def test_non_streaming_retries_against_the_new_port(monkeypatch):
 def test_non_streaming_still_502s_when_the_server_stays_dead(monkeypatch):
     client = _FakeNonStreamingClient()
     monkeypatch.setattr(inf_mod, "_cancelable_nonstreaming_client", lambda: client)
-    backend = _Backend(respawn_ok=False)
+    backend = _Backend(respawn_ok = False)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(_run_non_streaming(backend))
@@ -225,7 +225,7 @@ def test_non_streaming_does_not_retry_an_mtp_crash(monkeypatch):
     # An MTP+tensor crash schedules its own reload; retrying would race it.
     client = _FakeNonStreamingClient()
     monkeypatch.setattr(inf_mod, "_cancelable_nonstreaming_client", lambda: client)
-    backend = _Backend(mtp_handled=True)
+    backend = _Backend(mtp_handled = True)
 
     with pytest.raises(HTTPException):
         asyncio.run(_run_non_streaming(backend))
@@ -238,7 +238,7 @@ def test_non_streaming_respawns_at_most_once(monkeypatch):
     loop that respawns the model on every attempt."""
     client = _FakeNonStreamingClient()
     monkeypatch.setattr(inf_mod, "_cancelable_nonstreaming_client", lambda: client)
-    backend = _Backend(stays_dead=True)
+    backend = _Backend(stays_dead = True)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(_run_non_streaming(backend))
@@ -268,7 +268,7 @@ def test_streaming_retries_against_the_new_port(monkeypatch):
 def test_streaming_still_502s_when_the_server_stays_dead(monkeypatch):
     calls = []
     _install_stream_transport(monkeypatch, calls)
-    backend = _Backend(respawn_ok=False)
+    backend = _Backend(respawn_ok = False)
     lease = _Lease()
 
     with pytest.raises(HTTPException) as exc:
@@ -282,7 +282,7 @@ def test_streaming_still_502s_when_the_server_stays_dead(monkeypatch):
 def test_streaming_does_not_retry_an_mtp_crash(monkeypatch):
     calls = []
     _install_stream_transport(monkeypatch, calls)
-    backend = _Backend(mtp_handled=True)
+    backend = _Backend(mtp_handled = True)
 
     with pytest.raises(HTTPException):
         asyncio.run(_run_stream(backend))
@@ -294,7 +294,7 @@ def test_streaming_does_not_retry_an_mtp_crash(monkeypatch):
 def test_streaming_respawns_at_most_once(monkeypatch):
     calls = []
     _install_stream_transport(monkeypatch, calls)
-    backend = _Backend(stays_dead=True)
+    backend = _Backend(stays_dead = True)
     lease = _Lease()
 
     with pytest.raises(HTTPException):
@@ -310,10 +310,10 @@ def test_a_backend_without_respawn_hooks_is_untouched(monkeypatch):
     client = _FakeNonStreamingClient()
     monkeypatch.setattr(inf_mod, "_cancelable_nonstreaming_client", lambda: client)
     backend = SimpleNamespace(
-        base_url=_DEAD,
-        context_length=4096,
-        count_chat_tokens=lambda *_a, **_k: 2,
-        _request_reasoning_kwargs=lambda *_a, **_k: None,
+        base_url = _DEAD,
+        context_length = 4096,
+        count_chat_tokens = lambda *_a, **_k: 2,
+        _request_reasoning_kwargs = lambda *_a, **_k: None,
     )
 
     with pytest.raises(HTTPException):
@@ -370,7 +370,7 @@ def test_non_streaming_does_not_replay_a_slow_generation(monkeypatch):
     monkeypatch.setattr(inf_mod, "_cancelable_nonstreaming_client", lambda: client)
     # A live server: _respawn_if_dead reports _healthy, so a retry would go back
     # to the SAME port with the same prompt while the first copy is still decoding.
-    backend = _Backend(stays_dead=True)
+    backend = _Backend(stays_dead = True)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(_run_non_streaming(backend))
@@ -414,7 +414,7 @@ class _AuthRecordingClient:
             raise httpx.ConnectError("connection refused")
         return httpx.Response(
             200,
-            json={
+            json = {
                 "id": "chatcmpl-1",
                 "choices": [
                     {"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}
@@ -448,7 +448,7 @@ def test_streaming_retry_uses_the_respawned_api_key(monkeypatch):
             "data: [DONE]\n\n"
         )
         return httpx.Response(
-            200, content=content.encode(), headers={"content-type": "text/event-stream"}
+            200, content = content.encode(), headers = {"content-type": "text/event-stream"}
         )
 
     transport = httpx.MockTransport(handler)
@@ -456,7 +456,7 @@ def test_streaming_retry_uses_the_respawned_api_key(monkeypatch):
     monkeypatch.setattr(
         inf_mod.httpx,
         "AsyncClient",
-        lambda *_a, **kw: real_client(transport=transport, timeout=kw.get("timeout", 600)),
+        lambda *_a, **kw: real_client(transport = transport, timeout = kw.get("timeout", 600)),
     )
     backend = _RotatingKeyBackend()
 
@@ -481,7 +481,7 @@ class _SlowDeadTransport(httpx.AsyncBaseTransport):
     def __init__(
         self,
         calls,
-        delay=0.3,
+        delay = 0.3,
     ):
         self.calls = calls
         self.delay = delay
@@ -496,7 +496,7 @@ class _SlowDeadTransport(httpx.AsyncBaseTransport):
             "data: [DONE]\n\n"
         )
         return httpx.Response(
-            200, content=content.encode(), headers={"content-type": "text/event-stream"}
+            200, content = content.encode(), headers = {"content-type": "text/event-stream"}
         )
 
 
@@ -507,7 +507,7 @@ def test_streaming_retries_a_crash_that_lands_after_the_status_window(monkeypatc
     monkeypatch.setattr(
         inf_mod.httpx,
         "AsyncClient",
-        lambda *_a, **kw: real_client(transport=transport, timeout=kw.get("timeout", 600)),
+        lambda *_a, **kw: real_client(transport = transport, timeout = kw.get("timeout", 600)),
     )
     backend = _Backend()
 
@@ -534,9 +534,9 @@ def test_streaming_does_not_replay_a_slow_generation_after_the_status_window(mon
     monkeypatch.setattr(
         inf_mod.httpx,
         "AsyncClient",
-        lambda *_a, **kw: real_client(transport=transport, timeout=kw.get("timeout", 600)),
+        lambda *_a, **kw: real_client(transport = transport, timeout = kw.get("timeout", 600)),
     )
-    backend = _Backend(stays_dead=True)
+    backend = _Backend(stays_dead = True)
 
     blob = asyncio.run(_run_stream(backend))
 
@@ -562,7 +562,7 @@ class _SlowRespawnBackend(_Backend):
     def _respawn_if_dead(self):
         self.respawn_calls += 1
         self.respawn_started.set()
-        self.fed_while_loading = self.keepalive_during_respawn.wait(timeout=5.0)
+        self.fed_while_loading = self.keepalive_during_respawn.wait(timeout = 5.0)
         self.base_url = _FRESH
         return True
 
@@ -579,7 +579,7 @@ def test_streaming_keeps_the_stream_alive_while_the_server_respawns(monkeypatch)
     monkeypatch.setattr(
         inf_mod.httpx,
         "AsyncClient",
-        lambda *_a, **kw: real_client(transport=transport, timeout=kw.get("timeout", 600)),
+        lambda *_a, **kw: real_client(transport = transport, timeout = kw.get("timeout", 600)),
     )
     backend = _SlowRespawnBackend()
 
@@ -591,8 +591,8 @@ def test_streaming_keeps_the_stream_alive_while_the_server_respawns(monkeypatch)
             _payload(),
             "test-model",
             "chatcmpl-local",
-            admission_lease=_Lease(),
-            tracker=_Tracker(),
+            admission_lease = _Lease(),
+            tracker = _Tracker(),
         )
         chunks = []
         async for chunk in response.body_iterator:

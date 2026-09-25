@@ -782,10 +782,9 @@ def _transport_host(hostname: str) -> str:
         # httpx percent-encodes what RFC 3986 does not allow in a reg-name, so
         # safe^alias.example is dialled as safe%5Ealias.example, a name whose
         # parent zone can answer differently. Same quoting, same name.
-        return quote(hostname.lower(), safe=_HOST_SAFE_CHARS)
+        return quote(hostname.lower(), safe = _HOST_SAFE_CHARS)
     try:
         import idna
-
         return idna.encode(hostname.lower()).decode("ascii")
     except Exception:
         # httpx raises InvalidURL here, so the request cannot happen at all;
@@ -819,7 +818,7 @@ def _resolve_host(hostname: str, port: int | None, scheme: str) -> tuple[str, ..
     # Bound to a local: a worker abandoned at the deadline may outlive the
     # global, and BoundedSemaphore raises if it releases one it never took.
     in_flight = _dns_in_flight
-    if not in_flight.acquire(timeout=_DNS_TIMEOUT_SECONDS):
+    if not in_flight.acquire(timeout = _DNS_TIMEOUT_SECONDS):
         return None
 
     resolved: list[str] = []
@@ -831,7 +830,7 @@ def _resolve_host(hostname: str, port: int | None, scheme: str) -> tuple[str, ..
             infos = socket.getaddrinfo(
                 hostname,
                 port or (443 if scheme == "https" else 80),
-                type=socket.SOCK_STREAM,
+                type = socket.SOCK_STREAM,
             )
         except (OSError, UnicodeError, ValueError):
             return
@@ -845,7 +844,7 @@ def _resolve_host(hostname: str, port: int | None, scheme: str) -> tuple[str, ..
     # Daemon thread, so a resolver that never answers cannot hold up shutdown;
     # the validator abandons it after the timeout and treats the name the same
     # way it treats any other lookup failure.
-    thread = threading.Thread(target=_resolve, daemon=True)
+    thread = threading.Thread(target = _resolve, daemon = True)
     thread.start()
     thread.join(_DNS_TIMEOUT_SECONDS)
     if thread.is_alive():
@@ -886,7 +885,6 @@ def _resolves_to_metadata(hostname: str, port: int | None, scheme: str) -> bool:
 def _managed_account_caller() -> bool:
     """True when this validation runs for a managed (non-owner) account."""
     from utils.account_context import is_owner_context
-
     return not is_owner_context()
 
 
@@ -897,7 +895,6 @@ def _managed_private_urls_allowed() -> bool:
     module standalone.
     """
     from utils.managed_provider_url_settings import get_managed_private_provider_urls_allowed
-
     return get_managed_private_provider_urls_allowed()
 
 
@@ -918,12 +915,11 @@ def _reject_non_public(hostname: str, port: int | None, scheme: str, reason: str
             # to the same unbounded call keeps a slow-but-working resolver from
             # turning into a refusal here, where "no answer" fails closed.
             import socket
-
             try:
                 infos = socket.getaddrinfo(
                     _transport_host(hostname),
                     port or (443 if scheme == "https" else 80),
-                    type=socket.SOCK_STREAM,
+                    type = socket.SOCK_STREAM,
                 )
             except (OSError, UnicodeError) as exc:
                 raise ValueError("Provider base URL hostname could not be resolved.") from exc
@@ -953,7 +949,7 @@ def public_provider_address(url: str) -> str:
             infos = socket.getaddrinfo(
                 _transport_host(hostname),
                 parts.port or (443 if parts.scheme == "https" else 80),
-                type=socket.SOCK_STREAM,
+                type = socket.SOCK_STREAM,
             )
         except (OSError, UnicodeError) as exc:
             raise ValueError("Provider base URL hostname could not be resolved.") from exc
@@ -987,7 +983,7 @@ def provider_address_excluding_metadata(url: str) -> str:
             infos = socket.getaddrinfo(
                 _transport_host(hostname),
                 parts.port or (443 if parts.scheme == "https" else 80),
-                type=socket.SOCK_STREAM,
+                type = socket.SOCK_STREAM,
             )
         except (OSError, UnicodeError) as exc:
             raise ValueError("Provider base URL hostname could not be resolved.") from exc

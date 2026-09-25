@@ -29,21 +29,21 @@ def _load_module(monkeypatch):
 
 # "amd_bundled" is the Strix Halo case: no rocminfo, no amd-smi, only version.py knows.
 _HARDWARE = {
-    "nvidia": dict(nvidia=True, rocm_probe=False, hip="", label="2.9.1+cu128"),
-    "amd_tooling": dict(nvidia=False, rocm_probe=True, hip="6.4.43483", label="2.8.0+rocm6.4"),
+    "nvidia": dict(nvidia = True, rocm_probe = False, hip = "", label = "2.9.1+cu128"),
+    "amd_tooling": dict(nvidia = False, rocm_probe = True, hip = "6.4.43483", label = "2.8.0+rocm6.4"),
     "amd_bundled": dict(
-        nvidia=False, rocm_probe=False, hip="6.4.43483-a1", label="2.8.0a0+rocmsdk20250901"
+        nvidia = False, rocm_probe = False, hip = "6.4.43483-a1", label = "2.8.0a0+rocmsdk20250901"
     ),
-    "xpu": dict(nvidia=False, rocm_probe=False, hip="", label="2.9.1+xpu"),
-    "cpu": dict(nvidia=False, rocm_probe=False, hip="", label="2.9.1+cpu"),
-    "no_torch": dict(nvidia=False, rocm_probe=False, hip="", label=""),
+    "xpu": dict(nvidia = False, rocm_probe = False, hip = "", label = "2.9.1+xpu"),
+    "cpu": dict(nvidia = False, rocm_probe = False, hip = "", label = "2.9.1+cpu"),
+    "no_torch": dict(nvidia = False, rocm_probe = False, hip = "", label = ""),
 }
 
 _PLATFORMS = {
-    "windows": dict(is_windows=True, is_macos=False, is_wsl=False),
-    "linux": dict(is_windows=False, is_macos=False, is_wsl=False),
-    "wsl": dict(is_windows=False, is_macos=False, is_wsl=True),
-    "macos": dict(is_windows=False, is_macos=True, is_wsl=False),
+    "windows": dict(is_windows = True, is_macos = False, is_wsl = False),
+    "linux": dict(is_windows = False, is_macos = False, is_wsl = False),
+    "wsl": dict(is_windows = False, is_macos = False, is_wsl = True),
+    "macos": dict(is_windows = False, is_macos = True, is_wsl = False),
 }
 
 
@@ -52,8 +52,8 @@ def _prepare(
     *,
     platform_name,
     hardware_name,
-    known_backend="",
-    warm_probe=None,
+    known_backend = "",
+    warm_probe = None,
 ):
     """One matrix cell, stubbed only at names both trees have, so this file discriminates.
 
@@ -71,7 +71,7 @@ def _prepare(
     monkeypatch.setattr(mod, "_has_usable_nvidia_gpu", lambda: hw["nvidia"])
     monkeypatch.setattr(mod, "_has_rocm_gpu", lambda: hw["rocm_probe"])
     # raising = False: _torch_hip_version_on_disk does not exist on the pre-fix tree.
-    monkeypatch.setattr(mod, "_torch_hip_version_on_disk", lambda: hw["hip"], raising=False)
+    monkeypatch.setattr(mod, "_torch_hip_version_on_disk", lambda: hw["hip"], raising = False)
     monkeypatch.setattr(mod, "_installed_torch_version_label", lambda: hw["label"])
     monkeypatch.setattr(mod, "_TORCH_RUNTIME_PROBE", warm_probe)
 
@@ -132,7 +132,7 @@ _MATRIX = {
 
 @pytest.mark.parametrize(("platform_name", "hardware_name"), sorted(_MATRIX))
 def test_label_over_the_platform_and_hardware_matrix(monkeypatch, platform_name, hardware_name):
-    mod, _calls = _prepare(monkeypatch, platform_name=platform_name, hardware_name=hardware_name)
+    mod, _calls = _prepare(monkeypatch, platform_name = platform_name, hardware_name = hardware_name)
     expected = _MATRIX[(platform_name, hardware_name)]
     assert mod._torch_step_label("check") == f"torch check ({expected})"
 
@@ -140,7 +140,7 @@ def test_label_over_the_platform_and_hardware_matrix(monkeypatch, platform_name,
 @pytest.mark.parametrize(("platform_name", "hardware_name"), sorted(_MATRIX))
 @pytest.mark.parametrize("suffix", ["check", "final", "flavor"])
 def test_every_suffix_keeps_the_same_backend(monkeypatch, platform_name, hardware_name, suffix):
-    mod, _calls = _prepare(monkeypatch, platform_name=platform_name, hardware_name=hardware_name)
+    mod, _calls = _prepare(monkeypatch, platform_name = platform_name, hardware_name = hardware_name)
     expected = _MATRIX[(platform_name, hardware_name)]
     assert mod._torch_step_label(suffix) == f"torch {suffix} ({expected})"
 
@@ -150,10 +150,10 @@ def test_every_suffix_keeps_the_same_backend(monkeypatch, platform_name, hardwar
 def test_an_explicit_backend_wins_over_every_probe(monkeypatch, known_backend, platform_name):
     mod, _calls = _prepare(
         monkeypatch,
-        platform_name=platform_name,
+        platform_name = platform_name,
         # deliberately contradictory hardware: nothing below may override the pin
-        hardware_name="amd_bundled",
-        known_backend=known_backend,
+        hardware_name = "amd_bundled",
+        known_backend = known_backend,
     )
     assert mod._torch_step_label("check") == f"torch check ({known_backend})"
 
@@ -173,37 +173,37 @@ def test_an_explicit_backend_consults_no_detector(monkeypatch):
             mod,
             name,
             lambda *_a, **_k: pytest.fail(f"{name} must not run for a pinned backend"),
-            raising=False,
+            raising = False,
         )
     assert mod._torch_step_label("check") == "torch check (cuda)"
 
 
 def test_nvidia_still_takes_priority(monkeypatch):
-    mod, _calls = _prepare(monkeypatch, platform_name="windows", hardware_name="nvidia")
+    mod, _calls = _prepare(monkeypatch, platform_name = "windows", hardware_name = "nvidia")
     monkeypatch.setattr(mod, "_torch_hip_version_on_disk", lambda: "6.4.43483")
     assert mod._torch_step_label("check") == "torch check (cuda)"
 
 
 def test_the_rocm_probe_still_answers(monkeypatch):
-    mod, _calls = _prepare(monkeypatch, platform_name="linux", hardware_name="amd_tooling")
+    mod, _calls = _prepare(monkeypatch, platform_name = "linux", hardware_name = "amd_tooling")
     monkeypatch.setattr(mod, "_torch_hip_version_on_disk", lambda: "")
     monkeypatch.setattr(mod, "_installed_torch_version_label", lambda: "")
     assert mod._torch_step_label("check") == "torch check (rocm)"
 
 
 def test_a_windows_rocm_torch_is_rocm_even_with_no_rocm_tooling(monkeypatch):
-    mod, _calls = _prepare(monkeypatch, platform_name="windows", hardware_name="amd_bundled")
+    mod, _calls = _prepare(monkeypatch, platform_name = "windows", hardware_name = "amd_bundled")
     assert mod._torch_step_label("check") == "torch check (rocm)"
 
 
 def test_a_windows_rocm_torch_is_recognised_by_version_string_alone(monkeypatch):
-    mod, _calls = _prepare(monkeypatch, platform_name="windows", hardware_name="amd_bundled")
+    mod, _calls = _prepare(monkeypatch, platform_name = "windows", hardware_name = "amd_bundled")
     monkeypatch.setattr(mod, "_torch_hip_version_on_disk", lambda: "")
     assert mod._torch_step_label("check") == "torch check (rocm)"
 
 
 def test_a_host_with_neither_is_still_cpu(monkeypatch):
-    mod, _calls = _prepare(monkeypatch, platform_name="windows", hardware_name="cpu")
+    mod, _calls = _prepare(monkeypatch, platform_name = "windows", hardware_name = "cpu")
     assert mod._torch_step_label("check") == "torch check (cpu)"
 
 
@@ -211,7 +211,7 @@ def test_a_host_with_neither_is_still_cpu(monkeypatch):
 @pytest.mark.parametrize("hardware_name", sorted(_HARDWARE))
 def test_the_label_never_runs_the_torch_probe(monkeypatch, platform_name, hardware_name):
     mod, probe_calls = _prepare(
-        monkeypatch, platform_name=platform_name, hardware_name=hardware_name
+        monkeypatch, platform_name = platform_name, hardware_name = hardware_name
     )
     mod._torch_step_label("check")
     assert probe_calls == []
@@ -221,7 +221,7 @@ def test_the_label_leaves_the_probe_memo_cold(monkeypatch):
     """The discriminating case: pre-fix the label probed here, and pip_install then
     invalidated the memo three statements later, so the 90s was not even amortised.
     """
-    mod, probe_calls = _prepare(monkeypatch, platform_name="windows", hardware_name="amd_bundled")
+    mod, probe_calls = _prepare(monkeypatch, platform_name = "windows", hardware_name = "amd_bundled")
     assert mod._TORCH_RUNTIME_PROBE is None
     assert mod._torch_step_label("check") == "torch check (rocm)"
     assert probe_calls == []
@@ -232,16 +232,16 @@ def test_the_label_reuses_a_warm_probe_instead_of_the_disk(monkeypatch):
     warm = (True, True, "2.8.0a0+rocmsdk20250901", "6.4.43483", "")
     mod, probe_calls = _prepare(
         monkeypatch,
-        platform_name="windows",
-        hardware_name="cpu",  # disk says CPU
-        warm_probe=warm,
+        platform_name = "windows",
+        hardware_name = "cpu",  # disk says CPU
+        warm_probe = warm,
     )
     disk_reads = []
     monkeypatch.setattr(
         mod,
         "_torch_hip_version_on_disk",
         lambda: disk_reads.append("hip") or "",
-        raising=False,
+        raising = False,
     )
     assert mod._torch_step_label("check") == "torch check (rocm)"
     assert probe_calls == []  # a warm memo is reused, never re-probed
@@ -252,9 +252,9 @@ def test_a_warm_negative_probe_is_believed(monkeypatch):
     warm = (True, True, "2.9.1+cpu", "", "")
     mod, probe_calls = _prepare(
         monkeypatch,
-        platform_name="windows",
-        hardware_name="amd_bundled",
-        warm_probe=warm,
+        platform_name = "windows",
+        hardware_name = "amd_bundled",
+        warm_probe = warm,
     )
     assert mod._torch_step_label("check") == "torch check (cpu)"
     assert probe_calls == []
@@ -263,9 +263,9 @@ def test_a_warm_negative_probe_is_believed(monkeypatch):
 def test_an_inconclusive_warm_probe_is_not_read_as_rocm(monkeypatch):
     mod, probe_calls = _prepare(
         monkeypatch,
-        platform_name="windows",
-        hardware_name="cpu",
-        warm_probe=(False, False, None, "", ""),
+        platform_name = "windows",
+        hardware_name = "cpu",
+        warm_probe = (False, False, None, "", ""),
     )
     assert mod._torch_step_label("check") == "torch check (cpu)"
     assert probe_calls == []
@@ -275,14 +275,14 @@ def test_an_inconclusive_warm_probe_is_not_read_as_rocm(monkeypatch):
 def test_non_windows_never_touches_the_torch_build(monkeypatch, platform_name):
     """Linux, WSL and macOS short-circuit, so the change cannot alter their answer."""
     mod, probe_calls = _prepare(
-        monkeypatch, platform_name=platform_name, hardware_name="amd_bundled"
+        monkeypatch, platform_name = platform_name, hardware_name = "amd_bundled"
     )
     touched = []
     monkeypatch.setattr(
         mod,
         "_torch_hip_version_on_disk",
         lambda: touched.append("hip") or "",
-        raising=False,
+        raising = False,
     )
     monkeypatch.setattr(
         mod, "_installed_torch_version_label", lambda: touched.append("label") or ""
@@ -307,7 +307,7 @@ def _fake_torch_on_path(
     tmp_path,
     version_py,
     *,
-    as_directory=False,
+    as_directory = False,
 ):
     """Put a stand-in torch package where find_spec will see it.
 
@@ -315,14 +315,14 @@ def _fake_torch_on_path(
     runner that has torch, prepending sys.path alone leaves the fixture ignored.
     """
     torch_dir = tmp_path / "torch"
-    torch_dir.mkdir(exist_ok=True)
-    (torch_dir / "__init__.py").write_text("", encoding="utf-8")
+    torch_dir.mkdir(exist_ok = True)
+    (torch_dir / "__init__.py").write_text("", encoding = "utf-8")
     if as_directory:
         (torch_dir / "version.py").mkdir()
     else:
-        (torch_dir / "version.py").write_text(version_py, encoding="utf-8")
-    monkeypatch.delitem(sys.modules, "torch", raising=False)
-    monkeypatch.delitem(sys.modules, "torch.version", raising=False)
+        (torch_dir / "version.py").write_text(version_py, encoding = "utf-8")
+    monkeypatch.delitem(sys.modules, "torch", raising = False)
+    monkeypatch.delitem(sys.modules, "torch.version", raising = False)
     monkeypatch.syspath_prepend(str(tmp_path))
     return torch_dir
 
@@ -391,7 +391,7 @@ def test_the_hip_reader_survives_an_unreadable_version_py(monkeypatch, tmp_path)
     mod = _load_module(monkeypatch)
     _requires_hip_reader(mod)
     # version.py is a directory: the read raises OSError, which must be swallowed.
-    _fake_torch_on_path(monkeypatch, tmp_path, "", as_directory=True)
+    _fake_torch_on_path(monkeypatch, tmp_path, "", as_directory = True)
     assert mod._torch_hip_version_on_disk() == ""
 
 

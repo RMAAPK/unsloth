@@ -22,7 +22,7 @@ from utils.account_context import AccountContext, run_as
 ALICE = AccountContext("alice-id", "alice")
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _roots(tmp_path, monkeypatch):
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(tmp_path / "studio"))
     monkeypatch.setenv("UNSLOTH_STUDIO_PROJECTS_HOME", str(tmp_path / "projects"))

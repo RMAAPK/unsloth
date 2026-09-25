@@ -37,7 +37,7 @@ VENV = "/opt/unsloth-venv"
 
 
 def _read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding = "utf-8")
 
 
 def _logical_lines(text: str) -> list[str]:
@@ -161,7 +161,7 @@ def test_the_labextension_lands_where_the_branding_guard_looks():
     paths = {
         key: value.replace("\\", "/") if isinstance(value, str) else value
         for key, value in branding.resolve_paths(
-            venv_share=f"{VENV}/share/jupyter", jupyter_server_dir="/unused", config_dirs=[]
+            venv_share = f"{VENV}/share/jupyter", jupyter_server_dir = "/unused", config_dirs = []
         ).items()
     }
     output_dir = json.loads(_read(LABEXT_PKG))["jupyterlab"]["outputDir"]

@@ -154,7 +154,7 @@ def _downloaded_file_bytes(
     filename: str,
     size: int,
     blob_key: Optional[str],
-    revision: Optional[str]
+    revision: Optional[str],
 ) -> int:
     """Count one selected file across partial, finalized, and snapshot forms."""
     repo_cache = _repo_cache_dir(repo, hub_cache = hub_cache)

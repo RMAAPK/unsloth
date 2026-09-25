@@ -60,7 +60,7 @@ def _python_retention_sources() -> str:
     for relative in ("run.py", "utils/log_retention.py", "core/inference/llama_cpp.py"):
         path = backend / relative
         if path.is_file():
-            parts.append(path.read_text(encoding="utf-8", errors="replace"))
+            parts.append(path.read_text(encoding = "utf-8", errors = "replace"))
     return "\n".join(parts)
 
 
@@ -136,7 +136,7 @@ class TestLineCapsAgree:
             pytest.skip("desktop sources not present")
         phase = re.search(
             r"MAX_PHASE_LINE_BYTES: usize = ([0-9 *]+);",
-            _DIAGNOSTICS_RS.read_text(encoding="utf-8"),
+            _DIAGNOSTICS_RS.read_text(encoding = "utf-8"),
         )
         assert phase is not None, (
             "MAX_PHASE_LINE_BYTES is no longer a plain literal in diagnostics/mod.rs; "
@@ -144,7 +144,7 @@ class TestLineCapsAgree:
         )
         phase_bytes = eval(phase.group(1).strip())  # noqa: S307 - digits and '*' only
 
-        process = _PROCESS_RS.read_text(encoding="utf-8") if _PROCESS_RS.is_file() else ""
+        process = _PROCESS_RS.read_text(encoding = "utf-8") if _PROCESS_RS.is_file() else ""
         backend_cap = re.search(r"MAX_BACKEND_LOG_LINE_BYTES: usize = ([0-9 *]+);", process)
         if backend_cap is None:
             pytest.skip(
@@ -163,7 +163,7 @@ class TestLineCapsAgree:
         """Keeping N files is not a bound if any one of them can be any size."""
         if not _MAIN_RS.is_file():
             pytest.skip("desktop sources not present")
-        source = _MAIN_RS.read_text(encoding="utf-8")
+        source = _MAIN_RS.read_text(encoding = "utf-8")
         assert "RotatingLogFile" in source, (
             "tauri.log no longer uses RotatingLogFile, so nothing bounds its size while "
             "the app runs"

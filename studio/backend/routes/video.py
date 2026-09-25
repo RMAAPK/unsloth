@@ -453,7 +453,7 @@ async def load_video_model_gated(
 @router.get("/video/load-progress", response_model = VideoLoadProgressResponse)
 async def video_load_progress(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     if account_access.resident_hidden("video"):
         return account_access.hidden_resident_response()
@@ -727,7 +727,7 @@ async def cancel_video_generation(current_subject: str = Depends(get_current_sub
 @router.get("/video/status", response_model = VideoStatusResponse)
 async def video_status(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     if account_access.resident_hidden("video"):
         return account_access.hidden_resident_response()
@@ -746,7 +746,7 @@ async def video_status(
 @account_access.gpu_busy_route
 async def unload_video_model(
     current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ):
     account_access.require_resident_control("video")
     from core.inference.gpu_arbiter import VIDEO, release_if
@@ -1579,7 +1579,7 @@ async def _create_openai_video(
     body: VideoJobCreateRequest,
     reference: Optional[str],
     current_subject: str,
-    hf_token: Optional[str]
+    hf_token: Optional[str],
 ):
     from core.inference.gpu_arbiter import VIDEO
     from core.inference.media_auto_switch import (

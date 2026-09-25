@@ -109,7 +109,7 @@ _GGUF_POOLING = {1: "mean", 2: "cls", 3: "last"}
 _GGUF_POOLING_DEFAULT = {"nomic-bert": "mean", "nomic-bert-moe": "mean"}
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize = 32)
 def _gguf_pooling_at(path: str, mtime_ns: int, size: int) -> str:
     arch, value = _gguf_arch_uint(path, "pooling_type")
     if value in _GGUF_POOLING:
@@ -141,7 +141,6 @@ def _resolve_entrypoint(binary: str) -> str:
     """
     try:
         from core.inference.llama_cpp import LlamaCppBackend
-
         return LlamaCppBackend._exec_path_for_launch(binary) or binary
     except Exception:  # noqa: BLE001 - launch what we were given
         return binary
@@ -151,7 +150,6 @@ def _binary_lib_dir(binary: str) -> str:
     """Directory holding ``binary``'s sibling libraries, through an entrypoint."""
     try:
         from core.inference.llama_cpp import _llama_lib_dir
-
         return str(_llama_lib_dir(binary))
     except Exception:  # noqa: BLE001 - fall back to the plain parent
         return str(Path(binary).parent)
@@ -167,7 +165,6 @@ def _with_dyld_path(env: dict[str, str], lib_dir: str) -> dict[str, str]:
     out = dict(env)
     try:
         from core.inference.llama_cpp import _prepend_loader_dir
-
         out["DYLD_LIBRARY_PATH"] = _prepend_loader_dir(out.get("DYLD_LIBRARY_PATH", ""), lib_dir)
     except Exception:  # noqa: BLE001 - a search path is better than none
         existing = [p for p in out.get("DYLD_LIBRARY_PATH", "").split(os.pathsep) if p]
@@ -211,7 +208,7 @@ class LlamaServerBackend:
         # Sticky after an auto GPU start fails: later spawns stay on CPU.
         self._force_cpu = False
         # trust_env=False skips HTTP(S)_PROXY; full URLs per request survive a respawn.
-        self._client = httpx.Client(timeout=config.EMBED_REQUEST_TIMEOUT_S, trust_env=False)
+        self._client = httpx.Client(timeout = config.EMBED_REQUEST_TIMEOUT_S, trust_env = False)
         atexit.register(self._shutdown)
 
     @contextmanager
@@ -262,7 +259,7 @@ class LlamaServerBackend:
         return binary
 
     @staticmethod
-    @lru_cache(maxsize=8)
+    @lru_cache(maxsize = 8)
     def _help_text(binary: str) -> str:
         """`llama-server --help`, cached. Ignore exit code (some builds exit non-zero on --help).
 
@@ -276,19 +273,18 @@ class LlamaServerBackend:
         if sys.platform == "darwin":
             try:
                 from core.inference.llama_cpp import LlamaCppBackend
-
                 probe_env = LlamaCppBackend._llama_server_env_for_binary(binary)
             except Exception:  # noqa: BLE001 - probe with the inherited env
                 probe_env = None
         try:
             proc = subprocess.run(
                 [binary, "--help"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=30,
-                env=probe_env,
+                capture_output = True,
+                text = True,
+                encoding = "utf-8",
+                errors = "replace",
+                timeout = 30,
+                env = probe_env,
                 **windows_hidden_subprocess_kwargs(),
             )
             return (proc.stdout or "") + (proc.stderr or "")
@@ -323,7 +319,7 @@ class LlamaServerBackend:
             # Same pick as a hub listing gets, and its name tiebreak resolves a directory of split shards to shard 1.
             remaining = list(files)
             while remaining:
-                picked = LlamaServerBackend._pick_gguf(remaining, key=lambda f: f.name)
+                picked = LlamaServerBackend._pick_gguf(remaining, key = lambda f: f.name)
                 if picked is None:
                     break
                 # llama-server opens the siblings implicitly, so a torn family is not a usable answer even with
@@ -394,8 +390,8 @@ class LlamaServerBackend:
     def _pick_gguf(
         names,
         *,
-        key=None,
-        require_variant=False,
+        key = None,
+        require_variant = False,
     ):
         """GGUF pick from `names`, by variant then shortest name; `key` reads the comparable
         name off each entry.
@@ -424,7 +420,7 @@ class LlamaServerBackend:
                 return None
             match = usable
         # Name breaks a length tie: a directory scan yields no guaranteed order.
-        return sorted(match, key=lambda n: (len(name_of(n)), name_of(n)))[0]
+        return sorted(match, key = lambda n: (len(name_of(n)), name_of(n)))[0]
 
     @staticmethod
     def _cached_snapshot_dir(repo_id: str) -> Path | None:
@@ -445,7 +441,7 @@ class LlamaServerBackend:
         cased = resolve_cached_repo_id_case(repo_id)
         repo_dir = Path(active_hf_hub_cache()) / f"models--{cased.replace('/', '--')}"
         try:
-            rev = (repo_dir / "refs" / "main").read_text(encoding="utf-8").strip()
+            rev = (repo_dir / "refs" / "main").read_text(encoding = "utf-8").strip()
         except (OSError, ValueError):
             return None
         # A ref file holds a bare commit hash; a separator would join out of the cache.
@@ -480,8 +476,8 @@ class LlamaServerBackend:
         while files:
             pick = LlamaServerBackend._pick_gguf(
                 files,
-                key=lambda p: p.relative_to(snapshot).as_posix(),
-                require_variant=require_variant,
+                key = lambda p: p.relative_to(snapshot).as_posix(),
+                require_variant = require_variant,
             )
             # exists() guards only the window since the scan; is_file() dropped evicted blobs.
             if pick is None or not pick.exists():
@@ -504,12 +500,11 @@ class LlamaServerBackend:
             if path is None:
                 try:
                     from utils.embedding_model_settings import get_stored_download_pending
-
                     download_pending = get_stored_download_pending(model)
                 except Exception:  # noqa: BLE001 - old/unavailable settings store
                     download_pending = False
                 if download_pending:
-                    path = LlamaServerBackend._resolve_cached_gguf(desired, require_variant=False)
+                    path = LlamaServerBackend._resolve_cached_gguf(desired, require_variant = False)
         except Exception:  # noqa: BLE001 - identity prediction must not block ingestion
             return None
         return None if path is None else _gguf_pooling(path)
@@ -521,7 +516,7 @@ class LlamaServerBackend:
 
         ``model_name`` is the model the caller pinned; the live setting would
         resolve B's weights for a job still tagging its vectors as A."""
-        account_path(model_name, reference=True)
+        account_path(model_name, reference = True)
         model = model_name or config.effective_embedding_model()
         # Captured once: the path must stay tagged with the repo it was resolved FOR, so a mid-download
         # setting change reads as stale and respawns.
@@ -545,7 +540,6 @@ class LlamaServerBackend:
         if planned is not None:
             try:
                 from utils.embedding_model_settings import clear_stored_download_pending
-
                 clear_stored_download_pending(model)
             except Exception:  # noqa: BLE001 - a settings write must not fail a load
                 pass
@@ -561,21 +555,19 @@ class LlamaServerBackend:
             # later eviction reads as "never downloaded".
             try:
                 from utils.embedding_model_settings import clear_stored_download_pending
-
                 clear_stored_download_pending(model)
             except Exception:  # noqa: BLE001 - a settings write must not fail a load
                 pass
             return self._adopt_model_path(cached, desired)
         try:
             from utils.embedding_model_settings import get_stored_download_pending
-
             download_pending = get_stored_download_pending(model)
         except Exception:  # noqa: BLE001 - old/unavailable settings store
             download_pending = False
         if download_pending:
             # A published repo may not carry the configured quant, so accept any complete cached quant; never
             # fall through to the online loader while the transfer is pending or cancelled.
-            cached = self._resolve_cached_gguf(desired, require_variant=False)
+            cached = self._resolve_cached_gguf(desired, require_variant = False)
             if cached is not None:
                 # Reaching here means the configured variant is NOT cached (the strict pass returned if it
                 # were), which happens two ways that need opposite answers.
@@ -584,7 +576,6 @@ class LlamaServerBackend:
                     # here too.
                     try:
                         from utils.embedding_model_settings import clear_stored_download_pending
-
                         clear_stored_download_pending(model)
                     except Exception:  # noqa: BLE001 - a settings write must not fail a load
                         pass
@@ -694,9 +685,9 @@ class LlamaServerBackend:
             for candidate in candidates:
                 try:
                     names = call_with_deadline(
-                        lambda c=candidate: list_repo_files(c, token=token),
+                        lambda c = candidate: list_repo_files(c, token = token),
                         self._LIST_DEADLINE_S,
-                        name="embed-gguf-listing",
+                        name = "embed-gguf-listing",
                     )
                     filename, family = self._pick_complete_gguf(names)
                 except Exception as e:  # noqa: BLE001 - missing/gated/stalled -> next candidate
@@ -710,7 +701,7 @@ class LlamaServerBackend:
                 # Only where the hub failed to NAME a file: a transfer failing on its own (no disk, bad checksum)
                 # must surface.
                 for candidate in candidates:
-                    cached = self._resolve_cached_gguf(candidate, require_variant=False)
+                    cached = self._resolve_cached_gguf(candidate, require_variant = False)
                     if cached is not None:
                         logger.warning(
                             "using cached GGUF embedder %s: the %s variant could not be "
@@ -730,10 +721,10 @@ class LlamaServerBackend:
             downloaded = None
             for name in family:
                 fetched = hf_hub_download(
-                    repo_id=repo,
-                    filename=name,
-                    token=token,
-                    cache_dir=cache_dir,
+                    repo_id = repo,
+                    filename = name,
+                    token = token,
+                    cache_dir = cache_dir,
                 )
                 if name == filename:
                     downloaded = fetched
@@ -769,7 +760,7 @@ class LlamaServerBackend:
         from core.inference.llama_cpp import LlamaCppBackend
 
         # [(idx, free_mib)], honors CVD
-        gpus = LlamaCppBackend._get_gpu_free_memory(for_llama_server=True)
+        gpus = LlamaCppBackend._get_gpu_free_memory(for_llama_server = True)
         return any(free >= LlamaServerBackend._MIN_GPU_FREE_MIB for _, free in gpus)
 
     @staticmethod
@@ -783,7 +774,6 @@ class LlamaServerBackend:
         have no mapped_targets marker, and a build covering every card needs no pin.
         """
         from core.inference.llama_cpp import LlamaCppBackend
-
         return LlamaCppBackend._arch_gate_survivors(binary)
 
     def _build_cmd(
@@ -837,7 +827,6 @@ class LlamaServerBackend:
             if sys.platform == "win32":
                 # Chat's DLL search path: without it a venv-hosted cudart is never found and the CUDA build runs on the CPU.
                 from core.inference.llama_cpp import _llama_lib_dir
-
                 path_dirs = LlamaCppBackend._build_windows_path_dirs(
                     str(_llama_lib_dir(binary)), sys.prefix, os.environ.get("CUDA_PATH", "")
                 )
@@ -851,7 +840,7 @@ class LlamaServerBackend:
 
                 # prefer_rocr: a HIP-only mask still lets HSA enumerate, and die on, the unsupported agent.
                 LlamaCppBackend._emit_child_gpu_visibility(
-                    env, ",".join(str(i) for i in _pinned), prefer_rocr=True
+                    env, ",".join(str(i) for i in _pinned), prefer_rocr = True
                 )
                 logger.info("pinning the embed server to arch-supported GPU(s) %s", _pinned)
         # Not else: a macOS CPU start still has to blank the devices.
@@ -944,8 +933,8 @@ class LlamaServerBackend:
         pooling = _gguf_pooling(model_path)
         self._model_pooling = pooling
         port = config.EMBED_PORT or self._find_free_port()
-        env = self._build_env(binary, use_gpu=use_gpu)
-        cmd = self._build_cmd(binary, model_path, port, use_gpu=use_gpu, pooling=pooling)
+        env = self._build_env(binary, use_gpu = use_gpu)
+        cmd = self._build_cmd(binary, model_path, port, use_gpu = use_gpu, pooling = pooling)
         logger.info(
             "starting llama-server embedder (%s): %s",
             "gpu" if use_gpu else "cpu",
@@ -959,12 +948,12 @@ class LlamaServerBackend:
             raise RuntimeError("Unsloth is shutting down; not starting the embed server")
         proc = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            env=env,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT,
+            text = True,
+            encoding = "utf-8",
+            errors = "replace",
+            env = env,
             **windows_hidden_subprocess_kwargs(),
             **child_popen_kwargs(),
         )
@@ -982,10 +971,10 @@ class LlamaServerBackend:
             raise RuntimeError("Unsloth is shutting down; not starting the embed server")
         self._port = port
         self._stdout_thread = account_thread(
-            target=self._drain_stdout,
-            args=(proc,),
-            daemon=True,
-            name="llama-embed-stdout",
+            target = self._drain_stdout,
+            args = (proc,),
+            daemon = True,
+            name = "llama-embed-stdout",
         )
         self._stdout_thread.start()
         if not self._wait_for_health(config.EMBED_STARTUP_TIMEOUT_S):
@@ -998,7 +987,6 @@ class LlamaServerBackend:
     @staticmethod
     def _find_free_port() -> int:
         from core.inference.llama_cpp import LlamaCppBackend
-
         return LlamaCppBackend._find_free_port()
 
     def _wait_for_health(
@@ -1016,7 +1004,7 @@ class LlamaServerBackend:
                 return False
             try:
                 # trust_env=False: a proxy that 503s 127.0.0.1 must not block this probe.
-                if httpx.get(url, timeout=2.0, trust_env=False).status_code == 200:
+                if httpx.get(url, timeout = 2.0, trust_env = False).status_code == 200:
                     return True
             except (*_TRANSPORT_ERRORS, httpx.TimeoutException):
                 pass
@@ -1079,12 +1067,12 @@ class LlamaServerBackend:
             return
         try:
             proc.terminate()
-            proc.wait(timeout=5)
+            proc.wait(timeout = 5)
         except subprocess.TimeoutExpired:
             logger.warning("llama-server embedder did not exit on SIGTERM; killing")
             proc.kill()
             try:
-                proc.wait(timeout=5)
+                proc.wait(timeout = 5)
             except Exception:  # noqa: BLE001
                 pass
         except Exception as e:  # noqa: BLE001
@@ -1095,7 +1083,7 @@ class LlamaServerBackend:
                 forget_pid(proc.pid)
             self._process = None
             if self._stdout_thread is not None:
-                self._stdout_thread.join(timeout=2)
+                self._stdout_thread.join(timeout = 2)
                 self._stdout_thread = None
 
     def _shutdown(self) -> None:
@@ -1142,7 +1130,7 @@ class LlamaServerBackend:
                 # Held across readiness AND the request, so a swap can only land between whole requests.
                 self._ensure_ready(model_name)
                 try:
-                    resp = self._client.post(f"{self._base_url}{path}", json=payload)
+                    resp = self._client.post(f"{self._base_url}{path}", json = payload)
                     resp.raise_for_status()
                     return resp.json()
                 except (*_TRANSPORT_ERRORS, httpx.TimeoutException) as e:
@@ -1161,15 +1149,15 @@ class LlamaServerBackend:
         self,
         texts,
         *,
-        model_name=None,
-        normalize=True,
+        model_name = None,
+        normalize = True,
     ):
         """Embed texts -> (N, dim) float32. ``model_name`` pins which GGUF serves
         the request, so a Settings change cannot answer it from another model.
         Normalizes in Python to match the ST backend."""
         self._served_identity_local.value = None
         with self._operation(), self._serve_lock:
-            vectors = self._encode_active(texts, normalize=normalize, model_name=model_name)
+            vectors = self._encode_active(texts, normalize = normalize, model_name = model_name)
             self._served_identity_local.value = (self._model_repo, self._model_pooling)
             return vectors
 
@@ -1181,12 +1169,12 @@ class LlamaServerBackend:
         self,
         texts,
         *,
-        normalize=True,
-        model_name=None,
+        normalize = True,
+        model_name = None,
     ):
         n = len(texts)
         if n == 0:
-            return np.zeros((0, self.dim(model_name=model_name)), dtype=np.float32)
+            return np.zeros((0, self.dim(model_name = model_name)), dtype = np.float32)
         rows: list[list[float]] = []
         batch = max(1, config.EMBED_BATCH)
         for start in range(0, n, batch):
@@ -1194,7 +1182,7 @@ class LlamaServerBackend:
             data = self._post(
                 "/v1/embeddings",
                 {"input": chunk, "model": "embedding", "encoding_format": "float"},
-                model_name=model_name,
+                model_name = model_name,
             )
             items = data.get("data", [])
             if len(items) != len(chunk):
@@ -1202,18 +1190,18 @@ class LlamaServerBackend:
                     f"embedder returned {len(items)} vectors for {len(chunk)} inputs"
                 )
             # OpenAI spec lets the server reorder; sort back by index.
-            items = sorted(items, key=lambda d: d.get("index", 0))
+            items = sorted(items, key = lambda d: d.get("index", 0))
             rows.extend(d["embedding"] for d in items)
-        arr = np.asarray(rows, dtype=np.float32)
+        arr = np.asarray(rows, dtype = np.float32)
         if arr.ndim != 2:
             raise RuntimeError(f"embedder returned ragged vectors: shape {arr.shape}")
         if normalize:
-            norms = np.linalg.norm(arr, axis=1, keepdims=True)
+            norms = np.linalg.norm(arr, axis = 1, keepdims = True)
             norms[norms == 0] = 1.0
             arr = arr / norms
         return arr
 
-    def dim(self, *, model_name=None) -> int:
+    def dim(self, *, model_name = None) -> int:
         """Embedding width, probed via a 1-text encode and cached per model (_resolve_model_path clears
         it when the effective repo changes).
 
@@ -1227,7 +1215,7 @@ class LlamaServerBackend:
             cached = self._dim
             if cached is not None:
                 return cached
-            vec = self.encode(["x"], normalize=False, model_name=model_name)
+            vec = self.encode(["x"], normalize = False, model_name = model_name)
             width = int(vec.shape[1])
             self._dim = width
             return width
@@ -1238,7 +1226,7 @@ class LlamaServerBackend:
         malformed base URL, which is what an un-started server has.
         """
         try:
-            data = httpx.get(f"{self._base_url}/props", timeout=2.0, trust_env=False).json()
+            data = httpx.get(f"{self._base_url}/props", timeout = 2.0, trust_env = False).json()
         except Exception:  # noqa: BLE001 - see docstring
             return None
         return data if isinstance(data, dict) else None
@@ -1270,7 +1258,7 @@ class LlamaServerBackend:
         found = self._positive(self._server_props(), "n_ubatch")
         return min(found, _UBATCH_SIZE) if found else _UBATCH_SIZE
 
-    def max_tokens(self, *, model_name=None) -> int | None:
+    def max_tokens(self, *, model_name = None) -> int | None:
         with self._operation(), self._serve_lock:
             self._ensure_ready(model_name)
             if self._max_tokens is None and self._model_path:
@@ -1288,7 +1276,7 @@ class LlamaServerBackend:
                     data = self._post(
                         "/tokenize",
                         {"content": "", "add_special": True},
-                        model_name=model_name,
+                        model_name = model_name,
                     )
                     answer = max(1, limit - len(data.get("tokens", [])))
                     if running is None or batch is None:
@@ -1298,7 +1286,7 @@ class LlamaServerBackend:
                     self._max_tokens = answer
             return self._max_tokens
 
-    def warm(self, *, model_name=None) -> None:
+    def warm(self, *, model_name = None) -> None:
         """Start the server and probe dim off the request path.
 
         Readiness is left to ``dim``, which takes ``_serve_lock`` for it. Calling it
@@ -1306,19 +1294,19 @@ class LlamaServerBackend:
         move the port out from under an encode pinned to A that had already passed
         its own readiness check, and store B's vectors under A's identity."""
         with self._operation():
-            self.dim(model_name=model_name)
+            self.dim(model_name = model_name)
 
-    def token_counter(self, *, model_name=None):
+    def token_counter(self, *, model_name = None):
         """Count tokens via the GGUF's /tokenize so chunk sizing matches the
         embedder. Cached per text."""
 
-        @lru_cache(maxsize=4096)
+        @lru_cache(maxsize = 4096)
         def _count(text: str) -> int:
             with self._operation():
                 data = self._post(
                     "/tokenize",
                     {"content": text, "add_special": False},
-                    model_name=model_name,
+                    model_name = model_name,
                 )
                 return len(data.get("tokens", []))
 

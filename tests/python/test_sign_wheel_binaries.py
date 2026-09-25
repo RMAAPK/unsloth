@@ -28,7 +28,7 @@ SIGNER_PY = REPO_ROOT / ".github" / "scripts" / "sign_wheel_binaries.py"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "woa-wheelhouse.yml"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def mod():
     spec = importlib.util.spec_from_file_location("_sign_wheel_binaries", SIGNER_PY)
     module = importlib.util.module_from_spec(spec)
@@ -102,7 +102,7 @@ def fake_signer(tmp_path):
         "struct.pack_into('<II', d, at, len(d), 0x40)\n"
         "d += b'CERTIFICATE'\n"
         "p.write_bytes(bytes(d))\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     return [sys.executable, str(script)]
 
@@ -126,11 +126,11 @@ class TestWhatCountsAsAPeImage:
     def test_an_unsigned_image_reads_as_unsigned(self, mod):
         assert mod.is_signed(_pe()) is False
 
-    @pytest.mark.parametrize("plus", [True, False], ids=["PE32+", "PE32"])
+    @pytest.mark.parametrize("plus", [True, False], ids = ["PE32+", "PE32"])
     def test_a_signed_image_reads_as_signed(self, mod, plus):
         """PE32 and PE32+ put the data directory at different offsets; a reader that assumed
         one would call every 32-bit signed DLL unsigned and re-sign somebody else's binary."""
-        assert mod.is_signed(_pe(signed=True, plus=plus)) is True
+        assert mod.is_signed(_pe(signed = True, plus = plus)) is True
 
 
 class TestSigningAWheel:
@@ -153,7 +153,7 @@ class TestSigningAWheel:
     def test_an_already_signed_binary_is_left_alone(self, mod, tmp_path, fake_signer):
         """delvewheel vendors Microsoft's redistributables into pyarrow already signed by
         Microsoft. Re-signing one replaces their signature with ours."""
-        original = _pe(signed=True)
+        original = _pe(signed = True)
         wheel = _wheel(
             tmp_path / "demo-1.0-cp313-cp313-win_arm64.whl",
             {
@@ -272,27 +272,27 @@ class TestItRefusesRatherThanShipSomethingWrong:
         wheel = _wheel(
             tmp_path / "demo-1.0-cp313-cp313-win_arm64.whl",
             {
-                "demo/_core.cp313-win_arm64.pyd": _pe(machine=0x8664),
+                "demo/_core.cp313-win_arm64.pyd": _pe(machine = 0x8664),
             },
         )
-        with pytest.raises(SystemExit, match="0x8664"):
+        with pytest.raises(SystemExit, match = "0x8664"):
             mod.sign_wheel(wheel, tmp_path / "out", fake_signer)
 
     def test_a_foreign_architecture_is_allowed_when_asked(self, mod, tmp_path, fake_signer):
         wheel = _wheel(
             tmp_path / "demo-1.0-cp313-cp313-win_amd64.whl",
             {
-                "demo/_core.cp313-win_amd64.pyd": _pe(machine=0x8664),
+                "demo/_core.cp313-win_amd64.pyd": _pe(machine = 0x8664),
             },
         )
-        _, signed, _ = mod.sign_wheel(wheel, tmp_path / "out", fake_signer, require_machine=None)
+        _, signed, _ = mod.sign_wheel(wheel, tmp_path / "out", fake_signer, require_machine = None)
         assert signed == ["demo/_core.cp313-win_amd64.pyd"]
 
     def test_a_wheel_with_no_binaries_is_refused(self, mod, tmp_path, fake_signer):
         """Nothing to sign means the build produced a pure-Python wheel where a native one was
         expected. Publishing it silently is how an unsigned wheelhouse comes back."""
         wheel = _wheel(tmp_path / "demo-1.0-py3-none-win_arm64.whl", {"demo/__init__.py": b"x\n"})
-        with pytest.raises(SystemExit, match="no PE images"):
+        with pytest.raises(SystemExit, match = "no PE images"):
             mod.sign_wheel(wheel, tmp_path / "out", fake_signer)
 
     def test_a_signer_that_fails_fails_the_run(self, mod, tmp_path):
@@ -303,7 +303,7 @@ class TestItRefusesRatherThanShipSomethingWrong:
             },
         )
         failing = [sys.executable, "-c", "import sys; sys.exit(3)"]
-        with pytest.raises(SystemExit, match="signing failed"):
+        with pytest.raises(SystemExit, match = "signing failed"):
             mod.sign_wheel(wheel, tmp_path / "out", failing)
 
     def test_a_signer_that_silently_does_nothing_fails_the_run(self, mod, tmp_path):
@@ -316,7 +316,7 @@ class TestItRefusesRatherThanShipSomethingWrong:
             },
         )
         noop = [sys.executable, "-c", "import sys"]
-        with pytest.raises(SystemExit, match="no certificate after signing"):
+        with pytest.raises(SystemExit, match = "no certificate after signing"):
             mod.sign_wheel(wheel, tmp_path / "out", noop)
 
 
@@ -324,9 +324,9 @@ class TestTheWorkflowUsesTheProcedureTheDesktopReleaseUses:
     """One signing procedure, one definition. A second copy of the endpoint or the identity
     drifts, and the drift is invisible until a release is signed by the wrong certificate."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope = "class")
     def text(self):
-        return WORKFLOW.read_text(encoding="utf-8")
+        return WORKFLOW.read_text(encoding = "utf-8")
 
     def test_it_delegates_to_the_shared_signing_helper(self, text):
         assert "studio/src-tauri/windows/sign-with-trusted-signing.ps1" in text
@@ -335,7 +335,7 @@ class TestTheWorkflowUsesTheProcedureTheDesktopReleaseUses:
     def test_the_signing_cli_is_digest_pinned(self, text):
         assert "TRUSTED_SIGNING_CLI_SHA256" in text
         desktop = (REPO_ROOT / ".github" / "workflows" / "release-desktop.yml").read_text(
-            encoding="utf-8"
+            encoding = "utf-8"
         )
         import re
 
@@ -351,7 +351,6 @@ class TestTheWorkflowUsesTheProcedureTheDesktopReleaseUses:
 
     def test_only_the_signing_job_reads_the_azure_secrets(self, text):
         import yaml
-
         data = yaml.safe_load(text)
         for name, job in data["jobs"].items():
             uses_azure = "AZURE_" in yaml.safe_dump(job)

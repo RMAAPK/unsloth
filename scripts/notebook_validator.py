@@ -54,9 +54,9 @@ from typing import Any, Iterable, Iterator
 
 def _atomic_write_bytes(path: pathlib.Path, data: bytes) -> None:
     """Atomic write (see scripts/scan_packages.py::update_req_file). A crash between mkstemp and os.replace leaves the prior file intact, so a half-downloaded cache file cannot poison later runs."""
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents = True, exist_ok = True)
     dirpath = str(path.parent) or "."
-    fd, tmp_path = tempfile.mkstemp(prefix=".nb_val.", dir=dirpath)
+    fd, tmp_path = tempfile.mkstemp(prefix = ".nb_val.", dir = dirpath)
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
@@ -105,10 +105,10 @@ def _set_colab_oracle_dir(directory: pathlib.Path) -> None:
     _colab_python_version.cache_clear()
 
 
-@functools.lru_cache(maxsize=1)
+@functools.lru_cache(maxsize = 1)
 def _colab_python_version() -> str | None:
     try:
-        text = (_COLAB_ORACLE_DIR / _COLAB_OS_INFO_FILE.name).read_text(encoding="utf-8")
+        text = (_COLAB_ORACLE_DIR / _COLAB_OS_INFO_FILE.name).read_text(encoding = "utf-8")
     except OSError:
         return None
     match = _COLAB_PYTHON_RE.search(text)
@@ -341,7 +341,7 @@ def iter_notebooks(
 
 
 def load_notebook(path: pathlib.Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding = "utf-8"))
 
 
 def cell_source(cell: dict[str, Any]) -> str:
@@ -409,7 +409,7 @@ def parse_pip_freeze(path: pathlib.Path) -> dict[str, str]:
     out: dict[str, str] = {}
     if not path.is_file():
         return out
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding = "utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         m = PINNED_RE.match(line)
@@ -420,7 +420,7 @@ def parse_pip_freeze(path: pathlib.Path) -> dict[str, str]:
 
 def normalise_version(v: str) -> str:
     """Strip +cu128 / +cpu / -dev local-version metadata."""
-    return re.split(r"[+\-]", v, maxsplit=1)[0]
+    return re.split(r"[+\-]", v, maxsplit = 1)[0]
 
 
 def version_minor(v: str) -> str:
@@ -590,14 +590,14 @@ def parse_pip_line(line: str, line_no: int = 0) -> PipInvocation | None:
     tool = "uv-pip" if re.search(r"(?:^|\s)uv\s+pip\b", m.group("tool"), re.IGNORECASE) else "pip"
     rest = m.group("rest")
     # Strip trailing comment.
-    rest = re.split(r"(?<!\S)#", rest, maxsplit=1)[0]
+    rest = re.split(r"(?<!\S)#", rest, maxsplit = 1)[0]
     try:
-        tokens = shlex.split(rest, posix=True)
+        tokens = shlex.split(rest, posix = True)
     except ValueError:
         # f-string interpolation like {xformers}: replace braces with placeholders.
         rest_safe = re.sub(r"\{[^}]+\}", "PLACEHOLDER", rest)
         try:
-            tokens = shlex.split(rest_safe, posix=True)
+            tokens = shlex.split(rest_safe, posix = True)
         except ValueError:
             return None
     flags: set[str] = set()
@@ -618,12 +618,12 @@ def parse_pip_line(line: str, line_no: int = 0) -> PipInvocation | None:
             continue
         packages.append(t)
     return PipInvocation(
-        tool=tool,
-        flags=flags,
-        packages=packages,
-        raw=line,
-        line_no=line_no,
-        action=m.group("action").lower(),
+        tool = tool,
+        flags = flags,
+        packages = packages,
+        raw = line,
+        line_no = line_no,
+        action = m.group("action").lower(),
     )
 
 
@@ -632,7 +632,7 @@ def _glue_line_continuations(text: str) -> list[tuple[int, str]]:
     out: list[tuple[int, str]] = []
     buf = ""
     start = 0
-    for i, raw in enumerate(text.splitlines(), start=1):
+    for i, raw in enumerate(text.splitlines(), start = 1):
         if buf == "":
             start = i
         if raw.rstrip().endswith("\\"):
@@ -1030,7 +1030,7 @@ def _unwrap_shell_group(command: str) -> tuple[str, bool]:
     while True:
         # Any whitespace, not a literal space: `then\tpip install ...` is the same command to
         # the shell, and leaving `then\tpip` as one word hides it from every rule.
-        parts = stripped.split(maxsplit=1)
+        parts = stripped.split(maxsplit = 1)
         if not parts or parts[0].lower() not in _SHELL_KEYWORDS:
             break
         conditional = conditional or parts[0].lower() in _SHELL_BODY_KEYWORDS
@@ -1535,7 +1535,7 @@ def _behind_keywords(text: str) -> str:
     plain group."""
     text = text.lstrip("!").strip().lstrip("({").lstrip()
     while True:
-        parts = text.split(maxsplit=1)
+        parts = text.split(maxsplit = 1)
         if not parts or parts[0].lower() not in _SHELL_KEYWORDS:
             return text
         text = parts[1].strip() if len(parts) > 1 else ""
@@ -1557,7 +1557,7 @@ def _leading_shell_keywords(piece: str) -> list[str]:
         text = text[definition.end() :].lstrip().lstrip("({").lstrip()
     words: list[str] = []
     while True:
-        parts = text.split(maxsplit=1)
+        parts = text.split(maxsplit = 1)
         if not parts or parts[0].lower() not in _SHELL_KEYWORDS:
             return words
         words.append(parts[0].lower())
@@ -2073,7 +2073,7 @@ def _split_chained(line: str) -> list[tuple[str, bool]]:
                 ordered.append((inner_text, sub_conditional or inner_flag))
         # `${READY:-$(pip install ...)}` expands its word only when READY is unset, so the
         # install inside it is a path the notebook MAY take, never one it certainly does.
-        for inner in _substitution_bodies(piece, conditional=True):
+        for inner in _substitution_bodies(piece, conditional = True):
             for inner_text, _ in _split_chained(f"!{inner}"):
                 maybe_called.add((_invoked_name(inner_text), index))
                 ordered.append((inner_text, True))
@@ -2246,7 +2246,7 @@ def _split_chained(line: str) -> list[tuple[str, bool]]:
             for key in reached & ends_shell
             if key.split("#")[0] in call_at
         ),
-        default=None,
+        default = None,
     )
     if cut is not None:
         del ordered[cut + 1 :]
@@ -2297,7 +2297,7 @@ def parse_spec(spec: str) -> SpecParts | None:
     name = m.group("name").lower()
     rest = m.group("rest")
     pins = OP_VERSION_RE.findall(rest)
-    return SpecParts(name=name, pins=pins, raw=spec)
+    return SpecParts(name = name, pins = pins, raw = spec)
 
 
 def _canonical_project(name: str) -> str:
@@ -2319,7 +2319,7 @@ def explicit_pin(spec: SpecParts) -> str | None:
 
 
 def pypi_metadata(name: str, version: str) -> dict[str, Any] | None:
-    PYPI_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    PYPI_CACHE_DIR.mkdir(parents = True, exist_ok = True)
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", f"{name.lower()}__{version}")
     path = PYPI_CACHE_DIR / f"{safe}.json"
     if path.is_file():
@@ -2329,7 +2329,7 @@ def pypi_metadata(name: str, version: str) -> dict[str, Any] | None:
             pass
     url = f"https://pypi.org/pypi/{name}/{version}/json"
     try:
-        with urllib.request.urlopen(url, timeout=10) as r:
+        with urllib.request.urlopen(url, timeout = 10) as r:
             data = json.loads(r.read())
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
         return None
@@ -2507,13 +2507,13 @@ def rule_inst_001_git_plus(install_cell: str, file: str, cell_idx: int) -> list[
             continue
         findings.append(
             Finding(
-                rule="R-INST-001",
-                file=file,
-                cell=cell_idx,
-                line=line_no,
-                severity="error",
-                message="install line uses `git+` (volatile, not pinned to a release)",
-                hint=f"replace with a `pip install foo==X.Y.Z` from PyPI; allow-list is {GIT_PLUS_ALLOWLIST}",
+                rule = "R-INST-001",
+                file = file,
+                cell = cell_idx,
+                line = line_no,
+                severity = "error",
+                message = "install line uses `git+` (volatile, not pinned to a release)",
+                hint = f"replace with a `pip install foo==X.Y.Z` from PyPI; allow-list is {GIT_PLUS_ALLOWLIST}",
             )
         )
     return findings
@@ -2579,26 +2579,26 @@ def rule_inst_002_no_deps_transitive(
                         continue
                     findings.append(
                         Finding(
-                            rule="R-INST-002",
-                            file=file,
-                            cell=cell_idx,
-                            line=inv.line_no,
-                            severity="error",
-                            message=f"`--no-deps {sp.name}=={v}` requires `{target}` {spec_str}, and this cell uninstalls it",
-                            hint=f"drop the `pip uninstall {target}` or reinstall it inside {sp.name}'s window",
+                            rule = "R-INST-002",
+                            file = file,
+                            cell = cell_idx,
+                            line = inv.line_no,
+                            severity = "error",
+                            message = f"`--no-deps {sp.name}=={v}` requires `{target}` {spec_str}, and this cell uninstalls it",
+                            hint = f"drop the `pip uninstall {target}` or reinstall it inside {sp.name}'s window",
                         )
                     )
                     continue
                 if not constraint_satisfied(resolved_target, ops):
                     findings.append(
                         Finding(
-                            rule="R-INST-002",
-                            file=file,
-                            cell=cell_idx,
-                            line=inv.line_no,
-                            severity="error",
-                            message=f"`--no-deps {sp.name}=={v}` leaves transitive `{target}` unpinned: resolved {resolved_target} violates {sp.name}'s requirement {spec_str!r}",
-                            hint=f'add `"{target}>={ops[0][1]},<={ops[-1][1]}"` (or the exact window from the metadata) to the same install line',
+                            rule = "R-INST-002",
+                            file = file,
+                            cell = cell_idx,
+                            line = inv.line_no,
+                            severity = "error",
+                            message = f"`--no-deps {sp.name}=={v}` leaves transitive `{target}` unpinned: resolved {resolved_target} violates {sp.name}'s requirement {spec_str!r}",
+                            hint = f'add `"{target}>={ops[0][1]},<={ops[-1][1]}"` (or the exact window from the metadata) to the same install line',
                         )
                     )
     return findings
@@ -3007,12 +3007,12 @@ def rule_inst_003_peft_torchao(
             ):
                 findings.append(
                     Finding(
-                        rule="R-INST-003",
-                        file=file,
-                        cell=cell_idx,
-                        severity="error",
-                        message=f"resolved peft=={peft_v} requires torchao>={floor['torchao_floor']}; install cell asserts torchao={torchao_resolved or '(none)'}",
-                        hint=f'add `!pip install --no-deps --upgrade "torchao>={floor["torchao_floor"]}"` to the install cell',
+                        rule = "R-INST-003",
+                        file = file,
+                        cell = cell_idx,
+                        severity = "error",
+                        message = f"resolved peft=={peft_v} requires torchao>={floor['torchao_floor']}; install cell asserts torchao={torchao_resolved or '(none)'}",
+                        hint = f'add `!pip install --no-deps --upgrade "torchao>={floor["torchao_floor"]}"` to the install cell',
                     )
                 )
     return findings
@@ -3069,12 +3069,12 @@ def rule_inst_004_torchcodec_torch(
         # Past the ABI floor with a pre-0.12 codec: locked to an older torch minor.
         findings.append(
             Finding(
-                rule="R-INST-004",
-                file=file,
-                cell=cell_idx,
-                severity="error",
-                message=f"torch=={torch_v} (minor {t_minor}) is incompatible with torchcodec=={codec_v} (minor {c_minor}); torchcodec <{TORCHCODEC_ABI_STABLE_CODEC} is built against a single older torch minor",
-                hint=f"pin `torchcodec>={TORCHCODEC_ABI_STABLE_CODEC}.0` (the ABI-stable line, which targets torch >={TORCHCODEC_ABI_STABLE_TORCH})",
+                rule = "R-INST-004",
+                file = file,
+                cell = cell_idx,
+                severity = "error",
+                message = f"torch=={torch_v} (minor {t_minor}) is incompatible with torchcodec=={codec_v} (minor {c_minor}); torchcodec <{TORCHCODEC_ABI_STABLE_CODEC} is built against a single older torch minor",
+                hint = f"pin `torchcodec>={TORCHCODEC_ABI_STABLE_CODEC}.0` (the ABI-stable line, which targets torch >={TORCHCODEC_ABI_STABLE_TORCH})",
             )
         )
         return findings
@@ -3084,12 +3084,12 @@ def rule_inst_004_torchcodec_torch(
         if codec_exact and not _codec_works_above(t_minor, c_minor):
             findings.append(
                 Finding(
-                    rule="R-INST-004",
-                    file=file,
-                    cell=cell_idx,
-                    severity="error",
-                    message=f"torch>={torch_v} is incompatible with torchcodec=={codec_v} (minor {c_minor}) at every torch minor the floor admits",
-                    hint=f"pin `torchcodec>={TORCHCODEC_ABI_STABLE_CODEC}.0` (the ABI-stable line, which targets torch >={TORCHCODEC_ABI_STABLE_TORCH})",
+                    rule = "R-INST-004",
+                    file = file,
+                    cell = cell_idx,
+                    severity = "error",
+                    message = f"torch>={torch_v} is incompatible with torchcodec=={codec_v} (minor {c_minor}) at every torch minor the floor admits",
+                    hint = f"pin `torchcodec>={TORCHCODEC_ABI_STABLE_CODEC}.0` (the ABI-stable line, which targets torch >={TORCHCODEC_ABI_STABLE_TORCH})",
                 )
             )
         return findings
@@ -3099,12 +3099,12 @@ def rule_inst_004_torchcodec_torch(
     if c_minor not in allowed:
         findings.append(
             Finding(
-                rule="R-INST-004",
-                file=file,
-                cell=cell_idx,
-                severity="error",
-                message=f"torch=={torch_v} (minor {t_minor}) is incompatible with torchcodec=={codec_v} (minor {c_minor}); compatible minors: {sorted(allowed)}",
-                hint=f"pin `torchcodec=={sorted(allowed)[-1]}` (or remove the explicit pin and let pip resolve)",
+                rule = "R-INST-004",
+                file = file,
+                cell = cell_idx,
+                severity = "error",
+                message = f"torch=={torch_v} (minor {t_minor}) is incompatible with torchcodec=={codec_v} (minor {c_minor}); compatible minors: {sorted(allowed)}",
+                hint = f"pin `torchcodec=={sorted(allowed)[-1]}` (or remove the explicit pin and let pip resolve)",
             )
         )
     return findings
@@ -3147,24 +3147,24 @@ def rule_inst_005_transformers_tokenizers(
     if tokenizers_removed:
         findings.append(
             Finding(
-                rule="R-INST-005",
-                file=file,
-                cell=cell_idx,
-                severity="error",
-                message=f"`--no-deps transformers=={tf}` requires tokenizers {spec_str}, and this cell uninstalls it",
-                hint="drop the `pip uninstall tokenizers` or reinstall it inside the window",
+                rule = "R-INST-005",
+                file = file,
+                cell = cell_idx,
+                severity = "error",
+                message = f"`--no-deps transformers=={tf}` requires tokenizers {spec_str}, and this cell uninstalls it",
+                hint = "drop the `pip uninstall tokenizers` or reinstall it inside the window",
             )
         )
         return findings
     if not constraint_satisfied(tok, ops):
         findings.append(
             Finding(
-                rule="R-INST-005",
-                file=file,
-                cell=cell_idx,
-                severity="error",
-                message=f"`--no-deps transformers=={tf}` skips pip's transitive resolver; resolved tokenizers={tok} violates {spec_str}",
-                hint=f'pin `"tokenizers{spec_str}"` (or the matching window) on the same `--no-deps` line',
+                rule = "R-INST-005",
+                file = file,
+                cell = cell_idx,
+                severity = "error",
+                message = f"`--no-deps transformers=={tf}` skips pip's transitive resolver; resolved tokenizers={tok} violates {spec_str}",
+                hint = f'pin `"tokenizers{spec_str}"` (or the matching window) on the same `--no-deps` line',
             )
         )
     return findings
@@ -3179,13 +3179,13 @@ def rule_inst_006_double_bang(install_cell: str, file: str, cell_idx: int) -> li
         line_no = install_cell.count("\n", 0, m.start()) + 1
         findings.append(
             Finding(
-                rule="R-INST-006",
-                file=file,
-                cell=cell_idx,
-                line=line_no,
-                severity="warning",
-                message="double-bang `!!pip` runs in a subshell; almost always a typo for `!pip`",
-                hint="use a single `!`",
+                rule = "R-INST-006",
+                file = file,
+                cell = cell_idx,
+                line = line_no,
+                severity = "warning",
+                message = "double-bang `!!pip` runs in a subshell; almost always a typo for `!pip`",
+                hint = "use a single `!`",
             )
         )
     return findings
@@ -3213,13 +3213,13 @@ class _APIScanner(ast.NodeVisitor):
                 ):
                     self.findings.append(
                         Finding(
-                            rule="R-API-003",
-                            file=self.file,
-                            cell=self.cell_idx,
-                            line=kw.value.lineno,
-                            severity="warning",
-                            message="`optim='adamw_torch_fused'` is suboptimal under Unsloth's memory-efficient training",
-                            hint='use `optim="adamw_8bit"` (or `"paged_adamw_8bit"` for GRPO)',
+                            rule = "R-API-003",
+                            file = self.file,
+                            cell = self.cell_idx,
+                            line = kw.value.lineno,
+                            severity = "warning",
+                            message = "`optim='adamw_torch_fused'` is suboptimal under Unsloth's memory-efficient training",
+                            hint = 'use `optim="adamw_8bit"` (or `"paged_adamw_8bit"` for GRPO)',
                         )
                     )
         self.generic_visit(node)
@@ -3235,7 +3235,7 @@ def scan_user_cells(nb: dict[str, Any], file: str) -> list[Finding]:
             tree = ast.parse(src)
         except SyntaxError:
             continue
-        scanner = _APIScanner(file=file, cell_idx=i)
+        scanner = _APIScanner(file = file, cell_idx = i)
         scanner.visit(tree)
         findings.extend(scanner.findings)
     return findings
@@ -3284,12 +3284,12 @@ def rule_l12_exceptions_coverage(notebooks_dir: pathlib.Path) -> list[Finding]:
                 if not pat.search(cell):
                     findings.append(
                         Finding(
-                            rule="R-EXC-001",
-                            file=str(path),
-                            cell=idx,
-                            severity="error",
-                            message=f"DONT_UPDATE_EXCEPTIONS notebook missing policy clause `{cid}` (pattern {pat.pattern!r})",
-                            hint=f"add the matching install line; the regenerator can't reach this notebook",
+                            rule = "R-EXC-001",
+                            file = str(path),
+                            cell = idx,
+                            severity = "error",
+                            message = f"DONT_UPDATE_EXCEPTIONS notebook missing policy clause `{cid}` (pattern {pat.pattern!r})",
+                            hint = f"add the matching install line; the regenerator can't reach this notebook",
                         )
                     )
     return findings
@@ -3298,7 +3298,7 @@ def rule_l12_exceptions_coverage(notebooks_dir: pathlib.Path) -> list[Finding]:
 def _extract_dont_update_exceptions(update_script: pathlib.Path) -> list[str]:
     if not update_script.is_file():
         return []
-    src = update_script.read_text(encoding="utf-8")
+    src = update_script.read_text(encoding = "utf-8")
     m = re.search(r"DONT_UPDATE_EXCEPTIONS\s*=\s*\[(.*?)\]", src, re.DOTALL)
     if not m:
         return []
@@ -3317,14 +3317,14 @@ def cmd_drift(args: argparse.Namespace) -> int:
     nbdir = pathlib.Path(args.notebooks_dir).resolve()
     update_script = nbdir / "update_all_notebooks.py"
     if not update_script.is_file():
-        print(f"FAIL: {update_script} not found", file=sys.stderr)
+        print(f"FAIL: {update_script} not found", file = sys.stderr)
         return 2
     # Stash any pre-existing dirty state, run the updater, diff, restore.
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=nbdir).decode().strip()
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd = nbdir).decode().strip()
     subprocess.run(
         ["git", "-C", str(nbdir), "stash", "--include-untracked"],
-        check=False,
-        capture_output=True,
+        check = False,
+        capture_output = True,
     )
     # The restore MUST run even on SystemExit/KeyboardInterrupt, else the
     # working tree stays rolled back into the stash. A bare try/finally keeps
@@ -3335,40 +3335,40 @@ def cmd_drift(args: argparse.Namespace) -> int:
         try:
             proc = subprocess.run(
                 [sys.executable, str(update_script)],
-                cwd=nbdir,
-                capture_output=True,
-                text=True,
-                timeout=600,
+                cwd = nbdir,
+                capture_output = True,
+                text = True,
+                timeout = 600,
             )
         except subprocess.TimeoutExpired:
             print(
                 "FAIL: update_all_notebooks.py timed out (>600s)",
-                file=sys.stderr,
+                file = sys.stderr,
             )
             rc = 2
         else:
             if proc.returncode != 0:
                 print(
                     f"FAIL: update_all_notebooks.py exited {proc.returncode}",
-                    file=sys.stderr,
+                    file = sys.stderr,
                 )
                 sys.stderr.write(proc.stderr[-2000:])
                 rc = 2
             else:
                 diff_proc = subprocess.run(
                     ["git", "-C", str(nbdir), "diff", "--stat"],
-                    capture_output=True,
-                    text=True,
+                    capture_output = True,
+                    text = True,
                 )
                 if diff_proc.stdout.strip():
                     for line in diff_proc.stdout.splitlines():
                         findings.append(
                             Finding(
-                                rule="R-DRIFT-001",
-                                file=line.strip(),
-                                severity="error",
-                                message="generator-vs-checked-in drift",
-                                hint="run `python update_all_notebooks.py` and commit the diff",
+                                rule = "R-DRIFT-001",
+                                file = line.strip(),
+                                severity = "error",
+                                message = "generator-vs-checked-in drift",
+                                hint = "run `python update_all_notebooks.py` and commit the diff",
                             )
                         )
                 rc = 0 if not findings else 1
@@ -3376,13 +3376,13 @@ def cmd_drift(args: argparse.Namespace) -> int:
         # Restore the working tree (both commands run regardless of exit path).
         subprocess.run(
             ["git", "-C", str(nbdir), "checkout", "."],
-            check=False,
-            capture_output=True,
+            check = False,
+            capture_output = True,
         )
         subprocess.run(
             ["git", "-C", str(nbdir), "stash", "pop"],
-            check=False,
-            capture_output=True,
+            check = False,
+            capture_output = True,
         )
     _emit(findings)
     return rc
@@ -3394,31 +3394,31 @@ def cmd_drift(args: argparse.Namespace) -> int:
 def cmd_convert(args: argparse.Namespace) -> int:
     nbdir = pathlib.Path(args.notebooks_dir).resolve()
     out = pathlib.Path(args.out).resolve()
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents = True, exist_ok = True)
     converter = HERE / "notebook_to_python.py"
     if not converter.is_file():
-        print(f"FAIL: {converter} not found", file=sys.stderr)
+        print(f"FAIL: {converter} not found", file = sys.stderr)
         return 2
     # Convert in batches; the script accepts multiple notebooks at once.
-    notebooks = list(iter_notebooks(nbdir, include_templates=True))
+    notebooks = list(iter_notebooks(nbdir, include_templates = True))
     failed: list[Finding] = []
     BATCH = 32
     for i in range(0, len(notebooks), BATCH):
         chunk = notebooks[i : i + BATCH]
         proc = subprocess.run(
             [sys.executable, str(converter), "-o", str(out), *map(str, chunk)],
-            capture_output=True,
-            text=True,
+            capture_output = True,
+            text = True,
         )
         if proc.returncode != 0:
             for nb in chunk:
                 failed.append(
                     Finding(
-                        rule="R-CONV-001",
-                        file=str(nb),
-                        severity="error",
-                        message="notebook_to_python.py failed for this notebook",
-                        hint=proc.stderr[-200:].strip(),
+                        rule = "R-CONV-001",
+                        file = str(nb),
+                        severity = "error",
+                        message = "notebook_to_python.py failed for this notebook",
+                        hint = proc.stderr[-200:].strip(),
                     )
                 )
     print(f"converted {len(notebooks) - len(failed)}/{len(notebooks)} notebooks to {out}")
@@ -3438,7 +3438,7 @@ def cmd_lint(args: argparse.Namespace) -> int:
     if not colab:
         print(
             f"WARN: Colab pip-freeze empty / missing at {colab_path}; using empty oracle",
-            file=sys.stderr,
+            file = sys.stderr,
         )
 
     findings: list[Finding] = []
@@ -3449,10 +3449,10 @@ def cmd_lint(args: argparse.Namespace) -> int:
         except (json.JSONDecodeError, OSError) as e:
             findings.append(
                 Finding(
-                    rule="R-CONV-002",
-                    file=str(path),
-                    severity="error",
-                    message=f"notebook unreadable: {e}",
+                    rule = "R-CONV-002",
+                    file = str(path),
+                    severity = "error",
+                    message = f"notebook unreadable: {e}",
                 )
             )
             continue
@@ -3503,7 +3503,7 @@ def cmd_api(args: argparse.Namespace) -> int:
     if not surface_path.is_file():
         print(
             f"FAIL: {surface_path} not found; run dump-api-surface first",
-            file=sys.stderr,
+            file = sys.stderr,
         )
         return 2
     surface = json.loads(surface_path.read_text())
@@ -3516,7 +3516,7 @@ def cmd_api(args: argparse.Namespace) -> int:
     )
     for py in sorted(converted.glob("*.py")):
         try:
-            tree = ast.parse(py.read_text(encoding="utf-8"))
+            tree = ast.parse(py.read_text(encoding = "utf-8"))
         except SyntaxError:
             continue
         for node in ast.walk(tree):
@@ -3531,12 +3531,12 @@ def cmd_api(args: argparse.Namespace) -> int:
                     if surface_set and node.func.attr not in surface_set:
                         findings.append(
                             Finding(
-                                rule="R-API-004",
-                                file=str(py.name),
-                                line=node.lineno,
-                                severity="error",
-                                message=f"`{base.id}.{node.func.attr}` is not in the live API surface for the pinned unsloth tag",
-                                hint="check the unsloth changelog for a renamed/removed API",
+                                rule = "R-API-004",
+                                file = str(py.name),
+                                line = node.lineno,
+                                severity = "error",
+                                message = f"`{base.id}.{node.func.attr}` is not in the live API surface for the pinned unsloth tag",
+                                hint = "check the unsloth changelog for a renamed/removed API",
                             )
                         )
     _emit(findings)
@@ -3548,26 +3548,26 @@ def cmd_api(args: argparse.Namespace) -> int:
 
 def cmd_all(args: argparse.Namespace) -> int:
     rcs: list[int] = []
-    rcs.append(cmd_drift(argparse.Namespace(notebooks_dir=args.notebooks_dir)))
+    rcs.append(cmd_drift(argparse.Namespace(notebooks_dir = args.notebooks_dir)))
     rcs.append(
         cmd_lint(
             argparse.Namespace(
-                notebooks_dir=args.notebooks_dir,
-                colab_pin=args.colab_pin,
-                no_pypi=args.no_pypi,
+                notebooks_dir = args.notebooks_dir,
+                colab_pin = args.colab_pin,
+                no_pypi = args.no_pypi,
             )
         )
     )
-    rcs.append(cmd_exceptions(argparse.Namespace(notebooks_dir=args.notebooks_dir)))
+    rcs.append(cmd_exceptions(argparse.Namespace(notebooks_dir = args.notebooks_dir)))
     return 0 if all(rc == 0 for rc in rcs) else 1
 
 
 def _fetch_oracle(url: str) -> bytes | None:
     try:
-        with urllib.request.urlopen(url, timeout=15) as r:
+        with urllib.request.urlopen(url, timeout = 15) as r:
             return r.read()
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-        print(f"FAIL: could not fetch {url}: {e}", file=sys.stderr)
+        print(f"FAIL: could not fetch {url}: {e}", file = sys.stderr)
         return None
 
 
@@ -3619,14 +3619,14 @@ def cmd_refresh_colab(args: argparse.Namespace) -> int:
                 print(
                     f"FAIL: refresh-colab --all: {upstream_name} {reason}; "
                     "no snapshot was written",
-                    file=sys.stderr,
+                    file = sys.stderr,
                 )
                 return 2
             # Advisory oracle: nothing resolves a rule against it, so a transient upstream failure leaves
             # the stale snapshot in place rather than reddening the daily cron.
             print(f"::notice::skipping {upstream_name}: {reason}")
             skipped.append(upstream_name)
-        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        snapshot_dir.mkdir(parents = True, exist_ok = True)
         # The set lands together or not at all. Each write is atomic on its own, but a failure part way
         # through left a fresh package list beside a stale Python version, and the workflow's `|| echo`
         # fallback then linted against it while reporting the committed snapshot.
@@ -3650,16 +3650,16 @@ def cmd_refresh_colab(args: argparse.Namespace) -> int:
                 if keep is not None:
                     os.replace(keep, snapshot_dir / snapshot_name)
                 else:
-                    (snapshot_dir / snapshot_name).unlink(missing_ok=True)
+                    (snapshot_dir / snapshot_name).unlink(missing_ok = True)
             print(
                 f"FAIL: refresh-colab --all could not write the snapshot set ({e}); "
                 "the committed one was restored",
-                file=sys.stderr,
+                file = sys.stderr,
             )
             return 2
         finally:
             for keep in preserved.values():
-                keep.unlink(missing_ok=True)
+                keep.unlink(missing_ok = True)
         for snapshot_name in written:
             size = len(payloads[snapshot_name])
             print(f"wrote {size} bytes to {snapshot_dir / snapshot_name}")
@@ -3667,7 +3667,7 @@ def cmd_refresh_colab(args: argparse.Namespace) -> int:
             print(f"left as committed: {', '.join(skipped)}")
         return 0
     out = pathlib.Path(args.out).resolve()
-    out.parent.mkdir(parents=True, exist_ok=True)
+    out.parent.mkdir(parents = True, exist_ok = True)
     data = _fetch_oracle(COLAB_PIP_FREEZE_URL)
     if data is None:
         return 2
@@ -3766,8 +3766,8 @@ def cmd_colab_diff(args: argparse.Namespace) -> int:
         url = COLAB_ORACLE_BASE_URL + upstream_name
         snap_path = snapshot_dir / snapshot_name
         try:
-            with urllib.request.urlopen(url, timeout=15) as r:
-                upstream_text = r.read().decode("utf-8", errors="replace")
+            with urllib.request.urlopen(url, timeout = 15) as r:
+                upstream_text = r.read().decode("utf-8", errors = "replace")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             if upstream_name == COLAB_STRICT_ORACLE or upstream_name in COLAB_STRICT_ORACLE_KEYS:
                 # Not compared is not "no drift": passing here reported success for a check that never ran. An
@@ -3793,7 +3793,7 @@ def cmd_colab_diff(args: argparse.Namespace) -> int:
             else:
                 print(f"::warning::colab-diff: no committed snapshot at {snap_path}; skipping")
             continue
-        snapshot_text = snap_path.read_text(encoding="utf-8", errors="replace")
+        snapshot_text = snap_path.read_text(encoding = "utf-8", errors = "replace")
         parser = _COLAB_ORACLE_PARSERS[upstream_name]
         upstream = parser(upstream_text)
         snapshot = parser(snapshot_text)
@@ -3864,7 +3864,7 @@ def cmd_colab_diff(args: argparse.Namespace) -> int:
             "\n::error::A rule-bearing Colab oracle drifted from its committed "
             "snapshot; run `notebook_validator.py refresh-colab --all "
             "--snapshot-dir scripts/data` to acknowledge.",
-            file=sys.stderr,
+            file = sys.stderr,
         )
         return 1
     if any_diff:
@@ -3882,62 +3882,62 @@ def _emit(findings: list[Finding]) -> None:
     n_err = sum(1 for f in findings if f.severity == "error")
     n_warn = sum(1 for f in findings if f.severity == "warning")
     for f in findings:
-        print(json.dumps(f.to_dict(), separators=(",", ":")))
-    print(f"# total: {n_err} errors, {n_warn} warnings", file=sys.stderr)
+        print(json.dumps(f.to_dict(), separators = (",", ":")))
+    print(f"# total: {n_err} errors, {n_warn} warnings", file = sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="notebook_validator")
-    sub = p.add_subparsers(dest="cmd", required=True)
+    p = argparse.ArgumentParser(prog = "notebook_validator")
+    sub = p.add_subparsers(dest = "cmd", required = True)
 
     pa = sub.add_parser("drift")
-    pa.add_argument("--notebooks-dir", required=True)
+    pa.add_argument("--notebooks-dir", required = True)
 
     pa = sub.add_parser("convert")
-    pa.add_argument("--notebooks-dir", required=True)
-    pa.add_argument("--out", required=True)
+    pa.add_argument("--notebooks-dir", required = True)
+    pa.add_argument("--out", required = True)
 
     pa = sub.add_parser("lint")
-    pa.add_argument("--notebooks-dir", required=True)
-    pa.add_argument("--colab-pin", default=None)
+    pa.add_argument("--notebooks-dir", required = True)
+    pa.add_argument("--colab-pin", default = None)
     pa.add_argument(
         "--no-pypi",
-        action="store_true",
-        help="skip rules that require live PyPI metadata fetches",
+        action = "store_true",
+        help = "skip rules that require live PyPI metadata fetches",
     )
 
     pa = sub.add_parser("exceptions")
-    pa.add_argument("--notebooks-dir", required=True)
+    pa.add_argument("--notebooks-dir", required = True)
 
     pa = sub.add_parser("api")
-    pa.add_argument("--converted-dir", required=True)
-    pa.add_argument("--surface", required=True)
+    pa.add_argument("--converted-dir", required = True)
+    pa.add_argument("--surface", required = True)
 
     pa = sub.add_parser("all")
-    pa.add_argument("--notebooks-dir", required=True)
-    pa.add_argument("--colab-pin", default=None)
-    pa.add_argument("--no-pypi", action="store_true")
+    pa.add_argument("--notebooks-dir", required = True)
+    pa.add_argument("--colab-pin", default = None)
+    pa.add_argument("--no-pypi", action = "store_true")
 
     pa = sub.add_parser("refresh-colab")
-    pa.add_argument("--out", default=str(COLAB_FALLBACK_FILE))
+    pa.add_argument("--out", default = str(COLAB_FALLBACK_FILE))
     pa.add_argument(
         "--all",
-        action="store_true",
-        help="refresh every oracle file into --snapshot-dir, not just pip-freeze",
+        action = "store_true",
+        help = "refresh every oracle file into --snapshot-dir, not just pip-freeze",
     )
-    pa.add_argument("--snapshot-dir", default=str(DATA_DIR))
+    pa.add_argument("--snapshot-dir", default = str(DATA_DIR))
 
     pa = sub.add_parser("colab-diff")
-    pa.add_argument("--snapshot-dir", default=str(DATA_DIR))
+    pa.add_argument("--snapshot-dir", default = str(DATA_DIR))
     pa.add_argument(
         "--strict",
-        action="store_true",
-        help=f"exit 1 on {COLAB_STRICT_ORACLE} drift (default: advisory; exit 0)",
+        action = "store_true",
+        help = f"exit 1 on {COLAB_STRICT_ORACLE} drift (default: advisory; exit 0)",
     )
     pa.add_argument(
         "--full",
-        action="store_true",
-        help="print every drifted entry instead of capping each list",
+        action = "store_true",
+        help = "print every drifted entry instead of capping each list",
     )
 
     args = p.parse_args(argv)

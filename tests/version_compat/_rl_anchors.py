@@ -26,6 +26,6 @@ def _reject_aux_loss_opt_in(src: str) -> str:
         _rl_py_constant("_GRPO_AUX_LOSS_ENABLED_LINE"),
         lambda m: m.group(0) + "\n" + m.group(1) + _rl_py_constant("_GRPO_AUX_LOSS_REJECT"),
         src,
-        count=1,
-        flags=re.MULTILINE,
+        count = 1,
+        flags = re.MULTILINE,
     )

@@ -58,8 +58,8 @@ def _make_backend(monkeypatch, streams: list[list[str]], payloads: list[dict]):
         _url,
         payload,
         _cancel_event,
-        headers=None,
-        first_token_deadline=None,
+        headers = None,
+        first_token_deadline = None,
     ):
         payloads.append(copy.deepcopy(payload))
         yield type("FakeResponse", (), {"status_code": 200, "chunks": streams.pop(0)})()
@@ -67,7 +67,7 @@ def _make_backend(monkeypatch, streams: list[list[str]], payloads: list[dict]):
     def fake_iter_text_cancellable(
         response,
         _cancel_event,
-        first_token_deadline=None,
+        first_token_deadline = None,
     ):
         yield from response.chunks
 
@@ -198,10 +198,10 @@ def test_final_answer_survives_preface_then_disabled_tool_noop(monkeypatch):
 
     events = list(
         backend.generate_chat_completion_with_tools(
-            messages=[{"role": "user", "content": "answer me"}],
-            tools=[_web_search_tool()],  # terminal intentionally absent
-            temperature=0.0,
-            max_tool_iterations=5,
+            messages = [{"role": "user", "content": "answer me"}],
+            tools = [_web_search_tool()],  # terminal intentionally absent
+            temperature = 0.0,
+            max_tool_iterations = 5,
         )
     )
 

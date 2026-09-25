@@ -45,7 +45,7 @@ FILES = ["model_index.json", "vae/diffusion_pytorch_model.safetensors"]
 REPO = "black-forest-labs/FLUX.1-dev"
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _repo_with_no_running_job():
     """No job of this repo is left running around a test in this file.
 
@@ -57,7 +57,7 @@ def _repo_with_no_running_job():
     """
 
     def _retire():
-        for ref in download_lifecycle.active_download_refs(dl._registry, REPO, with_variant = True):
+        for ref in download_lifecycle.active_download_refs(dl._registry, REPO, with_variant=True):
             dl._registry.set_job(dl._download_job_key(REPO, ref.variant), "complete")
 
     _retire()
@@ -95,11 +95,11 @@ def test_scope_requires_files_and_rejects_a_variant(monkeypatch):
     monkeypatch.setattr(dl, "resolve_cached_repo_id_case", lambda repo, **k: repo)
 
     with pytest.raises(Exception) as no_files:
-        asyncio.run(dl.download_model_response(_request(files = [])))
+        asyncio.run(dl.download_model_response(_request(files=[])))
     assert "files" in str(no_files.value)
 
     with pytest.raises(Exception) as both:
-        asyncio.run(dl.download_model_response(_request(gguf_variant = "Q4_K_M")))
+        asyncio.run(dl.download_model_response(_request(gguf_variant="Q4_K_M")))
     assert "mutually exclusive" in str(both.value)
 
 
@@ -131,8 +131,8 @@ def test_scoped_start_spawns_a_file_scoped_worker(monkeypatch, tmp_path):
     args = spawned["args"]
     assert "--variant" in args and args[args.index("--variant") + 1] == scope_variant
     manifest_path = args[args.index("--files-json") + 1]
-    assert json.loads(Path(manifest_path).read_text(encoding = "utf-8")) == FILES
-    Path(manifest_path).unlink(missing_ok = True)
+    assert json.loads(Path(manifest_path).read_text(encoding="utf-8")) == FILES
+    Path(manifest_path).unlink(missing_ok=True)
 
 
 def test_scoped_files_survive_into_the_registry(monkeypatch):
@@ -162,9 +162,9 @@ def test_scoped_files_survive_into_the_registry(monkeypatch):
 def test_files_manifest_round_trips():
     path = download_lifecycle.write_files_manifest(FILES)
     try:
-        assert json.loads(Path(path).read_text(encoding = "utf-8")) == FILES
+        assert json.loads(Path(path).read_text(encoding="utf-8")) == FILES
     finally:
-        Path(path).unlink(missing_ok = True)
+        Path(path).unlink(missing_ok=True)
 
 
 def test_a_different_file_set_is_not_adopted(monkeypatch):
@@ -180,7 +180,7 @@ def test_a_different_file_set_is_not_adopted(monkeypatch):
         with pytest.raises(HTTPException) as other_files:
             asyncio.run(
                 dl.download_model_response(
-                    _request(files = ["model_index.json", "flux1-dev-Q2_K.gguf"])
+                    _request(files=["model_index.json", "flux1-dev-Q2_K.gguf"])
                 )
             )
         assert other_files.value.status_code == 409
@@ -188,7 +188,7 @@ def test_a_different_file_set_is_not_adopted(monkeypatch):
 
         # The same file set is still the same download: it adopts the live job as before, in any order and with duplicates collapsed.
         same = asyncio.run(
-            dl.download_model_response(_request(files = [FILES[1], FILES[0], FILES[0]]))
+            dl.download_model_response(_request(files=[FILES[1], FILES[0], FILES[0]]))
         )
         assert same["accepted"] is True and same["job_key"] == key
     finally:
@@ -204,10 +204,10 @@ def test_a_start_reports_whether_it_attached_to_a_live_job(monkeypatch):
     repo = "unsloth/attach-flag-probe"
     key = dl._download_job_key(repo, dl._scope_variant("diffusion"))
     try:
-        started = asyncio.run(dl.download_model_response(_request(repo_id = repo)))
+        started = asyncio.run(dl.download_model_response(_request(repo_id=repo)))
         assert started["accepted"] is True and started["attached"] is False
 
-        attached = asyncio.run(dl.download_model_response(_request(repo_id = repo)))
+        attached = asyncio.run(dl.download_model_response(_request(repo_id=repo)))
         assert attached["accepted"] is True and attached["attached"] is True
         assert attached["job_key"] == key
 
@@ -220,7 +220,7 @@ def test_a_start_reports_whether_it_attached_to_a_live_job(monkeypatch):
         # progress) joined nothing, so it must not claim it attached.
         monkeypatch.setattr(dl._registry, "claim", lambda *a, **k: (False, "repository_owned"))
         monkeypatch.setattr(dl._registry, "adoptable", lambda *a, **k: False)
-        refused = asyncio.run(dl.download_model_response(_request(repo_id = repo)))
+        refused = asyncio.run(dl.download_model_response(_request(repo_id=repo)))
         assert refused["accepted"] is False and refused["attached"] is False
     finally:
         dl._registry.set_job(key, "complete")
@@ -243,18 +243,18 @@ def test_the_http_retry_keeps_the_scoped_file_list_on_the_record(monkeypatch):
     key = dl._download_job_key("black-forest-labs/FLUX.1-dev", dl._scope_variant("diffusion"))
     try:
         # The retry only exists for a job that started on XET.
-        assert asyncio.run(dl.download_model_response(_request(use_xet = True)))["accepted"] is True
+        assert asyncio.run(dl.download_model_response(_request(use_xet=True)))["accepted"] is True
 
         retried = download_lifecycle._try_http_retry(
             dl._registry,
             key,
-            hf_token = None,
-            label = "FLUX.1-dev [@diffusion]",
-            log_prefix = "[test]",
-            logger = download_lifecycle.logging.getLogger("test"),
-            repo_type = "model",
-            repo_id = "black-forest-labs/FLUX.1-dev",
-            watch_name = "test",
+            hf_token=None,
+            label="FLUX.1-dev [@diffusion]",
+            log_prefix="[test]",
+            logger=download_lifecycle.logging.getLogger("test"),
+            repo_type="model",
+            repo_id="black-forest-labs/FLUX.1-dev",
+            watch_name="test",
         )
         assert retried is True
 
@@ -276,7 +276,7 @@ def test_scope_key_stays_derivable_from_the_scope_alone():
 
 
 def _fake_backend(*loading: str):
-    return SimpleNamespace(loading_repo_ids = lambda: tuple(loading))
+    return SimpleNamespace(loading_repo_ids=lambda: tuple(loading))
 
 
 def test_an_images_load_staging_a_repo_blocks_a_download_of_it(monkeypatch):
@@ -336,7 +336,7 @@ def test_active_downloads_publish_the_scoped_file_list(monkeypatch):
     try:
         asyncio.run(dl.download_model_response(_request()))
         rows = download_lifecycle.active_download_refs(
-            dl._registry, "black-forest-labs/FLUX.1-dev", with_variant = True
+            dl._registry, "black-forest-labs/FLUX.1-dev", with_variant=True
         )
         scoped = [r for r in rows if r.variant == "@diffusion"]
         assert scoped, f"no scoped row in {rows}"
@@ -355,11 +355,11 @@ def test_a_full_snapshot_download_reports_no_file_list(monkeypatch):
     try:
         asyncio.run(
             dl.download_model_response(
-                DownloadModelRequest(repo_id = "black-forest-labs/FLUX.1-dev", use_xet = False)
+                DownloadModelRequest(repo_id="black-forest-labs/FLUX.1-dev", use_xet=False)
             )
         )
         rows = download_lifecycle.active_download_refs(
-            dl._registry, "black-forest-labs/FLUX.1-dev", with_variant = True
+            dl._registry, "black-forest-labs/FLUX.1-dev", with_variant=True
         )
         full = [r for r in rows if r.variant is None]
         assert full, f"no full-snapshot row in {rows}"

@@ -42,23 +42,21 @@ LOGO_DATA_URI_PREFIX = "data:image/png;base64,iVBOR"
 
 
 def resolve_paths(
-    venv_share=None,
-    jupyter_server_dir=None,
-    config_dirs=None,
+    venv_share = None,
+    jupyter_server_dir = None,
+    config_dirs = None,
 ):
     """Installed locations of every checked branding asset; tests pass explicit roots."""
     if venv_share is None:
         venv_share = os.path.join(sys.prefix, "share", "jupyter")
     if jupyter_server_dir is None:
         import jupyter_server
-
         jupyter_server_dir = os.path.dirname(jupyter_server.__file__)
     labext_dir = os.path.join(venv_share, "labextensions", LABEXT_NAME)
 
     if config_dirs is None:
         try:
             from jupyter_core.paths import jupyter_config_path
-
             config_dirs = jupyter_config_path()
         except Exception:
             config_dirs = []
@@ -80,7 +78,7 @@ def resolve_paths(
 
 def _read(path):
     try:
-        with open(path, encoding="utf-8", errors="replace") as f:
+        with open(path, encoding = "utf-8", errors = "replace") as f:
             return f.read()
     except OSError:
         return None
@@ -107,7 +105,7 @@ def _bundle_text(static_dir):
     return "\n".join(parts)
 
 
-def verify_branding(paths=None):
+def verify_branding(paths = None):
     if paths is None:
         paths = resolve_paths()
     problems = []
@@ -221,7 +219,7 @@ def _load_jupyter_server_extension(serverapp):
     if not problems:
         return
     msg = banner(problems)
-    print(msg, file=sys.stderr, flush=True)
+    print(msg, file = sys.stderr, flush = True)
     try:
         serverapp.log.critical(msg)
     except Exception:
@@ -234,19 +232,19 @@ def _load_jupyter_server_extension(serverapp):
     raise SystemExit(1)
 
 
-def main(argv=None):
+def main(argv = None):
     import argparse
 
-    parser = argparse.ArgumentParser(description="Unsloth branding integrity check")
-    parser.add_argument("--verify", action="store_true", help="verify and exit nonzero on failure")
-    parser.add_argument("--venv-share", default=None)
-    parser.add_argument("--jupyter-server-dir", default=None)
+    parser = argparse.ArgumentParser(description = "Unsloth branding integrity check")
+    parser.add_argument("--verify", action = "store_true", help = "verify and exit nonzero on failure")
+    parser.add_argument("--venv-share", default = None)
+    parser.add_argument("--jupyter-server-dir", default = None)
     args = parser.parse_args(argv)
 
     paths = resolve_paths(args.venv_share, args.jupyter_server_dir)
     problems = verify_branding(paths)
     if problems:
-        print(banner(problems), file=sys.stderr, flush=True)
+        print(banner(problems), file = sys.stderr, flush = True)
         return 1
     print("Unsloth branding integrity check passed (" + PRODUCT + ", AGPLv3).")
     return 0

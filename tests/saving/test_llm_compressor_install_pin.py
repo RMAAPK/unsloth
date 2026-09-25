@@ -13,7 +13,7 @@ _ENV_FLAG = "UNSLOTH_DISABLE_LLM_COMPRESSOR_AUTOINSTALL"
 
 
 def _module() -> ast.Module:
-    return ast.parse(SAVE_PY.read_text(encoding="utf-8"), filename=str(SAVE_PY))
+    return ast.parse(SAVE_PY.read_text(encoding = "utf-8"), filename = str(SAVE_PY))
 
 
 def _get_function(name: str) -> ast.FunctionDef:

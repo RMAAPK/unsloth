@@ -99,9 +99,9 @@ def _stop_child(process: subprocess.Popen) -> None:
         try:
             completed = subprocess.run(
                 ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                capture_output=True,
-                timeout=15,
-                check=False,
+                capture_output = True,
+                timeout = 15,
+                check = False,
             )
         except Exception:
             completed = None
@@ -114,7 +114,7 @@ def _stop_child(process: subprocess.Popen) -> None:
         except OSError:
             process.terminate()
     try:
-        process.wait(timeout=_CANCEL_GRACE_SECONDS)
+        process.wait(timeout = _CANCEL_GRACE_SECONDS)
     except subprocess.TimeoutExpired:
         if os.name == "nt":
             process.kill()
@@ -220,7 +220,7 @@ def run_local_agent(
     try:
         while True:
             try:
-                stdout, stderr = process.communicate(timeout=_CANCEL_POLL_SECONDS)
+                stdout, stderr = process.communicate(timeout = _CANCEL_POLL_SECONDS)
                 break
             except subprocess.TimeoutExpired:
                 if cancel_event.is_set():
@@ -377,23 +377,23 @@ def serve(
         if response is None:
             return
         with output_lock:
-            stdout.write(json.dumps(response, separators=(",", ":")) + "\n")
+            stdout.write(json.dumps(response, separators = (",", ":")) + "\n")
             stdout.flush()
 
     def call_tool(request: dict, request_id: object, cancel_event: threading.Event) -> None:
         try:
             response = _response(
                 request,
-                run_agent=lambda task: run_agent(task, cancel_event),
-                tool_name=tool_name,
-                tool_description=tool_description,
-                run_read_only_agent=(
+                run_agent = lambda task: run_agent(task, cancel_event),
+                tool_name = tool_name,
+                tool_description = tool_description,
+                run_read_only_agent = (
                     (lambda task: run_read_only_agent(task, cancel_event))
                     if run_read_only_agent
                     else None
                 ),
-                read_only_tool_name=read_only_tool_name,
-                instructions=instructions,
+                read_only_tool_name = read_only_tool_name,
+                instructions = instructions,
             )
             if not cancel_event.is_set():
                 send(response)
@@ -421,9 +421,9 @@ def serve(
                     with state_lock:
                         active[request_id] = cancel_event
                     worker = threading.Thread(
-                        target=call_tool,
-                        args=(request, request_id, cancel_event),
-                        name=f"unsloth-agent-{request_id}",
+                        target = call_tool,
+                        args = (request, request_id, cancel_event),
+                        name = f"unsloth-agent-{request_id}",
                     )
                     workers.append(worker)
                     worker.start()
@@ -431,15 +431,15 @@ def serve(
                 else:
                     response = _response(
                         request,
-                        tool_name=tool_name,
-                        tool_description=tool_description,
-                        run_read_only_agent=(
+                        tool_name = tool_name,
+                        tool_description = tool_description,
+                        run_read_only_agent = (
                             (lambda task: run_read_only_agent(task, threading.Event()))
                             if run_read_only_agent
                             else None
                         ),
-                        read_only_tool_name=read_only_tool_name,
-                        instructions=instructions,
+                        read_only_tool_name = read_only_tool_name,
+                        instructions = instructions,
                     )
             except Exception as exc:
                 response = {
@@ -461,10 +461,10 @@ def serve(
 
 def main() -> None:
     serve(
-        run_read_only_agent=lambda task, cancel_event: run_local_agent(
-            task, cancel_event, read_only=True
+        run_read_only_agent = lambda task, cancel_event: run_local_agent(
+            task, cancel_event, read_only = True
         ),
-        read_only_tool_name="unsloth_plan_agent",
+        read_only_tool_name = "unsloth_plan_agent",
     )
 
 

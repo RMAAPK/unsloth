@@ -764,7 +764,7 @@ def _apply_mistral_reasoning_controls(
     body: dict[str, Any],
     model: str,
     enable_thinking: Optional[bool],
-    reasoning_effort: Optional[str]
+    reasoning_effort: Optional[str],
 ) -> None:
     """Translate generic reasoning controls into Mistral's model-specific shape:
     magistral-medium-latest takes baseline or `prompt_mode="reasoning"`; mistral-small-latest /
@@ -5954,7 +5954,7 @@ class ExternalProviderClient:
                         _record_openai_url_citation(all_url_citations, payload)
 
                     def _record_openai_reasoning_replay_item(
-                        payload: Any
+                        payload: Any,
                     ) -> Optional[dict[str, Any]]:
                         if not isinstance(payload, dict):
                             return None

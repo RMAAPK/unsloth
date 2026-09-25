@@ -56,8 +56,8 @@ def force_uma(uma, monkeypatch):
 @pytest.fixture()
 def tiny_safetensors(tmp_path):
     tensors = {
-        "w": torch.arange(32, dtype=torch.float32).reshape(4, 8),
-        "b": torch.tensor([1.0, 2.0, 3.0, 4.0], dtype=torch.float32),
+        "w": torch.arange(32, dtype = torch.float32).reshape(4, 8),
+        "b": torch.tensor([1.0, 2.0, 3.0, 4.0], dtype = torch.float32),
     }
     path = tmp_path / "model.safetensors"
     safetensors_torch.save_file(tensors, str(path))
@@ -165,7 +165,7 @@ def test_cpu_target_is_passthrough(uma, force_uma, monkeypatch, tiny_safetensors
     fake_mu = _install_fake_modeling_utils(monkeypatch, safetensors.safe_open)
     uma.patch_unified_memory_safetensors_load()
     # device="cpu" must NOT be intercepted -> identical data, still on CPU.
-    with fake_mu.safe_open(str(path), framework="pt", device="cpu") as f:
+    with fake_mu.safe_open(str(path), framework = "pt", device = "cpu") as f:
         for key, expected in tensors.items():
             got = f.get_slice(key)[:]
             assert got.device.type == "cpu"
@@ -174,7 +174,7 @@ def test_cpu_target_is_passthrough(uma, force_uma, monkeypatch, tiny_safetensors
 
 @pytest.mark.skipif(
     not has_real_cuda(),
-    reason="needs a GPU for the host->device clone-and-move path",
+    reason = "needs a GPU for the host->device clone-and-move path",
 )
 def test_cuda_target_clones_and_moves(uma, force_uma, monkeypatch, tiny_safetensors):
     path, tensors = tiny_safetensors
@@ -182,7 +182,7 @@ def test_cuda_target_clones_and_moves(uma, force_uma, monkeypatch, tiny_safetens
     fake_mu = _install_fake_modeling_utils(monkeypatch, safetensors.safe_open)
     uma.patch_unified_memory_safetensors_load()
     # device="cuda" IS intercepted -> tensors land on cuda, byte-identical.
-    with fake_mu.safe_open(str(path), framework="pt", device="cuda") as f:
+    with fake_mu.safe_open(str(path), framework = "pt", device = "cuda") as f:
         for key, expected in tensors.items():
             got = f.get_slice(key)[:]
             assert got.device.type == "cuda"
@@ -194,7 +194,7 @@ def test_cuda_target_clones_and_moves(uma, force_uma, monkeypatch, tiny_safetens
 
 @pytest.mark.skipif(
     not has_real_cuda(),
-    reason="needs a GPU for the low-memory fallback path",
+    reason = "needs a GPU for the low-memory fallback path",
 )
 def test_low_memory_falls_back_to_direct_move(uma, force_uma, monkeypatch, tiny_safetensors):
     path, tensors = tiny_safetensors
@@ -210,7 +210,7 @@ def test_low_memory_falls_back_to_direct_move(uma, force_uma, monkeypatch, tiny_
 
     monkeypatch.setattr(torch.Tensor, "clone", _oom_clone)
     try:
-        with fake_mu.safe_open(str(path), framework="pt", device="cuda") as f:
+        with fake_mu.safe_open(str(path), framework = "pt", device = "cuda") as f:
             for key, expected in tensors.items():
                 got = f.get_slice(key)[:]
                 assert got.device.type == "cuda"
@@ -219,5 +219,5 @@ def test_low_memory_falls_back_to_direct_move(uma, force_uma, monkeypatch, tiny_
     finally:
         monkeypatch.setattr(torch.Tensor, "clone", real_clone)
     for key, expected in tensors.items():
-        with fake_mu.safe_open(str(path), framework="pt", device="cuda") as f:
+        with fake_mu.safe_open(str(path), framework = "pt", device = "cuda") as f:
             assert torch.equal(f.get_tensor(key).cpu(), expected)

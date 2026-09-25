@@ -50,7 +50,7 @@ def test_single_image_cells_are_unchanged():
 def test_patcher_rewrites_the_installed_trl_extraction():
     """Read TRL's file, not the class: importing unsloth already replaced the method."""
     trl_grpo = pytest.importorskip("trl.trainer.grpo_trainer")
-    with open(trl_grpo.__file__, "r", encoding="utf-8") as fh:
+    with open(trl_grpo.__file__, "r", encoding = "utf-8") as fh:
         module_source = fh.read()
     start = module_source.find("    def _generate_and_score_completions(")
     assert start != -1, "TRL renamed _generate_and_score_completions"
@@ -177,7 +177,7 @@ def test_guard_is_injected_when_the_legacy_reference_calls_drift():
 def test_guard_stays_off_a_trl_whose_reference_calls_do_take_the_counts():
     """The installed TRL is fully plumbed, so a multi image row works and must not be refused."""
     trl_grpo = pytest.importorskip("trl.trainer.grpo_trainer")
-    with open(trl_grpo.__file__, "r", encoding="utf-8") as fh:
+    with open(trl_grpo.__file__, "r", encoding = "utf-8") as fh:
         module_source = fh.read()
     start = module_source.find("    def _generate_and_score_completions(")
     assert start != -1, "TRL renamed _generate_and_score_completions"
@@ -238,7 +238,7 @@ def test_a_trl_that_cannot_size_its_placeholders_refuses_the_multi_image_row():
     counts the same cells. That surfaces inside the processor naming neither the column nor
     the fix, which is exactly what the guard exists to replace."""
     patched = grpo_trainer__generate_and_score_completions(
-        "_generate_and_score_completions", _legacy_source(with_placeholder_helper=False)
+        "_generate_and_score_completions", _legacy_source(with_placeholder_helper = False)
     )
     assert "_unsloth_grpo_image_cell(img)" in patched
     assert "_unsloth_reject_grpo_image_list(inputs)" in patched
@@ -249,7 +249,7 @@ def test_a_trl_that_can_size_its_placeholders_is_not_refused():
     """The control, and the reason the guard cannot simply key on the legacy cell spelling:
     0.22.x takes the same spelling and does size its placeholders, so it must keep working."""
     patched = grpo_trainer__generate_and_score_completions(
-        "_generate_and_score_completions", _legacy_source(with_placeholder_helper=True)
+        "_generate_and_score_completions", _legacy_source(with_placeholder_helper = True)
     )
     assert "_unsloth_grpo_image_cell(img)" in patched
     assert "len(_unsloth_cell) if _unsloth_cell else 0" in patched
@@ -341,7 +341,7 @@ def test_the_guard_refuses_a_multi_image_row_only_in_legacy_vllm_server_mode():
 
 def test_the_legacy_guard_is_installed_with_the_trainer_and_the_modern_one_is_not():
     trl_grpo = pytest.importorskip("trl.trainer.grpo_trainer")
-    with open(trl_grpo.__file__, "r", encoding="utf-8") as fh:
+    with open(trl_grpo.__file__, "r", encoding = "utf-8") as fh:
         module_source = fh.read()
     start = module_source.find("    def _generate_and_score_completions(")
     source = module_source[start:]

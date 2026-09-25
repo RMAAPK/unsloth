@@ -86,7 +86,7 @@ def _leaf_inside_allowlist(path: Path, allow_roots: Optional[list[Path]]) -> boo
 def validate_chat_template(template: str) -> ValidateChatTemplateResponse:
     text = (template or "").strip()
     if not text:
-        return ValidateChatTemplateResponse(valid=True, error=None)
+        return ValidateChatTemplateResponse(valid = True, error = None)
     # Import Jinja lazily: optional at runtime (e.g. GGUF-only installs), so a
     # missing dependency must not crash API startup.
     try:
@@ -94,7 +94,7 @@ def validate_chat_template(template: str) -> ValidateChatTemplateResponse:
         from jinja2.ext import Extension
         from jinja2.sandbox import ImmutableSandboxedEnvironment
     except ImportError:
-        return ValidateChatTemplateResponse(valid=True, error=None)
+        return ValidateChatTemplateResponse(valid = True, error = None)
 
     class _GenerationTag(Extension):
         # Accept Transformers' {% generation %} assistant-mask tag so a pasted HF
@@ -103,24 +103,24 @@ def validate_chat_template(template: str) -> ValidateChatTemplateResponse:
 
         def parse(self, parser):
             next(parser.stream)
-            return parser.parse_statements(["name:endgeneration"], drop_needle=True)
+            return parser.parse_statements(["name:endgeneration"], drop_needle = True)
 
     try:
         env = ImmutableSandboxedEnvironment(
-            trim_blocks=True,
-            lstrip_blocks=True,
-            extensions=["jinja2.ext.loopcontrols", _GenerationTag],
+            trim_blocks = True,
+            lstrip_blocks = True,
+            extensions = ["jinja2.ext.loopcontrols", _GenerationTag],
         )
         env.parse(text)
-        return ValidateChatTemplateResponse(valid=True, error=None)
+        return ValidateChatTemplateResponse(valid = True, error = None)
     except TemplateError as exc:
         message = getattr(exc, "message", None) or str(exc)
         lineno = getattr(exc, "lineno", None)
         if lineno:
             message = f"Line {lineno}: {message}"
-        return ValidateChatTemplateResponse(valid=False, error=message)
+        return ValidateChatTemplateResponse(valid = False, error = message)
     except Exception as exc:
-        return ValidateChatTemplateResponse(valid=False, error=str(exc))
+        return ValidateChatTemplateResponse(valid = False, error = str(exc))
 
 
 def _chat_template_from_tokenizer_config(config: dict) -> Optional[str]:
@@ -155,7 +155,7 @@ def _chat_template_from_jinja_file(
         try:
             if template_file.stat().st_size > MAX_CHAT_TEMPLATE_BYTES:
                 continue
-            template = template_file.read_text(encoding="utf-8")
+            template = template_file.read_text(encoding = "utf-8")
         except Exception:
             continue
         if template.strip():
@@ -234,7 +234,7 @@ def _iter_ggufs(dir_path: Path) -> list[Path]:
         return []
     root = str(dir_path)
     found: list[Path] = []
-    for current, dirs, files in os.walk(root, followlinks=False):
+    for current, dirs, files in os.walk(root, followlinks = False):
         rel = os.path.relpath(current, root)
         depth = 0 if rel == os.curdir else rel.count(os.sep) + 1
         if depth >= _GGUF_SCAN_MAX_DEPTH:
@@ -314,7 +314,7 @@ def _find_gguf_in_dir(dir_path: Path, gguf_variant: Optional[str]) -> Optional[P
         return None
     candidates = [path for path in ggufs if not _is_nonfirst_gguf_split(path)] or ggufs
     try:
-        return max(candidates, key=lambda path: path.stat().st_size)
+        return max(candidates, key = lambda path: path.stat().st_size)
     except OSError:
         return candidates[0]
 
@@ -387,10 +387,10 @@ def read_default_chat_template(
     except Exception as exc:
         logger.debug("Could not read cached chat template for %s: %s", resolved, exc)
         cached_template = None
-    if cached_template and cache_reads_authorized(hf_token, repo_id=resolved):
+    if cached_template and cache_reads_authorized(hf_token, repo_id = resolved):
         return cached_template
 
-    if hf_env_offline() and not cache_reads_authorized(hf_token, repo_id=resolved):
+    if hf_env_offline() and not cache_reads_authorized(hf_token, repo_id = resolved):
         # Offline, hf_hub_download serves the cached copy without checking the credential,
         # so the fallback would hand back the template the walk just refused. The route
         # forces offline whenever the Hub looks unreachable.
@@ -399,7 +399,7 @@ def read_default_chat_template(
     try:
         from huggingface_hub import HfApi, hf_hub_download
 
-        _api = HfApi(token=hf_token)
+        _api = HfApi(token = hf_token)
 
         def _this_file_is_cached(rel: str) -> bool:
             """THIS file at this revision, not merely a directory for the repo.
@@ -416,7 +416,7 @@ def read_default_chat_template(
                 # a template living only there reported a miss and opened the gate.
                 return isinstance(
                     try_to_load_from_cache(
-                        repo_id=resolved, filename=rel, cache_dir=active_hf_hub_cache()
+                        repo_id = resolved, filename = rel, cache_dir = active_hf_hub_cache()
                     ),
                     str,
                 )
@@ -430,13 +430,13 @@ def read_default_chat_template(
             # file metadata publicly. Asked once, ahead of both.
             if cached_read_refused(
                 hf_token,
-                repo_id=resolved,
-                is_cached=lambda: _this_file_is_cached(rel),
+                repo_id = resolved,
+                is_cached = lambda: _this_file_is_cached(rel),
             ):
                 return False
             # Reuse the size lookup to skip absent or oversized files.
             try:
-                infos = _api.get_paths_info(resolved, [rel], repo_type="model", token=hf_token)
+                infos = _api.get_paths_info(resolved, [rel], repo_type = "model", token = hf_token)
             except Exception:
                 # Nothing cached to serve: let the Hub enforce its own access.
                 return True
@@ -452,10 +452,9 @@ def read_default_chat_template(
             unrecorded credentialed fetch is what hands a private repo to a tokenless caller."""
             try:
                 from huggingface_hub import try_to_load_from_cache
-
                 return isinstance(
                     try_to_load_from_cache(
-                        repo_id=resolved, filename=rel, cache_dir=active_hf_hub_cache()
+                        repo_id = resolved, filename = rel, cache_dir = active_hf_hub_cache()
                     ),
                     str,
                 )
@@ -480,8 +479,8 @@ def read_default_chat_template(
                     path = hf_hub_download(
                         resolved,
                         rel,
-                        token=hf_token,
-                        cache_dir=active_hf_hub_cache(),
+                        token = hf_token,
+                        cache_dir = active_hf_hub_cache(),
                     )
                 return _read_bounded_text(Path(path), MAX_TEMPLATE_METADATA_BYTES)
             except Exception:

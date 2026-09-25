@@ -35,7 +35,7 @@ BOB = AccountContext("0f0e0d0c0b0a0908", "bob", "user")
 def studio_home(tmp_path, monkeypatch):
     home = tmp_path / "studio"
     monkeypatch.setenv("UNSLOTH_STUDIO_HOME", str(home))
-    monkeypatch.delenv("UNSLOTH_STUDIO_PROJECTS_HOME", raising=False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_PROJECTS_HOME", raising = False)
     monkeypatch.setenv("UNSLOTH_STUDIO_DOCUMENTS_HOME", str(tmp_path / "Documents"))
     return home
 
@@ -94,7 +94,7 @@ def test_a_plain_thread_does_not_inherit_the_binding():
     seen: list[str] = []
     token = bind_account(ALICE)
     try:
-        t = threading.Thread(target=lambda: seen.append(current_account_id()))
+        t = threading.Thread(target = lambda: seen.append(current_account_id()))
         t.start()
         t.join(5)
     finally:
@@ -106,7 +106,7 @@ def test_account_thread_captures_the_account_at_creation():
     seen: list[str] = []
     token = bind_account(ALICE)
     try:
-        t = account_thread(target=lambda: seen.append(current_account_id()))
+        t = account_thread(target = lambda: seen.append(current_account_id()))
     finally:
         reset_account(token)
     t.start()
@@ -155,7 +155,6 @@ def test_a_managed_account_is_rooted_under_its_id(studio_home):
 
 def test_two_accounts_never_share_a_private_root(studio_home):
     from utils.paths import storage_roots as r
-
     for fn in (r.workspace_root, r.studio_db_path, r.rag_db_path, r.outputs_root, r.tmp_root):
         assert run_as(ALICE, fn) != run_as(BOB, fn), fn.__name__
         assert run_as(ALICE, fn) != fn(), fn.__name__
@@ -163,7 +162,6 @@ def test_two_accounts_never_share_a_private_root(studio_home):
 
 def test_root_resolution_creates_nothing(studio_home):
     from utils.paths import storage_roots as r
-
     for fn in (r.workspace_root, r.studio_db_path, r.assets_root, r.tmp_root):
         fn()
         run_as(ALICE, fn)
@@ -172,7 +170,7 @@ def test_root_resolution_creates_nothing(studio_home):
 
 def test_an_old_auth_db_gains_the_identity_columns_with_the_owner_pinned(auth_db, tmp_path):
     db = tmp_path / "auth" / "auth.db"
-    db.parent.mkdir(parents=True)
+    db.parent.mkdir(parents = True)
     conn = sqlite3.connect(db)
     conn.execute(
         "CREATE TABLE auth_user (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, "
@@ -249,16 +247,16 @@ def test_a_request_is_bound_to_the_account_its_token_names(auth_db):
     alice = auth_db.get_account("alice")
 
     async def resolve(token):
-        creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        creds = HTTPAuthorizationCredentials(scheme = "Bearer", credentials = token)
         subject, _gen = await authentication._get_current_credential(
-            creds, allow_password_change=False
+            creds, allow_password_change = False
         )
         return subject, current_account()
 
-    subject, bound = asyncio.run(resolve(authentication.create_access_token(subject="alice")))
+    subject, bound = asyncio.run(resolve(authentication.create_access_token(subject = "alice")))
     assert subject == "alice"
     assert bound == alice
-    subject, bound = asyncio.run(resolve(authentication.create_access_token(subject="unsloth")))
+    subject, bound = asyncio.run(resolve(authentication.create_access_token(subject = "unsloth")))
     assert (subject, bound) == ("unsloth", OWNER)
 
 
@@ -268,8 +266,8 @@ def test_generations_are_scoped_to_their_account():
     ag.reset_for_tests()
     ev_a, ev_b = threading.Event(), threading.Event()
     with (
-        run_as(ALICE, ag.ActiveGeneration, ev_a, thread_id="t1"),
-        run_as(BOB, ag.ActiveGeneration, ev_b, thread_id="t1"),
+        run_as(ALICE, ag.ActiveGeneration, ev_a, thread_id = "t1"),
+        run_as(BOB, ag.ActiveGeneration, ev_b, thread_id = "t1"),
     ):
         assert ag.count() == 2
         assert ag.count(ALICE.account_id) == 1
@@ -296,7 +294,7 @@ def test_a_load_never_evicts_another_accounts_active_generation(monkeypatch):
 
     run_as(ALICE, arb.acquire_for, arb.CHAT)
     assert arb.owner_account() == ALICE.account_id
-    with run_as(ALICE, ag.ActiveGeneration, threading.Event(), thread_id="t1"):
+    with run_as(ALICE, ag.ActiveGeneration, threading.Event(), thread_id = "t1"):
         with pytest.raises(arb.GpuBusyForAnotherAccountError):
             run_as(BOB, arb.acquire_for, arb.DIFFUSION)
         assert evicted == []
@@ -332,7 +330,7 @@ def test_reusing_a_resident_model_leaves_the_loader_in_control(monkeypatch):
 
     run_as(BOB, arb.acquire_for, arb.CHAT, lambda: None)
     assert arb.owner_account() == BOB.account_id
-    run_as(ALICE, arb.acquire_for, arb.CHAT, replacing=True)
+    run_as(ALICE, arb.acquire_for, arb.CHAT, replacing = True)
     assert arb.owner_account() == ALICE.account_id
     run_as(BOB, arb.acquire_for, arb.DIFFUSION)
     assert arb.owner_account() == BOB.account_id
@@ -351,7 +349,7 @@ def test_the_owner_alone_behaves_exactly_as_before(monkeypatch):
     monkeypatch.setitem(arb._EVICTORS, arb.DIFFUSION, lambda: evicted.append("diffusion"))
     arb.release(arb.CHAT)
     arb.acquire_for(arb.CHAT)
-    with ag.ActiveGeneration(threading.Event(), thread_id="t1"):
+    with ag.ActiveGeneration(threading.Event(), thread_id = "t1"):
         arb.acquire_for(arb.DIFFUSION)
     assert evicted == ["chat"]
     assert ag.cancel_all() == 0

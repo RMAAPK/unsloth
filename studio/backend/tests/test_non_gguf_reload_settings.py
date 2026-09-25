@@ -58,7 +58,7 @@ class _Request:
         self.gpu_memory_mode = fields.pop("gpu_memory_mode", None)
 
 
-def _loaded(max_seq_length=4096, load_in_4bit=True):
+def _loaded(max_seq_length = 4096, load_in_4bit = True):
     return _Backend(
         {
             "max_seq_length_requested": max_seq_length,
@@ -68,33 +68,33 @@ def _loaded(max_seq_length=4096, load_in_4bit=True):
 
 
 def test_matching_explicit_settings_are_reused():
-    backend = _loaded(max_seq_length=4096, load_in_4bit=True)
-    request = _Request(max_seq_length=4096, load_in_4bit=True)
+    backend = _loaded(max_seq_length = 4096, load_in_4bit = True)
+    request = _Request(max_seq_length = 4096, load_in_4bit = True)
     assert inference_route._non_gguf_runtime_settings_match(backend, request)
 
 
 def test_changed_context_forces_a_reload():
-    backend = _loaded(max_seq_length=4096)
-    request = _Request(max_seq_length=32768)
+    backend = _loaded(max_seq_length = 4096)
+    request = _Request(max_seq_length = 32768)
     assert not inference_route._non_gguf_runtime_settings_match(backend, request)
 
 
 def test_changed_precision_forces_a_reload():
-    backend = _loaded(load_in_4bit=True)
-    request = _Request(load_in_4bit=False)
+    backend = _loaded(load_in_4bit = True)
+    request = _Request(load_in_4bit = False)
     assert not inference_route._non_gguf_runtime_settings_match(backend, request)
 
 
 def test_omitted_settings_keep_the_legacy_reuse():
     """A caller that sends only model_path still reuses."""
-    backend = _loaded(max_seq_length=4096, load_in_4bit=True)
+    backend = _loaded(max_seq_length = 4096, load_in_4bit = True)
     assert inference_route._non_gguf_runtime_settings_match(backend, _Request())
 
 
 def test_zero_context_expresses_no_preference():
     """max_seq_length 0 never forces a reload."""
     assert inference_route._non_gguf_runtime_settings_match(
-        _loaded(max_seq_length=2048), _Request(max_seq_length=0)
+        _loaded(max_seq_length = 2048), _Request(max_seq_length = 0)
     )
 
 
@@ -102,14 +102,14 @@ def test_unrecorded_resident_settings_are_reused_not_reloaded():
     """An unrecorded resident value is not a mismatch."""
     backend = _Backend({})
     assert inference_route._non_gguf_runtime_settings_match(
-        backend, _Request(max_seq_length=32768, load_in_4bit=False)
+        backend, _Request(max_seq_length = 32768, load_in_4bit = False)
     )
 
 
 def test_force_reload_is_honored():
     """force_reload defeats the match."""
-    backend = _loaded(max_seq_length=4096)
-    request = _Request(force_reload=True, max_seq_length=4096)
+    backend = _loaded(max_seq_length = 4096)
+    request = _Request(force_reload = True, max_seq_length = 4096)
     assert not inference_route._non_gguf_runtime_settings_match(backend, request)
 
 
@@ -178,7 +178,7 @@ class TestNonGgufStatusReportsWhatTheLoadAskedFor:
         )
         monkeypatch.setattr(inference_route, "_running_load_attempt", None)
         monkeypatch.setattr(inference_route, "_pending_load_attempts", {})
-        return asyncio.run(inference_route.get_status(current_subject="test"))
+        return asyncio.run(inference_route.get_status(current_subject = "test"))
 
     def test_the_non_gguf_status_branch_publishes_them(self, monkeypatch):
         response = self._status_for(
@@ -225,23 +225,23 @@ class TestOmittedPrecisionKeepsTheResidentOne:
     another setting, such as the context, forces the reload."""
 
     def test_same_model_inherits_the_resident_precision(self):
-        request = _Request(max_seq_length=0)
+        request = _Request(max_seq_length = 0)
         inference_route._inherit_resident_load_in_4bit(
-            _loaded(load_in_4bit=False), request, RESIDENT
+            _loaded(load_in_4bit = False), request, RESIDENT
         )
         assert request.load_in_4bit is False
 
     def test_explicit_precision_wins(self):
-        request = _Request(load_in_4bit=True)
+        request = _Request(load_in_4bit = True)
         inference_route._inherit_resident_load_in_4bit(
-            _loaded(load_in_4bit=False), request, RESIDENT
+            _loaded(load_in_4bit = False), request, RESIDENT
         )
         assert request.load_in_4bit is True
 
     def test_other_model_keeps_the_default(self):
         request = _Request()
         inference_route._inherit_resident_load_in_4bit(
-            _loaded(load_in_4bit=False), request, "unsloth/Llama-3.2-1B-Instruct"
+            _loaded(load_in_4bit = False), request, "unsloth/Llama-3.2-1B-Instruct"
         )
         assert request.load_in_4bit is True
 
@@ -253,8 +253,8 @@ class TestOmittedPrecisionKeepsTheResidentOne:
     def test_pydantic_request_reuses_after_inheriting(self):
         from models.inference import LoadRequest
 
-        backend = _loaded(load_in_4bit=False)
-        request = LoadRequest(model_path=RESIDENT)
+        backend = _loaded(load_in_4bit = False)
+        request = LoadRequest(model_path = RESIDENT)
         inference_route._inherit_resident_load_in_4bit(backend, request, RESIDENT)
         assert request.load_in_4bit is False
         assert inference_route._non_gguf_runtime_settings_match(backend, request)

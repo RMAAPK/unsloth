@@ -55,7 +55,7 @@ _SOCKET_TIMEOUT = 300.0
 Transport = Callable[[str, str, "dict[str, str]", "bytes | None", float], "tuple[int, bytes]"]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen = True)
 class ScanStats:
     """The subset of a VirusTotal stats dict we report on."""
 
@@ -84,7 +84,7 @@ class FileReport:
     size: int = 0
     source: str = "skipped"
     stats: ScanStats | None = None
-    detections: list[str] = field(default_factory=list)
+    detections: list[str] = field(default_factory = list)
     note: str = ""
 
 
@@ -100,12 +100,12 @@ def parse_stats(raw: object) -> ScanStats:
         return int(value)
 
     return ScanStats(
-        malicious=_count("malicious"),
-        suspicious=_count("suspicious"),
-        undetected=_count("undetected"),
-        harmless=_count("harmless"),
+        malicious = _count("malicious"),
+        suspicious = _count("suspicious"),
+        undetected = _count("undetected"),
+        harmless = _count("harmless"),
         # `confirmed-timeout` is a separate bucket that means the same thing to us.
-        timeout=_count("timeout") + _count("confirmed-timeout"),
+        timeout = _count("timeout") + _count("confirmed-timeout"),
     )
 
 
@@ -131,7 +131,7 @@ def select_scan_targets(paths: Iterable[Path]) -> list[Path]:
     targets = [
         path for path in paths if path.is_file() and not path.name.endswith(SKIPPED_SUFFIXES)
     ]
-    return sorted(targets, key=lambda path: path.name)
+    return sorted(targets, key = lambda path: path.name)
 
 
 def sha256_of(path: Path) -> str:
@@ -256,10 +256,10 @@ def _default_transport(
     body: bytes | None,
     timeout: float = _SOCKET_TIMEOUT,
 ) -> tuple[int, bytes]:
-    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    request = urllib.request.Request(url, data = body, headers = headers, method = method)
     context = ssl.create_default_context()
     try:
-        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+        with urllib.request.urlopen(request, timeout = timeout, context = context) as response:
             return response.status, response.read()
     except urllib.error.HTTPError as error:
         # 404 on a hash lookup is an expected control-flow signal, not a failure.
@@ -382,8 +382,8 @@ class VirusTotalClient:
         status, payload = self.request(
             "GET",
             f"{API_ROOT}/files/{sha256}",
-            allow_status=(404,),
-            deadline=deadline,
+            allow_status = (404,),
+            deadline = deadline,
         )
         if status == 404:
             return None
@@ -403,7 +403,7 @@ class VirusTotalClient:
         body, content_type = _build_multipart(path)
 
         for attempt in range(1, attempts + 1):
-            _, payload = self.request("GET", f"{API_ROOT}/files/upload_url", deadline=deadline)
+            _, payload = self.request("GET", f"{API_ROOT}/files/upload_url", deadline = deadline)
             upload_url = payload.get("data") if isinstance(payload, dict) else None
             if not isinstance(upload_url, str) or not upload_url:
                 raise RuntimeError("VirusTotal did not return an upload URL")
@@ -414,10 +414,10 @@ class VirusTotalClient:
                 _, payload = self.request(
                     "POST",
                     upload_url,
-                    body=body,
-                    extra_headers={"content-type": content_type},
-                    max_attempts=1,
-                    deadline=deadline,
+                    body = body,
+                    extra_headers = {"content-type": content_type},
+                    max_attempts = 1,
+                    deadline = deadline,
                 )
             except TimeoutError:
                 raise
@@ -447,7 +447,7 @@ class VirusTotalClient:
             if self._clock() >= deadline:
                 raise TimeoutError(f"analysis {analysis_id} did not complete before the deadline")
             _, payload = self.request(
-                "GET", f"{API_ROOT}/analyses/{analysis_id}", deadline=deadline
+                "GET", f"{API_ROOT}/analyses/{analysis_id}", deadline = deadline
             )
             attributes = _attributes(payload)
             if attributes.get("status") == "completed":
@@ -477,7 +477,7 @@ def _redact_url(url: str) -> str:
 def _mask_in_actions(value: str) -> None:
     """Register `value` with the runner's log scrubber. `VT_API_KEY` comes from a repository secret, so Actions masks it everywhere automatically; the signed upload URL does not, since VirusTotal mints it per call and its query string is a credential, which makes it exactly the "sensitive information that is not a GitHub secret" the Actions docs say to pass through `::add-mask::`. Without this, the only thing keeping it out of the log is us remembering to call `_redact_url` at every print site, which is a rule that holds right up until someone adds a print or a traceback escapes. No-ops off the runner so local runs are not littered with workflow commands."""
     if value and os.environ.get("GITHUB_ACTIONS") == "true":
-        print(f"::add-mask::{value}", flush=True)
+        print(f"::add-mask::{value}", flush = True)
 
 
 def _attributes(payload: object) -> dict:
@@ -507,11 +507,11 @@ def _record(
 
 def scan_file(client: VirusTotalClient, path: Path, deadline: float) -> FileReport:
     """Scan one bundle, degrading to an annotated row rather than raising."""
-    report = FileReport(name=path.name, size=path.stat().st_size)
+    report = FileReport(name = path.name, size = path.stat().st_size)
     report.sha256 = sha256_of(path)
 
     try:
-        existing = client.lookup_hash(report.sha256, deadline=deadline)
+        existing = client.lookup_hash(report.sha256, deadline = deadline)
         if existing is not None:
             attributes = _attributes(existing)
             _record(
@@ -519,11 +519,11 @@ def scan_file(client: VirusTotalClient, path: Path, deadline: float) -> FileRepo
                 "known to VirusTotal (no upload)",
                 attributes.get("last_analysis_stats"),
                 attributes.get("last_analysis_results"),
-                completed=False,
+                completed = False,
             )
             return report
 
-        analysis_id = client.upload(path, deadline=deadline)
+        analysis_id = client.upload(path, deadline = deadline)
         # wait_for_analysis only returns once status == "completed".
         attributes = _attributes(client.wait_for_analysis(analysis_id, deadline))
         _record(
@@ -531,7 +531,7 @@ def scan_file(client: VirusTotalClient, path: Path, deadline: float) -> FileRepo
             "uploaded",
             attributes.get("stats"),
             attributes.get("results"),
-            completed=True,
+            completed = True,
         )
     except TimeoutError as error:
         report.source = "timed out"
@@ -557,7 +557,7 @@ def _emit(report: FileReport) -> None:
         f"bytes={report.size} source={report.source!r} malicious={stats.malicious} "
         f"suspicious={stats.suspicious} undetected={stats.undetected} "
         f"harmless={stats.harmless} timeout={stats.timeout}",
-        flush=True,
+        flush = True,
     )
     if report.detections:
         # ::warning:: and not ::error:: so the release still ships; see the module docstring.
@@ -565,47 +565,47 @@ def _emit(report: FileReport) -> None:
             f"::warning title=VirusTotal detection::{_gha_escape(report.name)}: "
             f"{stats.malicious} malicious, {stats.suspicious} suspicious "
             f"({_gha_escape(', '.join(report.detections))})",
-            flush=True,
+            flush = True,
         )
     if report.note:
         print(
             f"::warning title=VirusTotal scan incomplete::"
             f"{_gha_escape(report.name)}: {_gha_escape(report.note)}",
-            flush=True,
+            flush = True,
         )
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description = __doc__)
     parser.add_argument(
         "paths",
-        nargs="+",
-        type=Path,
-        help="release bundles to scan, or a directory containing them",
+        nargs = "+",
+        type = Path,
+        help = "release bundles to scan, or a directory containing them",
     )
     parser.add_argument(
         "--output-markdown",
-        type=Path,
-        default=None,
-        help="write the summary table here (for $GITHUB_STEP_SUMMARY)",
+        type = Path,
+        default = None,
+        help = "write the summary table here (for $GITHUB_STEP_SUMMARY)",
     )
     parser.add_argument(
         "--timeout-seconds",
-        type=float,
-        default=DEFAULT_TIMEOUT_SECONDS,
-        help="overall wall-clock cap for the whole scan",
+        type = float,
+        default = DEFAULT_TIMEOUT_SECONDS,
+        help = "overall wall-clock cap for the whole scan",
     )
     parser.add_argument(
         "--request-interval",
-        type=float,
-        default=DEFAULT_REQUEST_INTERVAL,
-        help="minimum seconds between API calls (free tier allows 4/min)",
+        type = float,
+        default = DEFAULT_REQUEST_INTERVAL,
+        help = "minimum seconds between API calls (free tier allows 4/min)",
     )
     parser.add_argument(
         "--fail-threshold",
-        type=int,
-        default=DEFAULT_FAIL_THRESHOLD,
-        help="exit non-zero when malicious + suspicious >= N (0 disables)",
+        type = int,
+        default = DEFAULT_FAIL_THRESHOLD,
+        help = "exit non-zero when malicious + suspicious >= N (0 disables)",
     )
     return parser
 
@@ -628,31 +628,31 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     def _write_markdown(text: str) -> None:
         if args.output_markdown is not None:
-            args.output_markdown.parent.mkdir(parents=True, exist_ok=True)
-            args.output_markdown.write_text(text, encoding="utf-8")
+            args.output_markdown.parent.mkdir(parents = True, exist_ok = True)
+            args.output_markdown.write_text(text, encoding = "utf-8")
 
     if not api_key:
         # A missing secret must never break a release: forks and re-runs by contributors without the org secret still have to be able to publish. The env var NAME is written out literally rather than interpolated from API_KEY_ENV; test_missing_key_skips_without_failing asserts the two stay in step.
         print(
             "virustotal_scan: VT_API_KEY is unset or empty; skipping the scan.",
-            flush=True,
+            flush = True,
         )
         _write_markdown(f"{SUMMARY_HEADING}\n\nSkipped: no API key configured for this run.\n")
         return 0
 
     targets = collect_paths(args.paths)
     if not targets:
-        print("virustotal_scan: no scannable bundles found.", flush=True)
+        print("virustotal_scan: no scannable bundles found.", flush = True)
         _write_markdown(f"{SUMMARY_HEADING}\n\nSkipped: no scannable bundles found.\n")
         return 0
 
-    client = VirusTotalClient(api_key, request_interval=args.request_interval)
+    client = VirusTotalClient(api_key, request_interval = args.request_interval)
     deadline = time.monotonic() + max(0.0, args.timeout_seconds)
 
     reports: list[FileReport] = []
     for path in targets:
         if time.monotonic() >= deadline:
-            report = FileReport(name=path.name, size=path.stat().st_size)
+            report = FileReport(name = path.name, size = path.stat().st_size)
             report.source = "skipped"
             report.note = "overall scan timeout reached before this asset was submitted"
             reports.append(report)
@@ -667,8 +667,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if exceeds_threshold(reports, args.fail_threshold):
         print(
             f"virustotal_scan: detections reached the --fail-threshold of {args.fail_threshold}.",
-            file=sys.stderr,
-            flush=True,
+            file = sys.stderr,
+            flush = True,
         )
         return 1
     return 0

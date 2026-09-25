@@ -33,10 +33,10 @@ def _cell(
     cell_id,
     arm,
     *,
-    completed=True,
-    session=SESSION,
-    tokens=10_000,
-    rep=0,
+    completed = True,
+    session = SESSION,
+    tokens = 10_000,
+    rep = 0,
 ):
     return {
         "row_type": "cell",
@@ -52,7 +52,7 @@ def _keystroke(
     cell_id,
     p95,
     *,
-    session=SESSION,
+    session = SESSION,
 ):
     return {
         "row_type": "action",
@@ -69,8 +69,8 @@ def _gate(
     name,
     passed,
     *,
-    cell_id=None,
-    session=SESSION,
+    cell_id = None,
+    session = SESSION,
 ):
     row = {"row_type": "gate", "name": name, "passed": passed, "detail": {}, "session_id": session}
     if cell_id is not None:
@@ -78,15 +78,15 @@ def _gate(
     return row
 
 
-def _pairs(records, session_id=SESSION):
+def _pairs(records, session_id = SESSION):
     result = compare_arms(
         records,
         "base",
         "treatment",
-        bench_version="0.1.0",
-        corpus_hash="c0ffee",
-        session_id=session_id,
-        label="test",
+        bench_version = "0.1.0",
+        corpus_hash = "c0ffee",
+        session_id = session_id,
+        label = "test",
     )
     return [p for p in result.pairs if p.metric_key == "keystroke_p95_ms"], result
 
@@ -95,7 +95,7 @@ def test_a_crashed_treatment_cell_does_not_become_a_win():
     records = [
         _cell("r10K.base.rep0", "base"),
         _keystroke("r10K.base.rep0", 100.0),
-        _cell("r10K.treatment.rep0", "treatment", completed=False),
+        _cell("r10K.treatment.rep0", "treatment", completed = False),
         _keystroke("r10K.treatment.rep0", 50.0),
     ]
     assert "treatment" not in readings_by_arm(records)
@@ -116,7 +116,7 @@ def test_a_cell_that_failed_a_per_cell_gate_does_not_become_a_win():
         _keystroke("r10K.base.rep0", 100.0),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
-        _gate("thread_complete", False, cell_id="r10K.treatment.rep0"),
+        _gate("thread_complete", False, cell_id = "r10K.treatment.rep0"),
     ]
     assert "treatment" not in readings_by_arm(records)
     pairs, result = _pairs(records)
@@ -132,7 +132,7 @@ def test_a_failed_follows_the_stream_gate_disqualifies_its_cell_too():
         _keystroke("r10K.base.rep0", 100.0),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
-        _gate("follows_the_stream", False, cell_id="r10K.treatment.rep0"),
+        _gate("follows_the_stream", False, cell_id = "r10K.treatment.rep0"),
     ]
     assert "treatment" not in readings_by_arm(records)
 
@@ -141,10 +141,10 @@ def test_a_passing_gate_leaves_its_cell_alone():
     records = [
         _cell("r10K.base.rep0", "base"),
         _keystroke("r10K.base.rep0", 100.0),
-        _gate("thread_complete", True, cell_id="r10K.base.rep0"),
+        _gate("thread_complete", True, cell_id = "r10K.base.rep0"),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
-        _gate("thread_complete", True, cell_id="r10K.treatment.rep0"),
+        _gate("thread_complete", True, cell_id = "r10K.treatment.rep0"),
     ]
     pairs, _result = _pairs(records)
     assert len(pairs) == 1
@@ -165,10 +165,10 @@ def test_a_failed_timer_clamp_does_not_throw_away_the_rest_of_the_cell():
     records = [
         _cell("r10K.base.rep0", "base"),
         _keystroke("r10K.base.rep0", 100.0),
-        _gate("timer_clamp", False, cell_id="r10K.base.rep0"),
+        _gate("timer_clamp", False, cell_id = "r10K.base.rep0"),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
-        _gate("timer_clamp", False, cell_id="r10K.treatment.rep0"),
+        _gate("timer_clamp", False, cell_id = "r10K.treatment.rep0"),
     ]
     assert set(readings_by_arm(records)) == {"base", "treatment"}
     pairs, _result = _pairs(records)
@@ -201,12 +201,12 @@ def test_a_retry_that_passed_is_not_disqualified_by_the_dead_attempt_gate():
     records = [
         _cell("r10K.base.rep0", "base"),
         _keystroke("r10K.base.rep0", 100.0),
-        _cell("r10K.treatment.rep0", "treatment", completed=False, session=OLD_SESSION),
-        _keystroke("r10K.treatment.rep0", 999.0, session=OLD_SESSION),
-        _gate("thread_complete", False, cell_id="r10K.treatment.rep0", session=OLD_SESSION),
+        _cell("r10K.treatment.rep0", "treatment", completed = False, session = OLD_SESSION),
+        _keystroke("r10K.treatment.rep0", 999.0, session = OLD_SESSION),
+        _gate("thread_complete", False, cell_id = "r10K.treatment.rep0", session = OLD_SESSION),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
-        _gate("thread_complete", True, cell_id="r10K.treatment.rep0"),
+        _gate("thread_complete", True, cell_id = "r10K.treatment.rep0"),
     ]
     assert "treatment" in readings_by_arm(records)
     pairs, _result = _pairs(records)
@@ -228,12 +228,12 @@ def test_two_completed_cells_still_pair():
 
 def test_cells_from_a_previous_session_are_not_paired_with_this_one():
     records = [
-        _cell("r10K.base.rep0", "base", session=OLD_SESSION),
-        _keystroke("r10K.base.rep0", 100.0, session=OLD_SESSION),
+        _cell("r10K.base.rep0", "base", session = OLD_SESSION),
+        _keystroke("r10K.base.rep0", 100.0, session = OLD_SESSION),
         _cell("r10K.treatment.rep0", "treatment"),
         _keystroke("r10K.treatment.rep0", 50.0),
     ]
-    assert "base" not in readings_by_arm(records, session_id=SESSION)
+    assert "base" not in readings_by_arm(records, session_id = SESSION)
     pairs, _result = _pairs(records)
     assert pairs == []
 
@@ -247,10 +247,9 @@ def test_a_payload_without_session_ids_is_still_readable():
         {k: v for k, v in _cell("b", "treatment").items() if k != "session_id"},
         {k: v for k, v in _keystroke("b", 50.0).items() if k != "session_id"},
     ]
-    assert set(readings_by_arm(records, session_id=SESSION)) == {"base", "treatment"}
+    assert set(readings_by_arm(records, session_id = SESSION)) == {"base", "treatment"}
 
 
 if __name__ == "__main__":
     import pytest
-
     raise SystemExit(pytest.main([__file__, "-q"]))

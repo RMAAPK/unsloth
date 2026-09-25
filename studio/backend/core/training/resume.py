@@ -21,8 +21,8 @@ def _is_foreign_absolute_path(path_value: str) -> bool:
 
 def _is_under_outputs(path: Path) -> bool:
     try:
-        resolved = path.resolve(strict=False)
-        root = outputs_root().resolve(strict=False)
+        resolved = path.resolve(strict = False)
+        root = outputs_root().resolve(strict = False)
         resolved.relative_to(root)
         return True
     except (OSError, RuntimeError, ValueError):
@@ -62,7 +62,7 @@ def _valid_state_file(path: Path, require_tensor: bool = True) -> bool:
             except ImportError:
                 return False
             try:
-                with safe_open(str(path), framework="np") as state:
+                with safe_open(str(path), framework = "np") as state:
                     return bool(state.keys())
             except SafetensorError:
                 return False
@@ -106,7 +106,7 @@ def session_eta_seconds(
 
 def _checkpoint_state(path: Path) -> Optional[int]:
     try:
-        state = json.loads((path / "trainer_state.json").read_text(encoding="utf-8"))
+        state = json.loads((path / "trainer_state.json").read_text(encoding = "utf-8"))
         step = state.get("global_step") if isinstance(state, dict) else None
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
@@ -129,8 +129,8 @@ def _valid_indexed_shard(checkpoint: Path, shard: object, expected_suffix: str) 
     if Path(shard).is_absolute() or Path(shard).suffix != expected_suffix:
         return False
     try:
-        root = checkpoint.resolve(strict=True)
-        candidate = (checkpoint / shard).resolve(strict=True)
+        root = checkpoint.resolve(strict = True)
+        candidate = (checkpoint / shard).resolve(strict = True)
         candidate.relative_to(root)
     except (OSError, ValueError):
         return False
@@ -142,7 +142,7 @@ def _has_model_state(path: Path) -> bool:
         return True
     for name in _MODEL_INDEXES:
         try:
-            index = json.loads((path / name).read_text(encoding="utf-8"))
+            index = json.loads((path / name).read_text(encoding = "utf-8"))
             shards = set(index["weight_map"].values())
         except (
             AttributeError,
@@ -174,8 +174,8 @@ def is_resume_checkpoint_valid(
         valid_bundle = (
             _has_model_state(path)
             # optimizer/scheduler state can be validly tensor-free (e.g. SGD without momentum).
-            and _valid_state_file(path / "optimizer.pt", require_tensor=False)
-            and _valid_state_file(path / "scheduler.pt", require_tensor=False)
+            and _valid_state_file(path / "optimizer.pt", require_tensor = False)
+            and _valid_state_file(path / "scheduler.pt", require_tensor = False)
         )
         if backend is None and not valid_bundle:
             valid_bundle = _valid_state_file(path / "adapters.safetensors") and _valid_state_file(
@@ -210,7 +210,7 @@ def get_resume_checkpoint_path(
     if is_resume_checkpoint_valid(path, expected_step):
         return str(path)
 
-    checkpoints = sorted(path.glob("checkpoint-*"), key=_checkpoint_step, reverse=True)
+    checkpoints = sorted(path.glob("checkpoint-*"), key = _checkpoint_step, reverse = True)
     return next(
         (
             str(checkpoint)
@@ -227,7 +227,7 @@ def normalize_resume_output_dir(path_value: str) -> str:
         raise ValueError("Resume checkpoint uses a path from a different operating system.")
     try:
         path = resolve_output_dir(path_value)
-        path.resolve(strict=True)
+        path.resolve(strict = True)
     except (OSError, RuntimeError) as error:
         raise ValueError("Resume checkpoint path could not be resolved.") from error
     if not _is_under_outputs(path):
@@ -278,9 +278,9 @@ def _resource_resume_cache_key(config: dict) -> Optional[str]:
     try:
         return json.dumps(
             values,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
+            sort_keys = True,
+            separators = (",", ":"),
+            ensure_ascii = False,
         )
     except (TypeError, ValueError):
         return None

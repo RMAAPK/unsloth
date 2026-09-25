@@ -58,7 +58,7 @@ from utils.models.model_config import _token_fingerprint as capability_fingerpri
 from utils.transformers_version import _token_cache_key
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _isolate_repo_access_cache():
     """``_repo_access_cache`` is a process global, so one test's memoized verdict would
     otherwise decide the next one's. Every test in this file used to reset it by hand."""
@@ -74,7 +74,7 @@ def _hub_reachable(monkeypatch, *, offline: bool = False) -> None:
 
 def _counting_probe(
     monkeypatch,
-    verdict=True,
+    verdict = True,
     *,
     offline: Optional[bool] = None,
     delay: float = 0.0,
@@ -86,7 +86,7 @@ def _counting_probe(
     ``_hub_offline`` stands, which is what the tests that never stubbed it expect.
     """
     if offline is not None:
-        _hub_reachable(monkeypatch, offline=offline)
+        _hub_reachable(monkeypatch, offline = offline)
     calls = {"n": 0}
 
     def _probe(*_a, **_k):
@@ -109,14 +109,14 @@ def _router_client(
     subject: str = "alice",
 ) -> TestClient:
     app = FastAPI()
-    app.include_router(router, prefix=prefix)
+    app.include_router(router, prefix = prefix)
     app.dependency_overrides[get_current_subject] = lambda: subject
     app.dependency_overrides[authenticated_via_api_key] = lambda: via_api_key
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions = False)
 
 
 def _models_client(via_api_key: bool) -> TestClient:
-    return _router_client(models_routes.router, "/api/models", via_api_key=via_api_key)
+    return _router_client(models_routes.router, "/api/models", via_api_key = via_api_key)
 
 
 def _st_resolver(monkeypatch, **overrides) -> None:
@@ -167,15 +167,15 @@ def _picker_env(
         )
 
 
-def _scan_refused(model_name: str, hf_token="hf_dummy") -> int:
+def _scan_refused(model_name: str, hf_token = "hf_dummy") -> int:
     """Drive the remote-code scan as an api key and return the status it refused with."""
     with pytest.raises(fastapi.HTTPException) as excinfo:
         asyncio.run(
             models_routes.scan_model_remote_code(
-                model_name=model_name,
-                hf_token=hf_token,
-                allow_ambient_token=False,
-                current_subject="alice",
+                model_name = model_name,
+                hf_token = hf_token,
+                allow_ambient_token = False,
+                current_subject = "alice",
             )
         )
     return excinfo.value.status_code
@@ -199,8 +199,8 @@ def _one_cached_quant(
     monkeypatch.setattr(
         gguf_variants,
         "list_gguf_variants",
-        lambda repo_id, hf_token=None: (
-            [GgufVariantInfo(filename="Model-Q4_K_M.gguf", quant="Q4_K_M", size_bytes=256)],
+        lambda repo_id, hf_token = None: (
+            [GgufVariantInfo(filename = "Model-Q4_K_M.gguf", quant = "Q4_K_M", size_bytes = 256)],
             False,
             [],
         ),
@@ -221,7 +221,7 @@ def _one_cached_quant(
     ],
 )
 def test_the_resolver_returns_one_of_exactly_three_values(hf_token, allow_ambient, expected):
-    resolved = hf_token_arg(hf_token, allow_ambient_token=allow_ambient)
+    resolved = hf_token_arg(hf_token, allow_ambient_token = allow_ambient)
     assert resolved is expected if expected in (None, False) else resolved == expected
 
 
@@ -234,13 +234,13 @@ def test_only_the_sentinel_reads_as_anonymous():
 
 def test_cache_reads_require_a_credential_that_reaches_the_repo(monkeypatch):
     """A token-shaped string is not authorization to read the host cache."""
-    probes = _counting_probe(monkeypatch, False, offline=False)
+    probes = _counting_probe(monkeypatch, False, offline = False)
 
-    assert cache_reads_authorized(False, repo_id="org/private") is False
-    assert cache_reads_authorized(None, repo_id="org/private") is True
-    assert cache_reads_authorized("hf_dummy", repo_id="org/private") is False
+    assert cache_reads_authorized(False, repo_id = "org/private") is False
+    assert cache_reads_authorized(None, repo_id = "org/private") is True
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/private") is False
     assert probes["n"] == 1, "ambient and anonymous must not pay a Hub round trip"
-    assert cache_reads_authorized("hf_dummy", repo_id="org/private") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/private") is False
     assert probes["n"] == 1, "the negative answer was not memoized"
 
 
@@ -252,14 +252,14 @@ def test_a_ui_session_that_saved_a_token_still_reads_its_own_cache(monkeypatch):
     list, the chat template and the dataset format check on repos already in its own cache.
     With no token saved it kept all three.
     """
-    probes = _counting_probe(monkeypatch, None, offline=True)
+    probes = _counting_probe(monkeypatch, None, offline = True)
 
-    ui = hf_token_arg("  hf_saved  ", allow_ambient_token=True)
-    api_key = hf_token_arg("  hf_saved  ", allow_ambient_token=False)
+    ui = hf_token_arg("  hf_saved  ", allow_ambient_token = True)
+    api_key = hf_token_arg("  hf_saved  ", allow_ambient_token = False)
 
     assert ui == "hf_saved" and api_key == "hf_saved", "same value, different caller class"
-    assert cache_reads_authorized(ui, repo_id="org/private") is True
-    assert cache_reads_authorized(api_key, repo_id="org/private") is False
+    assert cache_reads_authorized(ui, repo_id = "org/private") is True
+    assert cache_reads_authorized(api_key, repo_id = "org/private") is False
     assert probes["n"] == 0, "the UI session must not pay a round trip for its own token"
 
 
@@ -267,7 +267,7 @@ def test_the_ambient_marker_is_a_string_everywhere_it_is_used_as_a_value(monkeyp
     """Value transparent, entitlement not. Every consumer wanting the token VALUE sees a
     plain token; cache IDENTITY is the deliberate exception, pinned by the caller-class
     test below (this test once asserted the opposite, which was the bug)."""
-    ui = hf_token_arg("hf_saved", allow_ambient_token=True)
+    ui = hf_token_arg("hf_saved", allow_ambient_token = True)
 
     assert isinstance(ui, str)
     assert ui == "hf_saved"
@@ -283,12 +283,12 @@ def test_the_ambient_marker_is_a_string_everywhere_it_is_used_as_a_value(monkeyp
 
 def test_trimming_does_not_demote_a_ui_session_to_an_api_key():
     """str.strip returns a plain str, which would put the operator back behind the probe."""
-    ui = hf_token_arg("  hf_saved  ", allow_ambient_token=True)
+    ui = hf_token_arg("  hf_saved  ", allow_ambient_token = True)
 
     assert isinstance(normalize_token(ui), hf_tokens.AmbientAuthorizedToken)
     assert normalize_token(ui) == "hf_saved"
     assert not isinstance(
-        normalize_token(hf_token_arg("hf_saved", allow_ambient_token=False)),
+        normalize_token(hf_token_arg("hf_saved", allow_ambient_token = False)),
         hf_tokens.AmbientAuthorizedToken,
     )
     assert normalize_token(False) is False
@@ -307,10 +307,10 @@ def test_trimming_does_not_demote_a_ui_session_to_an_api_key():
 def test_the_shared_gate_refuses_only_where_a_cache_could_answer(
     monkeypatch, cached, authorized, refused
 ):
-    _counting_probe(monkeypatch, authorized, offline=False)
+    _counting_probe(monkeypatch, authorized, offline = False)
     assert (
         hf_tokens.cached_read_refused(
-            "hf_explicit", repo_id="acme/private", is_cached=lambda: cached
+            "hf_explicit", repo_id = "acme/private", is_cached = lambda: cached
         )
         is refused
     )
@@ -319,11 +319,11 @@ def test_the_shared_gate_refuses_only_where_a_cache_could_answer(
 def test_the_shared_gate_asks_the_cache_before_the_hub(monkeypatch):
     """``is_cached`` is local and the probe is a round trip, so nothing on disk must mean no
     probe at all."""
-    probes = _counting_probe(monkeypatch, False, offline=False)
+    probes = _counting_probe(monkeypatch, False, offline = False)
 
     assert (
         hf_tokens.cached_read_refused(
-            "hf_explicit", repo_id="acme/private", is_cached=lambda: False
+            "hf_explicit", repo_id = "acme/private", is_cached = lambda: False
         )
         is False
     )
@@ -331,30 +331,30 @@ def test_the_shared_gate_asks_the_cache_before_the_hub(monkeypatch):
 
 
 def test_a_verified_token_may_read_the_host_cache(monkeypatch):
-    _counting_probe(monkeypatch, True, offline=False)
+    _counting_probe(monkeypatch, True, offline = False)
 
-    assert cache_reads_authorized("hf_real", repo_id="org/private") is True
+    assert cache_reads_authorized("hf_real", repo_id = "org/private") is True
 
 
 def test_offline_explicit_token_is_denied_without_a_prior_probe(monkeypatch):
     """Fail closed: no Hub round trip means no cache for an unverified credential."""
-    _hub_reachable(monkeypatch, offline=True)
+    _hub_reachable(monkeypatch, offline = True)
 
-    assert cache_reads_authorized("hf_real", repo_id="org/private") is False
+    assert cache_reads_authorized("hf_real", repo_id = "org/private") is False
 
 
 def test_offline_explicit_token_may_use_a_recent_online_probe(monkeypatch):
-    probes = _counting_probe(monkeypatch, True, offline=False)
+    probes = _counting_probe(monkeypatch, True, offline = False)
 
-    assert cache_reads_authorized("hf_real", repo_id="org/private") is True
+    assert cache_reads_authorized("hf_real", repo_id = "org/private") is True
     assert probes["n"] == 1
 
-    _hub_reachable(monkeypatch, offline=True)
-    assert cache_reads_authorized("hf_real", repo_id="org/private") is True
+    _hub_reachable(monkeypatch, offline = True)
+    assert cache_reads_authorized("hf_real", repo_id = "org/private") is True
     assert probes["n"] == 1, "offline must reuse the memo, not re-probe"
 
 
-def _gated_hub_error(message="gated"):
+def _gated_hub_error(message = "gated"):
     """GatedRepoError without hub's response-bearing constructor (0.x vs 1.x)."""
     from huggingface_hub.errors import GatedRepoError
 
@@ -374,12 +374,12 @@ class _FakeHubSession:
         self,
         url,
         *,
-        headers=None,
-        timeout=None,
+        headers = None,
+        timeout = None,
         **kwargs,
     ):
         self.calls.append({"url": url, "headers": headers, "timeout": timeout, **kwargs})
-        return self._handler(url, headers=headers, timeout=timeout, **kwargs)
+        return self._handler(url, headers = headers, timeout = timeout, **kwargs)
 
 
 def _patch_auth_check_get(monkeypatch, handler):
@@ -389,7 +389,7 @@ def _patch_auth_check_get(monkeypatch, handler):
 
 
 def _ok_auth_check_response():
-    return SimpleNamespace(status_code=200, raise_for_status=lambda: None)
+    return SimpleNamespace(status_code = 200, raise_for_status = lambda: None)
 
 
 def test_a_redirect_is_not_an_authorization(monkeypatch):
@@ -398,10 +398,10 @@ def test_a_redirect_is_not_an_authorization(monkeypatch):
     _hub_reachable(monkeypatch)
     _patch_auth_check_get(
         monkeypatch,
-        lambda *_a, **_k: SimpleNamespace(status_code=307, raise_for_status=lambda: None),
+        lambda *_a, **_k: SimpleNamespace(status_code = 307, raise_for_status = lambda: None),
     )
 
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is False
 
 
 def test_a_hanging_auth_check_probe_times_out(monkeypatch):
@@ -412,8 +412,8 @@ def test_a_hanging_auth_check_probe_times_out(monkeypatch):
     def _hang(
         url,
         *,
-        headers=None,
-        timeout=None,
+        headers = None,
+        timeout = None,
         **_k,
     ):
         assert timeout == 0.2
@@ -421,7 +421,7 @@ def test_a_hanging_auth_check_probe_times_out(monkeypatch):
 
     session = _patch_auth_check_get(monkeypatch, _hang)
     started = time.monotonic()
-    assert cache_reads_authorized("hf_real", repo_id="org/private") is False
+    assert cache_reads_authorized("hf_real", repo_id = "org/private") is False
     assert time.monotonic() - started < 5
     assert "/auth-check" in session.calls[0]["url"]
     assert not [t for t in threading.enumerate() if t.name == "hf-repo-auth-check"]
@@ -480,7 +480,7 @@ def test_the_probe_url_is_built_safely(monkeypatch, endpoint, repo_id, expected_
         monkeypatch.setenv("HF_ENDPOINT", endpoint)
     session = _patch_auth_check_get(monkeypatch, lambda *_a, **_k: _ok_auth_check_response())
 
-    assert cache_reads_authorized("hf_dummy", repo_id=repo_id) is True
+    assert cache_reads_authorized("hf_dummy", repo_id = repo_id) is True
     url = session.calls[0]["url"]
     assert "?" not in url
     assert url.endswith(expected_url)
@@ -495,7 +495,7 @@ def test_a_dot_segment_repo_id_is_refused_before_the_wire(monkeypatch, repo_id):
     _hub_reachable(monkeypatch)
     session = _patch_auth_check_get(monkeypatch, lambda *_a, **_k: _ok_auth_check_response())
 
-    assert cache_reads_authorized("hf_dummy", repo_id=repo_id) is False
+    assert cache_reads_authorized("hf_dummy", repo_id = repo_id) is False
     assert session.calls == []
 
 
@@ -512,8 +512,8 @@ def test_an_unreachable_probe_takes_the_short_ttl_and_spans_the_next_request(mon
 
     _patch_auth_check_get(monkeypatch, _refuse)
 
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is False
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is False
     assert probes["n"] == 1, "the unreachable answer did not survive to the next request"
 
     # Held under the SHORT ttl, not the denial one, and the constants must stay ordered so
@@ -540,8 +540,8 @@ def test_a_gated_repo_denies_cache_reads_for_an_invalid_token(monkeypatch, repo_
     def _auth_check(
         url,
         *,
-        headers=None,
-        timeout=None,
+        headers = None,
+        timeout = None,
         **_k,
     ):
         seen["args"] = (url, headers, timeout)
@@ -549,7 +549,7 @@ def test_a_gated_repo_denies_cache_reads_for_an_invalid_token(monkeypatch, repo_
 
     _patch_auth_check_get(monkeypatch, _auth_check)
 
-    assert cache_reads_authorized("hf_invalid", repo_id="org/gated", repo_type=repo_type) is False
+    assert cache_reads_authorized("hf_invalid", repo_id = "org/gated", repo_type = repo_type) is False
     assert seen["args"][0].endswith(f"/api/{repo_type}s/org/gated/auth-check")
 
 
@@ -559,7 +559,7 @@ def test_a_token_that_is_not_a_string_is_denied_rather_than_read_as_ambient(valu
     took the operator's cache. Nothing reaches here today -- every HTTP boundary is a
     pydantic ``Optional[str]``, which rejects rather than coerces -- and this keeps the
     default at deny so one untyped ``payload.get("hf_token")`` cannot become a bypass."""
-    assert cache_reads_authorized(value, repo_id="org/private") is False
+    assert cache_reads_authorized(value, repo_id = "org/private") is False
 
 
 @pytest.mark.parametrize(
@@ -574,7 +574,7 @@ def test_a_local_path_is_not_probed_against_the_hub(monkeypatch, path):
     probes = []
     monkeypatch.setattr(hf_tokens, "_probe_repo_access", lambda *a, **k: probes.append(a) or True)
 
-    assert cache_reads_authorized("hf_dummy", repo_id=path) is False
+    assert cache_reads_authorized("hf_dummy", repo_id = path) is False
     assert probes == []
 
 
@@ -588,13 +588,13 @@ def test_the_local_config_probe_stays_local_for_an_explicit_token(monkeypatch, t
     _counting_probe(monkeypatch, False)
     local_dir = tmp_path / "my-model"
     local_dir.mkdir()
-    (local_dir / "config.json").write_text("{}", encoding="utf-8")
+    (local_dir / "config.json").write_text("{}", encoding = "utf-8")
     seen = {}
 
     def _is_vision(
         target,
-        hf_token=None,
-        local_files_only=False,
+        hf_token = None,
+        local_files_only = False,
         **kwargs,
     ):
         seen["local_files_only"] = local_files_only
@@ -602,18 +602,18 @@ def test_the_local_config_probe_stays_local_for_an_explicit_token(monkeypatch, t
 
     monkeypatch.setattr(models_routes, "is_vision_model", _is_vision)
     monkeypatch.setattr(models_routes, "is_embedding_model", lambda *_a, **_k: False)
-    monkeypatch.setattr(models_routes, "load_model_defaults", lambda *_a, **_k: {}, raising=False)
+    monkeypatch.setattr(models_routes, "load_model_defaults", lambda *_a, **_k: {}, raising = False)
 
     try:
         asyncio.run(
             models_routes.get_model_config(
                 str(local_dir),
-                hf_token=None,
-                prefer_local_cache=True,
-                local_path=None,
-                header_hf_token="hf_dummy",
-                allow_ambient_token=False,
-                current_subject="tester",
+                hf_token = None,
+                prefer_local_cache = True,
+                local_path = None,
+                header_hf_token = "hf_dummy",
+                allow_ambient_token = False,
+                current_subject = "tester",
             )
         )
     except Exception:
@@ -644,7 +644,7 @@ def test_the_local_config_probe_stays_local_for_an_explicit_token(monkeypatch, t
         (False, True, True, True, True),
         (False, False, True, False, True),
     ],
-    ids=[
+    ids = [
         "unverified-denied",
         "ambient-served",
         "uncached-still-fetched",
@@ -657,8 +657,8 @@ def test_the_chat_template_fallback_follows_the_caller(
     monkeypatch, hf_token, probe, cached, may_download, metadata_ok
 ):
     if probe is not None:
-        _counting_probe(monkeypatch, probe, offline=False)
-    _picker_env(monkeypatch, no_snapshots=True)
+        _counting_probe(monkeypatch, probe, offline = False)
+    _picker_env(monkeypatch, no_snapshots = True)
     # The gate asks about THIS template file, not the repo directory: a snapshot holding
     # only weights can serve no template, so refusing it would cost an authorized caller
     # one the Hub would have given it.
@@ -675,7 +675,7 @@ def test_the_chat_template_fallback_follows_the_caller(
         def get_paths_info(self, _repo, paths, *_a, **_k):
             if not metadata_ok:
                 raise ConnectionError("hub unreachable")
-            return [SimpleNamespace(path=paths[0], size=1024)]
+            return [SimpleNamespace(path = paths[0], size = 1024)]
 
     def _download(*a, **k):
         downloads.append(a)
@@ -703,7 +703,7 @@ def test_normalizing_a_token_does_not_launder_the_sentinel():
         (capability_fingerprint, None),
         (diffusion_compat._token_fingerprint, ""),
     ],
-    ids=["inventory_scan", "model_capability", "diffusion_compat"],
+    ids = ["inventory_scan", "model_capability", "diffusion_compat"],
 )
 def test_every_fingerprint_separates_anonymous_from_ambient(fingerprint, absent):
     anonymous = fingerprint(False)
@@ -788,7 +788,7 @@ def test_capability_routes_answer_both_callers_without_a_server_error(monkeypatc
 
     def _fake_is_vision_model(
         model_name,
-        hf_token=None,
+        hf_token = None,
         **_kwargs,
     ):
         seen["hf_token"] = hf_token
@@ -797,7 +797,7 @@ def test_capability_routes_answer_both_callers_without_a_server_error(monkeypatc
     monkeypatch.setattr(models_routes, "is_vision_model", _fake_is_vision_model)
     response = _models_client(via_api_key).get(
         "/api/models/check-vision/org/some-model",
-        headers={"Authorization": "Bearer token"},
+        headers = {"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 200, response.text
@@ -838,10 +838,10 @@ def test_seed_inspection_derives_its_policy_from_the_caller(monkeypatch):
     monkeypatch.setattr(seed_routes, "_list_hf_repo_files", _fake_list)
 
     for via_api_key in (True, False):
-        _router_client(seed_routes.router, "/api/data-recipe", via_api_key=via_api_key).post(
+        _router_client(seed_routes.router, "/api/data-recipe", via_api_key = via_api_key).post(
             "/api/data-recipe/seed/inspect",
-            json={"dataset_name": "org/private-seed"},
-            headers={"Authorization": "Bearer token"},
+            json = {"dataset_name": "org/private-seed"},
+            headers = {"Authorization": "Bearer token"},
         )
         assert seen["token"] is (
             False if via_api_key else None
@@ -854,15 +854,15 @@ def test_an_explicit_seed_token_wins_for_either_caller(monkeypatch):
     monkeypatch.setattr(
         seed_routes,
         "_list_hf_repo_files",
-        lambda *, dataset_name, token: seen.update(token=token) or [],
+        lambda *, dataset_name, token: seen.update(token = token) or [],
     )
-    monkeypatch.setattr(seed_routes, "load_dataset", lambda **_k: iter([]), raising=False)
+    monkeypatch.setattr(seed_routes, "load_dataset", lambda **_k: iter([]), raising = False)
 
     for via_api_key in (True, False):
-        _router_client(seed_routes.router, "/api/data-recipe", via_api_key=via_api_key).post(
+        _router_client(seed_routes.router, "/api/data-recipe", via_api_key = via_api_key).post(
             "/api/data-recipe/seed/inspect",
-            json={"dataset_name": "org/private-seed", "hf_token": "  caller-token  "},
-            headers={"Authorization": "Bearer token"},
+            json = {"dataset_name": "org/private-seed", "hf_token": "  caller-token  "},
+            headers = {"Authorization": "Bearer token"},
         )
         assert seen["token"] == "caller-token"
 
@@ -877,7 +877,7 @@ def test_an_explicit_seed_token_wins_for_either_caller(monkeypatch):
     ],
 )
 def test_the_request_dependency_keeps_the_caller_boundary(hf_token, allow_ambient, expected):
-    resolved = get_request_hf_token(hf_token=hf_token, allow_ambient_token=allow_ambient)
+    resolved = get_request_hf_token(hf_token = hf_token, allow_ambient_token = allow_ambient)
 
     assert resolved == expected
     if expected in (None, False):
@@ -899,7 +899,7 @@ def test_the_media_load_models_still_reject_the_sentinel():
     for model in (DiffusionLoadRequest, VideoLoadRequest):
         assert model.model_fields["hf_token"].annotation == Optional[str]
         with pytest.raises(pydantic.ValidationError):
-            model(model_path="org/repo", hf_token=False)
+            model(model_path = "org/repo", hf_token = False)
 
 
 @pytest.mark.parametrize(
@@ -909,7 +909,7 @@ def test_the_media_load_models_still_reject_the_sentinel():
 def test_the_stt_routes_keep_the_caller_boundary(route_line, expected):
     """The STT pair is converted: it downloads a whole repo and has no pydantic sink."""
     source = (Path(__file__).resolve().parent.parent / "routes" / "inference.py").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     marker = source.index(f'"/{route_line}"')
     signature = source[marker : marker + 400]
@@ -939,15 +939,15 @@ def test_the_audio_tokenizer_fallback_does_not_reach_for_the_ambient_token(monke
 
     def _get(
         url,
-        headers=None,
-        timeout=None,
+        headers = None,
+        timeout = None,
         **_kw,
     ):
         seen.setdefault("headers", headers)
         return _Resp()
 
     monkeypatch.setattr(requests, "get", _get)
-    model_config_module._detect_audio_from_tokenizer("org/private", hf_token=False, revision=None)
+    model_config_module._detect_audio_from_tokenizer("org/private", hf_token = False, revision = None)
 
     assert "Authorization" not in (
         seen.get("headers") or {}
@@ -984,7 +984,7 @@ def test_an_anonymous_caller_does_not_get_the_unauthenticated_preview_cache(monk
         ),
     )
     request = SimpleNamespace(
-        dataset_name="org/private", local_path=None, subset=None, train_split="train"
+        dataset_name = "org/private", local_path = None, subset = None, train_split = "train"
     )
 
     assert formatting._load_any_cached_hf_preview_slice(request, 5, None) == "ROWS"
@@ -1099,7 +1099,7 @@ def test_an_anonymous_caller_gets_no_template_from_the_offline_fallback(monkeypa
     The chat-template route forces offline whenever the Hub looks unreachable, so
     without this the Hub fallback hands back the template the cache walk just refused.
     """
-    _picker_env(monkeypatch, offline=True)
+    _picker_env(monkeypatch, offline = True)
 
     def _exploded(*args, **kwargs):
         raise AssertionError("the anonymous caller reached the hub fallback")
@@ -1127,9 +1127,9 @@ def test_an_anonymous_config_read_does_not_strip_the_process_credential(monkeypa
         return _Config()
 
     monkeypatch.setattr(transformers.AutoConfig, "from_pretrained", staticmethod(_from_pretrained))
-    monkeypatch.setattr(model_config_module, "active_hf_hub_cache", lambda: None, raising=False)
+    monkeypatch.setattr(model_config_module, "active_hf_hub_cache", lambda: None, raising = False)
 
-    model_config_module.load_model_config("org/private", token=False)
+    model_config_module.load_model_config("org/private", token = False)
 
     assert seen["token"] is False, "the sentinel was not passed through to the hub"
     assert (
@@ -1155,8 +1155,8 @@ def test_the_config_probes_do_not_go_local_only_for_an_anonymous_caller(
 
     def _is_vision(
         target,
-        hf_token=None,
-        local_files_only=False,
+        hf_token = None,
+        local_files_only = False,
         **kwargs,
     ):
         seen["local_files_only"] = local_files_only
@@ -1164,7 +1164,7 @@ def test_the_config_probes_do_not_go_local_only_for_an_anonymous_caller(
 
     monkeypatch.setattr(models_routes, "is_vision_model", _is_vision)
     monkeypatch.setattr(models_routes, "is_embedding_model", lambda *_a, **_k: False)
-    monkeypatch.setattr(models_routes, "load_model_defaults", lambda *_a, **_k: {}, raising=False)
+    monkeypatch.setattr(models_routes, "load_model_defaults", lambda *_a, **_k: {}, raising = False)
     monkeypatch.setattr(models_routes, "resolve_cached_repo_id_case", lambda name: name)
     monkeypatch.setattr(
         models_routes,
@@ -1176,12 +1176,12 @@ def test_the_config_probes_do_not_go_local_only_for_an_anonymous_caller(
         asyncio.run(
             models_routes.get_model_config(
                 "org/private",
-                hf_token=None,
-                prefer_local_cache=True,
-                local_path=None,
-                header_hf_token=hf_token if isinstance(hf_token, str) else None,
-                allow_ambient_token=hf_token is None,
-                current_subject="tester",
+                hf_token = None,
+                prefer_local_cache = True,
+                local_path = None,
+                header_hf_token = hf_token if isinstance(hf_token, str) else None,
+                allow_ambient_token = hf_token is None,
+                current_subject = "tester",
             )
         )
     except Exception:
@@ -1195,14 +1195,14 @@ def test_the_config_probes_do_not_go_local_only_for_an_anonymous_caller(
 def test_offline_embedding_detection_does_not_read_the_cache_anonymously(monkeypatch):
     """The marker read answers for a private repo without ever authorizing."""
     monkeypatch.setattr(model_config_module, "is_local_path", lambda _n: False)
-    monkeypatch.setattr("utils.utils.hf_env_offline", lambda: True, raising=False)
+    monkeypatch.setattr("utils.utils.hf_env_offline", lambda: True, raising = False)
 
     def _marker(_name):
         raise AssertionError("the anonymous caller read the embedding cache marker")
 
     monkeypatch.setattr(model_config_module, "_embedding_marker_in_hf_cache", _marker)
 
-    assert model_config_module.is_embedding_model("org/private", hf_token=False) is False
+    assert model_config_module.is_embedding_model("org/private", hf_token = False) is False
 
 
 @pytest.mark.parametrize("hf_token", [None, "hf_tok", False])
@@ -1230,10 +1230,10 @@ def test_gguf_variants_serve_the_hf_cache_only_to_an_authorized_caller(monkeypat
         asyncio.run(
             gguf_variants.get_gguf_variants_answer(
                 "org/private",
-                prefer_local_cache=True,
-                offline=True,
-                local_path=None,
-                hf_token=hf_token,
+                prefer_local_cache = True,
+                offline = True,
+                local_path = None,
+                hf_token = hf_token,
             )
         )
     except Exception:
@@ -1269,14 +1269,14 @@ def test_offline_capability_probes_do_not_read_the_cache_anonymously(monkeypatch
         return "stt", True
 
     monkeypatch.setattr(model_config_module, "_is_vision_model_uncached", _vision)
-    monkeypatch.setattr(model_config_module, "_detect_audio_type_uncached", _audio, raising=False)
+    monkeypatch.setattr(model_config_module, "_detect_audio_type_uncached", _audio, raising = False)
     # A fresh probe every time, so a warm entry cannot stand in for the guard.
     monkeypatch.setattr(model_config_module, "_vision_detection_cache", {})
     monkeypatch.setattr(model_config_module, "_audio_detection_cache", {})
     monkeypatch.setattr(model_config_module, "_audio_offline_miss_cache", {})
 
     is_vision = model_config_module.is_vision_model(
-        "org/private", hf_token=hf_token, local_files_only=False
+        "org/private", hf_token = hf_token, local_files_only = False
     )
 
     if is_anonymous(hf_token) or hf_token == "hf_tok":
@@ -1302,7 +1302,7 @@ def test_the_config_json_fallbacks_do_not_reach_the_cache_anonymously(monkeypatc
 
     monkeypatch.setattr(transformers_version, "_config_json_from_hf_cache", _from_cache)
 
-    cfg = transformers_version._load_config_json("org/private", hf_token=hf_token)
+    cfg = transformers_version._load_config_json("org/private", hf_token = hf_token)
 
     if is_anonymous(hf_token) or hf_token == "hf_tok":
         assert cfg is None
@@ -1321,13 +1321,13 @@ def test_a_cache_only_gguf_listing_is_refused_for_an_anonymous_caller(monkeypatc
     monkeypatch.setattr(
         gguf_variants,
         "list_gguf_variants",
-        lambda *_a, **_k: ([SimpleNamespace(filename="m-Q4.gguf")], False, None),
+        lambda *_a, **_k: ([SimpleNamespace(filename = "m-Q4.gguf")], False, None),
     )
     monkeypatch.setattr(gguf_variants, "select_gguf_cache_snapshot", lambda *_a, **_k: None)
     monkeypatch.setattr(gguf_variants, "_quants_from_state", lambda *_a, **_k: None)
 
     with pytest.raises(fastapi.HTTPException) as excinfo:
-        asyncio.run(gguf_variants.get_gguf_variants_answer("org/private", hf_token=False))
+        asyncio.run(gguf_variants.get_gguf_variants_answer("org/private", hf_token = False))
 
     assert excinfo.value.status_code == 404
 
@@ -1366,15 +1366,15 @@ def test_a_seed_preview_off_the_cache_is_refused(monkeypatch, reason, hf_token, 
     monkeypatch.setattr(seed_routes, "_list_hf_repo_files", _never)
 
     payload = SimpleNamespace(
-        dataset_name="org/private",
-        split=None,
-        subset=None,
-        hf_token=hf_token,
-        preview_size=5,
+        dataset_name = "org/private",
+        split = None,
+        subset = None,
+        hf_token = hf_token,
+        preview_size = 5,
     )
 
     with pytest.raises(fastapi.HTTPException) as excinfo:
-        asyncio.run(seed_routes.inspect_seed_dataset(payload, allow_ambient_token=False))
+        asyncio.run(seed_routes.inspect_seed_dataset(payload, allow_ambient_token = False))
 
     assert excinfo.value.status_code == 404
 
@@ -1387,15 +1387,15 @@ def test_the_lora_resolver_does_not_launder_the_sentinel(monkeypatch, hf_token):
     def _absent(
         _identifier,
         _filename,
-        token=None,
+        token = None,
     ):
         seen["token"] = token
         return True
 
-    monkeypatch.setattr("utils.hf_probe.hf_file_definitely_absent", _absent, raising=False)
+    monkeypatch.setattr("utils.hf_probe.hf_file_definitely_absent", _absent, raising = False)
 
     model_config_module.get_base_model_from_lora_identifier(
-        "org/private-adapter", hf_token=hf_token
+        "org/private-adapter", hf_token = hf_token
     )
 
     if is_anonymous(hf_token):
@@ -1418,7 +1418,7 @@ def test_the_audio_tokenizer_probe_does_not_read_the_cache_anonymously(monkeypat
     monkeypatch.setattr(model_config_module, "is_local_path", lambda _n: False)
 
     try:
-        model_config_module._detect_audio_from_tokenizer("org/private", hf_token=hf_token)
+        model_config_module._detect_audio_from_tokenizer("org/private", hf_token = hf_token)
     except Exception:
         pass
 
@@ -1431,20 +1431,20 @@ def test_the_audio_tokenizer_probe_does_not_read_the_cache_anonymously(monkeypat
 def test_the_embedding_transient_fallback_is_denied_to_an_anonymous_caller(monkeypatch):
     """The anonymous 404 for a private repo lands in the same except branch."""
     monkeypatch.setattr(model_config_module, "is_local_path", lambda _n: False)
-    monkeypatch.setattr("utils.utils.hf_env_offline", lambda: False, raising=False)
+    monkeypatch.setattr("utils.utils.hf_env_offline", lambda: False, raising = False)
     monkeypatch.setattr(model_config_module, "_embedding_detection_cache", {})
 
     def _boom(*_a, **_k):
         raise RuntimeError("404")
 
-    monkeypatch.setattr(model_config_module, "model_info", _boom, raising=False)
+    monkeypatch.setattr(model_config_module, "model_info", _boom, raising = False)
 
     def _marker(_name):
         raise AssertionError("the anonymous caller read the embedding cache marker")
 
     monkeypatch.setattr(model_config_module, "_embedding_marker_in_hf_cache", _marker)
 
-    assert model_config_module.is_embedding_model("org/private", hf_token=False) is False
+    assert model_config_module.is_embedding_model("org/private", hf_token = False) is False
 
 
 def test_a_public_model_keeps_its_size_when_the_cache_is_bypassed():
@@ -1471,7 +1471,7 @@ def test_the_offline_autoconfig_read_is_denied_to_an_anonymous_caller(monkeypatc
 
     _counting_probe(monkeypatch, False)
     monkeypatch.setattr(model_config_module, "_env_offline", lambda: True)
-    monkeypatch.setattr(model_config_module, "active_hf_hub_cache", lambda: None, raising=False)
+    monkeypatch.setattr(model_config_module, "active_hf_hub_cache", lambda: None, raising = False)
     monkeypatch.setattr(model_config_module, "_config_json_already_cached", lambda *_a, **_k: True)
     reached = {"n": 0}
 
@@ -1483,10 +1483,10 @@ def test_the_offline_autoconfig_read_is_denied_to_an_anonymous_caller(monkeypatc
 
     if is_anonymous(hf_token) or hf_token == "hf_tok":
         with pytest.raises(OSError):
-            model_config_module.load_model_config("org/private", token=hf_token)
+            model_config_module.load_model_config("org/private", token = hf_token)
         assert reached["n"] == 0, "an unverified caller read the offline config cache"
     else:
-        model_config_module.load_model_config("org/private", token=hf_token)
+        model_config_module.load_model_config("org/private", token = hf_token)
         assert reached["n"] == 1
 
 
@@ -1591,7 +1591,7 @@ def test_a_forced_offline_window_does_not_quarantine_a_repo_for_ten_minutes():
     with mock.patch.object(huggingface_hub, "HfApi", _Api):
         refusal = asyncio.run(
             auto._admit_and_start(
-                "org/repo", "Q4_K_M", "org/repo:Q4_K_M", None, auto._Active(repo_id="org/repo")
+                "org/repo", "Q4_K_M", "org/repo:Q4_K_M", None, auto._Active(repo_id = "org/repo")
             )
         )
 
@@ -1604,13 +1604,13 @@ def test_a_ui_sessions_marker_survives_the_route_level_token_normalizer():
     plain ``str``. That silently demoted a UI session to an API key between the dependency
     and the gate, so an ordinary session lost its own cache offline: the exact regression
     ``AmbientAuthorizedToken`` exists to prevent, reintroduced one call later."""
-    ui = hf_token_arg("  hf_saved  ", allow_ambient_token=True)
+    ui = hf_token_arg("  hf_saved  ", allow_ambient_token = True)
     resolved = models_routes._normalize_hf_token(ui)
 
     assert resolved == "hf_saved"
     assert isinstance(resolved, hf_tokens.AmbientAuthorizedToken), "marker lost in normalization"
     # An API key must not acquire the marker on the way through.
-    api_key = hf_token_arg("  hf_saved  ", allow_ambient_token=False)
+    api_key = hf_token_arg("  hf_saved  ", allow_ambient_token = False)
     assert not isinstance(
         models_routes._normalize_hf_token(api_key), hf_tokens.AmbientAuthorizedToken
     )
@@ -1621,7 +1621,7 @@ def test_a_ui_sessions_marker_survives_the_route_level_token_normalizer():
 @pytest.mark.parametrize(
     "via_api_key, gated",
     [(True, True), (False, False)],
-    ids=["api-key-denied", "ui-session-served"],
+    ids = ["api-key-denied", "ui-session-served"],
 )
 def test_the_format_check_gates_the_streaming_tiers_by_caller(monkeypatch, via_api_key, gated):
     """Measured against the installed ``datasets``: offline, ``load_dataset`` answers BOTH
@@ -1641,8 +1641,8 @@ def test_the_format_check_gates_the_streaming_tiers_by_caller(monkeypatch, via_a
 
     monkeypatch.setattr("datasets.load_dataset", _loader)
 
-    token = hf_token_arg("hf_saved", allow_ambient_token=not via_api_key)
-    request = CheckFormatRequest(dataset_name="acme/private-secrets")
+    token = hf_token_arg("hf_saved", allow_ambient_token = not via_api_key)
+    request = CheckFormatRequest(dataset_name = "acme/private-secrets")
 
     with pytest.raises(Exception) as excinfo:
         formatting.check_format_response(request, token)
@@ -1658,7 +1658,7 @@ def test_the_format_check_gates_the_streaming_tiers_by_caller(monkeypatch, via_a
 @pytest.mark.parametrize(
     "explicit, memoized",
     [(True, False), (False, True)],
-    ids=["explicit-token-re-derives", "ambient-keeps-memo"],
+    ids = ["explicit-token-re-derives", "ambient-keeps-memo"],
 )
 def test_the_offline_config_memo_follows_the_caller(monkeypatch, explicit, memoized):
     """``cache_reads_authorized`` expires in 60 s so a revoked token stops reading, but
@@ -1679,7 +1679,7 @@ def test_the_offline_config_memo_follows_the_caller(monkeypatch, explicit, memoi
         transformers_version, "cache_reads_authorized", lambda *_a, **_k: authorized["v"]
     )
 
-    token = hf_token_arg("hf_explicit", allow_ambient_token=False) if explicit else None
+    token = hf_token_arg("hf_explicit", allow_ambient_token = False) if explicit else None
     assert transformers_version._load_config_json("acme/private", token) == {"model_type": "secret"}
 
     if memoized:
@@ -1714,9 +1714,9 @@ def test_the_vision_config_read_refuses_an_unauthorized_cache_fallback(monkeypat
 
     monkeypatch.setattr("huggingface_hub.hf_hub_download", _download)
 
-    api_key = hf_token_arg("hf_cannot_read_this", allow_ambient_token=False)
+    api_key = hf_token_arg("hf_cannot_read_this", allow_ambient_token = False)
     assert (
-        model_config_module._raw_config_has_vision_config("acme/private-vlm", hf_token=api_key)
+        model_config_module._raw_config_has_vision_config("acme/private-vlm", hf_token = api_key)
         is None
     )
     assert calls["n"] == 0, "hf_hub_download ran for an unauthorized cached repo"
@@ -1737,17 +1737,17 @@ def test_the_remote_code_scan_refuses_a_cached_repo_it_cannot_authorize(monkeypa
     serves a cached file on an unreachable Hub without consulting the credential, so
     has_remote_code is answered off the operator's disk; gating only the prefer_local path
     left the scan running anyway. Uncached is the shared gate's own test."""
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     monkeypatch.setattr(models_routes, "_repo_in_any_hf_cache", lambda *_a, **_k: True)
     # config.json cached, which is what makes the scan answerable off disk.
     monkeypatch.setattr("huggingface_hub.try_to_load_from_cache", lambda **_k: "/cache/config.json")
 
     async def _call():
         return await models_routes.scan_model_remote_code(
-            model_name="acme/private-vlm",
-            hf_token="hf_cannot_read_this",
-            allow_ambient_token=False,
-            current_subject="alice",
+            model_name = "acme/private-vlm",
+            hf_token = "hf_cannot_read_this",
+            allow_ambient_token = False,
+            current_subject = "alice",
         )
 
     with pytest.raises(fastapi.HTTPException) as excinfo:
@@ -1763,7 +1763,7 @@ def test_the_legacy_body_token_keeps_its_caller_class():
     from routes import datasets as datasets_routes
 
     app = FastAPI()
-    app.include_router(datasets_routes.router, prefix="/api/datasets")
+    app.include_router(datasets_routes.router, prefix = "/api/datasets")
     app.dependency_overrides[get_current_subject] = lambda: "tester"
     app.dependency_overrides[authenticated_via_api_key] = lambda: False  # a UI session
 
@@ -1771,11 +1771,11 @@ def test_the_legacy_body_token_keeps_its_caller_class():
 
     def _capture(
         request,
-        hf_token=None,
+        hf_token = None,
         **_k,
     ):
         seen["token"] = hf_token
-        raise HTTPException(status_code=418, detail="captured")
+        raise HTTPException(status_code = 418, detail = "captured")
 
     original = datasets_routes.formatting.check_format_response
     datasets_routes.formatting.check_format_response = _capture
@@ -1783,7 +1783,7 @@ def test_the_legacy_body_token_keeps_its_caller_class():
         with TestClient(app) as client:
             client.post(
                 "/api/datasets/check-format",
-                json={"dataset_name": "acme/private-secrets", "hf_token": "hf_saved"},
+                json = {"dataset_name": "acme/private-secrets", "hf_token": "hf_saved"},
             )
     finally:
         datasets_routes.formatting.check_format_response = original
@@ -1801,8 +1801,8 @@ def test_the_same_token_from_two_caller_classes_takes_two_cache_identities():
     from hub.utils import inventory_scan
     from core.inference import diffusion_compat as dc
 
-    ui = hf_token_arg("hf_saved", allow_ambient_token=True)
-    api = hf_token_arg("hf_saved", allow_ambient_token=False)
+    ui = hf_token_arg("hf_saved", allow_ambient_token = True)
+    api = hf_token_arg("hf_saved", allow_ambient_token = False)
 
     for fingerprint in (
         inventory_scan.token_fingerprint,
@@ -1829,26 +1829,26 @@ def test_the_legacy_query_token_is_classified_like_the_header(monkeypatch):
     """
     _counting_probe(monkeypatch, False)
 
-    ui_header_absent = hf_token_arg(None, allow_ambient_token=True)
+    ui_header_absent = hf_token_arg(None, allow_ambient_token = True)
     resolved = models_routes._resolve_hub_token(ui_header_absent, "hf_saved")
     assert isinstance(resolved, hf_tokens.AmbientAuthorizedToken)
-    assert cache_reads_authorized(resolved, repo_id="acme/private") is True
+    assert cache_reads_authorized(resolved, repo_id = "acme/private") is True
 
     # An API key sending only the query parameter stays an API key: its header is the sentinel.
-    api_no_header = hf_token_arg(None, allow_ambient_token=False)
+    api_no_header = hf_token_arg(None, allow_ambient_token = False)
     api_resolved = models_routes._resolve_hub_token(api_no_header, "hf_saved")
     assert not isinstance(api_resolved, hf_tokens.AmbientAuthorizedToken)
-    assert cache_reads_authorized(api_resolved, repo_id="acme/private") is False
+    assert cache_reads_authorized(api_resolved, repo_id = "acme/private") is False
 
     # The header still wins over a stale query value, and the no-token cases are unchanged.
-    header = hf_token_arg("hf_header", allow_ambient_token=True)
+    header = hf_token_arg("hf_header", allow_ambient_token = True)
     assert models_routes._resolve_hub_token(header, "hf_query") == "hf_header"
     assert (
-        models_routes._resolve_hub_token(hf_token_arg(None, allow_ambient_token=False), None)
+        models_routes._resolve_hub_token(hf_token_arg(None, allow_ambient_token = False), None)
         is False
     )
     assert (
-        models_routes._resolve_hub_token(hf_token_arg(None, allow_ambient_token=True), None) is None
+        models_routes._resolve_hub_token(hf_token_arg(None, allow_ambient_token = True), None) is None
     )
 
 
@@ -1857,8 +1857,8 @@ def test_the_embedding_memo_does_not_cross_caller_classes(monkeypatch):
     was keyed on the raw token. The marker hashes and compares equal to a plain API token of
     the same value, so a UI-computed classification came straight back to an unverified API
     caller. Keyed on the fingerprint now, which carries the caller class."""
-    ui = hf_token_arg("hf_saved", allow_ambient_token=True)
-    api = hf_token_arg("hf_saved", allow_ambient_token=False)
+    ui = hf_token_arg("hf_saved", allow_ambient_token = True)
+    api = hf_token_arg("hf_saved", allow_ambient_token = False)
 
     monkeypatch.setattr(model_config_module, "_embedding_detection_cache", {})
     monkeypatch.setattr(model_config_module, "is_local_path", lambda *_a, **_k: False)
@@ -1889,18 +1889,18 @@ def test_an_offline_request_is_fail_closed_but_keeps_a_paid_for_answer(monkeypat
     offline=true still put the caller's token and repo id on the wire and could stall for the
     full probe timeout, to reach a branch that was never going to use the network. Fail closed
     must not discard an authorization already paid for, so the memo is consulted first."""
-    probes = _counting_probe(monkeypatch, True, offline=False)
+    probes = _counting_probe(monkeypatch, True, offline = False)
 
     # Cold and offline: refuse without asking.
-    assert cache_reads_authorized("hf_explicit", repo_id="acme/private", offline=True) is False
+    assert cache_reads_authorized("hf_explicit", repo_id = "acme/private", offline = True) is False
     assert probes["n"] == 0, "an offline request still went to the network"
 
     # Online, the same call probes: the flag is the caller's, not a new default.
-    assert cache_reads_authorized("hf_explicit", repo_id="acme/private") is True
+    assert cache_reads_authorized("hf_explicit", repo_id = "acme/private") is True
     assert probes["n"] == 1
 
     # Now memoized, an offline call keeps the yes rather than downgrading it.
-    assert cache_reads_authorized("hf_explicit", repo_id="acme/private", offline=True) is True
+    assert cache_reads_authorized("hf_explicit", repo_id = "acme/private", offline = True) is True
     assert probes["n"] == 1
 
 
@@ -1920,10 +1920,10 @@ def test_an_uncached_dataset_is_not_denied_for_an_unavailable_probe(monkeypatch)
 
     monkeypatch.setattr("datasets.load_dataset", _reached)
 
-    api_key = hf_token_arg("hf_explicit", allow_ambient_token=False)
+    api_key = hf_token_arg("hf_explicit", allow_ambient_token = False)
     with pytest.raises(Exception):
         formatting.check_format_response(
-            CheckFormatRequest(dataset_name="acme/not-cached"), api_key
+            CheckFormatRequest(dataset_name = "acme/not-cached"), api_key
         )
     assert reached["n"] > 0, "an uncached dataset was refused for nothing"
 
@@ -1932,7 +1932,7 @@ def test_an_uncached_dataset_is_not_denied_for_an_unavailable_probe(monkeypatch)
     reached["n"] = 0
     with pytest.raises(HTTPException) as excinfo:
         formatting.check_format_response(
-            CheckFormatRequest(dataset_name="acme/cached-private"), api_key
+            CheckFormatRequest(dataset_name = "acme/cached-private"), api_key
         )
     assert excinfo.value.status_code == 404
     assert reached["n"] == 0
@@ -1968,20 +1968,20 @@ def test_a_redirected_probe_does_not_authorize_the_repo_it_left(monkeypatch):
     _patch_auth_check_get(
         monkeypatch,
         lambda *_a, **_k: SimpleNamespace(
-            status_code=200,
-            raise_for_status=lambda: None,
-            url="https://huggingface.co/login",
+            status_code = 200,
+            raise_for_status = lambda: None,
+            url = "https://huggingface.co/login",
         ),
     )
 
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is False
 
 
 def test_a_cache_only_caller_is_never_put_on_the_wire(monkeypatch):
     """`local_files_only` and `prefer_local_cache` are promises, not hints. Both gates read
     only the process env, so on a host with no offline variables they probed anyway: one Hub
     round trip per cached repo in the /loras scan, for an answer neither branch would use."""
-    probes = _counting_probe(monkeypatch, True, offline=False)
+    probes = _counting_probe(monkeypatch, True, offline = False)
 
     assert (
         model_config_module._offline_cache_read_refused("hf_dummy", "acme/m", "acme/m", True)
@@ -1991,7 +1991,7 @@ def test_a_cache_only_caller_is_never_put_on_the_wire(monkeypatch):
     monkeypatch.setattr(dataset_cache, "dataset_cache_can_answer", lambda *_a, **_k: True)
     with pytest.raises(HTTPException) as excinfo:
         formatting.check_format_response(
-            CheckFormatRequest(dataset_name="acme/ds", prefer_local_cache=True), "hf_dummy"
+            CheckFormatRequest(dataset_name = "acme/ds", prefer_local_cache = True), "hf_dummy"
         )
     assert excinfo.value.status_code == 404
     assert probes["n"] == 0
@@ -2031,14 +2031,14 @@ def test_the_public_probe_does_not_borrow_the_operators_login(monkeypatch):
     _hub_reachable(monkeypatch)
     seen: dict = {}
 
-    def _headers(*, token="unset", **_k):
+    def _headers(*, token = "unset", **_k):
         seen["token"] = token
         return {}
 
     monkeypatch.setattr("huggingface_hub.utils.build_hf_headers", _headers)
     _patch_auth_check_get(monkeypatch, lambda *_a, **_k: _ok_auth_check_response())
 
-    assert hf_tokens.public_cache_read_authorized(repo_id="acme/ds") is True
+    assert hf_tokens.public_cache_read_authorized(repo_id = "acme/ds") is True
     assert seen["token"] is False
 
 
@@ -2049,8 +2049,8 @@ def test_the_public_verdict_takes_its_own_memo_key(monkeypatch):
     monkeypatch.setattr(hf_tokens, "_probe_repo_access", lambda *_a, **_k: next(verdicts))
     _hub_reachable(monkeypatch)
 
-    assert hf_tokens.public_cache_read_authorized(repo_id="acme/ds") is True
-    assert cache_reads_authorized("hf_dummy", repo_id="acme/ds") is False
+    assert hf_tokens.public_cache_read_authorized(repo_id = "acme/ds") is True
+    assert cache_reads_authorized("hf_dummy", repo_id = "acme/ds") is False
 
 
 def test_a_cached_alias_repo_is_authorized_in_its_own_right(monkeypatch):
@@ -2066,7 +2066,7 @@ def test_a_cached_alias_repo_is_authorized_in_its_own_right(monkeypatch):
     _hub_reachable(monkeypatch)
     _st_resolver(
         monkeypatch,
-        _cached_st_source=lambda _m: (
+        _cached_st_source = lambda _m: (
             "sentence-transformers/private-conversion",
             Path("/cache/snap"),
         ),
@@ -2086,7 +2086,7 @@ def test_the_gguf_listing_withholds_local_readiness_from_a_denied_caller(monkeyp
     _hub_reachable(monkeypatch)
 
     def _answer(token):
-        return asyncio.run(gguf_variants.get_gguf_variants_answer("acme/gated", hf_token=token))
+        return asyncio.run(gguf_variants.get_gguf_variants_answer("acme/gated", hf_token = token))
 
     _counting_probe(monkeypatch, True)
     assert _answer("hf_dummy").response.variants[0].downloaded is True
@@ -2112,7 +2112,7 @@ def test_the_context_length_lookup_honours_the_listings_refusal(monkeypatch):
 
     async def _denied(repo_id, **_k):
         return gguf_variants.VariantsAnswer(
-            ServiceResponse(repo_id=repo_id, variants=[], has_vision=False),
+            ServiceResponse(repo_id = repo_id, variants = [], has_vision = False),
             None,
             False,
         )
@@ -2122,7 +2122,7 @@ def test_the_context_length_lookup_honours_the_listings_refusal(monkeypatch):
 
     result = asyncio.run(
         models_routes.get_gguf_variants(
-            repo_id="acme/gated", hf_token="hf_dummy", current_subject="alice"
+            repo_id = "acme/gated", hf_token = "hf_dummy", current_subject = "alice"
         )
     )
 
@@ -2156,8 +2156,8 @@ def test_the_embedding_resolver_gates_the_base_repo_too(monkeypatch):
     """The per-candidate check answers for an alias or a derived conversion, and defers to
     the base decision when the cache answered under the requested id itself. That leg is the
     one the base decision still owns, so it needs its own row."""
-    _counting_probe(monkeypatch, False, offline=False)
-    _st_resolver(monkeypatch, _cached_st_source=lambda m: (m, Path("/cache/snap")))
+    _counting_probe(monkeypatch, False, offline = False)
+    _st_resolver(monkeypatch, _cached_st_source = lambda m: (m, Path("/cache/snap")))
 
     plan = settings_routes._resolve_embedding_model_plan("acme/private", "hf_dummy")
 
@@ -2170,8 +2170,8 @@ def test_the_embedding_resolver_does_not_probe_before_a_cache_lookup(monkeypatch
     every resolve, including the local and sentence-transformers paths that never read the GGUF
     cache. The probe is bounded at 10s against a 20s resolver deadline, so it was half the
     budget spent to reach a miss."""
-    probes = _counting_probe(monkeypatch, True, offline=False)
-    _st_resolver(monkeypatch, _local_sentence_transformer_is_present=lambda _m: True)
+    probes = _counting_probe(monkeypatch, True, offline = False)
+    _st_resolver(monkeypatch, _local_sentence_transformer_is_present = lambda _m: True)
 
     plan = settings_routes._resolve_embedding_model_plan("acme/local-st", "hf_dummy")
 
@@ -2183,7 +2183,7 @@ def test_the_scan_is_refused_before_it_expands_its_targets(monkeypatch):
     """The per-target check inside the loop cannot stand in for this one. Target expansion
     resolves the adapter's base and its native-audio dependencies, which reads the cache and
     talks to the Hub with the caller's token, so the primary has to be refused ahead of it."""
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     monkeypatch.setattr(models_routes, "_repo_in_any_hf_cache", lambda *_a, **_k: True)
     # config.json cached, which is what makes the scan answerable off disk.
     monkeypatch.setattr("huggingface_hub.try_to_load_from_cache", lambda **_k: "/cache/config.json")
@@ -2200,11 +2200,11 @@ def test_local_only_audio_detection_refuses_without_asking(monkeypatch):
     """The twin of the vision gate, and its own call site. /loras drives this one with
     local_files_only=True over every adapter it finds, so an unentitled caller must be told
     no from the disk state alone, without a probe and without a cached answer."""
-    probes = _counting_probe(monkeypatch, True, offline=False)
+    probes = _counting_probe(monkeypatch, True, offline = False)
     monkeypatch.setattr(model_config_module, "_env_offline", lambda: False)
 
     audio_type, definitive = model_config_module.detect_audio_type_checked(
-        "acme/private-audio", hf_token="hf_dummy", local_files_only=True
+        "acme/private-audio", hf_token = "hf_dummy", local_files_only = True
     )
 
     assert (audio_type, definitive) == (None, False)
@@ -2220,7 +2220,7 @@ def test_an_anonymous_caller_keeps_a_cached_public_gguf(monkeypatch, tmp_path, p
     monkeypatch.setattr(hf_tokens, "_probe_repo_access", lambda *_a, **_k: public)
     _hub_reachable(monkeypatch)
 
-    answer = asyncio.run(gguf_variants.get_gguf_variants_answer("acme/repo", hf_token=False))
+    answer = asyncio.run(gguf_variants.get_gguf_variants_answer("acme/repo", hf_token = False))
 
     assert answer.response.variants[0].downloaded is public
     assert answer.cache_authorized is public
@@ -2230,7 +2230,7 @@ def test_the_safetensors_fallback_authorizes_the_repo_it_found(monkeypatch):
     """The GGUF branch was gated and this one was not: after the remote probes come back
     empty, the plan reads the operator's snapshot and reports the repo it is filed under as
     cached, which is how a denied caller discovers and then force-saves private weights."""
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     _gguf_resolver(monkeypatch)
     monkeypatch.setattr(settings_routes, "_remote_embedding_gguf_plan", lambda *_a, **_k: None)
     monkeypatch.setattr(settings_routes, "_search_hub_for_gguf", lambda *_a, **_k: None)
@@ -2282,7 +2282,7 @@ def test_the_inner_preview_gate_does_not_veto_the_outer_one(monkeypatch):
     monkeypatch.setattr(formatting, "_load_cached_hf_preview_slice", lambda *_a, **_k: ("ROWS", 3))
 
     served = formatting._load_any_cached_hf_preview_slice(
-        SimpleNamespace(dataset_name="acme/public"), 5, False
+        SimpleNamespace(dataset_name = "acme/public"), 5, False
     )
 
     assert served == ("ROWS", 3), "a public cached preview was withheld from the sentinel"
@@ -2293,7 +2293,7 @@ def test_the_gguf_partial_state_is_withheld_with_the_rest(monkeypatch, tmp_path)
     so a caller who can list a gated repo's public metadata still learned the operator had
     an interrupted download: `partial`, its transport, and the bytes left to fetch."""
     reads: list = []
-    _one_cached_quant(monkeypatch, tmp_path, complete=False)
+    _one_cached_quant(monkeypatch, tmp_path, complete = False)
     monkeypatch.setattr(
         gguf_variants.download_registry,
         "incomplete_blob_hashes",
@@ -2312,7 +2312,7 @@ def test_the_gguf_partial_state_is_withheld_with_the_rest(monkeypatch, tmp_path)
     monkeypatch.setattr(hf_tokens, "_probe_repo_access", lambda *_a, **_k: False)
     _hub_reachable(monkeypatch)
 
-    answer = asyncio.run(gguf_variants.get_gguf_variants_answer("acme/gated", hf_token="hf_dummy"))
+    answer = asyncio.run(gguf_variants.get_gguf_variants_answer("acme/gated", hf_token = "hf_dummy"))
     variant = answer.response.variants[0]
 
     assert variant.partial is False
@@ -2324,8 +2324,8 @@ def test_a_repo_directory_is_not_a_cached_template(monkeypatch):
     cached for its weights alone holds no template, so refusing there protects nothing and
     costs an authorized caller the copy the Hub still has, whenever the probe is merely
     unavailable: a mirror without /auth-check, one transient failure."""
-    _counting_probe(monkeypatch, False, offline=False)
-    _picker_env(monkeypatch, no_snapshots=True)
+    _counting_probe(monkeypatch, False, offline = False)
+    _picker_env(monkeypatch, no_snapshots = True)
     # A snapshot is here, the template file is not.
     monkeypatch.setattr("huggingface_hub.try_to_load_from_cache", lambda **_k: None)
     downloads: list = []
@@ -2335,7 +2335,7 @@ def test_a_repo_directory_is_not_a_cached_template(monkeypatch):
             pass
 
         def get_paths_info(self, _repo, paths, *_a, **_k):
-            return [SimpleNamespace(path=paths[0], size=1024)]
+            return [SimpleNamespace(path = paths[0], size = 1024)]
 
     def _download(*a, **k):
         downloads.append(a)
@@ -2352,8 +2352,8 @@ def test_the_transformers_cache_key_separates_the_caller_classes():
     """The qualifier reached three fingerprints and missed this one. The tokenizer and
     config-tier caches keyed here return before any authorization check, so a UI session
     populating one handed its verdict to an API caller with the same token text."""
-    ui = hf_token_arg("hf_saved", allow_ambient_token=True)
-    api = hf_token_arg("hf_saved", allow_ambient_token=False)
+    ui = hf_token_arg("hf_saved", allow_ambient_token = True)
+    api = hf_token_arg("hf_saved", allow_ambient_token = False)
 
     assert _token_cache_key("acme/m", ui) != _token_cache_key("acme/m", api)
     assert "hf_saved" not in str(_token_cache_key("acme/m", ui))
@@ -2366,7 +2366,7 @@ def test_a_resolved_gguf_plan_does_not_report_an_unauthorized_cache(monkeypatch)
     """A gated repo can publish its filenames, so a plan coming back is not permission to
     report the operator's copy of it, and the repo the plan names need not be the one the
     caller asked about."""
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     _gguf_resolver(monkeypatch)
     monkeypatch.setattr(
         settings_routes,
@@ -2392,7 +2392,7 @@ def test_a_weights_only_cache_does_not_block_the_scan(monkeypatch):
     Python files are reached through it, so a snapshot holding only weights can answer
     nothing. Refusing it cost a valid token the scan a mirror would have served, in exactly
     the case the probe is unavailable rather than negative."""
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     monkeypatch.setattr(models_routes, "_repo_in_any_hf_cache", lambda *_a, **_k: True)
     monkeypatch.setattr("huggingface_hub.try_to_load_from_cache", lambda **_k: None)
 
@@ -2405,10 +2405,10 @@ def test_a_weights_only_cache_does_not_block_the_scan(monkeypatch):
     try:
         asyncio.run(
             models_routes.scan_model_remote_code(
-                model_name="acme/weights-only",
-                hf_token="hf_dummy",
-                allow_ambient_token=False,
-                current_subject="alice",
+                model_name = "acme/weights-only",
+                hf_token = "hf_dummy",
+                allow_ambient_token = False,
+                current_subject = "alice",
             )
         )
     except Exception:
@@ -2452,7 +2452,7 @@ def test_the_cached_alias_is_looked_up_before_the_literal_name_is_judged(monkeyp
     _hub_reachable(monkeypatch)
     _st_resolver(
         monkeypatch,
-        _cached_st_source=lambda _m: (
+        _cached_st_source = lambda _m: (
             "sentence-transformers/all-MiniLM-L6-v2",
             Path("/cache/snap"),
         ),
@@ -2490,7 +2490,7 @@ def test_the_cached_alias_is_looked_up_before_the_literal_name_is_judged(monkeyp
             False,
         ),
     ],
-    ids=[
+    ids = [
         "uppercase-host",
         "default-port",
         "trailing-slash",
@@ -2507,11 +2507,11 @@ def test_the_probe_compares_targets_not_spellings(monkeypatch, endpoint, final_u
     _patch_auth_check_get(
         monkeypatch,
         lambda *_a, **_k: SimpleNamespace(
-            status_code=200, raise_for_status=lambda: None, url=final_url
+            status_code = 200, raise_for_status = lambda: None, url = final_url
         ),
     )
 
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is authorized
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is authorized
 
 
 def test_a_recorded_redirect_is_refused_whatever_the_final_url(monkeypatch):
@@ -2521,13 +2521,13 @@ def test_a_recorded_redirect_is_refused_whatever_the_final_url(monkeypatch):
     _patch_auth_check_get(
         monkeypatch,
         lambda *_a, **_k: SimpleNamespace(
-            status_code=200,
-            raise_for_status=lambda: None,
-            history=[SimpleNamespace(status_code=302)],
+            status_code = 200,
+            raise_for_status = lambda: None,
+            history = [SimpleNamespace(status_code = 302)],
         ),
     )
 
-    assert cache_reads_authorized("hf_dummy", repo_id="org/repo") is False
+    assert cache_reads_authorized("hf_dummy", repo_id = "org/repo") is False
 
 
 @pytest.mark.parametrize(
@@ -2539,7 +2539,7 @@ def test_the_scan_predicate_covers_every_config_the_scanner_reads(monkeypatch, c
     scanner's own downloads pass, or it asks the library default about a read that happens
     in the operator's chosen root."""
     seen: list = []
-    _counting_probe(monkeypatch, False, offline=False)
+    _counting_probe(monkeypatch, False, offline = False)
     monkeypatch.setattr(models_routes, "_repo_in_any_hf_cache", lambda *_a, **_k: True)
     monkeypatch.setattr(
         "utils.hf_cache_settings.active_hf_hub_cache", lambda: Path("/studio/cache")
@@ -2549,7 +2549,7 @@ def test_the_scan_predicate_covers_every_config_the_scanner_reads(monkeypatch, c
         *,
         repo_id,
         filename,
-        cache_dir=None,
+        cache_dir = None,
         **_k,
     ):
         seen.append((filename, str(cache_dir)))
@@ -2569,15 +2569,15 @@ def test_the_template_predicate_asks_the_active_cache(monkeypatch):
     """The download names active_hf_hub_cache(), so a predicate that omits it reports a miss
     for a template living only in the operator's chosen root and opens the gate on it."""
     roots: list = []
-    _counting_probe(monkeypatch, False, offline=False)
-    _picker_env(monkeypatch, no_snapshots=True)
+    _counting_probe(monkeypatch, False, offline = False)
+    _picker_env(monkeypatch, no_snapshots = True)
     monkeypatch.setattr(picker_service, "active_hf_hub_cache", lambda: Path("/studio/cache"))
 
     def _lookup(
         *,
         repo_id,
         filename,
-        cache_dir=None,
+        cache_dir = None,
         **_k,
     ):
         roots.append(str(cache_dir))
@@ -2591,7 +2591,7 @@ def test_the_template_predicate_asks_the_active_cache(monkeypatch):
             pass
 
         def get_paths_info(self, _repo, paths, *_a, **_k):
-            return [SimpleNamespace(path=paths[0], size=1024)]
+            return [SimpleNamespace(path = paths[0], size = 1024)]
 
     monkeypatch.setattr("huggingface_hub.HfApi", _Api)
     monkeypatch.setattr(
@@ -2610,7 +2610,7 @@ def test_a_tokenless_api_caller_keeps_a_public_cached_embedder(monkeypatch):
     was: an online resolve offered a multi-gigabyte download of something already on disk."""
     monkeypatch.setattr(hf_tokens, "_probe_repo_access", lambda *_a, **_k: True)
     _hub_reachable(monkeypatch)
-    _st_resolver(monkeypatch, _cached_st_source=lambda m: (m, Path("/cache/snap")))
+    _st_resolver(monkeypatch, _cached_st_source = lambda m: (m, Path("/cache/snap")))
 
     plan = settings_routes._resolve_embedding_model_plan("acme/public-embed", False)
 
@@ -2620,12 +2620,12 @@ def test_a_tokenless_api_caller_keeps_a_public_cached_embedder(monkeypatch):
 def test_a_local_only_config_read_stays_off_the_wire(monkeypatch):
     """local_files_only is a contract. The guard tested the caller's flag and did not
     forward it, so the read it protects dialled /auth-check anyway."""
-    probes = _counting_probe(monkeypatch, True, offline=False)
+    probes = _counting_probe(monkeypatch, True, offline = False)
     monkeypatch.setattr(model_config_module, "_config_json_already_cached", lambda *_a, **_k: True)
 
     with pytest.raises(OSError):
         model_config_module.load_model_config(
-            "acme/private", token="hf_dummy", local_files_only=True
+            "acme/private", token = "hf_dummy", local_files_only = True
         )
 
     assert probes["n"] == 0
@@ -2640,7 +2640,7 @@ def test_a_slow_denial_is_still_a_denial(monkeypatch):
     denial.
     """
     monkeypatch.setattr(hf_tokens, "_REPO_ACCESS_PROBE_TIMEOUT_S", 0.05)
-    calls = _counting_probe(monkeypatch, False, offline=False, delay=0.2)
+    calls = _counting_probe(monkeypatch, False, offline = False, delay = 0.2)
 
     assert hf_tokens._explicit_token_reaches_repo("org/private", "hf_revoked", "model") is False
     assert calls["n"] == 1
@@ -2659,5 +2659,5 @@ def test_a_slow_denial_is_still_a_denial(monkeypatch):
     # remembering itself is pinned by test_offline_local_cache_discovery.py::
     # test_nothing_but_the_hub_overturns_a_hub_that_answered_no.
     hf_tokens._repo_access_cache.clear()
-    _counting_probe(monkeypatch, None, offline=False)
-    assert hf_tokens.cache_reads_authorized("hf_revoked", repo_id="org/private") is False
+    _counting_probe(monkeypatch, None, offline = False)
+    assert hf_tokens.cache_reads_authorized("hf_revoked", repo_id = "org/private") is False

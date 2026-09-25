@@ -386,7 +386,7 @@ class TestProviderInference:
         encrypt_key,
         provider_type: str,
         model: str,
-        api_key: str
+        api_key: str,
     ):
         """POST /api/providers/test → success: true."""
         encrypted = encrypt_key(api_key)
@@ -410,7 +410,7 @@ class TestProviderInference:
         encrypt_key,
         provider_type: str,
         model: str,
-        api_key: str
+        api_key: str,
     ):
         """POST /api/providers/models → non-empty list, print first 3."""
         encrypted = encrypt_key(api_key)
@@ -434,7 +434,7 @@ class TestProviderInference:
         encrypt_key,
         provider_type: str,
         model: str,
-        api_key: str
+        api_key: str,
     ):
         """POST /v1/chat/completions with provider fields → streamed reply."""
         encrypted = encrypt_key(api_key)
@@ -499,7 +499,7 @@ class TestVisionInference:
         vision_image_data_url: str,
         provider_type: str,
         model: str,
-        api_key: str
+        api_key: str,
     ):
         """Image URL + text message → non-empty streamed reply."""
         encrypted = encrypt_key(api_key)

@@ -36,7 +36,7 @@ TRAIN_API = REPO / "studio/frontend/src/features/training/api/train-api.ts"
 
 
 def test_success_tick_requires_the_current_token_to_be_validated():
-    source = GENERAL_TAB.read_text(encoding="utf-8")
+    source = GENERAL_TAB.read_text(encoding = "utf-8")
 
     assert "tokenIsCurrent && tokenValidation.isValid === true" in source
     assert 'tokenValidated ? "pr-14" : "pr-8"' in source
@@ -46,7 +46,7 @@ def test_success_tick_requires_the_current_token_to_be_validated():
 
 
 def test_validation_result_must_belong_to_the_current_normalized_token():
-    source = VALIDATION_HOOK.read_text(encoding="utf-8")
+    source = VALIDATION_HOOK.read_text(encoding = "utf-8")
 
     assert "const normalizedToken = token.trim()" in source
     assert "useDebouncedValue(normalizedToken, 500)" in source
@@ -58,9 +58,9 @@ def test_validation_result_must_belong_to_the_current_normalized_token():
 
 
 def test_saved_token_is_not_reported_as_connected():
-    indicator = TOKEN_INDICATOR.read_text(encoding="utf-8")
-    en_locale = EN_LOCALE.read_text(encoding="utf-8")
-    preview = RUN_PREVIEW.read_text(encoding="utf-8")
+    indicator = TOKEN_INDICATOR.read_text(encoding = "utf-8")
+    en_locale = EN_LOCALE.read_text(encoding = "utf-8")
+    preview = RUN_PREVIEW.read_text(encoding = "utf-8")
 
     assert 't("picker.hfToken.savedAriaLabel")' in indicator
     assert 't("picker.hfToken.savedHint")' in indicator
@@ -76,9 +76,9 @@ def test_saved_token_is_not_reported_as_connected():
 
 
 def test_model_defaults_error_warns_without_blocking_readiness_and_offers_retry():
-    readiness = TRAINING_READINESS.read_text(encoding="utf-8")
-    cta = START_TRAINING_CTA.read_text(encoding="utf-8")
-    config_store = TRAINING_CONFIG_STORE.read_text(encoding="utf-8")
+    readiness = TRAINING_READINESS.read_text(encoding = "utf-8")
+    cta = START_TRAINING_CTA.read_text(encoding = "utf-8")
+    config_store = TRAINING_CONFIG_STORE.read_text(encoding = "utf-8")
 
     assert "modelError: string | null;" in readiness
     assert "const modelError = state.modelDefaultsError;" in readiness
@@ -108,10 +108,10 @@ def test_model_defaults_error_warns_without_blocking_readiness_and_offers_retry(
 
 
 def test_training_start_prepares_token_once_before_transport():
-    actions = TRAINING_ACTIONS.read_text(encoding="utf-8")
-    fresh_start = FRESH_TRAINING_START.read_text(encoding="utf-8")
-    resume_start = RESUME_TRAINING_START.read_text(encoding="utf-8")
-    api = TRAIN_API.read_text(encoding="utf-8")
+    actions = TRAINING_ACTIONS.read_text(encoding = "utf-8")
+    fresh_start = FRESH_TRAINING_START.read_text(encoding = "utf-8")
+    resume_start = RESUME_TRAINING_START.read_text(encoding = "utf-8")
+    api = TRAIN_API.read_text(encoding = "utf-8")
 
     assert "prepareHfTokenForUse" not in actions
     assert fresh_start.count("await prepareHfTokenForUse(") == 1
@@ -156,10 +156,10 @@ def test_training_start_prepares_token_once_before_transport():
 
 
 def test_training_start_claims_runtime_before_first_await():
-    fresh_start = FRESH_TRAINING_START.read_text(encoding="utf-8")
-    resume_start = RESUME_TRAINING_START.read_text(encoding="utf-8")
-    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding="utf-8")
-    start_runtime = TRAINING_START_RUNTIME.read_text(encoding="utf-8")
+    fresh_start = FRESH_TRAINING_START.read_text(encoding = "utf-8")
+    resume_start = RESUME_TRAINING_START.read_text(encoding = "utf-8")
+    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding = "utf-8")
+    start_runtime = TRAINING_START_RUNTIME.read_text(encoding = "utf-8")
 
     entrypoint = fresh_start.split("export async function startFreshTrainingRun", 1)[1].split(
         "type AttemptHfTokenResult", 1
@@ -199,27 +199,27 @@ def test_training_start_claims_runtime_before_first_await():
 
 
 def test_accepted_training_start_stays_locked_during_preparation():
-    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding="utf-8")
-    actions = TRAINING_ACTIONS.read_text(encoding="utf-8")
-    cta = START_TRAINING_CTA.read_text(encoding="utf-8")
-    navigation = STUDIO_NAVIGATION.read_text(encoding="utf-8")
-    subnav = TRAIN_SUBNAV.read_text(encoding="utf-8")
+    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding = "utf-8")
+    actions = TRAINING_ACTIONS.read_text(encoding = "utf-8")
+    cta = START_TRAINING_CTA.read_text(encoding = "utf-8")
+    navigation = STUDIO_NAVIGATION.read_text(encoding = "utf-8")
+    subnav = TRAIN_SUBNAV.read_text(encoding = "utf-8")
     history_grid = (REPO / "studio/frontend/src/features/studio/history-card-grid.tsx").read_text(
-        encoding="utf-8"
+        encoding = "utf-8"
     )
     history_view = (
         REPO / "studio/frontend/src/features/studio/historical-training-view.tsx"
-    ).read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
     dataset_preview = (
         REPO / "studio/frontend/src/features/studio/sections/dataset-preview-dialog.tsx"
-    ).read_text(encoding="utf-8")
-    sidebar = (REPO / "studio/frontend/src/components/app-sidebar.tsx").read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
+    sidebar = (REPO / "studio/frontend/src/components/app-sidebar.tsx").read_text(encoding = "utf-8")
     completion_watch = (
         REPO / "studio/frontend/src/features/training/hooks/use-training-completion-watch.ts"
-    ).read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
     unload_guard = (
         REPO / "studio/frontend/src/features/training/hooks/use-training-unload-guard.ts"
-    ).read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
 
     for phase in (
         '"downloading_model"',
@@ -275,10 +275,10 @@ def test_accepted_training_start_stays_locked_during_preparation():
 def test_async_training_views_scope_results_to_the_current_request():
     history_view = (
         REPO / "studio/frontend/src/features/studio/historical-training-view.tsx"
-    ).read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
     dataset_preview = (
         REPO / "studio/frontend/src/features/studio/sections/dataset-preview-dialog.tsx"
-    ).read_text(encoding="utf-8")
+    ).read_text(encoding = "utf-8")
 
     assert "result?.runId === runId" in history_view
     assert "previous?.runId === runId && previous.detail" in history_view
@@ -290,8 +290,8 @@ def test_async_training_views_scope_results_to_the_current_request():
 
 
 def test_training_start_aborts_when_semantic_config_or_token_changes():
-    source = FRESH_TRAINING_START.read_text(encoding="utf-8")
-    start_inputs = TRAINING_START_INPUTS.read_text(encoding="utf-8")
+    source = FRESH_TRAINING_START.read_text(encoding = "utf-8")
+    start_inputs = TRAINING_START_INPUTS.read_text(encoding = "utf-8")
 
     input_guard = source.split("abortIfInputsChanged(): boolean", 1)[1].split(
         "enterTransport(): boolean", 1
@@ -328,7 +328,7 @@ def test_training_start_aborts_when_semantic_config_or_token_changes():
 
 
 def test_anonymous_token_decision_does_not_erase_a_replacement_token():
-    source = CONFIRM_TOKEN.read_text(encoding="utf-8")
+    source = CONFIRM_TOKEN.read_text(encoding = "utf-8")
     anonymous = source.split('if (decision === "anonymous")', 1)[1].split(
         'if (decision === "replace")', 1
     )[0]
@@ -339,7 +339,7 @@ def test_anonymous_token_decision_does_not_erase_a_replacement_token():
 
 
 def test_token_changes_clear_stale_training_start_errors():
-    source = TRAINING_RUNTIME_LIFECYCLE.read_text(encoding="utf-8")
+    source = TRAINING_RUNTIME_LIFECYCLE.read_text(encoding = "utf-8")
 
     assert "useTrainingConfigStore.subscribe(" in source
     assert "state.userEditRevision !== previousState.userEditRevision" in source
@@ -350,8 +350,8 @@ def test_token_changes_clear_stale_training_start_errors():
 
 
 def test_accepted_training_start_survives_runtime_resync_failure():
-    source = FRESH_TRAINING_START.read_text(encoding="utf-8")
-    runtime = TRAINING_START_RUNTIME.read_text(encoding="utf-8")
+    source = FRESH_TRAINING_START.read_text(encoding = "utf-8")
+    runtime = TRAINING_START_RUNTIME.read_text(encoding = "utf-8")
     submit = source.split("async function submitFreshTrainingRun", 1)[1].split(
         "async function checkSelectedDataset", 1
     )[0]
@@ -389,13 +389,13 @@ def test_accepted_training_start_survives_runtime_resync_failure():
         "await syncTrainingRuntimeFromBackend()"
     )
 
-    resume = RESUME_TRAINING_START.read_text(encoding="utf-8")
+    resume = RESUME_TRAINING_START.read_text(encoding = "utf-8")
     assert "attempt.settleAccepted(response.job_id, response.message)" in resume
 
 
 def test_superseded_start_cleanup_scopes_both_backend_mutations():
-    runtime = TRAINING_START_RUNTIME.read_text(encoding="utf-8")
-    api = TRAIN_API.read_text(encoding="utf-8")
+    runtime = TRAINING_START_RUNTIME.read_text(encoding = "utf-8")
+    api = TRAIN_API.read_text(encoding = "utf-8")
 
     cleanup = runtime.split("async function resetSupersededBackendJob", 1)[1].split(
         "export async function settleAcceptedTrainingStart", 1
@@ -419,7 +419,7 @@ def test_superseded_start_cleanup_scopes_both_backend_mutations():
 
 
 def test_resume_training_preserves_consent_and_error_contracts():
-    source = RESUME_TRAINING_START.read_text(encoding="utf-8")
+    source = RESUME_TRAINING_START.read_text(encoding = "utf-8")
 
     consent = source.split("async function confirmResumeRemoteCode", 1)[1].split(
         "async function submitResumeTrainingRun", 1
@@ -442,7 +442,7 @@ def test_resume_training_preserves_consent_and_error_contracts():
 
 
 def test_resume_token_identity_is_guarded_through_preflight():
-    source = RESUME_TRAINING_START.read_text(encoding="utf-8")
+    source = RESUME_TRAINING_START.read_text(encoding = "utf-8")
 
     attempt = source.split("class ResumeTrainingStartAttempt", 1)[1].split(
         "async function loadResumePayload", 1
@@ -485,7 +485,7 @@ def test_resume_token_identity_is_guarded_through_preflight():
 
 
 def test_training_stop_failure_preserves_the_runtime_latch():
-    actions = TRAINING_ACTIONS.read_text(encoding="utf-8")
+    actions = TRAINING_ACTIONS.read_text(encoding = "utf-8")
     stop = actions.split("const stopTrainingRun = useCallback", 1)[1]
     stop = stop.split("const resumeTrainingRunFromHistory", 1)[0]
     # Scoped cancellation moved the request behind a try/catch, so slice on that rather
@@ -511,7 +511,7 @@ def test_training_stop_failure_preserves_the_runtime_latch():
 
 
 def test_superseded_training_reset_preserves_the_current_runtime():
-    actions = TRAINING_ACTIONS.read_text(encoding="utf-8")
+    actions = TRAINING_ACTIONS.read_text(encoding = "utf-8")
     dismiss = actions.split("const dismissTrainingRun = useCallback", 1)[1]
     dismiss = dismiss.split("return {", 1)[0]
     guarded_reset = dismiss.split("const response = await resetTraining(", 1)[1].split(
@@ -531,11 +531,11 @@ def test_superseded_training_reset_preserves_the_current_runtime():
 
 
 def test_cancel_invalidates_fresh_and_resume_preflight_leases():
-    fresh = FRESH_TRAINING_START.read_text(encoding="utf-8")
-    actions = TRAINING_ACTIONS.read_text(encoding="utf-8")
-    resume = RESUME_TRAINING_START.read_text(encoding="utf-8")
-    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding="utf-8")
-    start_runtime = TRAINING_START_RUNTIME.read_text(encoding="utf-8")
+    fresh = FRESH_TRAINING_START.read_text(encoding = "utf-8")
+    actions = TRAINING_ACTIONS.read_text(encoding = "utf-8")
+    resume = RESUME_TRAINING_START.read_text(encoding = "utf-8")
+    runtime_store = TRAINING_RUNTIME_STORE.read_text(encoding = "utf-8")
+    start_runtime = TRAINING_START_RUNTIME.read_text(encoding = "utf-8")
 
     stop_setter = runtime_store.split("setStopRequested: (value)", 1)[1].split("setHydrating:", 1)[
         0

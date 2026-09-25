@@ -35,7 +35,7 @@ class _Capture:
 def _drive(
     snaps,
     monkeypatch,
-    tick_s = _TICK_S,
+    tick_s=_TICK_S,
 ):
     """Run _run() over `snaps` on a clock that advances tick_s per scrape."""
     clock = {"t": 1000.0}
@@ -61,14 +61,14 @@ def _drive(
 
 
 def _busy(
-    predicted = 0.0,
-    predicted_s = 0.0,
-    prompt = 0.0,
-    prompt_s = 0.0,
-    decode = 0.0,
-    running = 1.0,
-    waiting = 0.0,
-    gen_gauge = None,
+    predicted=0.0,
+    predicted_s=0.0,
+    prompt=0.0,
+    prompt_s=0.0,
+    decode=0.0,
+    running=1.0,
+    waiting=0.0,
+    gen_gauge=None,
 ):
     snap = {
         "tokens_predicted_total": predicted,
@@ -85,8 +85,8 @@ def _busy(
 
 
 def test_a_prefill_is_priced_by_the_seconds_it_reports_with_it(monkeypatch):
-    snaps = [_busy(decode = float(i)) for i in range(8)] + [
-        _busy(prompt = 1837.0, prompt_s = 80.0, decode = 8.0)
+    snaps = [_busy(decode=float(i)) for i in range(8)] + [
+        _busy(prompt=1837.0, prompt_s=80.0, decode=8.0)
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -96,8 +96,8 @@ def test_a_prefill_is_priced_by_the_seconds_it_reports_with_it(monkeypatch):
 
 
 def test_an_idle_gap_is_not_charged_to_the_prefill_after_it(monkeypatch):
-    idle = [_busy(running = 0.0) for _ in range(6)]
-    working = [_busy(decode = 1.0), _busy(prompt = 100.0, prompt_s = 20.0, decode = 2.0)]
+    idle = [_busy(running=0.0) for _ in range(6)]
+    working = [_busy(decode=1.0), _busy(prompt=100.0, prompt_s=20.0, decode=2.0)]
     stats = _drive(idle + working, monkeypatch)
 
     assert max(s["prompt_tok_s"] for s in stats) == 5.0
@@ -106,9 +106,9 @@ def test_an_idle_gap_is_not_charged_to_the_prefill_after_it(monkeypatch):
 def test_deferred_requests_do_not_stretch_the_denominator(monkeypatch):
     """A queued request is not running, so charging its wait understates instead."""
     snaps = [
-        _busy(decode = 1.0),
-        *[_busy(running = 0.0, waiting = 1.0, decode = 1.0) for _ in range(6)],
-        _busy(prompt = 100.0, prompt_s = 20.0, decode = 2.0),
+        _busy(decode=1.0),
+        *[_busy(running=0.0, waiting=1.0, decode=1.0) for _ in range(6)],
+        _busy(prompt=100.0, prompt_s=20.0, decode=2.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -120,8 +120,8 @@ def test_deferred_requests_do_not_stretch_the_denominator(monkeypatch):
 def test_work_already_running_at_the_first_poll_is_priced_whole(monkeypatch):
     """Starting mid-prefill, elapsed poll time omits up to an interval; the engine's does not."""
     snaps = [
-        _busy(prompt = 200.0, prompt_s = 40.0, decode = 4.0),
-        _busy(prompt = 1837.0, prompt_s = 80.0, decode = 8.0),
+        _busy(prompt=200.0, prompt_s=40.0, decode=4.0),
+        _busy(prompt=1837.0, prompt_s=80.0, decode=8.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -133,9 +133,9 @@ def test_work_already_running_at_the_first_poll_is_priced_whole(monkeypatch):
 def test_a_long_prefill_is_not_attributed_to_the_tick_it_flushed_on(monkeypatch):
     """The prompt counter and its seconds flush together, on a decode with output."""
     snaps = (
-        [_busy(prompt = 0.0)]
+        [_busy(prompt=0.0)]
         + [_busy() for _ in range(64)]
-        + [_busy(prompt = 130000.0, prompt_s = 650.0)]
+        + [_busy(prompt=130000.0, prompt_s=650.0)]
     )
     stats = _drive(snaps, monkeypatch)
 
@@ -145,7 +145,7 @@ def test_a_long_prefill_is_not_attributed_to_the_tick_it_flushed_on(monkeypatch)
 
 def test_the_decode_counter_reports_while_the_token_counters_are_still(monkeypatch):
     """Why the line read 0 for 98.8% of the time: only n_decode_total moves here."""
-    snaps = [_busy(decode = float(i * 20), gen_gauge = 0.0) for i in range(4)]
+    snaps = [_busy(decode=float(i * 20), gen_gauge=0.0) for i in range(4)]
     stats = _drive(snaps, monkeypatch)
 
     assert all(s["gen_tok_s"] == 0.0 for s in stats)
@@ -167,8 +167,8 @@ def test_a_build_without_the_decode_counter_omits_the_field(monkeypatch):
 def test_a_zero_gauge_is_a_reading_and_not_a_missing_one(monkeypatch):
     """One-token completion: the free prompt-batch token is no decode step, so 0."""
     snaps = [
-        _busy(gen_gauge = 0.0),
-        _busy(predicted = 1.0, predicted_s = 0.0001, gen_gauge = 0.0),
+        _busy(gen_gauge=0.0),
+        _busy(predicted=1.0, predicted_s=0.0001, gen_gauge=0.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -179,9 +179,9 @@ def test_a_zero_gauge_is_a_reading_and_not_a_missing_one(monkeypatch):
 def test_a_zero_gauge_beside_moved_counters_is_still_a_reading(monkeypatch):
     """Another client's scrape empties the bucket, and understating beats inventing."""
     snaps = [
-        _busy(predicted = 100.0, predicted_s = 5.0, gen_gauge = 20.0),
-        _busy(predicted = 300.0, predicted_s = 15.0, gen_gauge = 0.0),
-        _busy(predicted = 400.0, predicted_s = 20.0, gen_gauge = 20.0),
+        _busy(predicted=100.0, predicted_s=5.0, gen_gauge=20.0),
+        _busy(predicted=300.0, predicted_s=15.0, gen_gauge=0.0),
+        _busy(predicted=400.0, predicted_s=20.0, gen_gauge=20.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -194,9 +194,9 @@ def test_tokens_with_no_seconds_yet_are_kept_for_the_tick_that_brings_them(monke
     """Six significant digits can move one total a scrape before the other, so the
     baseline is held until both have moved rather than charged to the next seconds."""
     snaps = [
-        _busy(prompt = 100.0, prompt_s = 1000.0),
-        _busy(prompt = 200.0, prompt_s = 1000.0),
-        _busy(prompt = 300.0, prompt_s = 1020.0),
+        _busy(prompt=100.0, prompt_s=1000.0),
+        _busy(prompt=200.0, prompt_s=1000.0),
+        _busy(prompt=300.0, prompt_s=1020.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -205,10 +205,10 @@ def test_tokens_with_no_seconds_yet_are_kept_for_the_tick_that_brings_them(monke
 
 def test_seconds_that_resolve_before_their_tokens_are_kept_too(monkeypatch):
     snaps = [
-        _busy(prompt = 100.0, prompt_s = 1000.0),
-        _busy(prompt = 100.0, prompt_s = 1020.0),
-        _busy(prompt = 200.0, prompt_s = 1020.0),
-        _busy(prompt = 300.0, prompt_s = 1040.0),
+        _busy(prompt=100.0, prompt_s=1000.0),
+        _busy(prompt=100.0, prompt_s=1020.0),
+        _busy(prompt=200.0, prompt_s=1020.0),
+        _busy(prompt=300.0, prompt_s=1040.0),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -220,8 +220,8 @@ def test_seconds_that_resolve_before_their_tokens_are_kept_too(monkeypatch):
 def test_a_build_without_the_generation_gauge_omits_the_field(monkeypatch):
     """The seconds time n_gen - 1 steps against n_gen tokens, so the ratio is not a rate."""
     snaps = [
-        _busy(predicted = 0.0),
-        _busy(predicted = 1.0, predicted_s = 0.0001),
+        _busy(predicted=0.0),
+        _busy(predicted=1.0, predicted_s=0.0001),
     ]
     stats = _drive(snaps, monkeypatch)
 
@@ -274,8 +274,8 @@ def test_a_non_finite_metric_value_never_reaches_the_line(monkeypatch):
 
 def test_the_llama_cpp_gauge_still_wins_when_it_reports(monkeypatch):
     snaps = [
-        _busy(gen_gauge = 24.6),
-        _busy(predicted = 1837.0, predicted_s = 80.0, gen_gauge = 24.6),
+        _busy(gen_gauge=24.6),
+        _busy(predicted=1837.0, predicted_s=80.0, gen_gauge=24.6),
     ]
     stats = _drive(snaps, monkeypatch)
 

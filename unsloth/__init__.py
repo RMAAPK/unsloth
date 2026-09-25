@@ -24,7 +24,6 @@ os.environ.setdefault("TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL", "1")
 # import_fixes.disable_sentencepiece_on_windows; UNSLOTH_DISABLE_SENTENCEPIECE=0 opts out.
 try:
     from .import_fixes import disable_sentencepiece_on_windows as _no_sentencepiece
-
     _no_sentencepiece()
     del _no_sentencepiece
 except Exception:
@@ -102,13 +101,12 @@ if platform.system() == "Darwin" and platform.machine() == "arm64":
 # ── Windows console UTF-8 safety ─────────────────────────────────────────────
 if platform.system() == "Windows":
     import sys as _sys
-
     for _name in ("stdout", "stderr"):
         _s = getattr(_sys, _name, None)
         try:
             _enc = (getattr(_s, "encoding", None) or "").lower()
             if _s is not None and hasattr(_s, "reconfigure") and "utf" not in _enc:
-                _s.reconfigure(encoding="utf-8", errors="replace")
+                _s.reconfigure(encoding = "utf-8", errors = "replace")
         except Exception:
             pass
 
@@ -119,7 +117,7 @@ class _UnslothDeviceStats:
     def __init__(
         self,
         name,
-        total_memory=0,
+        total_memory = 0,
     ):
         """Store a display name and total memory in bytes."""
         self.name = name
@@ -163,7 +161,6 @@ if _IS_MLX:
     # there is no triton on this platform to inspect.
     try:
         from .import_fixes import patch_torch_missing_attribute_error as _patch_torch_attr
-
         _patch_torch_attr()
         del _patch_torch_attr
     except Exception:
@@ -172,7 +169,6 @@ if _IS_MLX:
     # 2.10 dies on `ScalingType`.
     try:
         from .import_fixes import fix_torchao_torch_symbol_skew as _fix_torchao
-
         _fix_torchao()
         del _fix_torchao
     except Exception:
@@ -180,7 +176,6 @@ if _IS_MLX:
     try:
         # Same reason: MLX audio reaches xcodec2 -> torchtune -> the old torchao.dtypes.nf4tensor path.
         from .import_fixes import fix_torchao_nf4tensor_move as _fix_nf4
-
         _fix_nf4()
         del _fix_nf4
     except Exception:
@@ -189,7 +184,6 @@ if _IS_MLX:
         # Same reason: this branch imports transformers itself further down, so a --no-deps floor miss would
         # surface here with the same wrong remedy.
         from .import_fixes import check_transformers_dependency_versions as _check_tf_deps
-
         _check_tf_deps()
         del _check_tf_deps
     except Exception:
@@ -201,7 +195,6 @@ if _IS_MLX:
         from .import_fixes import (
             fix_transformers5_image_processing_reexports as _fix_image_reexports,
         )
-
         _fix_image_reexports()
         del _fix_image_reexports
     except Exception:
@@ -212,7 +205,6 @@ if _IS_MLX:
         from .import_fixes import (
             fix_transformers_remote_rope_scaling_none as _fix_remote_rope_scaling,
         )
-
         _fix_remote_rope_scaling()
         del _fix_remote_rope_scaling
     except Exception:
@@ -297,7 +289,7 @@ if _IS_MLX:
 
         def batch_encoding_to(
             self,
-            device=None,
+            device = None,
             *args,
             **kwargs,
         ):
@@ -372,7 +364,6 @@ if _IS_MLX:
     def is_bfloat16_supported():
         try:
             import mlx.core as mx
-
             name = mx.device_info().get("device_name", "") or ""
             return not name.startswith(("Apple M1", "Apple M2"))
         except Exception:
@@ -443,15 +434,15 @@ if _IS_MLX:
         cuda = getattr(torch, "cuda", None)
         if cuda is not None and not getattr(cuda, "_unsloth_mlx_cuda_compat_api", False):
 
-            def get_device_properties(device=None):
+            def get_device_properties(device = None):
                 """Return MLX device stats through torch.cuda's compatibility API."""
                 return get_gpu_memory_stats()[0]
 
-            def get_device_name(device=None):
+            def get_device_name(device = None):
                 """Return the MLX device name through torch.cuda's compatibility API."""
                 return get_device_properties(device).name
 
-            def max_memory_reserved(device=None):
+            def max_memory_reserved(device = None):
                 """Return MLX peak memory in bytes for torch.cuda compatibility API."""
                 return int(get_gpu_memory_stats()[1] * 1024 * 1024 * 1024)
 
@@ -468,19 +459,19 @@ if _IS_MLX:
                     get_active = getattr(mx.metal, "get_active_memory", None)
                 return int(get_active()) if callable(get_active) else 0
 
-            def memory_current(device=None):
+            def memory_current(device = None):
                 """Return CURRENT MLX memory in bytes. torch.cuda.memory_reserved /
                 memory_allocated report live usage, not the peak (that is max_*)."""
                 return _mlx_active_memory_bytes()
 
-            def mem_get_info(device=None):
+            def mem_get_info(device = None):
                 """Return (free, total) bytes for torch.cuda compatibility API.
                 Free uses CURRENT active memory, not the peak high-water mark, so
                 a capacity check stays accurate after a transient spike."""
                 total = int(get_gpu_memory_stats()[2] * 1024 * 1024 * 1024)
                 return (max(total - _mlx_active_memory_bytes(), 0), total)
 
-            def reset_peak_memory_stats(device=None):
+            def reset_peak_memory_stats(device = None):
                 """Reset MLX's peak-memory counter so a later max_memory_reserved /
                 max_memory_allocated scopes to the run, not earlier model-load peaks."""
                 import mlx.core as mx
@@ -491,7 +482,7 @@ if _IS_MLX:
                 if callable(reset):
                     reset()
 
-            def synchronize(device=None):
+            def synchronize(device = None):
                 """Wait for queued MLX work when torch.cuda.synchronize() is called."""
                 import mlx.core as mx
 
@@ -511,8 +502,8 @@ if _IS_MLX:
             cuda.synchronize = synchronize
             cuda.current_device = lambda: 0
             cuda.device_count = lambda: 1
-            cuda.set_device = lambda device=None: None
-            cuda.get_device_capability = lambda device=None: (0, 0)
+            cuda.set_device = lambda device = None: None
+            cuda.get_device_capability = lambda device = None: (0, 0)
             cuda.is_bf16_supported = lambda *args, **kwargs: is_bfloat16_supported()
             cuda._unsloth_mlx_cuda_compat_api = True
 
@@ -804,7 +795,7 @@ if _IS_MLX:
             f"{', '.join(names)}. These options are not implemented by "
             "MLXTrainer yet.",
             RuntimeWarning,
-            stacklevel=3,
+            stacklevel = 3,
         )
 
     def _is_meaningful_mlx_trainer_kwarg(key, value):
@@ -939,7 +930,6 @@ if _IS_MLX:
 
             if warmup_ratio is not None and not warmup_steps_explicit:
                 import math as _math
-
                 max_steps = filtered_kwargs.get(
                     "max_steps",
                     getattr(MLXTrainingConfig, "max_steps", 60),
@@ -967,7 +957,7 @@ if _IS_MLX:
                 setattr(self, key, value)
             _warn_ignored_mlx_training_args(extra_kwargs)
 
-    def _resolve_mlx_cuda_style_max_seq_length(args, model=None):
+    def _resolve_mlx_cuda_style_max_seq_length(args, model = None):
         model_max_seq_length = _positive_mlx_context_length(
             getattr(model, "max_seq_length", None),
         )
@@ -1032,8 +1022,8 @@ if _IS_MLX:
 
     def _apply_unsloth_trainer_mlx_defaults(
         args,
-        model=None,
-        max_seq_length_explicit=False,
+        model = None,
+        max_seq_length_explicit = False,
     ):
         if (
             not getattr(args, "streaming", False)
@@ -1065,10 +1055,10 @@ if _IS_MLX:
                 args.max_grad_norm = 1.0
 
         if not max_seq_length_explicit:
-            _resolve_mlx_cuda_style_max_seq_length(args, model=model)
+            _resolve_mlx_cuda_style_max_seq_length(args, model = model)
         return args
 
-    def _coerce_mlx_training_args(args, overrides=None):
+    def _coerce_mlx_training_args(args, overrides = None):
         overrides = overrides or {}
         if isinstance(args, MLXTrainingConfig) and not overrides:
             return args
@@ -1404,8 +1394,8 @@ if _IS_MLX:
                 )
             trainer_kwargs["args"] = _apply_unsloth_trainer_mlx_defaults(
                 trainer_kwargs["args"],
-                model=trainer_kwargs.get("model"),
-                max_seq_length_explicit=(trainer_kwargs.get("max_seq_length") is not None),
+                model = trainer_kwargs.get("model"),
+                max_seq_length_explicit = (trainer_kwargs.get("max_seq_length") is not None),
             )
 
             super().__init__(**trainer_kwargs)
@@ -1424,8 +1414,8 @@ if _IS_MLX:
     class UnslothVisionDataCollator:
         def __init__(
             self,
-            model=None,
-            processor=None,
+            model = None,
+            processor = None,
             *args,
             **kwargs,
         ):
@@ -1461,19 +1451,16 @@ if _IS_MLX:
     def get_chat_template(*args, **kwargs):
         """Apply an Unsloth chat template through a lazy MLX-safe import."""
         from .chat_templates import get_chat_template as _get_chat_template
-
         return _get_chat_template(*args, **kwargs)
 
     def apply_chat_template(*args, **kwargs):
         """Format a dataset with an Unsloth chat template through a lazy import."""
         from .chat_templates import apply_chat_template as _apply_chat_template
-
         return _apply_chat_template(*args, **kwargs)
 
     def standardize_data_formats(*args, **kwargs):
         """Normalize ShareGPT-style datasets through the shared zoo helper."""
         from unsloth_zoo.dataset_utils import standardize_data_formats as _standardize_data_formats
-
         return _standardize_data_formats(*args, **kwargs)
 
     def standardize_sharegpt(*args, **kwargs):
@@ -1557,7 +1544,7 @@ if _IS_MLX:
                 _trl.__version__ = "0.0.0+unsloth-mlx"
                 _trl.__package__ = "trl"
                 _trl.__path__ = []
-                _trl.__spec__ = _machinery.ModuleSpec("trl", loader=None, is_package=True)
+                _trl.__spec__ = _machinery.ModuleSpec("trl", loader = None, is_package = True)
                 _sys.modules["trl"] = _trl
 
         _trl.SFTTrainer = UnslothTrainer
@@ -1585,7 +1572,7 @@ if _IS_MLX:
         module_name = f"{__name__}.trainer"
         _trainer = _types.ModuleType(module_name)
         _trainer.__package__ = __name__
-        _trainer.__spec__ = _machinery.ModuleSpec(module_name, loader=None)
+        _trainer.__spec__ = _machinery.ModuleSpec(module_name, loader = None)
         _trainer.MLXTrainer = MLXTrainer
         _trainer.MLXTrainingConfig = MLXTrainingConfig
         _trainer.UnslothTrainer = UnslothTrainer
@@ -1640,7 +1627,6 @@ else:
         """Clear cached GPU memory on CUDA, ROCm, XPU, or NPU when available."""
         try:
             import torch
-
             if hasattr(torch, "xpu") and torch.xpu.is_available():
                 torch.xpu.empty_cache()
             elif hasattr(torch, "cuda") and torch.cuda.is_available():
@@ -1656,7 +1642,6 @@ else:
 # import_fixes.fix_dill_module_by_value_pickling.
 try:
     from .import_fixes import fix_dill_module_by_value_pickling as _fix_dill
-
     _fix_dill()
     del _fix_dill
 except Exception:

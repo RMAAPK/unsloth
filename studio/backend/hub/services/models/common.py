@@ -464,7 +464,7 @@ def _prefer_complete_larger(
     candidate_partial: bool,
     candidate_size_bytes: int,
     existing_partial: bool,
-    existing_size_bytes: int
+    existing_size_bytes: int,
 ) -> bool:
     if candidate_partial != existing_partial:
         return not candidate_partial

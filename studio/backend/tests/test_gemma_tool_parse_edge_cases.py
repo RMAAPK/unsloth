@@ -222,7 +222,7 @@ def test_gemma_close_marker_inside_quoted_arg_is_not_leaked_when_stripping():
     assert len(calls) == 1, calls
     assert _args(calls[0]) == {"code": 'print("<tool_call|>")'}
     assert strip_tool_call_markup("before " + text + " after") == "before  after"
-    assert strip_tool_call_markup("before " + text + " after", final = True) == "before  after"
+    assert strip_tool_call_markup("before " + text + " after", final=True) == "before  after"
 
 
 def test_nested_xml_in_malformed_gemma_call_does_not_execute():
@@ -232,7 +232,7 @@ def test_nested_xml_in_malformed_gemma_call_does_not_execute():
         "</parameter></function></tool_call>, broken:{x}}<tool_call|>"
     )
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
@@ -243,7 +243,7 @@ def test_unbalanced_gemma_call_with_xml_does_not_execute():
         "<parameter=command>id</parameter></function>"
     )
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
@@ -260,14 +260,14 @@ def test_xml_between_braces_and_close_marker_does_not_execute():
         "<parameter=command>id</parameter></function><tool_call|>"
     )
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
 def test_balanced_inner_call_inside_unclosed_outer_does_not_execute():
     text = "<|tool_call>call:outer{code:<|tool_call>call:terminal{command:id}<tool_call|>"
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
@@ -275,7 +275,7 @@ def test_strip_preserves_text_after_malformed_gemma_close():
     # Junk before the close is a malformed span: strip through it, keep the tail.
     text = "pre <|tool_call>call:t{a:1} note <tool_call|> post"
     assert strip_tool_call_markup(text) == "pre  post"
-    assert strip_tool_call_markup(text, final = True) == "pre  post"
+    assert strip_tool_call_markup(text, final=True) == "pre  post"
 
 
 def test_malformed_closed_gemma_span_is_stripped():
@@ -289,11 +289,11 @@ def test_valid_call_after_missing_close_is_recovered():
     # A close-less call covers only its braces, so the later call is recovered.
     text = "<|tool_call>call:a{x:1} <|tool_call>call:b{y:2}<tool_call|>"
     names_inc = [
-        c["function"]["name"] for c in parse_tool_calls_from_text(text, allow_incomplete = True)
+        c["function"]["name"] for c in parse_tool_calls_from_text(text, allow_incomplete=True)
     ]
     assert "b" in names_inc, names_inc
     names_strict = [
-        c["function"]["name"] for c in parse_tool_calls_from_text(text, allow_incomplete = False)
+        c["function"]["name"] for c in parse_tool_calls_from_text(text, allow_incomplete=False)
     ]
     assert names_strict == ["b"], names_strict
 
@@ -301,7 +301,7 @@ def test_valid_call_after_missing_close_is_recovered():
 def test_strip_non_final_keeps_incomplete_gemma_block():
     text = "before <|tool_call>call:t{"
     assert strip_tool_call_markup(text) == text
-    assert strip_tool_call_markup(text, final = True) == "before"
+    assert strip_tool_call_markup(text, final=True) == "before"
 
 
 def test_json_call_between_gemma_braces_and_close_does_not_execute():
@@ -312,7 +312,7 @@ def test_json_call_between_gemma_braces_and_close_does_not_execute():
         "<tool_call|>"
     )
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
@@ -320,7 +320,7 @@ def test_gemma_call_between_gemma_braces_and_close_does_not_execute():
     # Same escape with a Gemma-native inner marker.
     text = "<|tool_call>call:outer{broken:{x}}<|tool_call>call:terminal{command:id}<tool_call|><tool_call|>"
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert "terminal" not in [c["function"]["name"] for c in calls], calls
 
 
@@ -329,7 +329,7 @@ def test_strip_final_keeps_text_after_closed_xml_with_inner_gemma_opener():
     text = (
         'before <function=python><parameter=code>print("<|tool_call>")</parameter></function> after'
     )
-    assert strip_tool_call_markup(text, final = True) == "before  after"
+    assert strip_tool_call_markup(text, final=True) == "before  after"
     assert strip_tool_call_markup(text) == "before  after"
 
 
@@ -341,7 +341,7 @@ def test_strip_final_keeps_text_after_closed_block_with_call_form_gemma_opener()
     )
     for block in (xml, json_block):
         text = "before " + block + " after"
-        assert strip_tool_call_markup(text, final = True) == "before  after", block
+        assert strip_tool_call_markup(text, final=True) == "before  after", block
         assert strip_tool_call_markup(text) == "before  after", block
 
 
@@ -352,7 +352,7 @@ def test_function_sibling_after_close_less_gemma_marker_is_recovered():
         "<function=terminal><parameter=command>id</parameter></function>"
     )
     for allow_incomplete in (True, False):
-        calls = parse_tool_calls_from_text(text, allow_incomplete = allow_incomplete)
+        calls = parse_tool_calls_from_text(text, allow_incomplete=allow_incomplete)
         assert [c["function"]["name"] for c in calls] == ["terminal"], calls
 
 
@@ -361,7 +361,7 @@ def test_valid_call_after_close_less_marker_with_quoted_close_token_is_recovered
     # close-less marker's coverage over that call.
     gemma = '<|tool_call>call:a{x:1} <|tool_call>call:b{note:<|"|></tool_call><|"|>}<tool_call|>'
     names = [
-        c["function"]["name"] for c in parse_tool_calls_from_text(gemma, allow_incomplete = False)
+        c["function"]["name"] for c in parse_tool_calls_from_text(gemma, allow_incomplete=False)
     ]
     assert names == ["b"], names
     json_text = (
@@ -369,7 +369,7 @@ def test_valid_call_after_close_less_marker_with_quoted_close_token_is_recovered
         '<tool_call>{"name":"b","arguments":{"x":"</tool_call>"}}</tool_call>'
     )
     names_j = [
-        c["function"]["name"] for c in parse_tool_calls_from_text(json_text, allow_incomplete = False)
+        c["function"]["name"] for c in parse_tool_calls_from_text(json_text, allow_incomplete=False)
     ]
     assert "b" in names_j, names_j
 
@@ -394,9 +394,9 @@ def test_malformed_gemma_array_does_not_hang():
     def _run():
         result["calls"] = parse_tool_calls_from_text("<|tool_call>call:f{a:[},]}<tool_call|>")
 
-    t = threading.Thread(target = _run, daemon = True)
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout = 10.0)
+    t.join(timeout=10.0)
     assert not t.is_alive(), "parse_tool_calls_from_text hung on malformed array input"
 
 
@@ -409,9 +409,9 @@ def test_malformed_gemma_mapping_value_does_not_hang():
     def _run():
         result["calls"] = parse_tool_calls_from_text("<|tool_call>call:f{a:}},b:1}<tool_call|>")
 
-    t = threading.Thread(target = _run, daemon = True)
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
-    t.join(timeout = 10.0)
+    t.join(timeout=10.0)
     assert not t.is_alive(), "parse_tool_calls_from_text hung on malformed mapping input"
 
 
@@ -419,9 +419,10 @@ def test_malformed_gemma_mapping_value_does_not_hang():
 # its position. The parser is unchanged, so a promoted call is never erased silently.
 
 
-def _strip(text: str, enabled = None) -> str:
+def _strip(text: str, enabled=None) -> str:
     from core.inference.tool_call_parser import strip_tool_markup
-    return strip_tool_markup(text, final = True, enabled_tool_names = enabled)
+
+    return strip_tool_markup(text, final=True, enabled_tool_names=enabled)
 
 
 def test_wrapperless_call_in_mid_sentence_prose_is_kept_by_every_display_strip():
@@ -431,7 +432,7 @@ def test_wrapperless_call_in_mid_sentence_prose_is_kept_by_every_display_strip()
     prose = 'Here is the syntax: call:terminal{command: "rm -rf /tmp/x"}. Do not run it.'
     en = {"terminal", "python", "web_search"}
     assert _strip(prose, en) == prose
-    assert strip_tool_markup_streaming(prose, enabled_tool_names = en) == prose
+    assert strip_tool_markup_streaming(prose, enabled_tool_names=en) == prose
     assert _routes_strip(prose, en) == prose
 
 
@@ -462,7 +463,7 @@ def test_streaming_display_of_prose_call_never_shrinks():
     en = {"web_search"}
     seen = ""
     for i in range(1, len(prose) + 1):
-        out = strip_tool_markup_streaming(prose[:i], enabled_tool_names = en)
+        out = strip_tool_markup_streaming(prose[:i], enabled_tool_names=en)
         assert len(out) >= len(seen), (i, out, seen)
         seen = out
     assert seen == prose
@@ -479,7 +480,7 @@ _CODE_QUOTED_EXAMPLES = [
 @pytest.mark.parametrize("text", _CODE_QUOTED_EXAMPLES)
 def test_wrapperless_call_quoted_in_markdown_code_is_documentation(text):
     en = {"web_search"}
-    assert parse_tool_calls_from_text(text, enabled_tool_names = en) == []
+    assert parse_tool_calls_from_text(text, enabled_tool_names=en) == []
     assert promotable_gemma_call_pos(text, en) == -1
     assert _strip(text, en) == text
 
@@ -492,7 +493,7 @@ def test_streamed_fenced_example_never_turns_into_a_call():
     for i in range(1, len(text) + 1):
         out = stripper.strip(text[:i])
         assert out.startswith(seen), (i, out, seen)
-        assert parse_tool_calls_from_text(text[:i], enabled_tool_names = en) == [], i
+        assert parse_tool_calls_from_text(text[:i], enabled_tool_names=en) == [], i
         assert promotable_gemma_call_pos(text[:i], en) == -1, i
         seen = out
     assert seen == text
@@ -501,7 +502,7 @@ def test_streamed_fenced_example_never_turns_into_a_call():
 def test_unfenced_wrapperless_call_is_still_promoted_beside_a_fence():
     text = "```\ncall:web_search{query:dogs}\n```\ncall:web_search{query:cats}"
     en = {"web_search"}
-    calls = parse_tool_calls_from_text(text, enabled_tool_names = en)
+    calls = parse_tool_calls_from_text(text, enabled_tool_names=en)
     assert [_args(c) for c in calls] == [{"query": "cats"}]
     assert _strip(text, en) == "```\ncall:web_search{query:dogs}\n```"
 
@@ -516,7 +517,7 @@ def test_unfenced_wrapperless_call_is_still_promoted_beside_a_fence():
 )
 def test_code_opened_inside_a_call_argument_does_not_hide_the_next_call(text):
     en = {"web_search"}
-    calls = parse_tool_calls_from_text(text, enabled_tool_names = en)
+    calls = parse_tool_calls_from_text(text, enabled_tool_names=en)
     assert len(calls) == 2 and _args(calls[1]) == {"query": "y"}, calls
     assert 'query:"y"' not in _strip(text, en)
 
@@ -524,7 +525,7 @@ def test_code_opened_inside_a_call_argument_does_not_hide_the_next_call(text):
 def test_native_token_gemma_call_inside_a_fence_is_still_a_call():
     text = '```\n<|tool_call>call:web_search{query:<|"|>cats<|"|>}<tool_call|>\n```'
     en = {"web_search"}
-    calls = parse_tool_calls_from_text(text, enabled_tool_names = en)
+    calls = parse_tool_calls_from_text(text, enabled_tool_names=en)
     assert len(calls) == 1, calls
     assert _args(calls[0]) == {"query": "cats"}
     assert "call:web_search" not in _strip(text, en)
@@ -542,7 +543,7 @@ def test_native_token_gemma_call_inside_a_fence_is_still_a_call():
 def test_wrapperless_call_after_a_fence_quoting_another_fence_is_still_promoted(fenced):
     text = fenced + '\ncall:web_search{query:"b"}'
     en = {"web_search"}
-    calls = parse_tool_calls_from_text(text, enabled_tool_names = en)
+    calls = parse_tool_calls_from_text(text, enabled_tool_names=en)
     assert [_args(c) for c in calls] == [{"query": "b"}]
     assert promotable_gemma_call_pos(text, en) == text.index("call:web_search")
     assert _strip(text, en) == fenced
@@ -555,7 +556,7 @@ def test_inline_code_example_keeps_streaming_on_the_safetensors_loop():
     for quoted in ('`call:web_search{query:"x"}`', '``call:web_search{query:"x"}``'):
         prose = f"In Gemma syntax: {quoted}. " + "More explanation follows. " * 40
         for i in range(1, len(prose) + 1):
-            assert promotable_gemma_call_pos(prose[:i], en, streaming = True) == -1, (quoted, i)
+            assert promotable_gemma_call_pos(prose[:i], en, streaming=True) == -1, (quoted, i)
 
     text = 'In Gemma syntax: ``call:web_search{query:"x"}``. ' + "More explanation follows. " * 40
 
@@ -569,10 +570,10 @@ def test_inline_code_example_keeps_streaming_on_the_safetensors_loop():
 
     events = list(
         run_safetensors_tool_loop(
-            single_turn = _gen,
-            messages = [{"role": "user", "content": "hi"}],
-            tools = [{"type": "function", "function": {"name": "web_search"}}],
-            execute_tool = lambda name, arguments, **_: calls.append(name) or "RESULT",
+            single_turn=_gen,
+            messages=[{"role": "user", "content": "hi"}],
+            tools=[{"type": "function", "function": {"name": "web_search"}}],
+            execute_tool=lambda name, arguments, **_: calls.append(name) or "RESULT",
         )
     )
     contents = [e["text"] for e in events if e["type"] == "content"]
@@ -584,9 +585,9 @@ def test_inline_code_example_keeps_streaming_on_the_safetensors_loop():
 def test_streaming_hold_lasts_only_while_an_inline_run_is_open_on_the_last_line():
     text = 'Use `call:web_search{query:"x"}\n'
     en = {"web_search"}
-    assert promotable_gemma_call_pos(text[:-1], en, streaming = True) == -1
-    assert promotable_gemma_call_pos(text, en, streaming = True) == text.index("call:")
+    assert promotable_gemma_call_pos(text[:-1], en, streaming=True) == -1
+    assert promotable_gemma_call_pos(text, en, streaming=True) == text.index("call:")
     shorter_run = 'Use ``a`b call:web_search{query:"x"}'
-    assert promotable_gemma_call_pos(shorter_run, en, streaming = True) == -1
+    assert promotable_gemma_call_pos(shorter_run, en, streaming=True) == -1
     closed = 'See `code` then call:web_search{query:"x"}'
-    assert promotable_gemma_call_pos(closed, en, streaming = True) == closed.index("call:")
+    assert promotable_gemma_call_pos(closed, en, streaming=True) == closed.index("call:")

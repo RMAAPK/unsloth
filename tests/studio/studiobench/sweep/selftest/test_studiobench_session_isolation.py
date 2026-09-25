@@ -124,8 +124,8 @@ def test_a_single_session_payload_is_unaffected():
 
 def test_a_session_can_be_selected_explicitly():
     rows = _two_session_payload()
-    a = floor_table.cell_metrics(rows, session="91c4d6d94da8")
-    b = floor_table.cell_metrics(rows, session="430f0b831dda")
+    a = floor_table.cell_metrics(rows, session = "91c4d6d94da8")
+    b = floor_table.cell_metrics(rows, session = "430f0b831dda")
     assert a["r1M.treatment.rep1"]["keystroke.p50_ms"] == 73.4
     assert b["r1M.treatment.rep1"]["keystroke.p50_ms"] == 144.5
 
@@ -223,11 +223,11 @@ def test_the_directory_is_reusable_once_the_first_run_closes(tmp_path):
 def test_a_marker_from_a_dead_process_does_not_block_forever(tmp_path):
     """A crashed run must not lock the directory against every later one."""
     stale = tmp_path / ".running.deadsession"
-    tmp_path.mkdir(parents=True, exist_ok=True)
+    tmp_path.mkdir(parents = True, exist_ok = True)
     # A pid that cannot be alive: this process's own pid is taken, so use one past the max.
-    with open("/proc/sys/kernel/pid_max", encoding="utf-8") as fh:
+    with open("/proc/sys/kernel/pid_max", encoding = "utf-8") as fh:
         dead_pid = int(fh.read().strip()) - 1
-    stale.write_text(f"{dead_pid} deadsession\n", encoding="utf-8")
+    stale.write_text(f"{dead_pid} deadsession\n", encoding = "utf-8")
     if _pid_alive(dead_pid):
         pytest.skip("the chosen pid happens to be alive")
     rec = Recorder(tmp_path / "payload.jsonl", new_session_id())
@@ -271,5 +271,5 @@ def test_the_new_row_types_are_registered_in_the_schema(tmp_path):
         )
     finally:
         rec.close()
-    written = (tmp_path / "payload.jsonl").read_text(encoding="utf-8")
+    written = (tmp_path / "payload.jsonl").read_text(encoding = "utf-8")
     assert "cell_aborted" in written and "comparability" in written

@@ -85,7 +85,7 @@ def _inline_tracing_expr(node):
             and sub.args
         ):
             return sub.args[0]
-    return ast.Constant(value=None)
+    return ast.Constant(value = None)
 
 
 class _Canonicalise(ast.NodeTransformer):
@@ -120,39 +120,39 @@ class _Canonicalise(ast.NodeTransformer):
     def visit_AnnAssign(self, node):
         # Dataclass field: the explicit __init__ makes any default unreachable.
         return ast.AnnAssign(
-            target=node.target,
-            annotation=ast.Name(id="_", ctx=ast.Load()),
-            value=None,
-            simple=node.simple,
+            target = node.target,
+            annotation = ast.Name(id = "_", ctx = ast.Load()),
+            value = None,
+            simple = node.simple,
         )
 
     def visit_Name(self, node):
         # `is_tracing_` only avoids shadowing the imported helper.
         if node.id == "is_tracing_":
-            return ast.Name(id="is_tracing", ctx=node.ctx)
+            return ast.Name(id = "is_tracing", ctx = node.ctx)
         return node
 
     def visit_BoolOp(self, node):
         self.generic_visit(node)
         arg = _inline_tracing_expr(node)
         if arg is not None:
-            return ast.Call(func=ast.Name(id="_TRACING", ctx=ast.Load()), args=[arg], keywords=[])
+            return ast.Call(func = ast.Name(id = "_TRACING", ctx = ast.Load()), args = [arg], keywords = [])
         return node
 
     def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id == "is_tracing":
             return ast.Call(
-                func=ast.Name(id="_TRACING", ctx=ast.Load()),
-                args=list(node.args),
-                keywords=[],
+                func = ast.Name(id = "_TRACING", ctx = ast.Load()),
+                args = list(node.args),
+                keywords = [],
             )
         return node
 
     def visit_Compare(self, node):
         self.generic_visit(node)
         if self.relax_device and "'cuda'" in ast.dump(node):
-            return ast.Name(id="_DEVICE_GATE", ctx=ast.Load())
+            return ast.Name(id = "_DEVICE_GATE", ctx = ast.Load())
         return node
 
     def visit_BinOp(self, node):
@@ -163,7 +163,7 @@ class _Canonicalise(ast.NodeTransformer):
             and "value=1.0" in ast.dump(node.left)
         ):
             return ast.BinOp(
-                left=ast.Name(id="_ONE", ctx=ast.Load()), op=ast.Sub(), right=node.right
+                left = ast.Name(id = "_ONE", ctx = ast.Load()), op = ast.Sub(), right = node.right
             )
         return node
 
@@ -250,7 +250,7 @@ def test_vendored_module_has_not_drifted_from_upstream():
     relax_inversion = version < (4, 53)  # 0-dim inversion forward-ported from 4.53.0
 
     upstream = _symbols(upstream_src, relax_device, relax_inversion)
-    vendored = _symbols(_COMPAT_PATH.read_text(encoding="utf-8"), relax_device, relax_inversion)
+    vendored = _symbols(_COMPAT_PATH.read_text(encoding = "utf-8"), relax_device, relax_inversion)
 
     shared = sorted(set(upstream) & set(vendored))
     assert shared, "no shared symbols found; the comparison is not doing anything"
@@ -275,7 +275,7 @@ def test_vendored_module_exports_everything_unsloth_imports():
     """The copy may be a subset of upstream, but not of what Unsloth uses."""
     upstream_src = _upstream_source()
     upstream = _symbols(upstream_src, False, False)
-    vendored = _symbols(_COMPAT_PATH.read_text(encoding="utf-8"), False, False)
+    vendored = _symbols(_COMPAT_PATH.read_text(encoding = "utf-8"), False, False)
 
     # Anything vendored must actually exist upstream; inventing symbols under an upstream module's name would be a
     # silent behavioural fork.

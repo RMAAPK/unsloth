@@ -448,7 +448,7 @@ def _get_generation_preset_settings(kind, schema):
     response_model = ImageGenerationPresetSettings,
 )
 def get_image_generation_preset_settings(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> ImageGenerationPresetSettings:
     return _get_generation_preset_settings("image", ImageGenerationPresetSettings)
 
@@ -472,7 +472,7 @@ def update_image_generation_preset_settings(
     response_model = VideoGenerationPresetSettings,
 )
 def get_video_generation_preset_settings(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> VideoGenerationPresetSettings:
     return _get_generation_preset_settings("video", VideoGenerationPresetSettings)
 
@@ -566,7 +566,7 @@ class HuggingFaceTokenResponse(BaseModel):
 @_account_settings_router.get("/hugging-face-token", response_model = HuggingFaceTokenResponse)
 def get_hugging_face_token(
     _current_subject: str = Depends(get_current_subject),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ) -> HuggingFaceTokenResponse:
     require_ui_session(via_api_key)
     token = credential_secrets.get_hf_token()
@@ -608,7 +608,7 @@ def migrate_hugging_face_token(
 @_account_settings_router.delete("/hugging-face-token", response_model = HuggingFaceTokenResponse)
 def clear_hugging_face_token(
     credential: tuple = Depends(get_current_credential),
-    via_api_key: bool = Depends(authenticated_via_api_key)
+    via_api_key: bool = Depends(authenticated_via_api_key),
 ) -> HuggingFaceTokenResponse:
     require_ui_session(via_api_key)
     with current_credential_write(credential):
@@ -1159,7 +1159,7 @@ def _llama_cpp_path_response() -> LlamaCppPathResponse:
 
 @_owner_settings_router.get("/hugging-face-cache", response_model = HuggingFaceCacheResponse)
 def get_hugging_face_cache(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> HuggingFaceCacheResponse:
     return _hugging_face_cache_response()
 
@@ -1272,7 +1272,7 @@ def update_upload_limit(
 
 @_shared_settings_router.get("/helper-precache", response_model = HelperPrecacheResponse)
 def get_helper_precache(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> HelperPrecacheResponse:
     return _helper_precache_response()
 
@@ -1296,7 +1296,7 @@ def update_helper_precache(
 
 @_shared_settings_router.get("/download-transport", response_model = DownloadTransportResponse)
 def get_download_transport(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> DownloadTransportResponse:
     return _download_transport_response()
 
@@ -1364,7 +1364,7 @@ def post_igpu_carveout_notice_dismiss(
 
 @_account_settings_router.get("/chat-preferences", response_model = ChatPreferencesResponse)
 def get_chat_preferences(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> ChatPreferencesResponse:
     return _chat_preferences_response()
 
@@ -1481,7 +1481,7 @@ class LastLocalModelResponse(BaseModel):
 
 @_account_settings_router.get("/last-local-model", response_model = LastLocalModelResponse)
 def get_last_local_model(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> LastLocalModelResponse:
     stored = _read_last_local_model(current_subject)
     _now = int(time.time() * 1000)
@@ -1560,7 +1560,7 @@ def _diffusion_accelerator_fallback_response() -> DiffusionAcceleratorFallbackRe
     "/diffusion-accelerator-fallback", response_model = DiffusionAcceleratorFallbackResponse
 )
 def get_diffusion_accelerator_fallback(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> DiffusionAcceleratorFallbackResponse:
     """Which native diffusion accelerators this host has been recorded as unable to run.
 
@@ -1574,7 +1574,7 @@ def get_diffusion_accelerator_fallback(
     "/diffusion-accelerator-fallback", response_model = DiffusionAcceleratorFallbackResponse
 )
 def clear_diffusion_accelerator_fallback(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> DiffusionAcceleratorFallbackResponse:
     """Forget the records, so the next load tries this host's own accelerator again.
 
@@ -1624,7 +1624,7 @@ def get_coding_agents(current_subject: str = Depends(get_current_subject)) -> Co
 
 @_owner_settings_router.get("/openai-auto-switch", response_model = OpenAIAutoSwitchResponse)
 def get_openai_auto_switch(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> OpenAIAutoSwitchResponse:
     return OpenAIAutoSwitchResponse(
         enabled = get_openai_auto_switch_enabled(),
@@ -2295,7 +2295,7 @@ def _no_embedding_weights_error(candidates: list[str]) -> str:
 
 @_owner_settings_router.get("/embedding-model", response_model = EmbeddingModelResponse)
 def get_embedding_model(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> EmbeddingModelResponse:
     return _embedding_model_response()
 
@@ -3094,7 +3094,7 @@ def update_embedding_model(
 
 @_owner_settings_router.post("/embedding-model/unload", response_model = EmbeddingModelResponse)
 def unload_embedding_model(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> EmbeddingModelResponse:
     """Drop the embedder and stop its llama-server. Indexing rebuilds it on demand."""
     from core.rag import embeddings
@@ -3108,7 +3108,7 @@ def unload_embedding_model(
 
 @_owner_settings_router.delete("/embedding-model", response_model = EmbeddingModelResponse)
 def reset_embedding_model(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> EmbeddingModelResponse:
     """Clear the override, returning to the env/default model."""
     reset_rag_embedding_model()
@@ -3122,7 +3122,7 @@ class PreviewLinkRotateResponse(BaseModel):
 
 @_owner_settings_router.post("/preview-links/rotate", response_model = PreviewLinkRotateResponse)
 def rotate_preview_links(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> PreviewLinkRotateResponse:
     """Rotate the preview-link signing secret, revoking every previously shared `/p` link."""
     rotate_preview_link_secret()
@@ -3372,7 +3372,7 @@ def update_lan_access_port(
 
 @_owner_settings_router.get("/preview-sharing", response_model = PreviewSharingResponse)
 def get_preview_sharing(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> PreviewSharingResponse:
     return PreviewSharingResponse(enabled = get_preview_sharing_enabled())
 
@@ -3407,7 +3407,7 @@ def _managed_provider_urls_response() -> ManagedProviderUrlsResponse:
 
 @_shared_settings_router.get("/managed-provider-urls", response_model = ManagedProviderUrlsResponse)
 def get_managed_provider_urls(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> ManagedProviderUrlsResponse:
     """Readable by any account: a managed one has to be able to tell a refusal the owner can lift
     from one nobody on this installation can, and it learns the same bit by trying to save a URL."""
@@ -3445,7 +3445,7 @@ def update_managed_provider_urls(
 
 @_account_settings_router.get("/current-date-prompt", response_model = CurrentDatePromptResponse)
 def get_current_date_prompt(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> CurrentDatePromptResponse:
     return CurrentDatePromptResponse(enabled = get_current_date_prompt_enabled())
 
@@ -3815,7 +3815,7 @@ class PersonalizationResponse(PersonalizationPayload):
 
 @_account_settings_router.get("/personalization", response_model = PersonalizationResponse)
 def get_personalization_settings(
-    current_subject: str = Depends(get_current_subject)
+    current_subject: str = Depends(get_current_subject),
 ) -> PersonalizationResponse:
     stored = get_personalization()
     response = PersonalizationResponse.model_validate(stored or {})
@@ -3912,7 +3912,7 @@ class DebugLogResponse(BaseModel):
 @_owner_settings_router.get("/debug/logs/sources", response_model = DebugLogSourcesResponse)
 def get_debug_log_sources(
     current_subject: str = Depends(get_current_subject),
-    _ui_session: None = Depends(_require_ui_session)
+    _ui_session: None = Depends(_require_ui_session),
 ) -> DebugLogSourcesResponse:
     """Every log file the viewer may read, newest first within each family.
 
@@ -4014,7 +4014,7 @@ _DEBUG_LOG_EXPORT_LOCK = threading.Semaphore(1)
 @_owner_settings_router.get("/debug/logs/export")
 def export_debug_logs(
     current_subject: str = Depends(get_current_subject),
-    _ui_session: None = Depends(_require_ui_session)
+    _ui_session: None = Depends(_require_ui_session),
 ) -> StreamingResponse:
     """Every log the picker lists, redacted, as one ZIP.
 

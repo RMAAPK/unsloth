@@ -62,14 +62,14 @@ def _write_layout(tmp_path, layout):
     root = tmp_path / layout
     pkg = root / "flash_attn"
     if layout == "absent":
-        root.mkdir(parents=True, exist_ok=True)
+        root.mkdir(parents = True, exist_ok = True)
         return root
     if layout in ("flash_attn_4_only", "both"):
         # flash-attn 4: a `cute` subpackage and deliberately NO flash_attn/__init__.py.
-        (pkg / "cute").mkdir(parents=True, exist_ok=True)
+        (pkg / "cute").mkdir(parents = True, exist_ok = True)
         (pkg / "cute" / "__init__.py").write_text("def flash_attn_func(*a, **k): ...\n")
     if layout in ("flash_attn_2", "both"):
-        pkg.mkdir(parents=True, exist_ok=True)
+        pkg.mkdir(parents = True, exist_ok = True)
         if layout == "flash_attn_2":
             # A real flash-attn 2 wheel is a regular package.
             (pkg / "__init__.py").write_text(
@@ -114,8 +114,8 @@ def test_layout_is_classified_correctly(tmp_path, layout, expected):
     # A subprocess per layout: `flash_attn` cannot be un-imported cleanly between cases.
     out = subprocess.run(
         [sys.executable, "-c", _CLASSIFY, str(root), str(_REPO_ROOT)],
-        capture_output=True,
-        text=True,
+        capture_output = True,
+        text = True,
     )
     assert out.returncode == 0, out.stdout + out.stderr
     assert f"LAYOUT={expected}" in out.stdout, out.stdout + out.stderr
@@ -151,8 +151,8 @@ def test_classification_never_imports_flash_attn(tmp_path, layout):
     root = _write_layout(tmp_path, layout)
     out = subprocess.run(
         [sys.executable, "-c", _NO_EAGER_IMPORT, str(root), str(_REPO_ROOT)],
-        capture_output=True,
-        text=True,
+        capture_output = True,
+        text = True,
     )
     assert out.returncode == 0, out.stdout + out.stderr
     assert "EXECUTED=False" in out.stdout, out.stdout + out.stderr
@@ -192,7 +192,7 @@ def test_fix_is_a_noop_without_xformers(monkeypatch):
     asked = []
     real_find_spec = import_fixes.importlib.util.find_spec
 
-    def _find_spec(name, package=None):
+    def _find_spec(name, package = None):
         asked.append(name)
         return None if name == "xformers" else real_find_spec(name, package)
 
@@ -251,8 +251,8 @@ def test_find_spec_is_restored_even_when_xformers_import_fails():
     and the unrepairable state must warn rather than degrade in silence."""
     out = subprocess.run(
         [sys.executable, "-c", _BROKEN_XFORMERS, "", str(_REPO_ROOT)],
-        capture_output=True,
-        text=True,
+        capture_output = True,
+        text = True,
     )
     assert "RESTORED=True" in out.stdout, out.stdout + out.stderr
     assert "WARNED=True" in out.stdout, out.stdout + out.stderr

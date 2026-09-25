@@ -42,7 +42,6 @@ def summarize_resident_chat() -> Dict[str, Any]:
 
     try:
         from core.inference import get_inference_backend
-
         inf = get_inference_backend()
         # active_model_name is set only on success; a mid-load model sits in
         # loading_models while already holding VRAM -> both count as resident.
@@ -57,7 +56,6 @@ def summarize_resident_chat() -> Dict[str, Any]:
 
     try:
         from routes.inference import get_llama_cpp_backend
-
         llama = get_llama_cpp_backend()
         # is_active (not is_loaded): a mid-start server already allocates VRAM.
         # A confirmed CPU-only server (_gpu_offload_active is False) holds no VRAM.
@@ -129,7 +127,7 @@ def can_keep_chat_during_training(
     target_modules: Optional[List[str]],
     gradient_checkpointing: str,
     optimizer: str,
-    gpu_ids: Optional[List[int]]
+    gpu_ids: Optional[List[int]],
 ) -> Tuple[bool, Dict[str, Any]]:
     """Decide if a resident chat model can coexist with training given free VRAM. Reuses training's own
     estimator/selector so the decision matches later placement. Default-deny: anything we can't size
@@ -151,15 +149,15 @@ def can_keep_chat_during_training(
         effective_4bit = False if training_type == "Full Finetuning" else load_in_4bit
 
         est_kwargs = dict(
-            hf_token=normalize_token(hf_token),
-            training_type=training_type,
-            load_in_4bit=effective_4bit,
-            batch_size=batch_size,
-            max_seq_length=max_seq_length,
-            lora_rank=lora_rank,
-            target_modules=target_modules,
-            gradient_checkpointing=gradient_checkpointing,
-            optimizer=optimizer,
+            hf_token = normalize_token(hf_token),
+            training_type = training_type,
+            load_in_4bit = effective_4bit,
+            batch_size = batch_size,
+            max_seq_length = max_seq_length,
+            lora_rank = lora_rank,
+            target_modules = target_modules,
+            gradient_checkpointing = gradient_checkpointing,
+            optimizer = optimizer,
         )
 
         if gpu_ids:
@@ -177,7 +175,7 @@ def can_keep_chat_during_training(
 
             # A requested GPU missing from the device list contributes 0.
             free_vals = [free_by_index.get(i, 0.0) for i in resolved]
-            ranked = sorted(free_vals, reverse=True)
+            ranked = sorted(free_vals, reverse = True)
             usable_gb = (
                 ranked[0] + sum(f * _MULTI_GPU_OVERHEAD for f in ranked[1:]) if ranked else 0.0
             )
@@ -259,10 +257,10 @@ def can_load_chat_during_training(
             return True, {"mode": "non_accelerator", "reason": "non_accelerator"}
 
         est_kwargs = dict(
-            hf_token=hf_token or None,
-            training_type=None,
-            load_in_4bit=load_in_4bit,
-            max_seq_length=max_seq_length or 2048,
+            hf_token = hf_token or None,
+            training_type = None,
+            load_in_4bit = load_in_4bit,
+            max_seq_length = max_seq_length or 2048,
         )
 
         # A native-audio switch's post-handoff snapshot already combines live free memory with the
@@ -292,7 +290,7 @@ def can_load_chat_during_training(
         if not requested_gpu_ids and not is_gguf:
             _selected, meta = auto_select_gpu_ids(
                 model_name,
-                required_override_gb=required_override_gb,
+                required_override_gb = required_override_gb,
                 **est_kwargs,
             )
             mode = meta.get("selection_mode")
@@ -371,7 +369,7 @@ def can_load_chat_during_training(
         if not free_vals:
             return False, {"mode": mode, "reason": "no_visible_gpus"}
 
-        ranked = sorted(free_vals, reverse=True)
+        ranked = sorted(free_vals, reverse = True)
         usable_gb = ranked[0] + sum(f * _MULTI_GPU_OVERHEAD for f in ranked[1:])
         needed_gb = required_gb * SAFETY_MARGIN + KEEP_FLOOR_GB
         aggregate_fits = usable_gb >= needed_gb
@@ -409,7 +407,6 @@ def free_chat_models_for_training(reason: str) -> List[str]:
 
     try:
         from core.inference import get_inference_backend
-
         inf = get_inference_backend()
         # No CPU exemption here, unlike the GGUF branch and the STT sidecars: it would key off a marker the
         # orchestrator writes rather than the worker that masked, and a marker that disagreed is an OOM mid-training.
@@ -431,7 +428,6 @@ def free_chat_models_for_training(reason: str) -> List[str]:
 
     try:
         from routes.inference import get_llama_cpp_backend
-
         llama = get_llama_cpp_backend()
         # CPU-only GGUF holds no VRAM, so killing it can't help (see summarize).
         if llama.is_active and getattr(llama, "_gpu_offload_active", None) is not False:
@@ -479,7 +475,6 @@ def free_stt_model_for_training(reason: str) -> List[str]:
     freed: List[str] = []
     try:
         from core.inference.stt_sidecar import get_stt_sidecar
-
         sidecar = get_stt_sidecar()
         if sidecar.is_loading() and sidecar.cancel_pending_load():
             logger.info("Cancelling STT model load for training (%s)", reason)
@@ -507,7 +502,6 @@ def free_stt_model_for_training(reason: str) -> List[str]:
     # Check the GGUF sidecar even after a cancelled or failed Transformers unload; both engines can hold memory at once.
     try:
         from core.inference.stt_ggml_sidecar import get_ggml_stt_sidecar
-
         ggml = get_ggml_stt_sidecar()
         if ggml.is_loading() and ggml.cancel_pending_load():
             logger.info("Cancelling GGUF STT model load for training (%s)", reason)
@@ -534,7 +528,6 @@ def free_stt_model_for_training(reason: str) -> List[str]:
 
     try:
         from core.inference.stt_mtmd_sidecar import get_mtmd_stt_sidecar
-
         mtmd = get_mtmd_stt_sidecar()
         if mtmd.is_loading() and mtmd.cancel_pending_load():
             logger.info("Cancelling mtmd STT model load for training (%s)", reason)
@@ -563,7 +556,7 @@ def free_stt_model_for_training(reason: str) -> List[str]:
 
 
 def coordinate_models_for_training(
-    can_keep: Callable[[], Tuple[bool, Dict[str, Any]]]
+    can_keep: Callable[[], Tuple[bool, Dict[str, Any]]],
 ) -> List[str]:
     """Keep resident models when they fit, evicting STT before chat."""
     resident_chat = summarize_resident_chat()
@@ -572,13 +565,13 @@ def coordinate_models_for_training(
         return []
 
     if resident_chat.get("loading"):
-        freed = free_stt_model_for_training(reason="chat model still loading")
-        freed += free_chat_models_for_training(reason="chat model still loading")
+        freed = free_stt_model_for_training(reason = "chat model still loading")
+        freed += free_chat_models_for_training(reason = "chat model still loading")
         return freed
 
     freed: List[str] = []
     if resident_stt.get("loading"):
-        released_stt = free_stt_model_for_training(reason="STT model still loading")
+        released_stt = free_stt_model_for_training(reason = "STT model still loading")
         freed += released_stt
         resident_stt = (
             {"model": None, "device": None, "loading": False, "any": False}
@@ -599,7 +592,7 @@ def coordinate_models_for_training(
         return freed
 
     if resident_stt["any"]:
-        freed += free_stt_model_for_training(reason="insufficient training memory")
+        freed += free_stt_model_for_training(reason = "insufficient training memory")
         if not resident_chat["any"]:
             return freed
         keep, _info = can_keep()
@@ -608,6 +601,6 @@ def coordinate_models_for_training(
             return freed
 
     freed += free_chat_models_for_training(
-        reason="insufficient VRAM to run training alongside chat",
+        reason = "insufficient VRAM to run training alongside chat",
     )
     return freed

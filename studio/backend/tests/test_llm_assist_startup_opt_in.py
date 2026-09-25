@@ -23,14 +23,14 @@ from utils import helper_precache_settings
 from utils.datasets import llm_assist as dataset_assist
 
 
-def _install_fake_studio_db(monkeypatch, *, stored=None):
+def _install_fake_studio_db(monkeypatch, *, stored = None):
     storage_pkg = types.ModuleType("storage")
     studio_db = types.ModuleType("storage.studio_db")
     values: dict[str, object] = {}
     if stored is not None:
         values[helper_precache_settings.HELPER_PRECACHE_SETTING_KEY] = stored
 
-    def get_app_setting(key, fallback=None):
+    def get_app_setting(key, fallback = None):
         return values.get(key, fallback)
 
     def upsert_app_settings(settings):
@@ -45,7 +45,7 @@ def _install_fake_studio_db(monkeypatch, *, stored=None):
 
 
 def test_helper_precache_defaults_off_when_setting_missing(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising=False)
+    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising = False)
     _install_fake_studio_db(monkeypatch)
 
     assert helper_precache_settings.get_helper_precache_enabled() is False
@@ -53,7 +53,7 @@ def test_helper_precache_defaults_off_when_setting_missing(monkeypatch):
 
 
 def test_helper_precache_opt_in_is_blocked_by_existing_disable_env(monkeypatch):
-    _install_fake_studio_db(monkeypatch, stored=True)
+    _install_fake_studio_db(monkeypatch, stored = True)
     monkeypatch.setenv("UNSLOTH_HELPER_MODEL_DISABLE", "true")
 
     assert helper_precache_settings.get_helper_precache_enabled() is True
@@ -62,11 +62,11 @@ def test_helper_precache_opt_in_is_blocked_by_existing_disable_env(monkeypatch):
 
 def test_settings_route_persists_helper_precache_toggle(monkeypatch):
     values = _install_fake_studio_db(monkeypatch)
-    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising=False)
+    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising = False)
 
     response = settings_route.update_helper_precache(
-        settings_route.HelperPrecachePayload(enabled=True),
-        current_subject="test-user",
+        settings_route.HelperPrecachePayload(enabled = True),
+        current_subject = "test-user",
     )
 
     assert response.enabled is True
@@ -76,7 +76,7 @@ def test_settings_route_persists_helper_precache_toggle(monkeypatch):
 
 
 def test_main_startup_uses_helper_precache_gate_instead_of_unconditional_precache():
-    source = (Path(__file__).resolve().parent.parent / "main.py").read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parent.parent / "main.py").read_text(encoding = "utf-8")
     startup_section = source[
         source.index("cleanup_orphaned_runs") : source.index("# Initialize RSA key pair")
     ]
@@ -106,13 +106,13 @@ def test_ai_assist_service_still_calls_on_demand_advisor(monkeypatch):
 
     response = dataset_formatting.ai_assist_mapping_response(
         AiAssistMappingRequest(
-            columns=["prompt", "answer"],
-            samples=[{"prompt": "x" * 250, "answer": "ok", "extra": "ignored"}],
-            dataset_name="owner/dataset",
-            model_name="unsloth/test",
-            model_type="text",
+            columns = ["prompt", "answer"],
+            samples = [{"prompt": "x" * 250, "answer": "ok", "extra": "ignored"}],
+            dataset_name = "owner/dataset",
+            model_name = "unsloth/test",
+            model_type = "text",
         ),
-        hf_token="hf_test",
+        hf_token = "hf_test",
     )
 
     assert response.success is True
@@ -142,7 +142,7 @@ def test_helper_backends_load_with_one_intent(monkeypatch):
             return True
 
     repo, variant = "owner/helper-GGUF", "Q4_K_M"
-    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising=False)
+    monkeypatch.delenv("UNSLOTH_HELPER_MODEL_DISABLE", raising = False)
     monkeypatch.setenv("UNSLOTH_HELPER_MODEL_REPO", repo)
     monkeypatch.setenv("UNSLOTH_HELPER_MODEL_VARIANT", variant)
     monkeypatch.setattr(llama_cpp, "LlamaCppBackend", FakeBackend)
@@ -154,11 +154,11 @@ def test_helper_backends_load_with_one_intent(monkeypatch):
         (
             lambda: hub_assist._run_multi_pass_advisor(
                 **advisor_kwargs,
-                dataset_name=None,
-                dataset_card=None,
-                dataset_metadata=None,
-                model_name=None,
-                model_type=None,
+                dataset_name = None,
+                dataset_card = None,
+                dataset_metadata = None,
+                model_name = None,
+                model_type = None,
             ),
             "hub-advisor",
         ),
@@ -166,8 +166,8 @@ def test_helper_backends_load_with_one_intent(monkeypatch):
     for run, label in calls:
         assert run() is None
         assert loaded.pop() == GgufLoadIntent(
-            model_identifier=f"{label}:{repo}:{variant}",
-            hf_repo=repo,
-            hf_variant=variant,
-            n_ctx=2048,
+            model_identifier = f"{label}:{repo}:{variant}",
+            hf_repo = repo,
+            hf_variant = variant,
+            n_ctx = 2048,
         )

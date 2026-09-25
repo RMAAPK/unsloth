@@ -65,7 +65,7 @@ GOOD = {
 
 
 def test_the_happy_reading_passes():
-    assert _payload().multi_gpu_failures(GOOD, expected_cards=2) == []
+    assert _payload().multi_gpu_failures(GOOD, expected_cards = 2) == []
 
 
 def test_the_nullcontext_shim_is_the_failure_this_leg_exists_for():
@@ -75,10 +75,10 @@ def test_the_nullcontext_shim_is_the_failure_this_leg_exists_for():
     coverage a pinned leg already has."""
     facts = dict(
         GOOD,
-        torch_gpu_device_is_real_switch=False,
-        torch_gpu_device_repr="<function torch_gpu_device at 0x7f>",
+        torch_gpu_device_is_real_switch = False,
+        torch_gpu_device_repr = "<function torch_gpu_device at 0x7f>",
     )
-    broken = _payload().multi_gpu_failures(facts, expected_cards=2)
+    broken = _payload().multi_gpu_failures(facts, expected_cards = 2)
     assert broken and "nullcontext" in broken[0]
 
 
@@ -88,15 +88,15 @@ def test_one_visible_card_fails_and_says_only_that():
     for the one card the leg was given sends the reader after the wrong bug."""
     facts = dict(
         GOOD,
-        device_count=1,
-        module_device_count=1,
-        torch_gpu_device_is_real_switch=False,
-        cuda_streams_len=1,
-        weight_buffers_len=1,
-        absmax_buffers_len=1,
-        rotary_cache_slots=1,
+        device_count = 1,
+        module_device_count = 1,
+        torch_gpu_device_is_real_switch = False,
+        cuda_streams_len = 1,
+        weight_buffers_len = 1,
+        absmax_buffers_len = 1,
+        rotary_cache_slots = 1,
     )
-    broken = _payload().multi_gpu_failures(facts, expected_cards=2)
+    broken = _payload().multi_gpu_failures(facts, expected_cards = 2)
     assert len(broken) == 1
     assert "the driver pinned it" in broken[0]
 
@@ -105,19 +105,19 @@ def test_an_import_before_the_cards_were_visible_is_caught_separately():
     """torch can see two cards while unsloth.kernels.utils was imported when
     only one was visible -- the bindings are made once, at import. The two are
     different failures with different fixes, so they are reported separately."""
-    facts = dict(GOOD, module_device_count=1)
-    broken = _payload().multi_gpu_failures(facts, expected_cards=2)
+    facts = dict(GOOD, module_device_count = 1)
+    broken = _payload().multi_gpu_failures(facts, expected_cards = 2)
     assert broken and "imported before the cards were visible" in broken[0]
 
 
 def test_short_stream_and_buffer_arrays_each_fail():
     payload = _payload()
     for key in ("cuda_streams_len", "weight_buffers_len", "absmax_buffers_len"):
-        broken = payload.multi_gpu_failures(dict(GOOD, **{key: 1}), expected_cards=2)
+        broken = payload.multi_gpu_failures(dict(GOOD, **{key: 1}), expected_cards = 2)
         assert broken, key
         assert "no stream or buffer of its own" in broken[0], key
         # None is not "fine": a missing array means the attribute is gone.
-        assert payload.multi_gpu_failures(dict(GOOD, **{key: None}), expected_cards=2)
+        assert payload.multi_gpu_failures(dict(GOOD, **{key: None}), expected_cards = 2)
 
 
 def test_missing_facts_are_a_failure_rather_than_a_silence():
@@ -125,15 +125,15 @@ def test_missing_facts_are_a_failure_rather_than_a_silence():
     as "nothing wrong". This is the shape that let a payload be carried and
     never executed for two rounds."""
     payload = _payload()
-    assert payload.multi_gpu_failures(None, expected_cards=2)
-    assert payload.multi_gpu_failures({}, expected_cards=2)
-    broken = payload.multi_gpu_failures({"error": "ImportError: no unsloth"}, expected_cards=2)
+    assert payload.multi_gpu_failures(None, expected_cards = 2)
+    assert payload.multi_gpu_failures({}, expected_cards = 2)
+    broken = payload.multi_gpu_failures({"error": "ImportError: no unsloth"}, expected_cards = 2)
     assert broken and "could not be read" in broken[0]
 
 
 def test_a_model_entirely_off_the_gpu_fails():
-    facts = dict(GOOD, parameters_by_device={"cpu": 596049920}, cuda_devices_holding_parameters=[])
-    assert _payload().multi_gpu_failures(facts, expected_cards=2)
+    facts = dict(GOOD, parameters_by_device = {"cpu": 596049920}, cuda_devices_holding_parameters = [])
+    assert _payload().multi_gpu_failures(facts, expected_cards = 2)
 
 
 def test_the_spread_across_cards_is_RECORDED_and_not_required():
@@ -147,14 +147,14 @@ def test_the_spread_across_cards_is_RECORDED_and_not_required():
     asserting an answer nobody had.
     """
     payload = _payload()
-    one_card = dict(GOOD, cuda_devices_holding_parameters=["cuda:0"])
+    one_card = dict(GOOD, cuda_devices_holding_parameters = ["cuda:0"])
     spread = dict(
         GOOD,
-        parameters_by_device={"cuda:0": 300000000, "cuda:1": 296049920},
-        cuda_devices_holding_parameters=["cuda:0", "cuda:1"],
+        parameters_by_device = {"cuda:0": 300000000, "cuda:1": 296049920},
+        cuda_devices_holding_parameters = ["cuda:0", "cuda:1"],
     )
-    assert payload.multi_gpu_failures(one_card, expected_cards=2) == []
-    assert payload.multi_gpu_failures(spread, expected_cards=2) == []
+    assert payload.multi_gpu_failures(one_card, expected_cards = 2) == []
+    assert payload.multi_gpu_failures(spread, expected_cards = 2) == []
 
 
 def test_the_reading_is_taken_from_the_module_and_not_recomputed():
@@ -163,7 +163,7 @@ def test_the_reading_is_taken_from_the_module_and_not_recomputed():
     torch again answers a different question and answers it agreeably."""
     import ast
 
-    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding="utf-8")
+    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding = "utf-8")
     func = next(
         n
         for n in ast.walk(ast.parse(source))
@@ -185,7 +185,7 @@ def test_the_leg_asks_for_two_cards_and_the_BUILT_payload_enforces_it():
     leg = legs.LEGS["multi_gpu"]
     assert leg.all_cards is True
     notebook = build_kernel.build_payload_notebook(
-        SMOKE_DIR, leg, unsloth_ref="main", zoo_ref="main"
+        SMOKE_DIR, leg, unsloth_ref = "main", zoo_ref = "main"
     )
     source = "".join("".join(c["source"]) for c in notebook["cells"])
     assert "device_count() == 2" in source, (
@@ -203,7 +203,7 @@ def test_every_OTHER_leg_still_requires_exactly_one():
         if name == "multi_gpu":
             continue
         notebook = build_kernel.build_payload_notebook(
-            SMOKE_DIR, leg, unsloth_ref="main", zoo_ref="main"
+            SMOKE_DIR, leg, unsloth_ref = "main", zoo_ref = "main"
         )
         source = "".join("".join(c["source"]) for c in notebook["cells"])
         assert "device_count() == 1" in source, name
@@ -250,7 +250,7 @@ def test_the_declaration_is_measured_and_not_copied_from_a_sibling():
     by."""
     import json
 
-    measured = json.loads((SMOKE_DIR / "measured_vram.json").read_text(encoding="utf-8"))[
+    measured = json.loads((SMOKE_DIR / "measured_vram.json").read_text(encoding = "utf-8"))[
         "peak_reserved_gb"
     ]
     assert (
@@ -269,7 +269,7 @@ def test_it_does_not_export_a_gguf_and_the_reason_is_recorded():
     assert "--export-gguf" not in leg.args
     # The reason travels with the decision. A leg that simply lacks a flag
     # invites someone to add it back in the hour they notice.
-    source = (ROOT / ".github" / "scripts" / "kaggle_t4_ci" / "legs.py").read_text(encoding="utf-8")
+    source = (ROOT / ".github" / "scripts" / "kaggle_t4_ci" / "legs.py").read_text(encoding = "utf-8")
     entry = source.split('"multi_gpu": Leg(')[1].split('),\n    "')[0]
     assert "backend CPU" in entry or "CPU bundle" in entry
 
@@ -282,16 +282,16 @@ def _driver_source() -> str:
     for name in ("default", "gptoss", "multi_gpu"):
         leg = legs.LEGS[name]
         payloads[f"t4_{leg.name}.ipynb"] = build_kernel.build_payload_notebook(
-            SMOKE_DIR, leg, unsloth_ref="main", zoo_ref="main"
+            SMOKE_DIR, leg, unsloth_ref = "main", zoo_ref = "main"
         )
     driver = build_kernel.build_driver(
         payloads,
-        per_run_timeout=3600,
-        vram_source={
+        per_run_timeout = 3600,
+        vram_source = {
             f"t4_{legs.LEGS[n].name}.ipynb": legs.LEGS[n]
             for n in ("default", "gptoss", "multi_gpu")
         },
-        all_card=("t4_Multi_GPU.ipynb",),
+        all_card = ("t4_Multi_GPU.ipynb",),
     )
     return "".join("".join(c["source"]) for c in driver["cells"])
 
@@ -388,10 +388,10 @@ def test_a_single_leg_dispatch_still_stands_down_on_one_card():
     notebooks = build_kernel.build_kernel(
         SMOKE_DIR,
         ("multi_gpu",),
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=3600,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 3600,
     )
     source = "".join("".join(c["source"]) for c in notebooks["cells"])
     assert "EXPECTED_GPUS = 2" in source, (
@@ -402,10 +402,10 @@ def test_a_single_leg_dispatch_still_stands_down_on_one_card():
     other = build_kernel.build_kernel(
         SMOKE_DIR,
         ("default",),
-        unsloth_ref="main",
-        zoo_ref="main",
-        extra_args=(),
-        per_run_timeout=3600,
+        unsloth_ref = "main",
+        zoo_ref = "main",
+        extra_args = (),
+        per_run_timeout = 3600,
     )
     assert "EXPECTED_GPUS = 1" in "".join("".join(c["source"]) for c in other["cells"])
 
@@ -432,7 +432,7 @@ def test_the_weights_go_on_one_card_while_both_stay_visible():
 def test_single_device_reaches_the_child_and_sets_a_device_map():
     import ast
 
-    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding="utf-8")
+    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding = "utf-8")
     tree = ast.parse(source)
     train = next(
         n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "train_once"
@@ -464,7 +464,7 @@ def test_a_crash_mid_cycle_still_reports_what_was_measured():
     """
     import ast
 
-    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding="utf-8")
+    source = (SMOKE_DIR / "run_t4_smoke.py").read_text(encoding = "utf-8")
     tree = ast.parse(source)
     facts = next(
         n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "multi_gpu_facts"

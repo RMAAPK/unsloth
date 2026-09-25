@@ -39,7 +39,7 @@ from core.inference.stt_sidecar import (
 def _shared_setup_1(monkeypatch):
     _install_fake_torch(monkeypatch)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
 
 
@@ -53,15 +53,15 @@ def _shared_setup_2(monkeypatch):
 
 def _shared_setup_3(monkeypatch):
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     return sidecar
 
 
 def _shared_setup_4(workers):
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
     sidecar.unload()
 
@@ -77,13 +77,13 @@ def _shared_setup_5(sidecar, workers):
 
 
 def _shared_setup_6(sidecar, workers):
-    with pytest.raises(SttModelBusyError, match = "did not exit"):
+    with pytest.raises(SttModelBusyError, match="did not exit"):
         sidecar.load("small")
 
     assert len(workers) == 1
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _neutral_audio_device_env(monkeypatch):
     """A server-wide default must not decide the outcome of these tests.
 
@@ -91,7 +91,7 @@ def _neutral_audio_device_env(monkeypatch):
     UNSLOTH_AUDIO_DEVICE would fail these on correct behaviour, and that host is
     exactly the one most likely to run them.
     """
-    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising = False)
+    monkeypatch.delenv("UNSLOTH_AUDIO_DEVICE", raising=False)
 
 
 _REAL_DECODE_AUDIO_BOUNDED = stt_sidecar_module._decode_audio_bounded
@@ -100,14 +100,14 @@ _REAL_SNAPSHOT_IS_COMPLETE = stt_sidecar_module._snapshot_is_complete
 _REAL_FIND_COMPLETE_CACHED_SNAPSHOT = stt_sidecar_module._find_complete_cached_snapshot
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def stub_audio_decoder(monkeypatch):
     """Unit tests below exercise orchestration, not PyAV container parsing."""
     monkeypatch.setattr(
         stt_sidecar_module,
         "_decode_audio_bounded",
         # Second arg is the cancel event the real decoder polls in its frame loop.
-        lambda _audio, _cancel_event = None: np.zeros(8000, dtype = np.float32),
+        lambda _audio, _cancel_event=None: np.zeros(8000, dtype=np.float32),
     )
     monkeypatch.setattr(
         "huggingface_hub.snapshot_download",
@@ -132,8 +132,8 @@ class _CaptureInference:
 
     def __init__(
         self,
-        text = "hello",
-        mutate = None,
+        text="hello",
+        mutate=None,
     ) -> None:
         self.text = text
         self.mutate = mutate
@@ -178,7 +178,7 @@ def test_transformers_is_required_for_stt_availability(monkeypatch):
 
 @pytest.mark.parametrize("missing", ["transformers", "av"])
 def test_load_rejects_an_incomplete_stt_runtime(monkeypatch, missing):
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", _REAL_ENSURE_STT_AVAILABLE)
     for module in ("torch", "transformers", "av"):
         monkeypatch.setitem(sys.modules, module, SimpleNamespace())
@@ -189,7 +189,7 @@ def test_load_rejects_an_incomplete_stt_runtime(monkeypatch, missing):
         lambda _model: pytest.fail("runtime must be checked before the model cache"),
     )
 
-    with pytest.raises(SttUnavailableError, match = "needs PyTorch, Transformers, and PyAV"):
+    with pytest.raises(SttUnavailableError, match="needs PyTorch, Transformers, and PyAV"):
         sidecar.load("small")
 
 
@@ -204,7 +204,7 @@ def test_model_id_accepts_defaults_and_custom_hub_repositories():
 
 @pytest.mark.parametrize("model", ["tiny-ish", "owner/model/extra", "../model", "owner/"])
 def test_invalid_custom_model_id_is_rejected(model):
-    with pytest.raises(SttModelIdError, match = "owner/model"):
+    with pytest.raises(SttModelIdError, match="owner/model"):
         resolve_model_id(model)
 
 
@@ -218,8 +218,8 @@ def test_remote_custom_model_validation_requires_whisper_config(monkeypatch):
         def model_info(self, repo, **kwargs):
             calls.append(("model_info", repo, kwargs))
             return SimpleNamespace(
-                sha = "a" * 40,
-                config = {
+                sha="a" * 40,
+                config={
                     "model_type": "whisper",
                     "architectures": ["WhisperForConditionalGeneration"],
                 },
@@ -251,7 +251,7 @@ def test_remote_custom_model_validation_rejects_non_whisper(monkeypatch):
 
         def model_info(self, _repo, **_kwargs):
             return SimpleNamespace(
-                config = {
+                config={
                     "model_type": "llama",
                     "architectures": ["LlamaForCausalLM"],
                 }
@@ -259,7 +259,7 @@ def test_remote_custom_model_validation_rejects_non_whisper(monkeypatch):
 
     monkeypatch.setattr("huggingface_hub.HfApi", FakeApi)
 
-    with pytest.raises(SttModelCompatibilityError, match = "not a compatible"):
+    with pytest.raises(SttModelCompatibilityError, match="not a compatible"):
         validate_remote_model("owner/chat-model")
 
 
@@ -269,11 +269,11 @@ def test_remote_custom_model_validation_requires_an_immutable_sha(monkeypatch):
             pass
 
         def model_info(self, _repo, **_kwargs):
-            return SimpleNamespace(sha = None, config = {"model_type": "whisper"})
+            return SimpleNamespace(sha=None, config={"model_type": "whisper"})
 
     monkeypatch.setattr("huggingface_hub.HfApi", FakeApi)
 
-    with pytest.raises(SttModelCompatibilityError, match = "immutable revision"):
+    with pytest.raises(SttModelCompatibilityError, match="immutable revision"):
         validate_remote_model("owner/custom-whisper")
 
 
@@ -282,7 +282,7 @@ def test_fast_transcription_uses_greedy_decoding(monkeypatch):
     infer = _CaptureInference()
     monkeypatch.setattr(sidecar, "_transcribe_decoded", infer)
 
-    result = sidecar.transcribe(b"encoded audio", language = "en", fast = True)
+    result = sidecar.transcribe(b"encoded audio", language="en", fast=True)
 
     assert result["text"] == "hello"
     assert result["duration"] == 0.5
@@ -340,7 +340,7 @@ def test_transcription_normalizes_region_qualified_language(monkeypatch):
     infer = _CaptureInference()
     monkeypatch.setattr(sidecar, "_transcribe_decoded", infer)
 
-    sidecar.transcribe(b"encoded audio", language = "fr-FR")
+    sidecar.transcribe(b"encoded audio", language="fr-FR")
 
     assert infer.generate_kwargs["language"] == "fr"
 
@@ -360,11 +360,11 @@ def test_english_only_model_rejects_non_english_before_decode(monkeypatch, tmp_p
     )
     monkeypatch.setattr(stt_sidecar_module, "_decode_audio_bounded", should_not_decode)
 
-    with pytest.raises(SttLanguageError, match = "English-only"):
+    with pytest.raises(SttLanguageError, match="English-only"):
         sidecar.transcribe(
             b"encoded audio",
-            model = "owner/whisper-small.en",
-            language = "fr-FR",
+            model="owner/whisper-small.en",
+            language="fr-FR",
         )
 
 
@@ -372,13 +372,13 @@ def test_english_only_model_omits_forbidden_generation_controls(monkeypatch):
     calls = []
 
     class FakeWorker:
-        generation_config = SimpleNamespace(is_multilingual = False)
+        generation_config = SimpleNamespace(is_multilingual=False)
 
         def transcribe_window(
             self,
             _pcm,
             generate_kwargs,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             calls.append(generate_kwargs)
             return "hello"
@@ -388,7 +388,7 @@ def test_english_only_model_omits_forbidden_generation_controls(monkeypatch):
 
     text = sidecar._transcribe_decoded(
         "owner/whisper-small.en",
-        np.zeros(160, dtype = np.float32),
+        np.zeros(160, dtype=np.float32),
         {
             "task": "transcribe",
             "language": "en",
@@ -411,8 +411,8 @@ def test_unknown_language_is_rejected_before_decode_or_model_load(monkeypatch):
     monkeypatch.setattr(stt_sidecar_module, "_decode_audio_bounded", should_not_run)
     monkeypatch.setattr(sidecar, "_transcribe_decoded", should_not_run)
 
-    with pytest.raises(SttLanguageError, match = "is not supported"):
-        sidecar.transcribe(b"encoded audio", language = "xx-YY")
+    with pytest.raises(SttLanguageError, match="is not supported"):
+        sidecar.transcribe(b"encoded audio", language="xx-YY")
 
 
 def test_unknown_language_is_not_reported_as_bad_audio(monkeypatch):
@@ -421,8 +421,8 @@ def test_unknown_language_is_not_reported_as_bad_audio(monkeypatch):
     monkeypatch.setattr(sidecar, "_transcribe_decoded", infer)
     monkeypatch.setattr(stt_sidecar_module, "_known_whisper_languages", lambda: frozenset({"en"}))
 
-    with pytest.raises(SttLanguageError, match = "is not supported"):
-        sidecar.transcribe(b"encoded audio", language = "xx-YY")
+    with pytest.raises(SttLanguageError, match="is not supported"):
+        sidecar.transcribe(b"encoded audio", language="xx-YY")
 
 
 def test_transcription_result_keeps_requested_model_id_during_switch(monkeypatch):
@@ -430,10 +430,10 @@ def test_transcription_result_keeps_requested_model_id_during_switch(monkeypatch
 
     # Simulate another request changing the mutable resident-model state after
     # this request pinned its own model id.
-    infer = _CaptureInference(mutate = lambda: setattr(sidecar, "_model_id", "large-v3"))
+    infer = _CaptureInference(mutate=lambda: setattr(sidecar, "_model_id", "large-v3"))
     monkeypatch.setattr(sidecar, "_transcribe_decoded", infer)
 
-    result = sidecar.transcribe(b"encoded audio", model = "small")
+    result = sidecar.transcribe(b"encoded audio", model="small")
 
     assert result["model"] == "small"
 
@@ -446,7 +446,7 @@ def test_inference_failure_propagates(monkeypatch):
 
     monkeypatch.setattr(sidecar, "_transcribe_decoded", boom)
 
-    with pytest.raises(RuntimeError, match = "inference failed"):
+    with pytest.raises(RuntimeError, match="inference failed"):
         sidecar.transcribe(b"encoded audio")
 
 
@@ -463,8 +463,8 @@ class _FakeTimer:
         self,
         interval,
         function,
-        args = (),
-        kwargs = None,
+        args=(),
+        kwargs=None,
     ):
         self.interval = interval
         self.function = function
@@ -486,24 +486,24 @@ class _FakeTimer:
 
 def _install_fake_torch(monkeypatch):
     fake_torch = SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        device = lambda value: value,
-        cuda = SimpleNamespace(is_available = lambda: False),
-        backends = SimpleNamespace(mps = SimpleNamespace(is_available = lambda: False)),
+        float16="float16",
+        float32="float32",
+        device=lambda value: value,
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: False)),
     )
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
     monkeypatch.setitem(sys.modules, "av", SimpleNamespace())
     return fake_torch
 
 
-def _install_fake_worker(monkeypatch, start = None):
+def _install_fake_worker(monkeypatch, start=None):
     """Replace the spawn child with a handle that records how it was started."""
     started = []
 
     class FakeWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.closed = False
             self.alive = True
@@ -513,7 +513,7 @@ def _install_fake_worker(monkeypatch, start = None):
             snapshot_path,
             device,
             dtype_name,
-            cancel_event = None,
+            cancel_event=None,
         ):
             started.append((snapshot_path, device, dtype_name))
             if start is not None:
@@ -528,7 +528,7 @@ def _install_fake_worker(monkeypatch, start = None):
             self.alive = False
 
     monkeypatch.setattr(
-        "core.inference.stt_transformers_worker.WhisperWorker", FakeWorker, raising = True
+        "core.inference.stt_transformers_worker.WhisperWorker", FakeWorker, raising=True
     )
     return started
 
@@ -551,10 +551,10 @@ def test_load_sends_the_dtype_by_name_so_torch_stays_out_of_the_command(monkeypa
     fake_torch.float16 = "torch.float16"
     started = _install_fake_worker(monkeypatch)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cuda", fake_torch.float16)
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cuda", fake_torch.float16)
     )
 
-    WhisperSttSidecar(keep_alive_seconds = 0).load("small")
+    WhisperSttSidecar(keep_alive_seconds=0).load("small")
 
     assert started == [(str(Path("/cached/model")), "cuda", "float16")]
 
@@ -592,12 +592,12 @@ def test_a_worker_rejected_by_a_late_cancel_is_stopped_rather_than_leaked(monkey
     # start() came back with a live child. Nothing installed that child, and dropping
     # the handle does not end the process holding the context training waits for.
     _shared_setup_1(monkeypatch)
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     workers = []
 
     class LateCancelWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.closed = False
             workers.append(self)
@@ -607,7 +607,7 @@ def test_a_worker_rejected_by_a_late_cancel_is_stopped_rather_than_leaked(monkey
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             # The load succeeded; the cancel arrives a moment later.
             self.device = device
@@ -620,7 +620,7 @@ def test_a_worker_rejected_by_a_late_cancel_is_stopped_rather_than_leaked(monkey
             self.closed = True
 
     monkeypatch.setattr(
-        "core.inference.stt_transformers_worker.WhisperWorker", LateCancelWorker, raising = True
+        "core.inference.stt_transformers_worker.WhisperWorker", LateCancelWorker, raising=True
     )
 
     _shared_setup_5(sidecar, workers)
@@ -634,12 +634,12 @@ def test_a_late_cancelled_worker_that_outlived_the_kill_stays_resident(monkeypat
     # and kill and still holds its accelerator memory, so reporting nothing resident
     # would let training be admitted against memory that is not free.
     _shared_setup_1(monkeypatch)
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     workers = []
 
     class UnkillableLateCancelWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.closes = 0
             workers.append(self)
@@ -649,7 +649,7 @@ def test_a_late_cancelled_worker_that_outlived_the_kill_stays_resident(monkeypat
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             self.device = device
             assert sidecar.cancel_pending_load() is True
@@ -664,7 +664,7 @@ def test_a_late_cancelled_worker_that_outlived_the_kill_stays_resident(monkeypat
     monkeypatch.setattr(
         "core.inference.stt_transformers_worker.WhisperWorker",
         UnkillableLateCancelWorker,
-        raising = True,
+        raising=True,
     )
 
     _shared_setup_5(sidecar, workers)
@@ -682,7 +682,7 @@ def _install_unkillable_worker(monkeypatch):
 
     class UnkillableWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.closes = 0
             workers.append(self)
@@ -692,7 +692,7 @@ def _install_unkillable_worker(monkeypatch):
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             self.device = device
 
@@ -704,7 +704,7 @@ def _install_unkillable_worker(monkeypatch):
             return False
 
     monkeypatch.setattr(
-        "core.inference.stt_transformers_worker.WhisperWorker", UnkillableWorker, raising = True
+        "core.inference.stt_transformers_worker.WhisperWorker", UnkillableWorker, raising=True
     )
     return workers
 
@@ -727,10 +727,10 @@ def test_a_new_load_is_refused_while_the_previous_worker_still_holds_its_memory(
     _shared_setup_1(monkeypatch)
     workers = _install_unkillable_worker(monkeypatch)
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
 
-    with pytest.raises(SttModelBusyError, match = "did not exit"):
+    with pytest.raises(SttModelBusyError, match="did not exit"):
         sidecar.load("base")
 
     assert len(workers) == 1
@@ -745,7 +745,7 @@ def test_a_surviving_worker_is_not_handed_to_the_next_dictation(monkeypatch):
     _shared_setup_1(monkeypatch)
     workers = _install_unkillable_worker(monkeypatch)
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
     sidecar.unload()
 
@@ -764,7 +764,7 @@ def test_a_worker_wedged_by_a_cancelled_transcription_is_not_handed_to_the_next_
 
     class WedgedByCancelWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.survived_kill = False
             workers.append(self)
@@ -774,7 +774,7 @@ def test_a_worker_wedged_by_a_cancelled_transcription_is_not_handed_to_the_next_
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             self.device = device
 
@@ -785,7 +785,7 @@ def test_a_worker_wedged_by_a_cancelled_transcription_is_not_handed_to_the_next_
             self,
             _pcm,
             _generate_kwargs,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             # What _await does once the cancel grace expires: close() terminates and
             # kills, the child answers neither, and the cancel is raised over its False.
@@ -798,13 +798,13 @@ def test_a_worker_wedged_by_a_cancelled_transcription_is_not_handed_to_the_next_
     monkeypatch.setattr(
         "core.inference.stt_transformers_worker.WhisperWorker",
         WedgedByCancelWorker,
-        raising = True,
+        raising=True,
     )
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     cancel_event = threading.Event()
     with pytest.raises(stt_sidecar_module.SttTranscriptionCancelledError):
-        sidecar.transcribe(b"audio", "small", cancel_event = cancel_event)
+        sidecar.transcribe(b"audio", "small", cancel_event=cancel_event)
 
     _shared_setup_6(sidecar, workers)
     # Still accounted for: it holds its memory until the kill finally takes.
@@ -821,7 +821,7 @@ def _install_worker_that_survives_its_own_start(monkeypatch, error):
 
     class SurvivingStartWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             # start() never got as far as naming the device it loaded on.
             self.device = None
             workers.append(self)
@@ -831,7 +831,7 @@ def _install_worker_that_survives_its_own_start(monkeypatch, error):
             _snapshot_path,
             _device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             raise error
 
@@ -844,7 +844,7 @@ def _install_worker_that_survives_its_own_start(monkeypatch, error):
     monkeypatch.setattr(
         "core.inference.stt_transformers_worker.WhisperWorker",
         SurvivingStartWorker,
-        raising = True,
+        raising=True,
     )
     return workers
 
@@ -859,7 +859,7 @@ def test_a_child_that_outlived_the_kill_inside_start_stays_accounted(monkeypatch
         monkeypatch, SttLoadCancelledError("STT model loading was cancelled so training can start.")
     )
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     _shared_setup_5(sidecar, workers)
     assert sidecar.loaded_model == "small"
     # The child never named a device, so the one the attempt was made on stands in.
@@ -872,13 +872,13 @@ def test_a_load_whose_child_outlived_the_kill_is_not_retried_onto_a_second_child
     # put a second child beside it and, installing that one, forget the first.
     _install_fake_torch(monkeypatch)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cuda", "float16")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cuda", "float16")
     )
     workers = _install_worker_that_survives_its_own_start(
         monkeypatch, RuntimeError("the dictation worker stopped responding")
     )
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     _shared_setup_6(sidecar, workers)
     assert sidecar.loaded_model == "small"
     assert sidecar.device == "cuda"
@@ -892,7 +892,7 @@ def test_an_idle_unload_retries_a_worker_that_outlived_the_kill(monkeypatch):
     monkeypatch.setattr(stt_sidecar_module.threading, "Timer", _FakeTimer)
     workers = _install_unkillable_worker(monkeypatch)
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 60)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=60)
     sidecar.load("small")
     sidecar._idle_timer.fire()
 
@@ -907,7 +907,7 @@ def _install_worker(monkeypatch, *, is_alive, close):
 
     class _ScriptedWorker:
         def __init__(self) -> None:
-            self.generation_config = SimpleNamespace(is_multilingual = None)
+            self.generation_config = SimpleNamespace(is_multilingual=None)
             self.device = None
             self.closes = 0
             self.alive = True
@@ -918,7 +918,7 @@ def _install_worker(monkeypatch, *, is_alive, close):
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             self.device = device
 
@@ -930,7 +930,7 @@ def _install_worker(monkeypatch, *, is_alive, close):
             return close(self)
 
     monkeypatch.setattr(
-        "core.inference.stt_transformers_worker.WhisperWorker", _ScriptedWorker, raising = True
+        "core.inference.stt_transformers_worker.WhisperWorker", _ScriptedWorker, raising=True
     )
     return workers
 
@@ -948,9 +948,9 @@ def test_a_worker_whose_liveness_cannot_be_read_stays_resident(monkeypatch):
     def unreadable(_worker):
         raise OSError("the process handle cannot be inspected")
 
-    workers = _install_worker(monkeypatch, is_alive = unreadable, close = _closed)
+    workers = _install_worker(monkeypatch, is_alive=unreadable, close=_closed)
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
 
     assert stt_sidecar_module._engine_is_alive(workers[0]) is True
@@ -966,7 +966,7 @@ def test_a_close_that_raises_is_a_failed_release(monkeypatch):
     def raising(_worker):
         raise OSError("the worker could not be joined")
 
-    workers = _install_worker(monkeypatch, is_alive = lambda worker: True, close = raising)
+    workers = _install_worker(monkeypatch, is_alive=lambda worker: True, close=raising)
 
     sidecar = _shared_setup_4(workers)
     assert sidecar.loaded_model == "small"
@@ -983,7 +983,7 @@ def test_a_close_that_raises_over_a_child_already_gone_still_releases(monkeypatc
         raise OSError("the worker pid could not be forgotten")
 
     workers = _install_worker(
-        monkeypatch, is_alive = lambda worker: worker.alive, close = raising_after_death
+        monkeypatch, is_alive=lambda worker: worker.alive, close=raising_after_death
     )
 
     sidecar = _shared_setup_4(workers)
@@ -999,17 +999,17 @@ def test_a_worker_being_reaped_stays_visible_to_training_admission(monkeypatch):
     release = threading.Event()
 
     def slow_close(worker):
-        release.wait(timeout = 10)
+        release.wait(timeout=10)
         worker.alive = False
         return True
 
-    _install_worker(monkeypatch, is_alive = lambda worker: worker.alive, close = slow_close)
+    _install_worker(monkeypatch, is_alive=lambda worker: worker.alive, close=slow_close)
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
 
     seen = {}
-    unloading = threading.Thread(target = sidecar.unload, daemon = True)
+    unloading = threading.Thread(target=sidecar.unload, daemon=True)
     unloading.start()
     try:
         time.sleep(0.2)  # inside the close
@@ -1017,7 +1017,7 @@ def test_a_worker_being_reaped_stays_visible_to_training_admission(monkeypatch):
         seen["device"] = sidecar.device
     finally:
         release.set()
-        unloading.join(timeout = 10)
+        unloading.join(timeout=10)
 
     assert seen["model"] == "small", "the reaping worker read as gone; training would miss its VRAM"
     assert seen["device"] == "cpu"
@@ -1034,7 +1034,7 @@ def test_a_host_that_cannot_spawn_keeps_dictation_in_process_on_cpu(monkeypatch)
 
     _install_fake_torch(monkeypatch)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cuda", "float16")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cuda", "float16")
     )
     spawned = []
     loaded = []
@@ -1045,24 +1045,24 @@ def test_a_host_that_cannot_spawn_keeps_dictation_in_process_on_cpu(monkeypatch)
             _snapshot_path,
             device,
             _dtype_name,
-            _cancel_event = None,
+            _cancel_event=None,
         ):
             spawned.append(device)
             raise worker_module.SttWorkerSpawnError("spawn is not permitted here")
 
     monkeypatch.setattr(
-        "core.inference.stt_transformers_worker.WhisperWorker", RefusedWorker, raising = True
+        "core.inference.stt_transformers_worker.WhisperWorker", RefusedWorker, raising=True
     )
     monkeypatch.setattr(
         worker_module,
         "load_whisper",
-        lambda path, device, dtype, _cancel = None: (
+        lambda path, device, dtype, _cancel=None: (
             loaded.append((path, device, dtype)) or (_FakeModel(), object())
         ),
     )
     monkeypatch.setattr(worker_module, "transcribe_window", lambda *_args, **_kwargs: "hello")
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     engine = sidecar.load("small")
 
     assert spawned == ["cuda", "cpu"]
@@ -1081,7 +1081,7 @@ def test_model_cache_preflight_uses_shared_offline_resolver(monkeypatch):
         lambda model: seen.append(model) or Path("/cached/model"),
     )
 
-    WhisperSttSidecar(keep_alive_seconds = 0)._ensure_model_downloaded("small")
+    WhisperSttSidecar(keep_alive_seconds=0)._ensure_model_downloaded("small")
 
     assert seen == ["small"]
 
@@ -1089,8 +1089,8 @@ def test_model_cache_preflight_uses_shared_offline_resolver(monkeypatch):
 def test_model_cache_preflight_reports_missing_snapshot(monkeypatch):
     monkeypatch.setattr(stt_sidecar_module, "_find_complete_cached_snapshot", lambda _model: None)
 
-    with pytest.raises(SttModelNotDownloadedError, match = "not downloaded"):
-        WhisperSttSidecar(keep_alive_seconds = 0)._ensure_model_downloaded("large-v3")
+    with pytest.raises(SttModelNotDownloadedError, match="not downloaded"):
+        WhisperSttSidecar(keep_alive_seconds=0)._ensure_model_downloaded("large-v3")
 
 
 def test_load_reports_model_hub_cache_miss(monkeypatch):
@@ -1100,13 +1100,13 @@ def test_load_reports_model_hub_cache_miss(monkeypatch):
         # What the worker reports for a cache miss it hit inside from_pretrained.
         raise SttModelNotDownloadedError("The dictation model is not downloaded.")
 
-    _install_fake_worker(monkeypatch, start = missing)
+    _install_fake_worker(monkeypatch, start=missing)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
 
-    with pytest.raises(SttModelNotDownloadedError, match = "large-v3"):
-        WhisperSttSidecar(keep_alive_seconds = 0).load("large-v3")
+    with pytest.raises(SttModelNotDownloadedError, match="large-v3"):
+        WhisperSttSidecar(keep_alive_seconds=0).load("large-v3")
 
 
 def test_unavailable_runtime_is_rejected_before_audio_decode(monkeypatch):
@@ -1121,37 +1121,37 @@ def test_unavailable_runtime_is_rejected_before_audio_decode(monkeypatch):
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", unavailable)
     monkeypatch.setattr(stt_sidecar_module, "_decode_audio_bounded", should_not_decode)
 
-    with pytest.raises(SttUnavailableError, match = "needs PyTorch"):
-        sidecar.transcribe(b"encoded audio", model = "small")
+    with pytest.raises(SttUnavailableError, match="needs PyTorch"):
+        sidecar.transcribe(b"encoded audio", model="small")
 
 
 def test_missing_model_is_rejected_before_audio_decode(monkeypatch):
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
 
-    def missing(_model_id, use_resident = True):
+    def missing(_model_id, use_resident=True):
         raise SttModelNotDownloadedError("not downloaded")
 
     def should_not_decode(_audio):
         pytest.fail("missing models must be rejected before audio decode")
 
-    monkeypatch.setattr(sidecar, "_ensure_model_downloaded", missing, raising = False)
+    monkeypatch.setattr(sidecar, "_ensure_model_downloaded", missing, raising=False)
     monkeypatch.setattr(stt_sidecar_module, "_decode_audio_bounded", should_not_decode)
 
-    with pytest.raises(SttModelNotDownloadedError, match = "not downloaded"):
-        sidecar.transcribe(b"encoded audio", model = "large-v3")
+    with pytest.raises(SttModelNotDownloadedError, match="not downloaded"):
+        sidecar.transcribe(b"encoded audio", model="large-v3")
 
 
 def test_missing_model_switch_keeps_resident_model(monkeypatch):
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     resident = object()
     sidecar._engine = resident
     sidecar._model_id = "small"
     sidecar._device = "cpu"
 
-    def missing(_model_id, use_resident = True):
+    def missing(_model_id, use_resident=True):
         raise SttModelNotDownloadedError("not downloaded")
 
-    monkeypatch.setattr(sidecar, "_ensure_model_downloaded", missing, raising = False)
+    monkeypatch.setattr(sidecar, "_ensure_model_downloaded", missing, raising=False)
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(
         sidecar,
@@ -1160,7 +1160,7 @@ def test_missing_model_switch_keeps_resident_model(monkeypatch):
     )
     _install_fake_torch(monkeypatch)
 
-    with pytest.raises(SttModelNotDownloadedError, match = "not downloaded"):
+    with pytest.raises(SttModelNotDownloadedError, match="not downloaded"):
         sidecar.load("large-v3")
 
     assert sidecar._engine is resident
@@ -1171,7 +1171,7 @@ def test_incompatible_custom_model_switch_keeps_resident_model(monkeypatch, tmp_
     (tmp_path / "config.json").write_text(
         '{"model_type": "llama", "architectures": ["LlamaForCausalLM"]}'
     )
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     resident = (object(), object())
     sidecar._engine = resident
     sidecar._model_id = "small"
@@ -1183,7 +1183,7 @@ def test_incompatible_custom_model_switch_keeps_resident_model(monkeypatch, tmp_
         lambda _model: tmp_path,
     )
 
-    with pytest.raises(SttModelCompatibilityError, match = "not a compatible"):
+    with pytest.raises(SttModelCompatibilityError, match="not a compatible"):
         sidecar.load("owner/chat-model")
 
     assert sidecar._engine is resident
@@ -1199,12 +1199,12 @@ def test_loaded_model_stays_warm_until_idle_timer_fires(monkeypatch):
         timers.append(timer)
         return timer
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 300)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=300)
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(stt_sidecar_module.threading, "Timer", make_timer)
     monkeypatch.setattr(sidecar, "_build_model", lambda *_args: (object(), object()))
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
 
     sidecar.load("small")
@@ -1227,12 +1227,12 @@ def test_reusing_loaded_model_refreshes_idle_timer(monkeypatch):
         timers.append(timer)
         return timer
 
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 300)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=300)
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(stt_sidecar_module.threading, "Timer", make_timer)
     monkeypatch.setattr(sidecar, "_build_model", lambda *_args: (object(), object()))
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
 
     sidecar.load("small")
@@ -1248,28 +1248,28 @@ def test_reusing_loaded_model_refreshes_idle_timer(monkeypatch):
 
 
 def test_unload_waits_for_inflight_transcription(monkeypatch):
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     started = threading.Event()
     release = threading.Event()
 
     def transcribe(*_args):
         started.set()
-        assert release.wait(timeout = 2)
+        assert release.wait(timeout=2)
         return "hello"
 
     monkeypatch.setattr(sidecar, "_transcribe_decoded", transcribe)
-    transcribe_thread = threading.Thread(target = lambda: sidecar.transcribe(b"audio"))
+    transcribe_thread = threading.Thread(target=lambda: sidecar.transcribe(b"audio"))
     transcribe_thread.start()
-    assert started.wait(timeout = 2)
+    assert started.wait(timeout=2)
 
-    unload_thread = threading.Thread(target = sidecar.unload)
+    unload_thread = threading.Thread(target=sidecar.unload)
     unload_thread.start()
     time.sleep(0.02)
     assert unload_thread.is_alive()
 
     release.set()
-    transcribe_thread.join(timeout = 2)
-    unload_thread.join(timeout = 2)
+    transcribe_thread.join(timeout=2)
+    unload_thread.join(timeout=2)
 
     assert not transcribe_thread.is_alive()
     assert not unload_thread.is_alive()
@@ -1277,10 +1277,10 @@ def test_unload_waits_for_inflight_transcription(monkeypatch):
 
 def test_new_stt_load_uses_cpu_while_training(monkeypatch):
     fake_torch = SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        cuda = SimpleNamespace(is_available = lambda: True),
-        backends = SimpleNamespace(mps = SimpleNamespace(is_available = lambda: True)),
+        float16="float16",
+        float32="float32",
+        cuda=SimpleNamespace(is_available=lambda: True),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: True)),
     )
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
     monkeypatch.setattr(stt_sidecar_module, "_training_active", lambda: True)
@@ -1290,10 +1290,10 @@ def test_new_stt_load_uses_cpu_while_training(monkeypatch):
 
 def test_new_stt_load_prefers_cuda_when_training_is_idle(monkeypatch):
     fake_torch = SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        cuda = SimpleNamespace(is_available = lambda: True),
-        backends = SimpleNamespace(mps = SimpleNamespace(is_available = lambda: False)),
+        float16="float16",
+        float32="float32",
+        cuda=SimpleNamespace(is_available=lambda: True),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: False)),
     )
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
     monkeypatch.setattr(stt_sidecar_module, "_training_active", lambda: False)
@@ -1303,10 +1303,10 @@ def test_new_stt_load_prefers_cuda_when_training_is_idle(monkeypatch):
 
 def test_new_stt_load_prefers_mps_when_cuda_is_unavailable(monkeypatch):
     fake_torch = SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        cuda = SimpleNamespace(is_available = lambda: False),
-        backends = SimpleNamespace(mps = SimpleNamespace(is_available = lambda: True)),
+        float16="float16",
+        float32="float32",
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: True)),
     )
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
     monkeypatch.setattr(stt_sidecar_module, "_training_active", lambda: False)
@@ -1316,10 +1316,10 @@ def test_new_stt_load_prefers_mps_when_cuda_is_unavailable(monkeypatch):
 
 def test_new_stt_load_uses_cpu_without_accelerators(monkeypatch):
     fake_torch = SimpleNamespace(
-        float16 = "float16",
-        float32 = "float32",
-        cuda = SimpleNamespace(is_available = lambda: False),
-        backends = SimpleNamespace(mps = SimpleNamespace(is_available = lambda: False)),
+        float16="float16",
+        float32="float32",
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: False)),
     )
     monkeypatch.setitem(sys.modules, "torch", fake_torch)
     monkeypatch.setattr(stt_sidecar_module, "_training_active", lambda: False)
@@ -1330,7 +1330,7 @@ def test_new_stt_load_uses_cpu_without_accelerators(monkeypatch):
 def test_accelerator_load_failure_retries_on_cpu(monkeypatch):
     fake_torch = _install_fake_torch(monkeypatch)
     calls = []
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", lambda: None)
 
     def build(_repo, device, dtype, _cancel_event):
@@ -1340,7 +1340,7 @@ def test_accelerator_load_failure_retries_on_cpu(monkeypatch):
         return object(), object()
 
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cuda", "float16")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cuda", "float16")
     )
     monkeypatch.setattr(sidecar, "_build_model", build)
 
@@ -1360,14 +1360,14 @@ def test_pending_load_can_be_cancelled_without_waiting_for_model_lock(monkeypatc
     # runner did not finish inside it.
     settle = 30.0
     _install_fake_torch(monkeypatch)
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     build_started = threading.Event()
     release_build = threading.Event()
     errors = []
 
     def build(_repo, _device, _dtype, _cancel_event):
         build_started.set()
-        assert release_build.wait(timeout = settle)
+        assert release_build.wait(timeout=settle)
         return object(), object()
 
     def run_load():
@@ -1378,25 +1378,25 @@ def test_pending_load_can_be_cancelled_without_waiting_for_model_lock(monkeypatc
 
     monkeypatch.setattr(stt_sidecar_module, "ensure_stt_available", lambda: None)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("cpu", "float32")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("cpu", "float32")
     )
     monkeypatch.setattr(sidecar, "_build_model", build)
 
-    load_thread = threading.Thread(target = run_load)
+    load_thread = threading.Thread(target=run_load)
     load_thread.start()
-    assert build_started.wait(timeout = settle)
+    assert build_started.wait(timeout=settle)
 
     result = []
-    cancel_thread = threading.Thread(target = lambda: result.append(sidecar.cancel_pending_load()))
+    cancel_thread = threading.Thread(target=lambda: result.append(sidecar.cancel_pending_load()))
     cancel_thread.start()
-    cancel_thread.join(timeout = 2)  # the contract: back while the build still holds the lock
+    cancel_thread.join(timeout=2)  # the contract: back while the build still holds the lock
 
     assert not cancel_thread.is_alive()
     assert result == [True]
     assert load_thread.is_alive()
 
     release_build.set()
-    load_thread.join(timeout = settle)
+    load_thread.join(timeout=settle)
 
     assert not load_thread.is_alive()
     assert len(errors) == 1
@@ -1411,7 +1411,7 @@ def _wav_bytes(sample_count: int, sample_rate: int = 16000) -> bytes:
         wav.setnchannels(1)
         wav.setsampwidth(2)
         wav.setframerate(sample_rate)
-        wav.writeframes(np.zeros(sample_count, dtype = np.int16).tobytes())
+        wav.writeframes(np.zeros(sample_count, dtype=np.int16).tobytes())
     return output.getvalue()
 
 
@@ -1428,14 +1428,14 @@ def test_bounded_decoder_rejects_audio_as_soon_as_sample_cap_is_crossed(monkeypa
     pytest.importorskip("av")
     monkeypatch.setattr(stt_sidecar_module, "_MAX_AUDIO_SECONDS", 1)
 
-    with pytest.raises(SttAudioTooLongError, match = "Audio must"):
+    with pytest.raises(SttAudioTooLongError, match="Audio must"):
         _REAL_DECODE_AUDIO_BOUNDED(_wav_bytes(16001))
 
 
 def test_bounded_decoder_resamples_stereo_48khz_to_mono_16khz():
     pytest.importorskip("av")
     output = io.BytesIO()
-    frames = np.zeros((4800, 2), dtype = np.int16)
+    frames = np.zeros((4800, 2), dtype=np.int16)
     with wave.open(output, "wb") as wav:
         wav.setnchannels(2)
         wav.setsampwidth(2)
@@ -1452,7 +1452,7 @@ def test_bounded_decoder_resamples_stereo_48khz_to_mono_16khz():
 def test_bounded_decoder_rejects_malformed_audio(audio):
     pytest.importorskip("av")
 
-    with pytest.raises(SttAudioDecodeError, match = "Could not decode"):
+    with pytest.raises(SttAudioDecodeError, match="Could not decode"):
         _REAL_DECODE_AUDIO_BOUNDED(audio)
 
 
@@ -1468,7 +1468,7 @@ def test_bounded_decoder_rejects_container_without_audio_stream(monkeypatch):
         samples = 0
 
     class FakeContainer:
-        streams = SimpleNamespace(audio = [])
+        streams = SimpleNamespace(audio=[])
 
         def __enter__(self):
             return self
@@ -1477,23 +1477,23 @@ def test_bounded_decoder_rejects_container_without_audio_stream(monkeypatch):
             return False
 
     fake_av = SimpleNamespace(
-        audio = SimpleNamespace(
-            resampler = SimpleNamespace(AudioResampler = FakeResampler),
-            fifo = SimpleNamespace(AudioFifo = FakeFifo),
+        audio=SimpleNamespace(
+            resampler=SimpleNamespace(AudioResampler=FakeResampler),
+            fifo=SimpleNamespace(AudioFifo=FakeFifo),
         ),
-        open = lambda *_args, **_kwargs: FakeContainer(),
+        open=lambda *_args, **_kwargs: FakeContainer(),
     )
     monkeypatch.setitem(sys.modules, "av", fake_av)
     monkeypatch.setitem(
         sys.modules,
         "av.error",
         SimpleNamespace(
-            FFmpegError = FakeFFmpegError,
-            InvalidDataError = FakeFFmpegError,
+            FFmpegError=FakeFFmpegError,
+            InvalidDataError=FakeFFmpegError,
         ),
     )
 
-    with pytest.raises(SttAudioDecodeError, match = "Could not decode"):
+    with pytest.raises(SttAudioDecodeError, match="Could not decode"):
         _REAL_DECODE_AUDIO_BOUNDED(b"video-only")
 
 
@@ -1515,7 +1515,7 @@ def test_unload_releases_model_and_device():
 
 
 def _write_complete_snapshot(snapshot: Path, *, model_type: str = "whisper") -> None:
-    snapshot.mkdir(parents = True, exist_ok = True)
+    snapshot.mkdir(parents=True, exist_ok=True)
     (snapshot / "config.json").write_text(json.dumps({"model_type": model_type}))
     (snapshot / "preprocessor_config.json").write_text("{}")
     (snapshot / "tokenizer.json").write_text("{}")
@@ -1523,7 +1523,7 @@ def _write_complete_snapshot(snapshot: Path, *, model_type: str = "whisper") -> 
 
 
 def _sibling(name: str, size: int, key: str):
-    return SimpleNamespace(rfilename = name, size = size, blob_id = key, lfs = None)
+    return SimpleNamespace(rfilename=name, size=size, blob_id=key, lfs=None)
 
 
 def test_sha_snapshot_without_main_ref_survives_restart_and_cache_relocation(monkeypatch, tmp_path):
@@ -1555,15 +1555,15 @@ def test_corrupt_or_escaping_revision_record_is_ignored(monkeypatch, tmp_path):
     monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path / "hub"))
     _shared_setup_2(monkeypatch)
     record = stt_sidecar_module._revision_record_path(repo)
-    record.parent.mkdir(parents = True)
+    record.parent.mkdir(parents=True)
     record.write_text(json.dumps({"version": 1, "repo": repo, "revision": "../../outside"}))
     assert stt_sidecar_module._find_complete_cached_snapshot(repo) is None
 
     outside = tmp_path / "outside"
     _write_complete_snapshot(outside)
     snapshots = tmp_path / "hub" / "models--openai--whisper-tiny.en" / "snapshots"
-    snapshots.mkdir(parents = True)
-    (snapshots / ("d" * 40)).symlink_to(outside, target_is_directory = True)
+    snapshots.mkdir(parents=True)
+    (snapshots / ("d" * 40)).symlink_to(outside, target_is_directory=True)
     assert stt_sidecar_module._find_complete_cached_snapshot(repo) is None
 
 
@@ -1578,7 +1578,7 @@ def test_adapter_only_snapshot_is_not_complete(tmp_path):
 
 def test_snapshot_selection_prefers_safetensors_and_excludes_unrelated_files():
     info = SimpleNamespace(
-        siblings = [
+        siblings=[
             _sibling("config.json", 10, "config"),
             _sibling("preprocessor_config.json", 20, "preprocessor"),
             _sibling("tokenizer.json", 30, "tokenizer"),
@@ -1603,7 +1603,7 @@ def test_snapshot_selection_prefers_safetensors_and_excludes_unrelated_files():
 
 def test_snapshot_selection_includes_every_indexed_shard():
     info = SimpleNamespace(
-        siblings = [
+        siblings=[
             _sibling("config.json", 10, "config"),
             _sibling("model.safetensors.index.json", 5, "index"),
             _sibling("model-00001-of-00002.safetensors", 50, "shard1"),
@@ -1634,7 +1634,7 @@ def test_snapshot_selection_rejects_pickle_only_weights():
     # A custom repo shipping only pytorch_model.bin (pickle) must fail closed:
     # selecting it would download a checkpoint that runs code at load time.
     info = SimpleNamespace(
-        siblings = [
+        siblings=[
             _sibling("config.json", 10, "config"),
             _sibling("preprocessor_config.json", 20, "preprocessor"),
             _sibling("tokenizer.json", 30, "tokenizer"),
@@ -1642,7 +1642,7 @@ def test_snapshot_selection_rejects_pickle_only_weights():
         ]
     )
 
-    with pytest.raises(SttModelCompatibilityError, match = "safetensors"):
+    with pytest.raises(SttModelCompatibilityError, match="safetensors"):
         stt_sidecar_module._select_snapshot_files(
             info, lambda _name: pytest.fail("pickle weights must not be selected")
         )
@@ -1653,14 +1653,14 @@ def test_snapshot_selection_rejects_safe_index_pointing_at_pickle_shards():
     # loading by extension, so those shards would still pickle-load. The index
     # is attacker-controlled, so a non-safetensors shard must fail closed.
     info = SimpleNamespace(
-        siblings = [
+        siblings=[
             _sibling("config.json", 10, "config"),
             _sibling("model.safetensors.index.json", 5, "index"),
             _sibling("pytorch_model-00001-of-00001.bin", 90, "shard"),
         ]
     )
 
-    with pytest.raises(SttModelCompatibilityError, match = "non-safetensors shards"):
+    with pytest.raises(SttModelCompatibilityError, match="non-safetensors shards"):
         stt_sidecar_module._select_snapshot_files(
             info,
             lambda _name: {"weight_map": {"a": "pytorch_model-00001-of-00001.bin"}},
@@ -1670,7 +1670,7 @@ def test_snapshot_selection_rejects_safe_index_pointing_at_pickle_shards():
 def test_progress_counts_only_selected_blobs_and_caps_incomplete_files(monkeypatch, tmp_path):
     monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path / "hub"))
     blobs = tmp_path / "hub" / "models--owner--whisper" / "blobs"
-    blobs.mkdir(parents = True)
+    blobs.mkdir(parents=True)
     (blobs / "one").write_bytes(b"x" * 10)
     (blobs / "two.incomplete").write_bytes(b"x" * 30)
     (blobs / "unrelated").write_bytes(b"x" * 1000)
@@ -1733,13 +1733,13 @@ def test_download_metadata_and_snapshot_use_the_same_revision(monkeypatch, tmp_p
 
         def model_info(self, repo, **kwargs):
             calls.append(("info", repo, kwargs))
-            return SimpleNamespace(sha = revision, siblings = siblings)
+            return SimpleNamespace(sha=revision, siblings=siblings)
 
     def fake_spawn_download(
         args,
-        hf_token = None,
+        hf_token=None,
         *,
-        hub_cache = None,
+        hub_cache=None,
     ):
         calls.append(("snapshot", _worker_args(args)))
         return _FakeDownloadProcess()
@@ -1792,14 +1792,14 @@ def test_download_rejects_a_second_model_while_one_is_in_flight(monkeypatch):
     monkeypatch.setattr(
         state,
         "_run",
-        lambda repo, token, revision: release.wait(timeout = 5),
+        lambda repo, token, revision: release.wait(timeout=5),
     )
 
     state.start("small")
     try:
         # Re-requesting the in-flight model is a no-op, not an error.
         state.start("small")
-        with pytest.raises(SttModelIdError, match = "still"):
+        with pytest.raises(SttModelIdError, match="still"):
             state.start("tiny")
         assert state.status()["downloading"] is True
         assert state.status()["model"] == "small"
@@ -1813,7 +1813,7 @@ def test_download_failure_is_reported_in_status(monkeypatch):
     monkeypatch.setitem(sys.modules, "huggingface_hub", None)
 
     state.start("small")
-    state._thread.join(timeout = 5)
+    state._thread.join(timeout=5)
 
     status = state.status()
     assert status["downloading"] is False
@@ -1835,7 +1835,7 @@ def test_sharded_snapshot_with_missing_shard_is_not_downloaded(monkeypatch, tmp_
     _shared_setup_2(monkeypatch)
     monkeypatch.setattr(stt_sidecar_module, "_snapshot_is_complete", _REAL_SNAPSHOT_IS_COMPLETE)
     snap = tmp_path / "hub" / "models--unsloth--whisper-small" / "snapshots" / ("a" * 40)
-    snap.mkdir(parents = True)
+    snap.mkdir(parents=True)
     (snap / "config.json").write_bytes(b"{}")
     (snap / "preprocessor_config.json").write_bytes(b"{}")
     (snap / "tokenizer.json").write_bytes(b"{}")
@@ -1865,23 +1865,23 @@ def test_preflight_rejects_partial_snapshot(monkeypatch, tmp_path, model_id):
     monkeypatch.setattr(stt_sidecar_module, "_snapshot_is_complete", _REAL_SNAPSHOT_IS_COMPLETE)
     repo = STT_MODELS.get(model_id, model_id)
     snapshot = tmp_path / "hub" / f"models--{repo.replace('/', '--')}" / "snapshots" / ("b" * 40)
-    snapshot.mkdir(parents = True)
+    snapshot.mkdir(parents=True)
     (snapshot / "config.json").write_text('{"model_type": "whisper"}')
 
-    with pytest.raises(SttModelNotDownloadedError, match = "not downloaded"):
-        WhisperSttSidecar(keep_alive_seconds = 0)._ensure_model_downloaded(model_id)
+    with pytest.raises(SttModelNotDownloadedError, match="not downloaded"):
+        WhisperSttSidecar(keep_alive_seconds=0)._ensure_model_downloaded(model_id)
 
     # Completing the snapshot clears the preflight.
     (snapshot / "preprocessor_config.json").write_text("{}")
     (snapshot / "tokenizer.json").write_text("{}")
     (snapshot / "model.safetensors").write_bytes(b"w" * 8)
-    WhisperSttSidecar(keep_alive_seconds = 0)._ensure_model_downloaded(model_id)
+    WhisperSttSidecar(keep_alive_seconds=0)._ensure_model_downloaded(model_id)
 
 
 def test_cpu_retry_releases_failed_accelerator_load(monkeypatch):
     _install_fake_torch(monkeypatch)
     monkeypatch.setattr(
-        stt_sidecar_module, "_pick_device", lambda _preference = None: ("mps", "float16")
+        stt_sidecar_module, "_pick_device", lambda _preference=None: ("mps", "float16")
     )
 
     class Marker:
@@ -1901,7 +1901,7 @@ def test_cpu_retry_releases_failed_accelerator_load(monkeypatch):
         return (_FakeModel(), object())
 
     monkeypatch.setattr(WhisperSttSidecar, "_build_model", fake_build)
-    sidecar = WhisperSttSidecar(keep_alive_seconds = 0)
+    sidecar = WhisperSttSidecar(keep_alive_seconds=0)
     sidecar.load("small")
 
     # The failed attempt must be collectable before the CPU model loads, or
@@ -1921,7 +1921,7 @@ def test_decoding_stops_as_soon_as_the_request_is_cancelled(monkeypatch):
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(16000)
-        w.writeframes((np.zeros(16000 * 5, dtype = np.int16)).tobytes())
+        w.writeframes((np.zeros(16000 * 5, dtype=np.int16)).tobytes())
 
     cancelled = threading.Event()
     cancelled.set()

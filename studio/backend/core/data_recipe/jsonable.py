@@ -12,7 +12,7 @@ from typing import Any
 
 def _pil_to_preview_payload(image: Any) -> dict[str, Any]:
     buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format = "JPEG", quality = 85)
+    image.convert("RGB").save(buffer, format="JPEG", quality=85)
     return {
         "type": "image",
         "mime": "image/jpeg",
@@ -24,6 +24,7 @@ def _pil_to_preview_payload(image: Any) -> dict[str, Any]:
 
 def _open_pil_image_from_bytes(raw_bytes: bytes):
     from PIL import Image  # type: ignore
+
     with Image.open(io.BytesIO(raw_bytes)) as image:
         return image.copy()
 
@@ -52,6 +53,7 @@ def _to_pil_from_hf_image_dict(value: Any) -> Any | None:
     if isinstance(path_value, str) and path_value.strip():
         try:
             from PIL import Image  # type: ignore
+
             with Image.open(Path(path_value)) as image:
                 return image.copy()
         except (OSError, ValueError, TypeError):
@@ -75,6 +77,7 @@ def _is_pandas_missing(value: Any) -> bool:
     if not _PANDAS_SENTINELS_READY:
         try:
             import pandas as pd  # type: ignore
+
             _PANDAS_NA, _PANDAS_NAT = pd.NA, pd.NaT
         except ImportError:  # pragma: no cover
             _PANDAS_NA = _PANDAS_NAT = _NO_SENTINEL

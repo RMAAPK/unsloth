@@ -29,7 +29,7 @@ from utils.prebuilt import freshness_flow
 TOKEN = "Bearer issue-11103-test-token"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope = "module")
 def tls_certificate(tmp_path_factory):
     openssl = shutil.which("openssl")
     if openssl is None:
@@ -55,8 +55,8 @@ def tls_certificate(tmp_path_factory):
             "-out",
             str(cert),
         ],
-        check=True,
-        capture_output=True,
+        check = True,
+        capture_output = True,
     )
     return cert, key
 
@@ -70,7 +70,6 @@ def stdlib_ssl():
     injected = ssl.SSLContext.__module__.startswith("truststore")
     if injected:
         import truststore
-
         truststore.extract_from_ssl()
     try:
         yield
@@ -87,10 +86,10 @@ def servers(stdlib_ssl, tls_certificate, monkeypatch):
     monkeypatch.setenv("no_proxy", "127.0.0.1,localhost")
     for handler in prebuilt_core._URL_OPENER.handlers:
         if isinstance(handler, urllib.request.HTTPSHandler):
-            monkeypatch.setattr(handler, "_context", ssl.create_default_context(cafile=str(cert)))
+            monkeypatch.setattr(handler, "_context", ssl.create_default_context(cafile = str(cert)))
     running = []
 
-    def start(*, tls=True, payload=None):
+    def start(*, tls = True, payload = None):
         class Handler(BaseHTTPRequestHandler):
             timeout = 3
 
@@ -116,9 +115,9 @@ def servers(stdlib_ssl, tls_certificate, monkeypatch):
         if tls:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             context.load_cert_chain(cert, key)
-            server.socket = context.wrap_socket(server.socket, server_side=True)
+            server.socket = context.wrap_socket(server.socket, server_side = True)
         server.url = f"{'https' if tls else 'http'}://127.0.0.1:{server.server_port}"
-        thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01})
+        thread = threading.Thread(target = server.serve_forever, kwargs = {"poll_interval": 0.01})
         thread.start()
         running.append((server, thread))
         return server
@@ -127,13 +126,13 @@ def servers(stdlib_ssl, tls_certificate, monkeypatch):
     for server, thread in reversed(running):
         server.shutdown()
         server.server_close()
-        thread.join(timeout=5)
+        thread.join(timeout = 5)
         assert not thread.is_alive()
 
 
 def fetch(client, url, monkeypatch):
     monkeypatch.setenv("GH_TOKEN", TOKEN.removeprefix("Bearer "))
-    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising = False)
     original_request = urllib.request.Request
 
     class LocalRequest(original_request):
@@ -144,16 +143,16 @@ def fetch(client, url, monkeypatch):
 
     monkeypatch.setattr(urllib.request, "Request", LocalRequest)
     if client == "prebuilt":
-        request = original_request(url, headers={"Authorization": TOKEN})
-        with prebuilt_core._URL_OPENER.open(request, timeout=3) as response:
+        request = original_request(url, headers = {"Authorization": TOKEN})
+        with prebuilt_core._URL_OPENER.open(request, timeout = 3) as response:
             return json.load(response)
     if client == "freshness":
         return freshness_flow._fetch_newest_published_release_blocking(
-            "owner/repo", 3, log_message="redirect test"
+            "owner/repo", 3, log_message = "redirect test"
         )
     if client == "changelog":
         return llama_cpp_changelog._fetch_release_blocking("owner/repo", "v1", 3)
-    return sd._fetch_release("v1", repo="owner/repo", timeout=3)
+    return sd._fetch_release("v1", repo = "owner/repo", timeout = 3)
 
 
 @pytest.mark.parametrize("client", ["prebuilt", "freshness", "changelog", "sd"])
@@ -164,10 +163,10 @@ def fetch(client, url, monkeypatch):
 def test_release_redirect_credentials(client, code, target, servers, monkeypatch):
     release = {"tag_name": "v1", "published_at": "2026-01-01T00:00:00Z"}
     payload = [release] if client == "freshness" else release
-    source = servers(payload=payload)
+    source = servers(payload = payload)
     source.code = code
     destination = (
-        source if target == "same_origin" else servers(tls=target != "downgrade", payload=payload)
+        source if target == "same_origin" else servers(tls = target != "downgrade", payload = payload)
     )
     destination_url = destination.url
     if target == "other_host":
@@ -206,7 +205,7 @@ def test_release_redirect_credentials(client, code, target, servers, monkeypatch
 def test_prebuilt_origin_comparison(start, target, expected):
     request = urllib.request.Request(
         start,
-        headers={
+        headers = {
             "Authorization": TOKEN,
             "Accept": "application/json",
             "User-Agent": "redirect-test",
@@ -237,11 +236,11 @@ def test_installer_import_without_backend_dependencies(name, mode, tmp_path):
         ]
     result = subprocess.run(
         [sys.executable, "-S", *args],
-        cwd=tmp_path,
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=10,
+        cwd = tmp_path,
+        env = env,
+        capture_output = True,
+        text = True,
+        timeout = 10,
     )
     assert result.returncode == 0, result.stderr
 
@@ -259,7 +258,7 @@ def test_an_unparseable_redirect_port_strips_rather_than_raising(start, target):
     """No client catches ValueError, so raising turns a soft "no release info" into an
     uncaught exception on an update check. Unreadable target, other origin, strip."""
     request = urllib.request.Request(
-        start, headers={"Authorization": TOKEN, "Accept": "application/json"}
+        start, headers = {"Authorization": TOKEN, "Accept": "application/json"}
     )
     result = prebuilt_core._CrossHostAuthStrippingRedirectHandler().redirect_request(
         request, None, 302, "Found", {}, target
@@ -273,7 +272,7 @@ def test_an_unparseable_redirect_port_strips_rather_than_raising(start, target):
 def test_an_unparseable_redirect_port_stays_soft_for_every_client(client, servers, monkeypatch):
     """The same case end to end: no ValueError reaches the caller."""
     release = {"tag_name": "v1", "published_at": "2026-01-01T00:00:00Z"}
-    source = servers(payload=[release] if client == "freshness" else release)
+    source = servers(payload = [release] if client == "freshness" else release)
     source.redirects["/start"] = "https://127.0.0.1:99999/final"
     # No ValueError arm: it must not be raised, so letting it escape fails the test.
     try:
@@ -286,14 +285,14 @@ def test_an_unparseable_redirect_port_stays_soft_for_every_client(client, server
 def test_a_downgrade_is_refused_part_way_down_a_chain(servers):
     """https -> https -> http. Every other case here is one hop from the request, so a
     policy comparing only the ORIGINAL request URL would pass them all and still leak."""
-    source = servers(payload={"tag_name": "v1"})
-    plaintext = servers(tls=False, payload={"tag_name": "v1"})
+    source = servers(payload = {"tag_name": "v1"})
+    plaintext = servers(tls = False, payload = {"tag_name": "v1"})
     source.redirects["/start"] = source.url + "/two"
     source.redirects["/two"] = plaintext.url + "/final"
 
-    request = urllib.request.Request(source.url + "/start", headers={"Authorization": TOKEN})
+    request = urllib.request.Request(source.url + "/start", headers = {"Authorization": TOKEN})
     with pytest.raises(urllib.error.HTTPError) as error:
-        prebuilt_core._URL_OPENER.open(request, timeout=3)
+        prebuilt_core._URL_OPENER.open(request, timeout = 3)
     error.value.close()
     assert [path for path, _ in source.seen] == ["/start", "/two"]
     assert plaintext.seen == []
@@ -304,17 +303,17 @@ def test_a_downgrade_is_refused_part_way_down_a_chain(servers):
 def test_the_method_and_a_signed_query_survive_the_hop(method, cross_origin, servers):
     """routes/training.py preflights with HEAD, and GitHub and Hugging Face redirect to
     a CDN URL whose credentials are in the query: mangling it reads as an auth failure."""
-    source = servers(payload={"tag_name": "v1"})
-    destination = servers(payload={"tag_name": "v1"}) if cross_origin else source
+    source = servers(payload = {"tag_name": "v1"})
+    destination = servers(payload = {"tag_name": "v1"}) if cross_origin else source
     target = destination.url
     if cross_origin:
         target = target.replace("127.0.0.1", "localhost")
     source.redirects["/start"] = f"{target}/final?sig=abc123&exp=99"
 
     request = urllib.request.Request(
-        source.url + "/start", headers={"Authorization": TOKEN}, method=method
+        source.url + "/start", headers = {"Authorization": TOKEN}, method = method
     )
-    with prebuilt_core._URL_OPENER.open(request, timeout=3) as response:
+    with prebuilt_core._URL_OPENER.open(request, timeout = 3) as response:
         assert response.status == 200
     landed = [(path, token) for path, token in destination.seen if path.startswith("/final")]
     assert landed, "the redirect was not followed"

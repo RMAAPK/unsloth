@@ -24,7 +24,7 @@ def test_a_failed_restore_is_reported_with_the_stranded_path(matrix, monkeypatch
         )
     ]
     for root in roots:
-        root.mkdir(parents=True, exist_ok=True)
+        root.mkdir(parents = True, exist_ok = True)
         (root / "private.txt").write_text("keep")
     calls = []
 
@@ -38,7 +38,7 @@ def test_a_failed_restore_is_reported_with_the_stranded_path(matrix, monkeypatch
             os.rename(source, destination)
 
     monkeypatch.setattr(accounts, "Path", RenameFailsLateAndOnce)
-    response = client.delete(f"/api/accounts/{account.account_id}", headers=headers())
+    response = client.delete(f"/api/accounts/{account.account_id}", headers = headers())
     print(f"delete: {response.status_code} {response.text}")
     assert response.status_code == 409
     stranded = [p for root in roots for p in root.parent.iterdir() if "-deleted-" in p.name]

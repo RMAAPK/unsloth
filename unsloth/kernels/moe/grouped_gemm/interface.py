@@ -583,7 +583,7 @@ class GroupedGemm(torch.autograd.Function):
         kernel_config_bwd_dW,
         autotune,
         dX_only,
-        dW_only
+        dW_only,
     ):
         ctx.topk = topk
         ctx.permute_x = permute_x
@@ -732,7 +732,7 @@ def check_valid_config_fwd(
     use_tma_load_w,
     use_tma_store,
     fuse_mul_post,
-    is_first_gemm
+    is_first_gemm,
 ):
     """Check if the configuration is valid for the forward pass."""
     is_second_gemm = not is_first_gemm
@@ -756,7 +756,7 @@ def check_valid_config_bwd_dW(
     use_tma_load_x,
     use_tma_store,
     fuse_mul_post,
-    is_first_gemm
+    is_first_gemm,
 ):
     """Check if the configuration is valid for the backward pass of dW."""
     is_second_gemm = not is_first_gemm
@@ -775,7 +775,7 @@ def check_valid_config_bwd_dX(
     use_tma_load_w,
     use_tma_store,
     fuse_mul_post,
-    is_first_gemm
+    is_first_gemm,
 ):
     """Check if the configuration is valid for the backward pass of dW."""
     is_second_gemm = not is_first_gemm

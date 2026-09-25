@@ -44,7 +44,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 RL_REPLACEMENTS = REPO_ROOT / "unsloth" / "models" / "rl_replacements.py"
 RL_PY = REPO_ROOT / "unsloth" / "models" / "rl.py"
-SRC = RL_REPLACEMENTS.read_text(encoding="utf-8")
+SRC = RL_REPLACEMENTS.read_text(encoding = "utf-8")
 
 
 # ---- the premise ---------------------------------------------------------
@@ -72,15 +72,15 @@ def test_bfloat16_autocast_raises_without_hardware_support():
     """Guards everything below: if torch ever downgraded this to a warning,
     the bug would be a silent precision change instead of a crash, and these
     tests would be asserting the wrong thing."""
-    with _pretend_cuda(has_bf16=False):
-        with pytest.raises(RuntimeError, match="does not support bfloat16"):
-            with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
+    with _pretend_cuda(has_bf16 = False):
+        with pytest.raises(RuntimeError, match = "does not support bfloat16"):
+            with torch.amp.autocast(device_type = "cuda", dtype = torch.bfloat16):
                 pass
 
 
 def test_disabling_autocast_skips_that_check():
-    with _pretend_cuda(has_bf16=False):
-        with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=False):
+    with _pretend_cuda(has_bf16 = False):
+        with torch.amp.autocast(device_type = "cuda", dtype = torch.bfloat16, enabled = False):
             pass
 
 
@@ -150,7 +150,7 @@ def test_the_injected_snippet_only_autocasts_when_asked(precision, has_bf16, exp
         env["ACCELERATE_MIXED_PRECISION"] = precision
 
     namespace = _namespace(env)
-    with _pretend_cuda(has_bf16=has_bf16):
+    with _pretend_cuda(has_bf16 = has_bf16):
         exec(
             _prepare_inputs_snippet() + "\n    seen.append(torch.is_autocast_enabled('cuda'))\n",
             namespace,
@@ -162,7 +162,7 @@ def test_the_generated_trainer_imports_the_device_type_it_autocasts_with():
     """getsource inlines these bodies but not this file's imports, so the name has
     to come from the template rl.py splices in, or the generated cache raises."""
     preamble = "from unsloth_zoo.device_type import DEVICE_TYPE, DEVICE_TYPE_TORCH"
-    assert preamble in RL_PY.read_text(encoding="utf-8"), "rl.py's trainer template must import it"
+    assert preamble in RL_PY.read_text(encoding = "utf-8"), "rl.py's trainer template must import it"
 
 
 def test_no_autocast_call_pins_the_device_type_to_cuda():
@@ -234,7 +234,7 @@ def test_forced_float32_still_autocasts_in_the_injected_header():
             "UNSLOTH_FORCE_FLOAT32": "1",
         }
     )
-    with _pretend_cuda(has_bf16=False):
+    with _pretend_cuda(has_bf16 = False):
         exec(
             _prepare_inputs_snippet()
             + "\n    seen.append(torch.get_autocast_dtype('cuda') if torch.is_autocast_enabled('cuda') else None)\n",
@@ -268,7 +268,7 @@ def test_chunk_sizing_by_execution():
                     "_autocast_enabled": False,
                 },
             )(),
-            "lm_head": torch.zeros(2, 2, dtype=head_dtype),
+            "lm_head": torch.zeros(2, 2, dtype = head_dtype),
         }
         line = next(l for l in SRC.splitlines() if "forward_dtype = (" in l)
         start = SRC.index(line)

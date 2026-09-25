@@ -30,12 +30,12 @@ HERMES_URL = "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/s
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32" or not shutil.which("bash") or not shutil.which("curl"),
-    reason="runs the installer helpers under bash with a file:// installer",
+    reason = "runs the installer helpers under bash with a file:// installer",
 )
 
 
 def _source() -> str:
-    return SCRIPT.read_text(encoding="utf-8")
+    return SCRIPT.read_text(encoding = "utf-8")
 
 
 def _function(name: str) -> str:
@@ -73,7 +73,7 @@ def _installer(
         '        *) echo "unknown option: $1" >&2; exit 1 ;;\n'
         "    esac\n"
         "done\n",
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     return script
 
@@ -83,7 +83,7 @@ def _curl_bash(tmp_path: Path, installer: Path, args: list[str]) -> subprocess.C
     # sleep is the retry backoff: three rejected attempts would otherwise cost a minute.
     helpers.write_text(
         "sleep() { :; }\n" + _function("installer_args") + _function("curl_bash"),
-        encoding="utf-8",
+        encoding = "utf-8",
     )
     command = (
         "set -uo pipefail\n"
@@ -91,11 +91,11 @@ def _curl_bash(tmp_path: Path, installer: Path, args: list[str]) -> subprocess.C
         f". {shlex.quote(str(helpers))}\n"
         f"curl_bash {shlex.quote(installer.as_uri())} {' '.join(shlex.quote(a) for a in args)}\n"
     )
-    return subprocess.run(["bash", "-c", command], capture_output=True, text=True, timeout=60)
+    return subprocess.run(["bash", "-c", command], capture_output = True, text = True, timeout = 60)
 
 
 def _received(tmp_path: Path) -> list[str]:
-    return (tmp_path / "argv").read_text(encoding="utf-8").split()
+    return (tmp_path / "argv").read_text(encoding = "utf-8").split()
 
 
 def test_the_hermes_recipe_installs_once_the_vendor_drops_no_skills(tmp_path: Path) -> None:
@@ -105,9 +105,9 @@ def test_the_hermes_recipe_installs_once_the_vendor_drops_no_skills(tmp_path: Pa
         ["--non-interactive", "--skip-setup", "--skip-browser|--no-playwright|-SkipBrowser"],
     )
     result = _curl_bash(tmp_path, installer, _hermes_args())
-    assert result.returncode == 0, (tmp_path / "install.log").read_text(encoding="utf-8")
+    assert result.returncode == 0, (tmp_path / "install.log").read_text(encoding = "utf-8")
     assert _received(tmp_path) == ["--non-interactive", "--skip-setup", "--skip-browser"]
-    assert "no longer takes --no-skills" in (tmp_path / "install.log").read_text(encoding="utf-8")
+    assert "no longer takes --no-skills" in (tmp_path / "install.log").read_text(encoding = "utf-8")
 
 
 def test_an_optional_flag_the_installer_still_parses_is_passed(tmp_path: Path) -> None:
@@ -141,7 +141,7 @@ def test_a_removed_flag_still_named_outside_the_parser_is_not_kept(tmp_path: Pat
     )
     installer = _installer(tmp_path, ["--non-interactive"], preamble)
     result = _curl_bash(tmp_path, installer, ["--non-interactive", "?--no-skills"])
-    assert result.returncode == 0, (tmp_path / "install.log").read_text(encoding="utf-8")
+    assert result.returncode == 0, (tmp_path / "install.log").read_text(encoding = "utf-8")
     assert _received(tmp_path) == ["--non-interactive"]
 
 

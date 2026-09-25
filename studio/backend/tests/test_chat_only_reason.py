@@ -23,7 +23,7 @@ if str(_BACKEND) not in sys.path:
 import utils.hardware.hardware as hw  # noqa: E402
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _no_torch(monkeypatch):
     # Force the non-CUDA/XPU path regardless of the test host's real GPUs.
     monkeypatch.setattr(hw, "_has_torch", lambda: False)
@@ -79,7 +79,7 @@ def _no_torch_apple_silicon(monkeypatch, *, mlx_on_disk: bool):
 def test_apple_silicon_no_torch_install_without_mlx_is_off_by_request(monkeypatch):
     # GGUF-only by request: not a broken stack, so the UI must not send the user to
     # `unsloth studio update`, which keeps no-torch and cannot enable Train.
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=False)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = False)
     assert hw.detect_hardware() == hw.DeviceType.CPU
     assert hw.CHAT_ONLY is True
     assert hw.CHAT_ONLY_REASON == "no_torch"
@@ -90,7 +90,7 @@ def test_apple_silicon_no_torch_install_with_mlx_on_disk_waits_for_the_probe(mon
     # A hand-installed stack can lose the warm's import race (#9120) and be usable a moment
     # later. no_torch would stop the sidebar polling before the overturn lands, so the verdict
     # stays mlx_unavailable, which the post-warm probe can still overturn, until it settles.
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=True)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = True)
     hw.detect_hardware()
     assert hw.CHAT_ONLY is True
     assert hw.CHAT_ONLY_REASON == "mlx_unavailable"
@@ -98,7 +98,7 @@ def test_apple_silicon_no_torch_install_with_mlx_on_disk_waits_for_the_probe(mon
 
 
 def test_the_probe_settles_a_no_torch_host_once_the_stack_measures_unusable(monkeypatch):
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=True)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = True)
     hw.detect_hardware()
     assert hw.settle_the_no_torch_verdict(hw.current_detection_epoch()) is True
     assert hw.CHAT_ONLY_REASON == "no_torch"
@@ -112,7 +112,7 @@ def test_the_probe_settles_a_no_torch_host_once_the_stack_measures_unusable(monk
 def test_a_probe_retired_by_a_shutdown_settles_nothing(monkeypatch):
     # The worker's epoch predates its measurement; a shutdown since means the next lifespan
     # measures for itself, so a stale settle neither flips the verdict nor pins the flag.
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=True)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = True)
     hw.detect_hardware()
     assert hw.settle_the_no_torch_verdict(hw.current_detection_epoch() - 1) is False
     assert hw.CHAT_ONLY_REASON == "mlx_unavailable"
@@ -122,7 +122,7 @@ def test_a_probe_retired_by_a_shutdown_settles_nothing(monkeypatch):
 def test_a_settled_flag_does_not_outlive_its_lifespan(monkeypatch):
     # A new lifespan must run its own probe: a transient import failure at its detection
     # would otherwise publish no_torch and skip the probe that would have overturned it.
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=True)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = True)
     monkeypatch.setattr(hw, "_NO_TORCH_SETTLED_EPOCH", hw.current_detection_epoch() - 1)
     hw.detect_hardware()
     assert hw.CHAT_ONLY_REASON == "mlx_unavailable"
@@ -140,7 +140,7 @@ def test_a_declined_settle_does_not_mark_the_epoch(monkeypatch):
     # record the epoch on the way out: the next transient MLX import failure in this
     # lifespan would then publish no_torch, which reads as settled, and
     # start_mlx_autorepair_if_needed() would skip the probe that restores Train.
-    _no_torch_apple_silicon(monkeypatch, mlx_on_disk=True)
+    _no_torch_apple_silicon(monkeypatch, mlx_on_disk = True)
     hw.CHAT_ONLY, hw.CHAT_ONLY_REASON = False, None
     assert hw.settle_the_no_torch_verdict(hw.current_detection_epoch()) is False
     assert hw._NO_TORCH_SETTLED_EPOCH != hw.current_detection_epoch()

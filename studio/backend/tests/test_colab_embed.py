@@ -47,7 +47,7 @@ def test_ready_card_html_points_to_cloudflare_when_link_ready(monkeypatch):
     html = colab._ready_card_html(
         "https://8888-test.prod.colab.dev/",
         8888,
-        has_cloudflare_link=True,
+        has_cloudflare_link = True,
     )
     assert "Cloudflare link above" in html
 
@@ -57,7 +57,7 @@ def test_ready_card_html_warns_when_cloudflare_tunnel_missing(monkeypatch):
     html = colab._ready_card_html(
         "https://8888-test.prod.colab.dev/",
         8888,
-        cloudflare_requested=True,
+        cloudflare_requested = True,
     )
     assert "Could not open a Cloudflare tunnel" in html
 
@@ -66,7 +66,7 @@ def test_warn_colab_cloudflare_missing_logs_on_colab_without_tunnel(monkeypatch)
     warnings: list[str] = []
     monkeypatch.setattr(colab, "_is_colab_runtime", lambda: True)
     monkeypatch.setattr(colab.logger, "warning", lambda msg, **kwargs: warnings.append(msg))
-    colab._warn_colab_cloudflare_missing(use_cloudflare=True, cloudflare_url=None)
+    colab._warn_colab_cloudflare_missing(use_cloudflare = True, cloudflare_url = None)
     assert warnings
     assert "Cloudflare tunnel unavailable" in warnings[0]
 
@@ -77,8 +77,8 @@ def test_warn_colab_cloudflare_missing_skips_when_tunnel_ready(monkeypatch, capl
     monkeypatch.setattr(colab, "_is_colab_runtime", lambda: True)
     with caplog.at_level(logging.WARNING):
         colab._warn_colab_cloudflare_missing(
-            use_cloudflare=True,
-            cloudflare_url="https://share.trycloudflare.com",
+            use_cloudflare = True,
+            cloudflare_url = "https://share.trycloudflare.com",
         )
     assert "Cloudflare tunnel unavailable" not in caplog.text
 
@@ -131,14 +131,14 @@ def test_ready_card_html_keeps_open_button_for_localhost_outside_colab(monkeypat
 
 def test_embed_kernel_port_iframe_uses_colab_helper(monkeypatch):
     colab_output = MagicMock()
-    google_colab = SimpleNamespace(output=colab_output)
+    google_colab = SimpleNamespace(output = colab_output)
     monkeypatch.setattr(colab, "_is_colab_runtime", lambda: True)
     with patch.dict("sys.modules", _mock_google_colab_modules(google_colab)):
         assert colab._embed_kernel_port_iframe(8888) is True
     colab_output.serve_kernel_port_as_iframe.assert_called_once_with(
         8888,
-        height=colab._COLAB_IFRAME_HEIGHT,
-        width="100%",
+        height = colab._COLAB_IFRAME_HEIGHT,
+        width = "100%",
     )
 
 
@@ -150,7 +150,7 @@ def test_embed_kernel_port_iframe_returns_false_without_colab():
 def test_embed_kernel_port_iframe_skips_colabtools_without_runtime(monkeypatch):
     """colabtools can queue JS without appending an iframe; only trust the helper on Colab."""
     colab_output = MagicMock()
-    google_colab = SimpleNamespace(output=colab_output)
+    google_colab = SimpleNamespace(output = colab_output)
     monkeypatch.setattr(colab, "_is_colab_runtime", lambda: False)
     with patch.dict("sys.modules", _mock_google_colab_modules(google_colab)):
         assert colab._embed_kernel_port_iframe(8888) is False
@@ -167,9 +167,9 @@ def test_show_and_embed_prefers_kernel_port_iframe(monkeypatch):
         "show_link",
         lambda port,
         *,
-        _url=None,
-        has_cloudflare_link=False,
-        cloudflare_requested=False: calls.append("show_link"),
+        _url = None,
+        has_cloudflare_link = False,
+        cloudflare_requested = False: calls.append("show_link"),
     )
     monkeypatch.setattr(
         colab,
@@ -195,7 +195,7 @@ def test_show_and_embed_falls_back_to_html_iframe(monkeypatch):
     monkeypatch.setattr(
         colab,
         "show_link",
-        lambda port, *, _url=None, has_cloudflare_link=False: None,
+        lambda port, *, _url = None, has_cloudflare_link = False: None,
     )
     monkeypatch.setattr(colab, "_embed_kernel_port_iframe", lambda port: False)
     monkeypatch.setattr(
@@ -238,12 +238,12 @@ def test_finalize_colab_admin_password_clears_bootstrap_gate(monkeypatch):
     )
 
     storage = SimpleNamespace(
-        DEFAULT_ADMIN_USERNAME="unsloth",
-        ensure_default_admin=MagicMock(),
-        get_bootstrap_password=MagicMock(return_value="alpha-beta-gamma"),
-        generate_bootstrap_password=MagicMock(return_value="alpha-beta-gamma"),
-        requires_password_change=MagicMock(return_value=True),
-        update_password=MagicMock(return_value=True),
+        DEFAULT_ADMIN_USERNAME = "unsloth",
+        ensure_default_admin = MagicMock(),
+        get_bootstrap_password = MagicMock(return_value = "alpha-beta-gamma"),
+        generate_bootstrap_password = MagicMock(return_value = "alpha-beta-gamma"),
+        requires_password_change = MagicMock(return_value = True),
+        update_password = MagicMock(return_value = True),
     )
     auth_pkg = types.ModuleType("auth")
     auth_pkg.storage = storage
@@ -275,7 +275,7 @@ def test_start_skips_finalize_when_cloudflare_disabled(monkeypatch):
     monkeypatch.setattr(colab, "_stop_cloudflare_tunnel", lambda: None)
     monkeypatch.setattr(time, "sleep", lambda _: (_ for _ in ()).throw(KeyboardInterrupt))
 
-    colab.start(cloudflare=False)
+    colab.start(cloudflare = False)
 
     assert finalize_calls == []
 
@@ -290,12 +290,12 @@ def test_finalize_colab_admin_password_redisplay_on_rerun(monkeypatch):
     monkeypatch.setattr(colab, "_colab_credentials_still_valid", lambda username, password: True)
 
     storage = SimpleNamespace(
-        DEFAULT_ADMIN_USERNAME="unsloth",
-        ensure_default_admin=MagicMock(),
-        get_bootstrap_password=MagicMock(),
-        generate_bootstrap_password=MagicMock(),
-        requires_password_change=MagicMock(return_value=False),
-        update_password=MagicMock(),
+        DEFAULT_ADMIN_USERNAME = "unsloth",
+        ensure_default_admin = MagicMock(),
+        get_bootstrap_password = MagicMock(),
+        generate_bootstrap_password = MagicMock(),
+        requires_password_change = MagicMock(return_value = False),
+        update_password = MagicMock(),
     )
     auth_pkg = types.ModuleType("auth")
     auth_pkg.storage = storage
@@ -320,12 +320,12 @@ def test_finalize_colab_admin_password_drops_stale_cached_credentials(monkeypatc
     monkeypatch.setattr(colab, "_clear_colab_login_credentials", lambda: cleared.append(True))
 
     storage = SimpleNamespace(
-        DEFAULT_ADMIN_USERNAME="unsloth",
-        ensure_default_admin=MagicMock(),
-        get_bootstrap_password=MagicMock(),
-        generate_bootstrap_password=MagicMock(),
-        requires_password_change=MagicMock(return_value=False),
-        update_password=MagicMock(),
+        DEFAULT_ADMIN_USERNAME = "unsloth",
+        ensure_default_admin = MagicMock(),
+        get_bootstrap_password = MagicMock(),
+        generate_bootstrap_password = MagicMock(),
+        requires_password_change = MagicMock(return_value = False),
+        update_password = MagicMock(),
     )
     auth_pkg = types.ModuleType("auth")
     auth_pkg.storage = storage
@@ -342,7 +342,7 @@ def test_colab_credentials_still_valid_matches_stored_hash(monkeypatch):
 
     salt, pwd_hash = hash_password("right-pass")
     storage = SimpleNamespace(
-        get_user_and_secret=MagicMock(return_value=(salt, pwd_hash, "jwt", False)),
+        get_user_and_secret = MagicMock(return_value = (salt, pwd_hash, "jwt", False)),
     )
     with patch.dict("sys.modules", {"auth.storage": storage}):
         assert colab._colab_credentials_still_valid("unsloth", "right-pass") is True
@@ -350,7 +350,7 @@ def test_colab_credentials_still_valid_matches_stored_hash(monkeypatch):
 
 
 def test_colab_credentials_still_valid_false_when_user_missing(monkeypatch):
-    storage = SimpleNamespace(get_user_and_secret=MagicMock(return_value=None))
+    storage = SimpleNamespace(get_user_and_secret = MagicMock(return_value = None))
     with patch.dict("sys.modules", {"auth.storage": storage}):
         assert colab._colab_credentials_still_valid("unsloth", "any") is False
 
@@ -412,8 +412,8 @@ def test_show_and_embed_folds_login_into_the_cloudflare_card(monkeypatch):
     """One card, not two: the tunnel card carries the password itself."""
     displayed: list[str] = []
     ipython_display = SimpleNamespace(
-        HTML=lambda html: SimpleNamespace(html=html),
-        display=lambda html: displayed.append(html.html),
+        HTML = lambda html: SimpleNamespace(html = html),
+        display = lambda html: displayed.append(html.html),
     )
     login_cards: list[tuple] = []
 
@@ -427,14 +427,14 @@ def test_show_and_embed_folds_login_into_the_cloudflare_card(monkeypatch):
     monkeypatch.setattr(
         colab,
         "show_link",
-        lambda port, *, _url=None, has_cloudflare_link=False, cloudflare_requested=False: None,
+        lambda port, *, _url = None, has_cloudflare_link = False, cloudflare_requested = False: None,
     )
     monkeypatch.setattr(colab, "_embed_kernel_port_iframe", lambda port: True)
     with patch.dict("sys.modules", {"IPython.display": ipython_display}):
         colab._show_and_embed(
             8888,
-            cloudflare_url="https://share.trycloudflare.com",
-            colab_login=("unsloth", "secret-pass"),
+            cloudflare_url = "https://share.trycloudflare.com",
+            colab_login = ("unsloth", "secret-pass"),
         )
 
     assert len(displayed) == 1
@@ -457,10 +457,10 @@ def test_show_and_embed_keeps_separate_login_card_without_tunnel(monkeypatch):
     monkeypatch.setattr(
         colab,
         "show_link",
-        lambda port, *, _url=None, has_cloudflare_link=False, cloudflare_requested=False: None,
+        lambda port, *, _url = None, has_cloudflare_link = False, cloudflare_requested = False: None,
     )
     monkeypatch.setattr(colab, "_embed_kernel_port_iframe", lambda port: True)
-    colab._show_and_embed(8888, colab_login=("unsloth", "secret-pass"))
+    colab._show_and_embed(8888, colab_login = ("unsloth", "secret-pass"))
 
     assert login_cards == [("unsloth", "secret-pass")]
 
@@ -476,12 +476,12 @@ def test_show_and_embed_skips_ready_card_when_tunnel_is_up(monkeypatch):
         "show_link",
         lambda port,
         *,
-        _url=None,
-        has_cloudflare_link=False,
-        cloudflare_requested=False: calls.append("show_link"),
+        _url = None,
+        has_cloudflare_link = False,
+        cloudflare_requested = False: calls.append("show_link"),
     )
     monkeypatch.setattr(colab, "_embed_kernel_port_iframe", lambda port: True)
-    colab._show_and_embed(8888, cloudflare_url="https://share.trycloudflare.com")
+    colab._show_and_embed(8888, cloudflare_url = "https://share.trycloudflare.com")
 
     assert calls == []
 
@@ -497,9 +497,9 @@ def test_show_and_embed_keeps_ready_card_without_tunnel(monkeypatch):
         "show_link",
         lambda port,
         *,
-        _url=None,
-        has_cloudflare_link=False,
-        cloudflare_requested=False: calls.append("show_link"),
+        _url = None,
+        has_cloudflare_link = False,
+        cloudflare_requested = False: calls.append("show_link"),
     )
     monkeypatch.setattr(colab, "_embed_kernel_port_iframe", lambda port: True)
     colab._show_and_embed(8888)
@@ -515,7 +515,7 @@ def test_show_and_embed_skips_iframe_on_colab_when_cloudflare_ready(monkeypatch)
     monkeypatch.setattr(
         colab,
         "show_link",
-        lambda port, *, _url=None, has_cloudflare_link=False, cloudflare_requested=False: None,
+        lambda port, *, _url = None, has_cloudflare_link = False, cloudflare_requested = False: None,
     )
     monkeypatch.setattr(
         colab,
@@ -528,7 +528,7 @@ def test_show_and_embed_skips_iframe_on_colab_when_cloudflare_ready(monkeypatch)
         lambda url, port: calls.append("html_iframe") or True,
     )
 
-    colab._show_and_embed(8888, cloudflare_url="https://share.trycloudflare.com")
+    colab._show_and_embed(8888, cloudflare_url = "https://share.trycloudflare.com")
 
     assert calls == []
 
@@ -544,9 +544,9 @@ def test_show_and_embed_uses_kernel_helper_on_colab_runtime_despite_localhost(mo
         "show_link",
         lambda port,
         *,
-        _url=None,
-        has_cloudflare_link=False,
-        cloudflare_requested=False: calls.append("show_link"),
+        _url = None,
+        has_cloudflare_link = False,
+        cloudflare_requested = False: calls.append("show_link"),
     )
     monkeypatch.setattr(
         colab,
@@ -575,9 +575,9 @@ def test_show_and_embed_skips_kernel_helper_for_localhost_outside_colab(monkeypa
         "show_link",
         lambda port,
         *,
-        _url=None,
-        has_cloudflare_link=False,
-        cloudflare_requested=False: calls.append("show_link"),
+        _url = None,
+        has_cloudflare_link = False,
+        cloudflare_requested = False: calls.append("show_link"),
     )
     monkeypatch.setattr(
         colab,
@@ -603,7 +603,7 @@ def test_show_and_embed_still_embeds_when_show_link_fails(monkeypatch):
     monkeypatch.setattr(
         colab,
         "show_link",
-        lambda port, *, _url=None: (_ for _ in ()).throw(RuntimeError("no display")),
+        lambda port, *, _url = None: (_ for _ in ()).throw(RuntimeError("no display")),
     )
     monkeypatch.setattr(
         colab,

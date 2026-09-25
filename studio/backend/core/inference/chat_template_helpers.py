@@ -320,7 +320,7 @@ _FULLWIDTH_MARKER = re.compile("\\A<\uff5c([A-Za-z][A-Za-z\u2581_ \\\\]{0,39})\u
 _ALIAS_SEPARATORS = "(?:\u2581|\\\\?_| )"
 
 
-@functools.lru_cache(maxsize=1)
+@functools.lru_cache(maxsize = 1)
 def _deepseek_opener_pattern():
     """The tool-call-parser's own DeepSeek opener alternation, or None if unavailable. Single source
     of truth: tool_call_parser keeps the five spellings llama.cpp accepts, and a profile that
@@ -433,8 +433,8 @@ class ModelMarkup:
         self.boundary = _alternation(boundary)
         # Bound once per profile, not per call: a fresh partial each time would be a fresh identity, so a sweep cache
         # keyed on the callable would never hit and would grow one entry per message instead.
-        self.rewrite_control = functools.partial(neutralize_control_markup, markup=self)
-        self.rewrite_boundary = functools.partial(neutralize_turn_boundary_markup, markup=self)
+        self.rewrite_control = functools.partial(neutralize_control_markup, markup = self)
+        self.rewrite_boundary = functools.partial(neutralize_turn_boundary_markup, markup = self)
 
 
 def _alternation(markers: set):
@@ -442,7 +442,7 @@ def _alternation(markers: set):
     if not markers:
         return None
     return re.compile(
-        "|".join(_marker_pattern_source(m) for m in sorted(markers, key=len, reverse=True))
+        "|".join(_marker_pattern_source(m) for m in sorted(markers, key = len, reverse = True))
     )
 
 
@@ -461,10 +461,10 @@ _SPECIAL_TOKEN_VARIABLES = (
 
 def model_markup(
     chat_template,
-    tokens=None,
-    tools=None,
+    tokens = None,
+    tools = None,
     prefer_tool_use: bool = True,
-    specials=None,
+    specials = None,
 ) -> Optional[ModelMarkup]:
     """Profile one model's structural markers, or None when nothing is known about it. None means
     "sweep everything the curated patterns know", which is the safe direction for a model whose
@@ -491,7 +491,7 @@ def model_markup(
     # and unioning them made a no-tools turn rewrite "<tools>", which cannot appear in the prompt it is about to send
     # (#7066).
     bodies = _selected_template_strings_from_value(
-        chat_template, tools, prefer_tool_use=prefer_tool_use
+        chat_template, tools, prefer_tool_use = prefer_tool_use
     )
     for body in bodies or _template_strings(chat_template):
         # Blanked rather than removed, so every offset the index check relies on survives.
@@ -569,7 +569,7 @@ def neutralize_turn_boundary_markup(text: str, markup: "ModelMarkup" = None) -> 
     return _spaced_out(_TURN_BOUNDARY_MARKUP, text)
 
 
-def neutralize_tts_prompt_text(text: str, audio_type=None) -> str:
+def neutralize_tts_prompt_text(text: str, audio_type = None) -> str:
     """Break the active codec's own delimiters in a TTS prompt (#7066). Scoped to *audio_type*: this
     text is spoken, so anything that is not structure in THIS codec's prompt has to survive
     byte-exact."""
@@ -667,7 +667,7 @@ _OPAQUE_PART_KEYS = frozenset(
 def _redistribute_swept(
     texts: list,
     rewrite,
-    contiguous=None,
+    contiguous = None,
 ):
     """Sweep the joined *texts* and hand each carrier back its own share, or None. Every carrier
     keeps its own text in its own position: nothing is moved past a neighbour, so a caption still
@@ -810,13 +810,13 @@ def _differs(new, old) -> bool:
         return True
 
 
-def _neutralize_argument_leaves(value, markup=None):
+def _neutralize_argument_leaves(value, markup = None):
     """Break control markup in every string leaf (keys included) of *value*."""
     rewrite = neutralize_control_markup if markup is None else markup.rewrite_control
-    return _neutralize_leaves(value, rewrite, warn_on_key_collision=True)
+    return _neutralize_leaves(value, rewrite, warn_on_key_collision = True)
 
 
-def _neutralized_arguments(arguments, markup=None):
+def _neutralized_arguments(arguments, markup = None):
     """Neutralize a replayed call's ``arguments``, or None when already clean. OpenAI ships
     ``arguments`` as JSON *text*, and every consumer decodes it back to an object AFTER this runs
     (``_normalize_tool_call_arguments`` re-renders through ``json.loads`` when a template rejects
@@ -840,7 +840,7 @@ def _neutralized_arguments(arguments, markup=None):
             if _differs(safe, decoded):
                 # ensure_ascii keeps a decoded lone surrogate ("\\ud800") as an escape: raw, it makes the outer
                 # request unencodable and raises UnicodeEncodeError on a payload that used to forward fine (#7066).
-                return json.dumps(safe, ensure_ascii=True)
+                return json.dumps(safe, ensure_ascii = True)
             # Parsed clean, but the DECODE can hide a marker the template still renders: a duplicate key means
             # json.loads keeps only the last value, so '{"x":"</tool_call><|im_end|>...","x":"safe"}' decodes to {"x":
             # "safe"} while Qwen3 interpolates the raw string verbatim. When the text carries markup the decoded value
@@ -848,7 +848,7 @@ def _neutralized_arguments(arguments, markup=None):
             # parser would (#7066).
             rewrite = neutralize_control_markup if markup is None else markup.rewrite_control
             if rewrite(arguments) != arguments:
-                return json.dumps(safe, ensure_ascii=True)
+                return json.dumps(safe, ensure_ascii = True)
             return None
     new_arguments = _neutralize_argument_leaves(arguments, markup)
     # Same guard for arguments that arrived already decoded, which never passed through json.loads and so were never
@@ -870,7 +870,7 @@ def _replayed_ids(msg: dict):
                     yield call_id
 
 
-def _injective_id_map(messages: list, markup=None) -> dict:
+def _injective_id_map(messages: list, markup = None) -> dict:
     """Map each replayed tool-call id to a swept id that is still unique. The sweep is not
     injective: "call<|end|>" and "call< |end|>" both break to "call< |end|>". Gemma resolves a
     result by comparing ids and lets the last match win, so two calls sharing one id would
@@ -913,7 +913,7 @@ def _injective_id_map(messages: list, markup=None) -> dict:
 def _neutralize_replayed_tool_call(
     tool_calls: list,
     id_map: dict = None,
-    markup=None,
+    markup = None,
 ) -> list:
     """Neutralize a replayed tool call's name, arguments and id, in every shape it carries.
 
@@ -1015,7 +1015,7 @@ def _memoized(rewrite, cache: dict):
 def neutralize_control_markup_in_messages(
     messages: list,
     cache: dict = None,
-    markup=None,
+    markup = None,
 ) -> list:
     """Neutralize control markup in message content and names (#7066). User / system /
     tool turns lose every marker; assistant turns lose only turn boundaries and keep the think /
@@ -1170,7 +1170,7 @@ def neutralize_control_markup_in_messages(
 def neutralize_tool_descriptions(
     tools,
     cache: dict = None,
-    markup=None,
+    markup = None,
 ):
     """Neutralize a rendered tool catalog, dropping any tool with an unsafe name.
 
@@ -1194,7 +1194,7 @@ def neutralize_tool_descriptions(
     key = None
     if cache is not None:
         try:
-            key = ("catalog", json.dumps(tools, sort_keys=True, default=str))
+            key = ("catalog", json.dumps(tools, sort_keys = True, default = str))
         except (TypeError, ValueError):
             key = None
         if key is not None and key in cache:
@@ -1322,7 +1322,7 @@ _SCHEMA_VALUED_IDENTIFIERS = frozenset(
 )
 
 
-def _first_unsafe_leaf(value, markup=None):
+def _first_unsafe_leaf(value, markup = None):
     """The first string leaf, dict key included, that the rewrite would change."""
     stack = [value]
     seen = {id(value)}
@@ -1375,7 +1375,7 @@ def _schema_roots(target):
 _SCHEMA_INSTANCE_KEYS = frozenset({"examples", "example"})
 
 
-def _unsafe_schema_identifier(value, markup=None):
+def _unsafe_schema_identifier(value, markup = None):
     """Return the first schema identifier the rewrite would change, or None."""
     stack = [value]
     seen = {id(value)}
@@ -1510,7 +1510,7 @@ def mapped_chat_template(model_info: dict, active_model_name):
                 probe = None
             if probe is None:
                 return None  # cannot resolve safely; retry next turn
-            remapped = get_chat_template(probe, chat_template=MODEL_TO_TEMPLATE_MAPPER[name])
+            remapped = get_chat_template(probe, chat_template = MODEL_TO_TEMPLATE_MAPPER[name])
             mapped = getattr(remapped, "chat_template", None)
     except Exception as exc:
         logger.debug("Could not resolve the mapped chat template early: %s", exc)
@@ -1529,7 +1529,7 @@ def _is_processor(obj) -> bool:
     )
 
 
-def chat_render_target(processor, tokenizer=None):
+def chat_render_target(processor, tokenizer = None):
     """The object whose chat template a render will actually use. ``_generate_vlm`` falls back to
     the nested tokenizer when the processor cannot render a chat itself, so anything profiling
     the prompt ahead of the render has to make the same choice. Reproducing the rule at the call
@@ -1737,7 +1737,7 @@ def _template_reads_tools(
     without a catalog, so the healer would otherwise promote calls for tools the model never saw
     (#7066).
     """
-    bodies = _selected_template_strings_from_value(value, tools, prefer_tool_use=prefer_tool_use)
+    bodies = _selected_template_strings_from_value(value, tools, prefer_tool_use = prefer_tool_use)
     if not bodies:
         # Unreadable, not proven silent. Emptying the catalog here would disable healing for every model whose
         # template shape this module cannot parse, which is a feature regression rather than the narrow authorization
@@ -1788,8 +1788,8 @@ def _renders_tool_schema(
     return _template_reads_tools(
         value,
         tools,
-        prefer_tool_use=not is_processor,
-        require_tools_variable=is_processor,
+        prefer_tool_use = not is_processor,
+        require_tools_variable = is_processor,
     )
 
 
@@ -1797,9 +1797,9 @@ def renderable_tool_catalog_for_targets(
     tools,
     targets,
     model_info,
-    cache=None,
-    active_model_name=None,
-    template=None,
+    cache = None,
+    active_model_name = None,
+    template = None,
     template_is_processor: bool = False,
 ):
     """The catalog safe under every object a backend could render this turn with.
@@ -1839,9 +1839,9 @@ def renderable_tool_catalog(
     tools,
     tokenizer,
     model_info,
-    cache=None,
-    active_model_name=None,
-    template=None,
+    cache = None,
+    active_model_name = None,
+    template = None,
     template_is_processor: bool = False,
 ):
     """The catalog that survives EVERY template this request could render with.
@@ -1876,7 +1876,7 @@ def renderable_tool_catalog(
         return []
 
     active_renders_tools = _renders_tool_schema(
-        tokenizer, template, tools, template_is_processor=template_is_processor
+        tokenizer, template, tools, template_is_processor = template_is_processor
     )
     # A processor stays on "default" and the VLM path renders straight through apply_chat_template_for_generation,
     # with no native-template fallback behind it. When that default body never reads ``tools`` the schema cannot reach
@@ -1905,7 +1905,7 @@ def renderable_tool_catalog(
         native_tpl,
         _vocabulary_of(tokenizer),
         tools,
-        specials=_special_token_strings(getattr(tokenizer, "tokenizer", tokenizer)),
+        specials = _special_token_strings(getattr(tokenizer, "tokenizer", tokenizer)),
     )
     if native is None:
         return safe
@@ -1956,7 +1956,7 @@ def _tokenizer_objects(tokenizer) -> tuple:
 
 def _selected_template_strings_from_value(
     template,
-    tools=None,
+    tools = None,
     *,
     prefer_tool_use: bool = True,
 ) -> tuple[str, ...]:
@@ -1977,7 +1977,7 @@ def _selected_template_strings_from_value(
         }
         if named:
             return _selected_template_strings_from_value(
-                named, tools, prefer_tool_use=prefer_tool_use
+                named, tools, prefer_tool_use = prefer_tool_use
             )
         return ()
     if not isinstance(template, dict):
@@ -1990,7 +1990,7 @@ def _selected_template_strings_from_value(
     return values if len(values) == 1 else ()
 
 
-def _selected_chat_template_strings(tokenizer, tools=None) -> tuple[str, ...]:
+def _selected_chat_template_strings(tokenizer, tools = None) -> tuple[str, ...]:
     tools = tools or None
     getter = getattr(tokenizer, "get_chat_template", None)
     if callable(getter):
@@ -2006,7 +2006,7 @@ def _selected_chat_template_strings(tokenizer, tools=None) -> tuple[str, ...]:
     return _selected_template_strings_from_value(
         getattr(tokenizer, "chat_template", None),
         tools,
-        prefer_tool_use=not _is_processor(tokenizer),
+        prefer_tool_use = not _is_processor(tokenizer),
     )
 
 
@@ -2021,7 +2021,7 @@ def _detect_reasoning_channel_markers_from_templates(
     return None
 
 
-def detect_reasoning_channel_markers(tokenizer, tools=None) -> Optional[tuple[str, ...]]:
+def detect_reasoning_channel_markers(tokenizer, tools = None) -> Optional[tuple[str, ...]]:
     """Return the native reasoning-channel markers a tokenizer's template emits. Detection uses the
     active chat template rather than model names or vocabulary membership: some models expose
     Gemma control tokens without using the native thought-channel response protocol, and those
@@ -2034,7 +2034,7 @@ def detect_reasoning_channel_markers(tokenizer, tools=None) -> Optional[tuple[st
 
 
 def detect_reasoning_channel_markers_from_template(
-    template, tools=None
+    template, tools = None
 ) -> Optional[tuple[str, ...]]:
     """Return native reasoning-channel markers from a raw template value."""
     return _detect_reasoning_channel_markers_from_templates(
@@ -2045,10 +2045,10 @@ def detect_reasoning_channel_markers_from_template(
 def detect_reasoning_channel_markers_from_model_info(
     tokenizer,
     model_info: Optional[dict] = None,
-    tools=None,
+    tools = None,
 ) -> Optional[tuple[str, ...]]:
     """Return reasoning markers from the active or cached native template."""
-    markers = detect_reasoning_channel_markers(tokenizer, tools=tools)
+    markers = detect_reasoning_channel_markers(tokenizer, tools = tools)
     if markers is not None or not isinstance(model_info, dict):
         return markers
 
@@ -2063,7 +2063,7 @@ def detect_reasoning_channel_markers_from_model_info(
     return None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen = True)
 class ChatTemplateRenderResult:
     """Prompt plus response-protocol metadata selected by the renderer."""
 
@@ -2153,7 +2153,7 @@ def _atem_parameter_value(raw: str):
     which RFC 8259 s6 does not, and 1e400 becomes inf without ever being one."""
     try:
         value = json.loads(raw)
-        json.dumps(value, allow_nan=False)
+        json.dumps(value, allow_nan = False)
     except (ValueError, RecursionError):
         return raw
     return value
@@ -2230,7 +2230,7 @@ def _atem_block_pieces(block: str, *, complete: bool) -> Optional[list[tuple[boo
         cursor = end + len(_ATEM_INVOKE_CLOSE)
     if not saw_call:
         return None
-    pieces.append((False, _atem_surrounding_text(block[cursor:], complete=complete)))
+    pieces.append((False, _atem_surrounding_text(block[cursor:], complete = complete)))
     return pieces
 
 
@@ -2367,7 +2367,7 @@ class RecipientChannelNormalizer:
                 self._buffer = self._buffer[index + length :]
                 self._tool_header = None
                 self._tool_scanned = 0
-                pieces = _atem_block_pieces(block, complete=True)
+                pieces = _atem_block_pieces(block, complete = True)
                 self._between_blocks = True
                 if pieces is not None:
                     output.append("".join(text for _, text in pieces))
@@ -2462,7 +2462,7 @@ class RecipientChannelNormalizer:
     def finish(self) -> str:
         """Flush a naturally completed stream, closing an open reasoning block and keeping any call
         that closed inside a block the model never terminated."""
-        output = self._flush(keep_calls=True)
+        output = self._flush(keep_calls = True)
         if self._in_reasoning:
             output += _THINK_CLOSE
             self._in_reasoning = False
@@ -2472,7 +2472,7 @@ class RecipientChannelNormalizer:
         """Flush buffered text without completing anything the model left open. Text held back
         survives; a call held back does not, so cancelling a turn can never be the thing that
         starts a tool running."""
-        return self._flush(keep_calls=False)
+        return self._flush(keep_calls = False)
 
     def _flush(self, *, keep_calls: bool) -> str:
         output = self._buffer
@@ -2480,9 +2480,9 @@ class RecipientChannelNormalizer:
         if self._tool_header is not None:
             # No terminator arrived, so unlike feed() there is no complete block to hand on: keep the text the model
             # had written and drop the rest.
-            pieces = _atem_block_pieces(output, complete=False)
+            pieces = _atem_block_pieces(output, complete = False)
             if pieces is None:
-                output = _atem_surrounding_text(output, complete=False)
+                output = _atem_surrounding_text(output, complete = False)
             else:
                 output = "".join(t for is_call, t in pieces if keep_calls or not is_call)
             self._tool_header = None
@@ -2503,7 +2503,7 @@ def make_reasoning_normalizer(markers: tuple[str, ...], *, in_reasoning: bool = 
         # This protocol cannot start mid-block: its generation prompt ends at "<|start|>assistant", so the model
         # always writes its own header.
         return RecipientChannelNormalizer(*markers)
-    return ReasoningChannelNormalizer(*markers, in_reasoning=in_reasoning)
+    return ReasoningChannelNormalizer(*markers, in_reasoning = in_reasoning)
 
 
 def prompt_opens_reasoning_channel(
@@ -2539,25 +2539,25 @@ def prompt_opens_reasoning_channel(
 
 def normalize_reasoning_snapshots(
     stream,
-    tokenizer=None,
-    cancel_event=None,
+    tokenizer = None,
+    cancel_event = None,
     markers: Optional[tuple[str, ...]] = None,
-    tools=None,
+    tools = None,
     prompt: Optional[str] = None,
     continued: bool = False,
-    ended=None,
+    ended = None,
 ):
     """Normalize a prefix-monotonic cumulative text stream when supported. ``ended`` is read after
     the stream: a turn a stop sequence ended still owes its open block a close, even if a cancel
     landed on the same step."""
-    markers = markers or detect_reasoning_channel_markers(tokenizer, tools=tools)
+    markers = markers or detect_reasoning_channel_markers(tokenizer, tools = tools)
     if markers is None:
         yield from stream
         return
 
     normalizer = make_reasoning_normalizer(
         markers,
-        in_reasoning=prompt_opens_reasoning_channel(prompt, markers, continued),
+        in_reasoning = prompt_opens_reasoning_channel(prompt, markers, continued),
     )
     raw_output = ""
     normalized_output = ""
@@ -2581,7 +2581,7 @@ def normalize_reasoning_snapshots(
 
 def detect_think_prefill(
     prompt: Optional[str],
-    special_tokens=None,
+    special_tokens = None,
     *,
     preserves_think_close: bool = False,
 ) -> str:
@@ -2732,8 +2732,8 @@ def _special_token_strings(tokenizer) -> dict:
 
 def markup_for_tokenizer(
     tokenizer,
-    tools=None,
-    template=None,
+    tools = None,
+    template = None,
 ) -> Optional[ModelMarkup]:
     """Profile the loaded tokenizer's own structural markers, cached per tokenizer. Returns None
     when the template and vocabulary cannot be read, which falls back to the curated patterns: an
@@ -2766,7 +2766,7 @@ def markup_for_tokenizer(
     # raised TypeError and every call rebuilt the profile.
     if not isinstance(template, str):
         try:
-            template_key = json.dumps(template, sort_keys=True, default=str)
+            template_key = json.dumps(template, sort_keys = True, default = str)
         except (TypeError, ValueError):
             template_key = repr(template)
     else:
@@ -2786,8 +2786,8 @@ def markup_for_tokenizer(
         template,
         tokens,
         tools,
-        prefer_tool_use=not is_processor,
-        specials=_special_token_strings(inner),
+        prefer_tool_use = not is_processor,
+        specials = _special_token_strings(inner),
     )
     try:
         entry = cached if isinstance(cached, dict) else {}
@@ -2865,7 +2865,7 @@ def structured_media_reprs(content) -> set:
     media_types = _STRUCTURED_IMAGE_TYPES + _STRUCTURED_VIDEO_TYPES
     if isinstance(content, list):
         values = (
-            {str(content), json.dumps(content, ensure_ascii=False)}
+            {str(content), json.dumps(content, ensure_ascii = False)}
             if _count_structured_parts(content, media_types)
             else set()
         )
@@ -2875,7 +2875,7 @@ def structured_media_reprs(content) -> set:
     if not isinstance(content, dict):
         return set()
     if str(content.get("type", "")).lower() in media_types:
-        return {str(content), json.dumps(content, ensure_ascii=False)}
+        return {str(content), json.dumps(content, ensure_ascii = False)}
     return structured_media_reprs(content.get("content"))
 
 
@@ -3086,19 +3086,19 @@ def render_prompt_with_boundary(
     partial = trailing_assistant_text(messages) if continue_final_message else None
     if not partial:
         return processor.apply_chat_template(
-            messages, add_generation_prompt=True, tokenize=False, **extra
+            messages, add_generation_prompt = True, tokenize = False, **extra
         )
     try:
         return processor.apply_chat_template(
             messages,
-            add_generation_prompt=False,
-            continue_final_message=True,
-            tokenize=False,
+            add_generation_prompt = False,
+            continue_final_message = True,
+            tokenize = False,
             **extra,
         )
     except TypeError:
         prefix = processor.apply_chat_template(
-            messages[:-1], add_generation_prompt=True, tokenize=False, **extra
+            messages[:-1], add_generation_prompt = True, tokenize = False, **extra
         )
         return f"{strip_open_reasoning_prefill(prefix)}{partial}"
 
@@ -3188,7 +3188,7 @@ def apply_chat_template_for_generation(
             try:
                 return tokenizer.apply_chat_template(
                     _swept_for(kwargs, msgs),
-                    tokenize=False,
+                    tokenize = False,
                     **boundary,
                     **kwargs,
                 )
@@ -3210,7 +3210,7 @@ def apply_chat_template_for_generation(
             swept = _swept_for(kwargs, msgs)
             try:
                 prefix = tokenizer.apply_chat_template(
-                    swept[:-1], tokenize=False, add_generation_prompt=True, **kwargs
+                    swept[:-1], tokenize = False, add_generation_prompt = True, **kwargs
                 )
             except TypeError:
                 continue
@@ -3248,7 +3248,7 @@ def apply_chat_template_for_generation(
 def resolve_native_chat_template(
     model_info: dict,
     active_model_name,
-    hf_token=None,
+    hf_token = None,
 ):
     """The model's native chat template, fetched once and cached on *model_info*. Returns False when
     the repo has none and None when the fetch failed, so a failure is retried rather than pinned.
@@ -3268,11 +3268,10 @@ def resolve_native_chat_template(
     trust_remote_code = bool(model_info.get("trust_remote_code", False))
     try:
         from transformers import AutoTokenizer
-
         nt = AutoTokenizer.from_pretrained(
             template_source,
-            token=hf_token if hf_token and hf_token.strip() else None,
-            trust_remote_code=trust_remote_code,
+            token = hf_token if hf_token and hf_token.strip() else None,
+            trust_remote_code = trust_remote_code,
         )
         native_tpl = nt.chat_template or False
     except Exception as exc:
@@ -3294,7 +3293,7 @@ def render_native_template(
     reasoning_effort: Optional[str] = None,
     preserve_thinking: Optional[bool] = None,
     continue_final_message: bool = False,
-    apply_fn=None,
+    apply_fn = None,
     hf_token: Optional[str] = None,
     return_metadata: bool = False,
 ):
@@ -3347,20 +3346,20 @@ def render_native_template(
         with_tools = apply_fn(
             render_tokenizer,
             messages,
-            tools=tools,
-            enable_thinking=enable_thinking,
-            reasoning_effort=reasoning_effort,
-            preserve_thinking=preserve_thinking,
-            continue_final_message=continue_final_message,
+            tools = tools,
+            enable_thinking = enable_thinking,
+            reasoning_effort = reasoning_effort,
+            preserve_thinking = preserve_thinking,
+            continue_final_message = continue_final_message,
         )
         no_tools = apply_fn(
             render_tokenizer,
             messages,
-            tools=None,
-            enable_thinking=enable_thinking,
-            reasoning_effort=reasoning_effort,
-            preserve_thinking=preserve_thinking,
-            continue_final_message=continue_final_message,
+            tools = None,
+            enable_thinking = enable_thinking,
+            reasoning_effort = reasoning_effort,
+            preserve_thinking = preserve_thinking,
+            continue_final_message = continue_final_message,
         )
     except Exception as exc:
         logger.warning(
@@ -3401,7 +3400,7 @@ def render_with_native_template_fallback(
     reasoning_effort: Optional[str] = None,
     preserve_thinking: Optional[bool] = None,
     continue_final_message: bool = False,
-    apply_fn=None,
+    apply_fn = None,
     hf_token: Optional[str] = None,
     return_metadata: bool = False,
 ):
@@ -3412,12 +3411,12 @@ def render_with_native_template_fallback(
     backends so both advertise tools consistently. ``hf_token`` is forwarded so a gated/private
     model's native template can still be fetched. With ``return_metadata``, returns the selected
     prompt plus reasoning-channel markers for the exact template used by this request."""
-    live_markers = detect_reasoning_channel_markers(tokenizer, tools=tools)
+    live_markers = detect_reasoning_channel_markers(tokenizer, tools = tools)
 
     def _result(
         prompt: str,
-        markers=live_markers,
-        advertised=None,
+        markers = live_markers,
+        advertised = None,
     ):
         if return_metadata:
             if advertised is None and tools:
@@ -3437,7 +3436,7 @@ def render_with_native_template_fallback(
         markers = live_markers
         if markers is None:
             markers = detect_reasoning_channel_markers_from_model_info(
-                tokenizer, model_info, tools=None
+                tokenizer, model_info, tools = None
             )
         return _result(formatted_prompt, markers)
     if apply_fn is None:
@@ -3448,11 +3447,11 @@ def render_with_native_template_fallback(
         probe_no_tools = apply_fn(
             tokenizer,
             messages,
-            tools=None,
-            enable_thinking=enable_thinking,
-            reasoning_effort=reasoning_effort,
-            preserve_thinking=preserve_thinking,
-            continue_final_message=continue_final_message,
+            tools = None,
+            enable_thinking = enable_thinking,
+            reasoning_effort = reasoning_effort,
+            preserve_thinking = preserve_thinking,
+            continue_final_message = continue_final_message,
         )
     except Exception as exc:
         logger.warning(
@@ -3464,17 +3463,17 @@ def render_with_native_template_fallback(
     if formatted_prompt != probe_no_tools:
         return _result(formatted_prompt)  # template already emits the tools schema
     native_prompt = render_native_template(
-        model_info=model_info,
-        active_model_name=active_model_name,
-        messages=messages,
-        tools=tools,
-        enable_thinking=enable_thinking,
-        reasoning_effort=reasoning_effort,
-        preserve_thinking=preserve_thinking,
-        continue_final_message=continue_final_message,
-        apply_fn=apply_fn,
-        hf_token=hf_token,
-        return_metadata=return_metadata,
+        model_info = model_info,
+        active_model_name = active_model_name,
+        messages = messages,
+        tools = tools,
+        enable_thinking = enable_thinking,
+        reasoning_effort = reasoning_effort,
+        preserve_thinking = preserve_thinking,
+        continue_final_message = continue_final_message,
+        apply_fn = apply_fn,
+        hf_token = hf_token,
+        return_metadata = return_metadata,
     )
     if native_prompt:
         logger.info(

@@ -49,9 +49,9 @@ def _protocol_error(code: int, message: str) -> Exception:
 
     cls = getattr(mcp_exceptions, "MCPError", None) or mcp_exceptions.McpError
     try:
-        return cls(code = code, message = message)
+        return cls(code=code, message=message)
     except TypeError:
-        return cls(ErrorData(code = code, message = message))
+        return cls(ErrorData(code=code, message=message))
 
 
 def _settled(
@@ -71,9 +71,9 @@ def _settled(
 
 def _result(text: str) -> SimpleNamespace:
     return SimpleNamespace(
-        content = [SimpleNamespace(type = "text", text = text)],
-        is_error = False,
-        structured_content = None,
+        content=[SimpleNamespace(type="text", text=text)],
+        is_error=False,
+        structured_content=None,
     )
 
 
@@ -114,7 +114,7 @@ class RecordingClient:
             raise RuntimeError("session expired")
         if self.probe_delay:
             await asyncio.sleep(self.probe_delay)
-        return SimpleNamespace(tools = [])
+        return SimpleNamespace(tools=[])
 
     async def __aenter__(self):
         if self.connect_delay:
@@ -163,7 +163,7 @@ def clients(monkeypatch):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: RecordingClient(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: RecordingClient(url, headers, use_oauth),
     )
     yield RecordingClient.instances
     close_mcp_sessions()
@@ -171,8 +171,8 @@ def clients(monkeypatch):
 
 def _call(
     url,
-    name = "t",
-    args = None,
+    name="t",
+    args=None,
     **kw,
 ):
     kw.setdefault("timeout", 30.0)
@@ -185,72 +185,72 @@ def _call(
 
 
 def test_scoped_http_reuses_one_client(clients):
-    assert _call(HTTP_URL, scope = SCOPE) == "call-1"
-    assert _call(HTTP_URL, scope = SCOPE) == "call-2"
+    assert _call(HTTP_URL, scope=SCOPE) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE) == "call-2"
     assert len(clients) == 1
     assert clients[0].entered == 1 and clients[0].exited == 0
 
 
 def test_sse_urls_are_cached_too(clients):
-    _call(SSE_URL, scope = SCOPE)
-    _call(SSE_URL, scope = SCOPE)
+    _call(SSE_URL, scope=SCOPE)
+    _call(SSE_URL, scope=SCOPE)
     assert len(clients) == 1
 
 
 def test_different_scopes_do_not_share(clients):
-    _call(HTTP_URL, scope = SCOPE)
-    _call(HTTP_URL, scope = SCOPE_B)
+    _call(HTTP_URL, scope=SCOPE)
+    _call(HTTP_URL, scope=SCOPE_B)
     assert len(clients) == 2
 
 
 def test_different_urls_do_not_share(clients):
-    _call(HTTP_URL, scope = SCOPE)
-    _call(HTTP_URL_2, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
+    _call(HTTP_URL_2, scope=SCOPE)
     assert len(clients) == 2
 
 
 def test_different_header_values_do_not_share(clients):
-    _call(HTTP_URL, scope = SCOPE, headers = {"Authorization": "Bearer a"})
-    _call(HTTP_URL, scope = SCOPE, headers = {"Authorization": "Bearer b"})
+    _call(HTTP_URL, scope=SCOPE, headers={"Authorization": "Bearer a"})
+    _call(HTTP_URL, scope=SCOPE, headers={"Authorization": "Bearer b"})
     assert len(clients) == 2
     assert clients[0].headers != clients[1].headers
 
 
 def test_headers_reach_the_client_unchanged(clients):
-    _call(HTTP_URL, scope = SCOPE, headers = {"Authorization": "Bearer a"})
+    _call(HTTP_URL, scope=SCOPE, headers={"Authorization": "Bearer a"})
     assert clients[0].headers == {"Authorization": "Bearer a"}
 
 
 def test_header_order_does_not_split_the_session(clients):
-    _call(HTTP_URL, scope = SCOPE, headers = {"A": "1", "B": "2"})
-    _call(HTTP_URL, scope = SCOPE, headers = {"B": "2", "A": "1"})
+    _call(HTTP_URL, scope=SCOPE, headers={"A": "1", "B": "2"})
+    _call(HTTP_URL, scope=SCOPE, headers={"B": "2", "A": "1"})
     assert len(clients) == 1
 
 
 def test_empty_headers_and_none_share_a_key(clients):
-    _call(HTTP_URL, scope = SCOPE, headers = None)
-    _call(HTTP_URL, scope = SCOPE, headers = {})
+    _call(HTTP_URL, scope=SCOPE, headers=None)
+    _call(HTTP_URL, scope=SCOPE, headers={})
     assert len(clients) == 1
 
 
 def test_unscoped_http_stays_one_shot(clients):
-    _call(HTTP_URL, scope = None)
-    _call(HTTP_URL, scope = None)
+    _call(HTTP_URL, scope=None)
+    _call(HTTP_URL, scope=None)
     assert len(clients) == 2
     assert all(c.entered == 1 and _settled(c) == 1 for c in clients)
     assert mcp_client._mcp_sessions == {}
 
 
 def test_empty_scope_is_treated_as_unscoped(clients):
-    _call(HTTP_URL, scope = "")
-    _call(HTTP_URL, scope = "")
+    _call(HTTP_URL, scope="")
+    _call(HTTP_URL, scope="")
     assert len(clients) == 2
     assert mcp_client._mcp_sessions == {}
 
 
 def test_oauth_http_stays_one_shot(clients):
-    _call(HTTP_URL, scope = SCOPE, use_oauth = True)
-    _call(HTTP_URL, scope = SCOPE, use_oauth = True)
+    _call(HTTP_URL, scope=SCOPE, use_oauth=True)
+    _call(HTTP_URL, scope=SCOPE, use_oauth=True)
     assert len(clients) == 2
     assert all(c.use_oauth for c in clients)
     assert mcp_client._mcp_sessions == {}
@@ -261,7 +261,7 @@ def test_a_shared_session_is_never_built_for_an_oauth_server():
     so if that ever slips the session must refuse rather than talk to an OAuth
     server with no credentials."""
     with pytest.raises(ValueError):
-        mcp_client._McpSession(HTTP_URL, None, use_oauth = True)
+        mcp_client._McpSession(HTTP_URL, None, use_oauth=True)
 
 
 # --------------------------------------------------------------------------
@@ -276,9 +276,9 @@ def test_http_connect_uses_the_whole_caller_budget(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: _slow_connect(url, headers, use_oauth, 0.8),
+        lambda url, headers, use_oauth=False: _slow_connect(url, headers, use_oauth, 0.8),
     )
-    out = _call(HTTP_URL, scope = SCOPE, timeout = 5.0)
+    out = _call(HTTP_URL, scope=SCOPE, timeout=5.0)
     assert out == "call-1", out
 
 
@@ -293,9 +293,9 @@ def test_stdio_connect_keeps_its_cold_start_cap(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: _slow_connect(url, headers, use_oauth, 0.8),
+        lambda url, headers, use_oauth=False: _slow_connect(url, headers, use_oauth, 0.8),
     )
-    out = _call(STDIO_URL, scope = SCOPE, timeout = 5.0)
+    out = _call(STDIO_URL, scope=SCOPE, timeout=5.0)
     assert "timed out connecting" in out, out
 
 
@@ -306,18 +306,18 @@ def test_connect_timeout_reports_the_window_that_expired(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: _slow_connect(url, headers, use_oauth, 5.0),
+        lambda url, headers, use_oauth=False: _slow_connect(url, headers, use_oauth, 5.0),
     )
-    out = _call(STDIO_URL, scope = SCOPE, timeout = 9.0)
+    out = _call(STDIO_URL, scope=SCOPE, timeout=9.0)
     assert "0.3s" in out and "9s" not in out, out
 
 
 def test_total_deadline_still_bounds_a_slow_http_connect(clients):
     """The complement: giving HTTP the full budget must not remove the budget."""
-    mcp_client._client = lambda url, headers, use_oauth = False: _slow_connect(
+    mcp_client._client = lambda url, headers, use_oauth=False: _slow_connect(
         url, headers, use_oauth, 1.0
     )
-    out = _call(HTTP_URL, scope = SCOPE, timeout = 0.25)
+    out = _call(HTTP_URL, scope=SCOPE, timeout=0.25)
     assert "timed out" in out, out
 
 
@@ -325,14 +325,14 @@ def test_connect_and_call_share_one_deadline(monkeypatch, clients):
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         c = _slow_connect(url, headers, use_oauth, 0.25)
         c.call_delay = 0.25
         return c
 
     monkeypatch.setattr(mcp_client, "_client", _client)
-    out = _call(HTTP_URL, scope = SCOPE, timeout = 0.35)
+    out = _call(HTTP_URL, scope=SCOPE, timeout=0.35)
     assert "timed out" in out, out
 
 
@@ -341,9 +341,9 @@ def test_unlimited_timeout_stays_unlimited(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: _slow_connect(url, headers, use_oauth, 0.3),
+        lambda url, headers, use_oauth=False: _slow_connect(url, headers, use_oauth, 0.3),
     )
-    assert _call(HTTP_URL, scope = SCOPE, timeout = None) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE, timeout=None) == "call-1"
 
 
 # --------------------------------------------------------------------------
@@ -354,18 +354,18 @@ def test_unlimited_timeout_stays_unlimited(monkeypatch, clients):
 def _parallel(
     url,
     scopes,
-    delay = 0.4,
+    delay=0.4,
 ):
     out: list[str] = []
     lock = threading.Lock()
 
     def run(scope):
-        r = _call(url, "delayed", scope = scope)
+        r = _call(url, "delayed", scope=scope)
         with lock:
             out.append(r)
 
     started = time.monotonic()
-    threads = [threading.Thread(target = run, args = (s,)) for s in scopes]
+    threads = [threading.Thread(target=run, args=(s,)) for s in scopes]
     for t in threads:
         t.start()
     for t in threads:
@@ -381,7 +381,7 @@ def test_two_http_calls_in_one_chat_run_concurrently(monkeypatch, clients):
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         c = RecordingClient(url, headers, use_oauth)
         c.call_delay = 0.4
@@ -402,14 +402,14 @@ def test_two_stdio_calls_in_one_chat_stay_serialized(monkeypatch, clients):
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         c = RecordingClient(url, headers, use_oauth)
         c.call_delay = 0.3
         return c
 
     monkeypatch.setattr(mcp_client, "_client", _client)
-    out, _ = _parallel(STDIO_URL, [SCOPE, SCOPE], delay = 0.3)
+    out, _ = _parallel(STDIO_URL, [SCOPE, SCOPE], delay=0.3)
     assert len(out) == 2
     assert len(clients) == 1
     assert clients[0].max_live == 1, "stdio calls overlapped on one subprocess"
@@ -419,7 +419,7 @@ def test_calls_in_different_chats_run_concurrently(monkeypatch, clients):
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         c = RecordingClient(url, headers, use_oauth)
         c.call_delay = 0.4
@@ -438,7 +438,7 @@ def test_concurrent_first_calls_publish_one_session(monkeypatch, clients):
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         return _slow_connect(url, headers, use_oauth, 0.3)
 
@@ -481,7 +481,7 @@ def test_oauth_flip_before_connect_blocks_dispatch(clients):
     try:
         out: list[str] = []
         worker = threading.Thread(
-            target = lambda: out.append(_call(HTTP_URL, scope = SCOPE, config_check = config_check))
+            target=lambda: out.append(_call(HTTP_URL, scope=SCOPE, config_check=config_check))
         )
         worker.start()
         assert reached.wait(10)
@@ -499,19 +499,19 @@ def test_oauth_flip_before_connect_blocks_dispatch(clients):
 
 def test_oauth_flip_before_dispatch_blocks_a_cached_session(clients):
     row = {"use_oauth": 0}
-    _call(HTTP_URL, scope = SCOPE, config_check = lambda: not row["use_oauth"])
+    _call(HTTP_URL, scope=SCOPE, config_check=lambda: not row["use_oauth"])
     assert len(mcp_client._mcp_sessions) == 1
     row["use_oauth"] = 1
-    out = _call(HTTP_URL, scope = SCOPE, config_check = lambda: not row["use_oauth"])
+    out = _call(HTTP_URL, scope=SCOPE, config_check=lambda: not row["use_oauth"])
     assert "updated or removed" in out, out
     assert mcp_client._mcp_sessions == {}
 
 
 def test_url_change_blocks_a_cached_session(clients):
     row = {"url": HTTP_URL}
-    _call(HTTP_URL, scope = SCOPE, config_check = lambda: row["url"] == HTTP_URL)
+    _call(HTTP_URL, scope=SCOPE, config_check=lambda: row["url"] == HTTP_URL)
     row["url"] = HTTP_URL_2
-    out = _call(HTTP_URL, scope = SCOPE, config_check = lambda: row["url"] == HTTP_URL)
+    out = _call(HTTP_URL, scope=SCOPE, config_check=lambda: row["url"] == HTTP_URL)
     assert "updated or removed" in out, out
 
 
@@ -519,7 +519,7 @@ def test_a_raising_config_check_fails_closed(clients):
     def boom() -> bool:
         raise RuntimeError("db gone")
 
-    out = _call(HTTP_URL, scope = SCOPE, config_check = boom)
+    out = _call(HTTP_URL, scope=SCOPE, config_check=boom)
     assert "updated or removed" in out, out
     assert mcp_client._mcp_sessions == {}
 
@@ -532,41 +532,41 @@ def test_a_raising_config_check_fails_closed(clients):
 def test_a_transport_failure_is_never_replayed(clients):
     """The tool may already have run on the server, so a retry could double a
     side effect. Drop the session; the next call reconnects."""
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     attempts = []
 
     async def _boom(
         name,
         args,
-        raise_on_error = True,
+        raise_on_error=True,
     ):
         attempts.append(name)
         raise RuntimeError("stream closed")
 
     clients[0].call_tool = _boom
-    out = _call(HTTP_URL, scope = SCOPE)
+    out = _call(HTTP_URL, scope=SCOPE)
     assert out.startswith("Error:"), out
     assert len(attempts) == 1, f"the failed tool was dispatched {len(attempts)} times"
     assert mcp_client._mcp_sessions == {}
     # The session is gone, so the next call reconnects rather than reusing it.
-    assert _call(HTTP_URL, scope = SCOPE) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE) == "call-1"
     assert len(clients) == 2
 
 
 def test_a_tool_error_keeps_the_session(clients):
     from fastmcp.exceptions import ToolError
 
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
 
     async def _tool_error(
         name,
         args,
-        raise_on_error = True,
+        raise_on_error=True,
     ):
         raise ToolError("nope")
 
     clients[0].call_tool = _tool_error
-    assert _call(HTTP_URL, scope = SCOPE).startswith("Error:")
+    assert _call(HTTP_URL, scope=SCOPE).startswith("Error:")
     assert len(mcp_client._mcp_sessions) == 1
     assert len(clients) == 1
 
@@ -575,9 +575,9 @@ def test_an_expired_idle_http_session_is_replaced_before_dispatch(monkeypatch, c
     """A server may drop an HTTP session whenever it likes and no HTTP transport
     exposes a liveness probe, so the only honest check is to ask it."""
     monkeypatch.setattr(mcp_client, "_HTTP_IDLE_RECHECK", 0.0)
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     clients[0].probe_error = True
-    assert _call(HTTP_URL, scope = SCOPE) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE) == "call-1"
     assert len(clients) == 2
     assert _settled(clients[0]) == 1
 
@@ -592,14 +592,14 @@ def test_a_concurrent_checkout_cannot_cancel_another_borrowers_recheck(monkeypat
     def _client(
         url,
         headers,
-        use_oauth = False,
+        use_oauth=False,
     ):
         c = RecordingClient(url, headers, use_oauth)
         c.call_delay = 0.3
         return c
 
     monkeypatch.setattr(mcp_client, "_client", _client)
-    _call(HTTP_URL, scope = SCOPE)  # connect and publish
+    _call(HTTP_URL, scope=SCOPE)  # connect and publish
     out, _ = _parallel(HTTP_URL, [SCOPE, SCOPE])
     assert len(out) == 2
     # Both were reused after an idle gap, so both must have proved the session.
@@ -612,7 +612,7 @@ def test_a_second_borrower_still_proves_a_session_that_went_idle(monkeypatch, cl
     session nobody has proved yet. If the server expired it, that user's call is
     the thing that finds out, and it cannot be replayed."""
     monkeypatch.setattr(mcp_client, "_HTTP_IDLE_RECHECK", 0.2)
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     client = clients[0]
     probes = {"n": 0}
     started = threading.Event()
@@ -628,10 +628,10 @@ def test_a_second_borrower_still_proves_a_session_that_went_idle(monkeypatch, cl
     client.list_tools_mcp = gated
     time.sleep(0.3)  # past the recheck threshold
     out: list[str] = []
-    first = threading.Thread(target = lambda: out.append(_call(HTTP_URL, scope = SCOPE)))
+    first = threading.Thread(target=lambda: out.append(_call(HTTP_URL, scope=SCOPE)))
     first.start()
     assert started.wait(10), "the first borrower never began its probe"
-    out.append(_call(HTTP_URL, scope = SCOPE))
+    out.append(_call(HTTP_URL, scope=SCOPE))
     first.join(30)
     assert len(out) == 2 and not any(r.startswith("Error:") for r in out), out
     assert probes["n"] == 2, "the second borrower dispatched on an unproven session"
@@ -648,7 +648,7 @@ def test_closing_many_sessions_does_not_run_serially(monkeypatch, clients):
     # a partial last batch would leave stragglers waiting for a party that never arrives.
     together = min(mcp_client._MAX_CLOSE_THREADS, 6)
     assert together > 1, f"_MAX_CLOSE_THREADS is {mcp_client._MAX_CLOSE_THREADS}; close is serial"
-    overlapping = threading.Barrier(together, timeout = 30)
+    overlapping = threading.Barrier(together, timeout=30)
 
     class SlowExit(RecordingClient):
         async def __aexit__(self, *exc):
@@ -660,10 +660,10 @@ def test_closing_many_sessions_does_not_run_serially(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: SlowExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: SlowExit(url, headers, use_oauth),
     )
     for i in range(together):
-        _call(HTTP_URL, scope = f"chat-{i}")
+        _call(HTTP_URL, scope=f"chat-{i}")
     started = time.monotonic()
     close_mcp_sessions()
     elapsed = time.monotonic() - started
@@ -678,9 +678,9 @@ def test_a_slow_but_live_idle_session_survives_the_recheck(monkeypatch, clients)
     there would discard exactly the state this cache is for."""
     monkeypatch.setattr(mcp_client, "_HTTP_IDLE_RECHECK", 0.0)
     monkeypatch.setattr(mcp_client, "_SESSION_LIVENESS_TIMEOUT", 0.2)
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     clients[0].probe_delay = 0.6  # answers, but well past the probe window
-    assert _call(HTTP_URL, scope = SCOPE, timeout = 30.0) == "call-2"
+    assert _call(HTTP_URL, scope=SCOPE, timeout=30.0) == "call-2"
     assert len(clients) == 1, "a slow probe retired a healthy session"
 
 
@@ -690,10 +690,10 @@ def test_a_tight_deadline_skips_the_probe_and_still_runs_the_tool(monkeypatch, c
     quietly eats the whole budget leaves nothing to dispatch with."""
     monkeypatch.setattr(mcp_client, "_HTTP_IDLE_RECHECK", 0.0)
     monkeypatch.setattr(mcp_client, "_SESSION_LIVENESS_TIMEOUT", 0.5)
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     clients[0].probe_delay = 1.5
     clients[0].call_delay = 0.2
-    assert _call(HTTP_URL, scope = SCOPE, timeout = 0.8) == "call-2"
+    assert _call(HTTP_URL, scope=SCOPE, timeout=0.8) == "call-2"
     assert clients[0].probes == 0, "the probe ran with no budget left for the call"
 
 
@@ -721,7 +721,7 @@ def test_evicting_another_scope_does_not_run_on_the_callers_deadline(monkeypatch
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: HeldExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: HeldExit(url, headers, use_oauth),
     )
     # Who CALLS close() is the whole question, and it is exact. `__aexit__` cannot answer
     # it: that always runs on the session's own loop thread, whoever is waiting on it.
@@ -741,18 +741,18 @@ def test_evicting_another_scope_does_not_run_on_the_callers_deadline(monkeypatch
     joined_worker = []
     joining = threading.Thread.join
 
-    def record_join(self, timeout = None):
+    def record_join(self, timeout=None):
         if self.name == "mcp-cleanup":
             joined_worker.append((threading.get_ident(), timeout))
         return joining(self, timeout)
 
     monkeypatch.setattr(threading.Thread, "join", record_join)
 
-    _call(HTTP_URL, scope = SCOPE)  # fills the cache
+    _call(HTTP_URL, scope=SCOPE)  # fills the cache
     monkeypatch.setattr(mcp_client, "_MAX_SESSIONS", 1)
     caller = threading.get_ident()
     started = time.monotonic()
-    assert _call(HTTP_URL, scope = SCOPE_B) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE_B) == "call-1"
     elapsed = time.monotonic() - started
 
     assert tearing_down.wait(10), "the eviction never started, so nothing was under test"
@@ -791,11 +791,11 @@ def test_a_json_rpc_error_keeps_the_chats_session(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: ProtocolError(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: ProtocolError(url, headers, use_oauth),
     )
-    _call(HTTP_URL, scope = SCOPE)
-    assert _call(HTTP_URL, "nope", scope = SCOPE).startswith("Error:")
-    assert _call(HTTP_URL, scope = SCOPE) == "call-2"
+    _call(HTTP_URL, scope=SCOPE)
+    assert _call(HTTP_URL, "nope", scope=SCOPE).startswith("Error:")
+    assert _call(HTTP_URL, scope=SCOPE) == "call-2"
     assert len(clients) == 1, "a protocol error discarded the session"
     # Kept, but no longer taken on trust: the next call proves it first, in case
     # the error was the server saying it no longer knows this session.
@@ -818,12 +818,12 @@ def test_a_failed_session_is_not_closed_on_the_retry_budget(monkeypatch, clients
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: HangingExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: HangingExit(url, headers, use_oauth),
     )
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     clients[0].probe_error = True  # the server dropped it while it sat idle
     started = time.monotonic()
-    assert _call(HTTP_URL, scope = SCOPE) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE) == "call-1"
     elapsed = time.monotonic() - started
     assert len(clients) == 2
     assert elapsed < 1.0, f"the retry waited for the dead session to close: {elapsed:.2f}s"
@@ -849,14 +849,14 @@ def test_a_synchronous_close_waits_for_work_already_started(monkeypatch, clients
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: SlowExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: SlowExit(url, headers, use_oauth),
     )
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     victim = clients[0]
     # Only the evicted session is slow, so the assertion cannot be satisfied by
     # close_mcp_sessions happening to take just as long on the others.
     victim.slow = True
-    _call(HTTP_URL, scope = SCOPE_B)  # evicts the first, worker picks it up
+    _call(HTTP_URL, scope=SCOPE_B)  # evicts the first, worker picks it up
     assert gate.wait(10), "the worker never started on the evicted session"
     close_mcp_sessions()
     assert victim.exited == 1, "close_mcp_sessions returned mid-teardown"
@@ -878,15 +878,15 @@ def test_a_surviving_call_does_not_pay_for_the_retirement(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: SlowExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: SlowExit(url, headers, use_oauth),
     )
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     session = next(iter(mcp_client._mcp_sessions.values()))
     client = clients[0]
     client.call_delay = 0.3
 
     out: list[str] = []
-    slow = threading.Thread(target = lambda: out.append(_call(HTTP_URL, scope = SCOPE)))
+    slow = threading.Thread(target=lambda: out.append(_call(HTTP_URL, scope=SCOPE)))
     slow.start()
     while session.in_flight < 1:
         time.sleep(0.01)
@@ -914,12 +914,12 @@ def test_evictions_do_not_spawn_a_thread_each(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: HangingExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: HangingExit(url, headers, use_oauth),
     )
     try:
         before = threading.active_count()
         for i in range(12):  # 11 evictions, all of them stuck in __aexit__
-            _call(HTTP_URL, scope = f"chat-{i}")
+            _call(HTTP_URL, scope=f"chat-{i}")
         # Not a total thread count: a transport stuck in __aexit__ keeps its own
         # session loop thread alive whatever closes it. What must stay bounded is
         # the cleanup machinery itself.
@@ -945,10 +945,10 @@ def test_a_json_rpc_error_from_the_probe_keeps_the_session(monkeypatch, clients)
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: ProbeRefused(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: ProbeRefused(url, headers, use_oauth),
     )
-    _call(HTTP_URL, scope = SCOPE)
-    assert _call(HTTP_URL, scope = SCOPE) == "call-2"
+    _call(HTTP_URL, scope=SCOPE)
+    assert _call(HTTP_URL, scope=SCOPE) == "call-2"
     assert len(clients) == 1, "a protocol error on the probe replaced the session"
     assert clients[0].probes == 1
 
@@ -970,11 +970,11 @@ def test_the_queue_of_pending_closes_is_bounded(monkeypatch, clients):
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: HangingExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: HangingExit(url, headers, use_oauth),
     )
     try:
         for i in range(6):  # 5 evictions, none of which can finish closing
-            threading.Thread(target = _call, args = (HTTP_URL,), kwargs = {"scope": f"c{i}"}).start()
+            threading.Thread(target=_call, args=(HTTP_URL,), kwargs={"scope": f"c{i}"}).start()
             deadline = time.monotonic() + 5.0
             while len(mcp_client._mcp_cleanup_queue) < min(i, 2) and time.monotonic() < deadline:
                 time.sleep(0.01)
@@ -984,7 +984,7 @@ def test_the_queue_of_pending_closes_is_bounded(monkeypatch, clients):
         release.set()
         for t in threading.enumerate():
             if t.name.startswith("mcp-") and t is not threading.current_thread():
-                join_when_started(t, timeout = 5)
+                join_when_started(t, timeout=5)
 
 
 def test_closing_many_sessions_does_not_spawn_a_thread_each(monkeypatch, clients):
@@ -1006,11 +1006,11 @@ def test_closing_many_sessions_does_not_spawn_a_thread_each(monkeypatch, clients
     monkeypatch.setattr(
         mcp_client,
         "_client",
-        lambda url, headers, use_oauth = False: HangingExit(url, headers, use_oauth),
+        lambda url, headers, use_oauth=False: HangingExit(url, headers, use_oauth),
     )
     for i in range(9):
-        _call(HTTP_URL, scope = f"chat-{i}")
-    closer = threading.Thread(target = close_mcp_sessions)
+        _call(HTTP_URL, scope=f"chat-{i}")
+    closer = threading.Thread(target=close_mcp_sessions)
     closer.start()
     deadline = time.monotonic() + 10.0
     while len(live) < 3 and time.monotonic() < deadline:
@@ -1027,10 +1027,10 @@ def test_a_slow_probe_still_condemns_a_dirty_session(monkeypatch, clients):
     """The counterpart that must not change: a session whose last call was
     abandoned is under suspicion, so silence within the window condemns it."""
     monkeypatch.setattr(mcp_client, "_SESSION_LIVENESS_TIMEOUT", 0.2)
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     clients[0].probe_delay = 0.6
     mcp_client._mcp_sessions[next(iter(mcp_client._mcp_sessions))].dirty = True
-    assert _call(HTTP_URL, scope = SCOPE, timeout = 30.0) == "call-1"
+    assert _call(HTTP_URL, scope=SCOPE, timeout=30.0) == "call-1"
     assert len(clients) == 2, "a wedged session was reused"
 
 
@@ -1038,7 +1038,7 @@ def test_a_failed_session_is_uncached_before_the_borrow_is_released(clients):
     """HTTP callers do not queue on call_lock, so between releasing the borrow and
     dropping the key another same-scope call could check the broken transport out
     and dispatch on it."""
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     key = next(iter(mcp_client._mcp_sessions))
     seen = {}
     real_release = mcp_client._release_session
@@ -1052,14 +1052,14 @@ def test_a_failed_session_is_uncached_before_the_borrow_is_released(clients):
     async def _boom(
         name,
         args,
-        raise_on_error = True,
+        raise_on_error=True,
     ):
         raise RuntimeError("stream closed")
 
     clients[0].call_tool = _boom
     mcp_client._release_session = watching_release
     try:
-        assert _call(HTTP_URL, scope = SCOPE).startswith("Error:")
+        assert _call(HTTP_URL, scope=SCOPE).startswith("Error:")
     finally:
         mcp_client._release_session = real_release
     assert seen["cached"] is False, "the failed session was still checkout-able"
@@ -1095,7 +1095,7 @@ def test_closing_sessions_works_during_interpreter_exit():
         """
     ) % (_BACKEND_DIR,)
     proc = subprocess.run(
-        [sys.executable, "-c", script], capture_output = True, text = True, timeout = 120
+        [sys.executable, "-c", script], capture_output=True, text=True, timeout=120
     )
     assert "CLOSED:a,b,c" in proc.stdout, f"stdout={proc.stdout!r} stderr={proc.stderr[-2000:]!r}"
     assert "can't register atexit" not in proc.stderr, proc.stderr[-2000:]
@@ -1108,7 +1108,7 @@ def test_a_fork_resets_the_inherited_cache(clients):
     out would wait on a loop that never runs."""
     if not hasattr(mcp_client.os, "register_at_fork"):
         pytest.skip("no register_at_fork on this platform")
-    _call(HTTP_URL, scope = SCOPE)
+    _call(HTTP_URL, scope=SCOPE)
     assert len(mcp_client._mcp_sessions) == 1
     # The real hook runs in a child that is about to exec or exit, so dropping the
     # entries is the whole point. Here it runs in the parent, where those objects
@@ -1135,11 +1135,12 @@ def test_transport_dead_is_unknown_for_http():
     _connect_task are StdioTransport internals, absent from both HTTP transports
     on every fastmcp this repo supports."""
     from fastmcp.client.transports import SSETransport, StreamableHttpTransport
+
     for cls in (StreamableHttpTransport, SSETransport):
-        transport = cls(url = "https://x.test/mcp")
+        transport = cls(url="https://x.test/mcp")
         assert not hasattr(transport, "_is_session_dead")
         assert not hasattr(transport, "_connect_task")
         assert (
-            mcp_client._transport_dead(SimpleNamespace(client = SimpleNamespace(transport = transport)))
+            mcp_client._transport_dead(SimpleNamespace(client=SimpleNamespace(transport=transport)))
             is False
         )

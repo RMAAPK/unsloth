@@ -48,7 +48,7 @@ def _require_playwright_page():
 
 
 def source(name: str) -> str:
-    return (STUDIO_TESTS / name).read_text(encoding="utf-8")
+    return (STUDIO_TESTS / name).read_text(encoding = "utf-8")
 
 
 def verdict(name: str) -> str:
@@ -140,10 +140,10 @@ def test_the_ansi_dump_survives_a_vite_server_that_is_still_talking(tmp_path, mo
     smoke = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(smoke)
 
-    tail: deque[str] = deque(maxlen=20)
+    tail: deque[str] = deque(maxlen = 20)
     for index in range(tail.maxlen or 20):
         tail.append(f"vite line {index}")
-    vite = types.SimpleNamespace(vite_tail=tail)
+    vite = types.SimpleNamespace(vite_tail = tail)
     stop = threading.Event()
 
     def keep_talking() -> None:
@@ -152,7 +152,7 @@ def test_the_ansi_dump_survives_a_vite_server_that_is_still_talking(tmp_path, mo
             tail.append(f"[vite] page reload {index}")
             index += 1
 
-    talker = threading.Thread(target=keep_talking, daemon=True)
+    talker = threading.Thread(target = keep_talking, daemon = True)
     talker.start()
     try:
         for _ in range(5):
@@ -160,7 +160,7 @@ def test_the_ansi_dump_survives_a_vite_server_that_is_still_talking(tmp_path, mo
             smoke.dump(types.SimpleNamespace(), vite)
     finally:
         stop.set()
-        talker.join(timeout=5)
+        talker.join(timeout = 5)
 
 
 def test_stream_pacing_asserts_its_long_task_probe_measured_something() -> None:
@@ -380,7 +380,7 @@ def test_thread_weight_rejects_a_dead_delete_at_every_size() -> None:
     for dead in sizes:
         results = {
             "sizes": sizes,
-            "by_size": {str(size): _thread_weight_row(deleted=size != dead) for size in sizes},
+            "by_size": {str(size): _thread_weight_row(deleted = size != dead) for size in sizes},
         }
         assert f"N={dead} never deleted a message" in module.harness_failures(results)
     healthy = {

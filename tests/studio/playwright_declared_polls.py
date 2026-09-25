@@ -57,7 +57,7 @@ BASE = os.environ["BASE_URL"]
 OLD = os.environ["STUDIO_OLD_PW"]
 NEW = os.environ["STUDIO_NEW_PW"]
 ART = Path(os.environ.get("PW_ART_DIR", "logs/playwright-declared-polls"))
-ART.mkdir(parents = True, exist_ok = True)
+ART.mkdir(parents=True, exist_ok=True)
 
 # How long to watch, once the app has stopped booting.
 SETTLE_S = float(os.environ.get("PW_POLL_SETTLE_S", "20"))
@@ -80,7 +80,7 @@ MIN_POLLED_PATHS = int(os.environ.get("PW_POLL_MIN_PATHS", "2"))
 
 
 def info(message: str) -> None:
-    print(message, flush = True)
+    print(message, flush=True)
 
 
 def api(
@@ -90,13 +90,13 @@ def api(
 ) -> dict:
     request = urllib.request.Request(
         f"{BASE}{path}",
-        data = json.dumps(payload).encode(),
-        headers = {
+        data=json.dumps(payload).encode(),
+        headers={
             "Content-Type": "application/json",
             **({"Authorization": f"Bearer {token}"} if token else {}),
         },
     )
-    with urllib.request.urlopen(request, timeout = 30) as response:
+    with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode() or "{}")
 
 
@@ -110,7 +110,7 @@ def normalize(url: str) -> str:
 def main() -> int:
     declared = set(ALL_POLLS)
 
-    if not wait_for_health(BASE, info = info):
+    if not wait_for_health(BASE, info=info):
         info("FAIL backend never became healthy")
         return 1
 
@@ -153,10 +153,10 @@ def main() -> int:
         dwell_counts.clear()
 
     with sync_playwright() as p:
-        install_wall_clock_watchdog(WALL_TIMEOUT_S, label = "declared-polls", info = info)
-        browser = p.chromium.launch(headless = True, args = chromium_launch_args())
+        install_wall_clock_watchdog(WALL_TIMEOUT_S, label="declared-polls", info=info)
+        browser = p.chromium.launch(headless=True, args=chromium_launch_args())
         context = browser.new_context(
-            viewport = {"width": 1440, "height": 900}, reduced_motion = "reduce"
+            viewport={"width": 1440, "height": 900}, reduced_motion="reduce"
         )
         context.add_init_script(seed_js)
         page = context.new_page()
@@ -170,7 +170,7 @@ def main() -> int:
                 dwell_counts[path] += 1
 
         page.on("request", on_request)
-        page.goto(BASE, wait_until = "domcontentloaded", timeout = 60_000)
+        page.goto(BASE, wait_until="domcontentloaded", timeout=60_000)
 
         # Boot traffic is one-shot by nature and would otherwise be indistinguishable from a slow poll over a short
         # window. Let it drain before counting anything.
@@ -183,7 +183,7 @@ def main() -> int:
         dwell = max(int(WATCH_S * 1000 / (len(SECTIONS) + 1)), 20_000)
         for label in SECTIONS:
             try:
-                page.get_by_text(label, exact = True).first.click(timeout = 8_000)
+                page.get_by_text(label, exact=True).first.click(timeout=8_000)
             except Exception:
                 info(f"note: could not reach {label!r}")
                 continue
@@ -215,9 +215,9 @@ def main() -> int:
                 "polled": dict(sorted(polled.items())),
                 "undeclared": undeclared,
             },
-            indent = 2,
+            indent=2,
         ),
-        encoding = "utf-8",
+        encoding="utf-8",
     )
 
     info(

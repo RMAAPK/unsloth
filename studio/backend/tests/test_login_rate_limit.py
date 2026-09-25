@@ -22,7 +22,7 @@ if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
 
-@pytest.fixture(autouse = True)
+@pytest.fixture(autouse=True)
 def _reset_buckets():
     """Clear the in-memory bucket dicts between tests."""
     from routes import auth as auth_routes
@@ -42,7 +42,7 @@ def _reset_buckets():
 
 @pytest.fixture
 def env_no_proxy(monkeypatch):
-    monkeypatch.delenv("UNSLOTH_STUDIO_TRUST_FORWARDED", raising = False)
+    monkeypatch.delenv("UNSLOTH_STUDIO_TRUST_FORWARDED", raising=False)
 
 
 @pytest.fixture
@@ -53,10 +53,11 @@ def env_trust_proxy(monkeypatch):
 class _FakeRequest:
     def __init__(
         self,
-        client_host = "127.0.0.1",
-        headers = None,
+        client_host="127.0.0.1",
+        headers=None,
     ):
         from starlette.datastructures import Headers
+
         self.client = type("Client", (), {"host": client_host})()
         self.headers = Headers(headers or {})
 
@@ -67,10 +68,12 @@ class _FakeRequest:
 class TestClientIp:
     def test_uses_request_client_host_by_default(self, env_no_proxy):
         from routes.auth import _client_ip
+
         assert _client_ip(_FakeRequest("203.0.113.5")) == "203.0.113.5"
 
     def test_ignores_xff_when_trust_off(self, env_no_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest(
             "127.0.0.1",
             {"x-forwarded-for": "198.51.100.7, 10.0.0.1"},
@@ -80,6 +83,7 @@ class TestClientIp:
 
     def test_honours_first_xff_when_trust_on(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest(
             "127.0.0.1",
             {"x-forwarded-for": "198.51.100.7, 10.0.0.1"},
@@ -88,10 +92,12 @@ class TestClientIp:
 
     def test_falls_back_to_client_host_when_xff_missing(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         assert _client_ip(_FakeRequest("203.0.113.9")) == "203.0.113.9"
 
     def test_honours_forwarded_header_when_trust_on(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest(
             "127.0.0.1",
             {"forwarded": 'for="198.51.100.42";proto=https'},
@@ -107,21 +113,25 @@ class TestClientIp:
 
     def test_xff_strips_ipv4_port(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest("127.0.0.1", {"x-forwarded-for": "198.51.100.7:50001, 10.0.0.1"})
         assert _client_ip(req) == "198.51.100.7"
 
     def test_xff_strips_bracketed_ipv6_port(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest("127.0.0.1", {"x-forwarded-for": "[2001:db8::1]:50001, 10.0.0.1"})
         assert _client_ip(req) == "2001:db8::1"
 
     def test_forwarded_strips_ipv4_port(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest("127.0.0.1", {"forwarded": 'for="198.51.100.7:50001";proto=https'})
         assert _client_ip(req) == "198.51.100.7"
 
     def test_forwarded_strips_bracketed_ipv6_port(self, env_trust_proxy):
         from routes.auth import _client_ip
+
         req = _FakeRequest("127.0.0.1", {"forwarded": 'for="[2001:db8::1]:50001";proto=https'})
         assert _client_ip(req) == "2001:db8::1"
 
@@ -129,6 +139,7 @@ class TestClientIp:
         # Pick the first Forwarded element only, else suffix variations create
         # attacker-controlled buckets.
         from routes.auth import _client_ip
+
         req = _FakeRequest(
             "127.0.0.1",
             {"forwarded": "for=198.51.100.42, for=10.0.0.1;proto=https"},
@@ -138,6 +149,7 @@ class TestClientIp:
     def test_xff_invalid_ip_falls_back_to_client_host(self, env_trust_proxy):
         # A garbage XFF must not propagate into the bucket key.
         from routes.auth import _client_ip
+
         req = _FakeRequest("127.0.0.1", {"x-forwarded-for": "not-an-ip"})
         assert _client_ip(req) == "127.0.0.1"
 
@@ -475,14 +487,14 @@ class TestLogin429Body:
         monkeypatch.setattr(storage, "_BOOTSTRAP_PW_PATH", tmp_path / ".bootstrap_password")
         monkeypatch.setattr(storage, "_bootstrap_password", None)
         storage.create_initial_user(
-            username = storage.DEFAULT_ADMIN_USERNAME,
-            password = "human-password-123",
-            jwt_secret = _secrets.token_urlsafe(64),
-            must_change_password = False,
+            username=storage.DEFAULT_ADMIN_USERNAME,
+            password="human-password-123",
+            jwt_secret=_secrets.token_urlsafe(64),
+            must_change_password=False,
         )
 
         app = FastAPI()
-        app.include_router(auth_router, prefix = "/api/auth")
+        app.include_router(auth_router, prefix="/api/auth")
         return TestClient(app)
 
     def test_429_detail_does_not_leak_ip(self, env_no_proxy, login_client):
@@ -492,12 +504,12 @@ class TestLogin429Body:
         for _ in range(_LOGIN_MAX_FAILS):
             r = login_client.post(
                 "/api/auth/login",
-                json = {"username": "unsloth", "password": "wrong"},
+                json={"username": "unsloth", "password": "wrong"},
             )
             assert r.status_code == 401
         r = login_client.post(
             "/api/auth/login",
-            json = {"username": "unsloth", "password": "wrong"},
+            json={"username": "unsloth", "password": "wrong"},
         )
         assert r.status_code == 429
         detail = r.json()["detail"]

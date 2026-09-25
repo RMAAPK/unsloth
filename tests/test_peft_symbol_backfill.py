@@ -37,7 +37,7 @@ FIXES = _load_module()
 backfill = FIXES._backfill_missing_peft_symbols
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _restore_modules():
     saved = {k: sys.modules.get(k) for k in (CONV, CORE)}
     yield
@@ -61,8 +61,8 @@ def test_backfills_only_the_missing_symbol():
     sentinel_fn = lambda *a, **k: "upstream"
     mod = _fake_real_module(
         CONV,
-        get_checkpoint_conversion_mapping=sentinel_fn,
-        get_model_conversion_mapping=sentinel_fn,
+        get_checkpoint_conversion_mapping = sentinel_fn,
+        get_model_conversion_mapping = sentinel_fn,
     )
     added = backfill(CONV)
     assert added == ("_MODEL_TO_CONVERSION_PATTERN",)
@@ -102,7 +102,7 @@ def test_idempotent():
 
 def test_core_model_loading_classes_are_subclassable():
     # peft subclasses ConversionOps at module top, so it must be a real class.
-    _fake_real_module(CORE, dot_natural_key=lambda k: k)
+    _fake_real_module(CORE, dot_natural_key = lambda k: k)
     added = backfill(CORE)
     assert "dot_natural_key" not in added
     mod = sys.modules[CORE]
@@ -136,16 +136,16 @@ def test_required_symbols_match_peft_import_list():
 def test_a_missing_mapping_function_is_announced():
     _fake_real_module(
         CONV,
-        _MODEL_TO_CONVERSION_PATTERN={"real": 1},
-        get_checkpoint_conversion_mapping=lambda *a: "real",
+        _MODEL_TO_CONVERSION_PATTERN = {"real": 1},
+        get_checkpoint_conversion_mapping = lambda *a: "real",
     )
-    with pytest.warns(RuntimeWarning, match="get_model_conversion_mapping"):
+    with pytest.warns(RuntimeWarning, match = "get_model_conversion_mapping"):
         assert backfill(CONV) == ("get_model_conversion_mapping",)
 
 
 def test_a_missing_conversion_class_is_announced():
     _fake_real_module(CORE, **{s: object() for s in FIXES._PEFT_REQUIRED_SYMBOLS[CORE][1:]})
-    with pytest.warns(RuntimeWarning, match="Concatenate"):
+    with pytest.warns(RuntimeWarning, match = "Concatenate"):
         backfill(CORE)
 
 
@@ -155,8 +155,8 @@ def test_only_the_pattern_is_quiet():
 
     _fake_real_module(
         CONV,
-        get_checkpoint_conversion_mapping=lambda *a: None,
-        get_model_conversion_mapping=lambda *a: None,
+        get_checkpoint_conversion_mapping = lambda *a: None,
+        get_model_conversion_mapping = lambda *a: None,
     )
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -165,7 +165,6 @@ def test_only_the_pattern_is_quiet():
 
 def test_a_complete_module_says_nothing():
     import warnings
-
     _fake_real_module(CONV, **{s: object() for s in FIXES._PEFT_REQUIRED_SYMBOLS[CONV]})
     with warnings.catch_warnings():
         warnings.simplefilter("error")

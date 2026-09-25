@@ -996,7 +996,7 @@ def _read_preview_rows_from_multi_files(
     file_names: list[str],
     preview_size: int,
     chunk_size: int | None,
-    chunk_overlap: int | None
+    chunk_overlap: int | None,
 ) -> list[dict[str, str]]:
     chunking = _chunking()
     if chunking is None:

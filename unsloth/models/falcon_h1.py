@@ -462,7 +462,7 @@ def FalconH1DecoderLayer_fast_forward(
 
 def _FalconH1_fast_forward_inference(
     attention_fast_forward_inference = FalconH1Attention_fast_forward_inference,
-    mlp_fast_forward_inference = fast_swiglu_inference
+    mlp_fast_forward_inference = fast_swiglu_inference,
 ):
     # Makes attention and MLP customisable (qwen3/cohere custom attention).
     def FalconH1Model_fast_forward_inference_custom(

@@ -453,7 +453,7 @@ def test_a_specific_host_launch_reports_the_address_it_was_given():
 
 
 def test_a_wildcard_launch_refreshes_lan_addresses_instead_of_showing_the_public_address(
-    monkeypatch
+    monkeypatch,
 ):
     """The status refreshes every LAN address instead of relying on server_url's
     single direct base, and never leaks an obsolete public-address value."""

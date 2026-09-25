@@ -198,11 +198,11 @@ def test_no_release_ever_published_a_cu128_wheel():
 def _mismatch_message(
     monkeypatch,
     *,
-    cuda="12.8",
-    vllm="0.23.0",
-    machine="x86_64",
-    system="Linux",
-    soname=13,
+    cuda = "12.8",
+    vllm = "0.23.0",
+    machine = "x86_64",
+    system = "Linux",
+    soname = 13,
 ):
     import platform as _platform
     import unsloth.import_fixes as import_fixes
@@ -235,50 +235,49 @@ def test_message_recommends_the_real_cu129_wheel_on_a_cuda12_system(monkeypatch)
 
 
 def test_message_is_arch_correct_on_aarch64(monkeypatch):
-    message = _mismatch_message(monkeypatch, machine="aarch64")
+    message = _mismatch_message(monkeypatch, machine = "aarch64")
     assert "manylinux_2_28_aarch64.whl" in message, message
     assert "x86_64" not in message
 
 
 def test_message_recommends_the_default_wheel_on_a_cuda13_system(monkeypatch):
     """Reverse direction: CUDA 13 host, vLLM built for CUDA 12."""
-    message = _mismatch_message(monkeypatch, cuda="13.0", soname=12)
+    message = _mismatch_message(monkeypatch, cuda = "13.0", soname = 12)
     assert "vllm-0.23.0-cp38-abi3-manylinux_2_28_x86_64.whl" in message, message
     assert "+cu" not in message
 
 
 def test_older_release_uses_its_own_manylinux_tag(monkeypatch):
-    message = _mismatch_message(monkeypatch, vllm="0.18.0")
+    message = _mismatch_message(monkeypatch, vllm = "0.18.0")
     assert "vllm-0.18.0-cp38-abi3-manylinux_2_31_x86_64.whl" in message, message
 
 
 def test_unmapped_newer_release_points_at_the_release_page(monkeypatch):
-    message = _mismatch_message(monkeypatch, vllm="0.99.0")
+    message = _mismatch_message(monkeypatch, vllm = "0.99.0")
     assert ".whl" not in message, message
     assert "https://github.com/vllm-project/vllm/releases/tag/v0.99.0" in message
     assert "+cu129" in message  # still says which variant to pick
 
 
 def test_non_release_version_never_fabricates_a_filename(monkeypatch):
-    message = _mismatch_message(monkeypatch, vllm="0.24.0rc1")
+    message = _mismatch_message(monkeypatch, vllm = "0.24.0rc1")
     assert ".whl" not in message, message
     assert "https://github.com/vllm-project/vllm/releases" in message
 
 
 @pytest.mark.parametrize("system,machine", [("Windows", "AMD64"), ("Darwin", "arm64")])
 def test_non_linux_never_recommends_a_manylinux_wheel(monkeypatch, system, machine):
-    message = _mismatch_message(monkeypatch, system=system, machine=machine)
+    message = _mismatch_message(monkeypatch, system = system, machine = machine)
     assert "manylinux" not in message, message
     assert ".whl" not in message, message
 
 
 def test_matching_cuda_is_not_reported_as_a_mismatch(monkeypatch):
-    assert _mismatch_message(monkeypatch, cuda="12.8", soname=12) is None
+    assert _mismatch_message(monkeypatch, cuda = "12.8", soname = 12) is None
 
 
 def test_unrelated_error_is_not_reported_as_a_mismatch(monkeypatch):
     import unsloth.import_fixes as import_fixes
-
     assert (
         import_fixes._get_vllm_cuda_mismatch_message(
             ImportError("vllm._C: undefined symbol: _ZN3c108ListType3ofTsEv")
@@ -289,7 +288,6 @@ def test_unrelated_error_is_not_reported_as_a_mismatch(monkeypatch):
 
 def test_table_ranges_are_ordered_and_disjoint():
     from packaging.version import Version
-
     previous_high = None
     for low, high, by_cuda in _VLLM_WHEEL_ASSETS:
         assert Version(low) <= Version(high), (low, high)
@@ -301,7 +299,7 @@ def test_table_ranges_are_ordered_and_disjoint():
 
 @pytest.mark.skipif(
     os.environ.get("UNSLOTH_TEST_NETWORK", "0") not in ("1", "true", "True"),
-    reason="set UNSLOTH_TEST_NETWORK=1 to check the URLs against GitHub",
+    reason = "set UNSLOTH_TEST_NETWORK=1 to check the URLs against GitHub",
 )
 @pytest.mark.parametrize("version", sorted(_RELEASE_ASSETS))
 def test_wheel_urls_resolve_live(version):
@@ -310,6 +308,6 @@ def test_wheel_urls_resolve_live(version):
             url = _get_vllm_wheel_url(version, cuda_major, arch)
             if url is None:
                 continue
-            request = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(request, timeout=30) as response:
+            request = urllib.request.Request(url, method = "HEAD")
+            with urllib.request.urlopen(request, timeout = 30) as response:
                 assert response.status == 200, (url, response.status)

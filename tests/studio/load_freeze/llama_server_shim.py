@@ -155,7 +155,7 @@ class FakeLlamaServer:
             detok_status: int,
             detok_body: Optional[bytes],
             detok_map: dict,
-            completion_delay: float
+            completion_delay: float,
         ) -> None:
             self.health_delay = health_delay
             self.health_fail = health_fail

@@ -678,7 +678,7 @@ def build_worker_provenance_event(
     *,
     model_load_target: Any,
     model_load_in_4bit: bool,
-    dataset_loaded_from_exact_snapshot: bool
+    dataset_loaded_from_exact_snapshot: bool,
 ) -> dict[str, Any]:
     model_repo_id, model_snapshot, model_load_mode, model_reason = attest_loaded_model(
         config,

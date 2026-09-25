@@ -35,7 +35,7 @@ class _StallingClient:
 
 
 def _transport(client):
-    return OAICompatTransport(client, model="local-model")
+    return OAICompatTransport(client, model = "local-model")
 
 
 def test_cancel_closes_a_stalled_upstream_stream():
@@ -46,10 +46,10 @@ def test_cancel_closes_a_stalled_upstream_stream():
 
         async def consume():
             async for line in _transport(client).stream(
-                messages=[{"role": "user", "content": "hi"}],
-                tools=None,
-                tool_choice="auto",
-                cancel_event=cancel_event,
+                messages = [{"role": "user", "content": "hi"}],
+                tools = None,
+                tool_choice = "auto",
+                cancel_event = cancel_event,
             ):
                 seen.append(line)
 
@@ -58,7 +58,7 @@ def test_cancel_closes_a_stalled_upstream_stream():
         assert seen and not client.torn_down, "should still be parked on the provider"
 
         cancel_event.set()
-        await asyncio.wait_for(task, timeout=5.0)
+        await asyncio.wait_for(task, timeout = 5.0)
         assert client.torn_down, "cancel must close the upstream, not await the next chunk"
 
     asyncio.run(scenario())
@@ -70,10 +70,10 @@ def test_closing_the_generator_still_tears_the_upstream_down():
     async def scenario():
         client = _StallingClient()
         generator = _transport(client).stream(
-            messages=[{"role": "user", "content": "hi"}],
-            tools=None,
-            tool_choice="auto",
-            cancel_event=threading.Event(),
+            messages = [{"role": "user", "content": "hi"}],
+            tools = None,
+            tool_choice = "auto",
+            cancel_event = threading.Event(),
         )
         assert (await generator.__anext__()).startswith("data:")
         await generator.aclose()
@@ -89,10 +89,10 @@ def test_an_uncancelled_stream_relays_every_line():
         lines = [
             line
             async for line in _transport(client).stream(
-                messages=[{"role": "user", "content": "hi"}],
-                tools=None,
-                tool_choice="auto",
-                cancel_event=threading.Event(),
+                messages = [{"role": "user", "content": "hi"}],
+                tools = None,
+                tool_choice = "auto",
+                cancel_event = threading.Event(),
             )
         ]
         assert lines[-1] == "data: [DONE]"

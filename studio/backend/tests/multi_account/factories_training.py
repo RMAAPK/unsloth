@@ -43,6 +43,7 @@ _EVENTS_REASON = (
 
 def _claim_in_process_job(service) -> None:
     from utils.account_context import current_account
+
     with service._account_job_lock:
         service._result_account = service.job_account = current_account()
 
@@ -58,11 +59,11 @@ def seed_training_start_request(account) -> dict[str, str]:
     def install() -> None:
         _claim_in_process_job(backend)
         record = TrainingStartRequestRecord(
-            start_request_id = START_REQUEST_ID,
-            job_id = START_JOB_ID,
-            state = "rejected",
-            message = SENTINEL,
-            error = "Training start failed validation",
+            start_request_id=START_REQUEST_ID,
+            job_id=START_JOB_ID,
+            state="rejected",
+            message=SENTINEL,
+            error="Training start failed validation",
         )
         with backend._lock:
             backend._start_requests[START_REQUEST_ID] = record
@@ -86,7 +87,7 @@ def seed_diffusion_run(account) -> dict[str, str]:
 
     def install() -> None:
         folder = tensorboard_root() / "diffusion"
-        folder.mkdir(parents = True, exist_ok = True)
+        folder.mkdir(parents=True, exist_ok=True)
         (folder / f"{DIFFUSION_JOB_ID}.json").write_text(
             json.dumps(
                 {
@@ -99,7 +100,7 @@ def seed_diffusion_run(account) -> dict[str, str]:
                     "config": {},
                 }
             ),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
 
     run_as(account, install)
@@ -115,10 +116,10 @@ def seed_diffusion_dataset(account) -> dict[str, str]:
 
     def install() -> None:
         folder = datasets_root() / DATASET_NAME
-        folder.mkdir(parents = True, exist_ok = True)
+        folder.mkdir(parents=True, exist_ok=True)
         image = folder / IMAGE_NAME
         image.write_bytes(base64.b64decode(PNG_1X1))
-        image.with_suffix(".txt").write_text(SENTINEL, encoding = "utf-8")
+        image.with_suffix(".txt").write_text(SENTINEL, encoding="utf-8")
 
     run_as(account, install)
     return {"name": DATASET_NAME, "filename": IMAGE_NAME}
@@ -132,7 +133,7 @@ def seed_scan_folder(account) -> dict[str, str]:
 
     def install() -> str:
         folder = workspace_root() / SCAN_FOLDER_DIRNAME
-        folder.mkdir(parents = True, exist_ok = True)
+        folder.mkdir(parents=True, exist_ok=True)
         row, _ = add_scan_folder_with_status(str(folder))
         return str(row["id"])
 
@@ -149,7 +150,7 @@ def seed_recipe_job(account) -> dict[str, str]:
 
     def install() -> None:
         _claim_in_process_job(manager)
-        job = Job(job_id = RECIPE_JOB_ID, status = "completed", started_at = 1000.0)
+        job = Job(job_id=RECIPE_JOB_ID, status="completed", started_at=1000.0)
         job.finished_at = 2000.0
         job.execution_type = "preview"
         job.analysis = {"summary": SENTINEL}
@@ -177,12 +178,12 @@ def seed_unstructured_upload(account) -> dict[str, str]:
 
     def install() -> None:
         block = unstructured_uploads_root() / BLOCK_ID
-        block.mkdir(parents = True, exist_ok = True)
-        (block / f"{FILE_ID}.txt").write_text(SENTINEL, encoding = "utf-8")
-        (block / f"{FILE_ID}.extracted.txt").write_text(SENTINEL, encoding = "utf-8")
+        block.mkdir(parents=True, exist_ok=True)
+        (block / f"{FILE_ID}.txt").write_text(SENTINEL, encoding="utf-8")
+        (block / f"{FILE_ID}.extracted.txt").write_text(SENTINEL, encoding="utf-8")
         (block / f"{FILE_ID}.meta.json").write_text(
             json.dumps({"original_filename": "training-matrix.txt", "size_bytes": 1}),
-            encoding = "utf-8",
+            encoding="utf-8",
         )
 
     run_as(account, install)
@@ -190,74 +191,74 @@ def seed_unstructured_upload(account) -> dict[str, str]:
 
 
 FACTORIES = {
-    "routes.training_history:DELETE:/runs/{run_id}": Factory("training", fragment = "deleted"),
+    "routes.training_history:DELETE:/runs/{run_id}": Factory("training", fragment="deleted"),
     "routes.training:GET:/start-requests/{start_request_id}": Factory(
-        "training-start-request", fragment = SENTINEL
+        "training-start-request", fragment=SENTINEL
     ),
     "routes.training:POST:/start-requests/{start_request_id}/acknowledge": Factory(
-        "training-start-request", fragment = "ok"
+        "training-start-request", fragment="ok"
     ),
     "routes.training:POST:/start-requests/{start_request_id}/cancel": Factory(
-        "training-start-request", fragment = SENTINEL
+        "training-start-request", fragment=SENTINEL
     ),
     "routes.training:GET:/diffusion/runs/{job_id}": Factory(
-        "training-diffusion-run", fragment = SENTINEL
+        "training-diffusion-run", fragment=SENTINEL
     ),
     "routes.training:GET:/diffusion/dataset/{name}/images": Factory(
-        "training-diffusion-dataset", fragment = SENTINEL
+        "training-diffusion-dataset", fragment=SENTINEL
     ),
     "routes.training:GET:/diffusion/dataset/{name}/image/{filename}": Factory(
-        "training-diffusion-dataset", fragment = "IHDR"
+        "training-diffusion-dataset", fragment="IHDR"
     ),
     "routes.training:DELETE:/diffusion/dataset/{name}/image/{filename}": Factory(
-        "training-diffusion-dataset", fragment = IMAGE_NAME
+        "training-diffusion-dataset", fragment=IMAGE_NAME
     ),
     "routes.training:PUT:/diffusion/dataset/{name}/caption/{filename}": Factory(
-        "training-diffusion-dataset", {"caption": EDITED}, fragment = EDITED
+        "training-diffusion-dataset", {"caption": EDITED}, fragment=EDITED
     ),
     "routes.models:DELETE:/scan-folders/{folder_id}": Factory(
         "training-scan-folder",
-        owner = (200,),
-        wrong = (200,),
-        reason = _SCAN_FOLDER_REASON,
+        owner=(200,),
+        wrong=(200,),
+        reason=_SCAN_FOLDER_REASON,
     ),
     "routes.data_recipe.jobs:GET:/jobs/{job_id}/status": Factory(
-        "training-recipe-job", fragment = RECIPE_JOB_ID
+        "training-recipe-job", fragment=RECIPE_JOB_ID
     ),
     "routes.data_recipe.jobs:GET:/jobs/{job_id}/analysis": Factory(
-        "training-recipe-job", fragment = SENTINEL
+        "training-recipe-job", fragment=SENTINEL
     ),
     "routes.data_recipe.jobs:GET:/jobs/{job_id}/dataset": Factory(
-        "training-recipe-job", fragment = SENTINEL
+        "training-recipe-job", fragment=SENTINEL
     ),
     "routes.data_recipe.jobs:GET:/jobs/{job_id}/download-url": Factory(
-        "training-recipe-job", fragment = "/download?"
+        "training-recipe-job", fragment="/download?"
     ),
     "routes.data_recipe.jobs:GET:/jobs/{job_id}/download": Factory(
-        "training-recipe-job", fragment = SENTINEL
+        "training-recipe-job", fragment=SENTINEL
     ),
     "routes.data_recipe.jobs:POST:/jobs/{job_id}/cancel": Factory(
-        "training-recipe-job", fragment = RECIPE_JOB_ID
+        "training-recipe-job", fragment=RECIPE_JOB_ID
     ),
     "routes.data_recipe.jobs:POST:/jobs/{job_id}/publish": Factory(
         "training-recipe-job",
         {"repo_id": "training-matrix/dataset", "description": SENTINEL, "hf_token": "hf_matrix"},
-        success = 409,
-        fragment = "Only completed full runs can be published.",
-        owner = (400,),
-        wrong = (400,),
-        reason = _PUBLISH_REASON,
+        success=409,
+        fragment="Only completed full runs can be published.",
+        owner=(400,),
+        wrong=(400,),
+        reason=_PUBLISH_REASON,
     ),
     "routes.data_recipe.seed:DELETE:/seed/unstructured-block/{block_id}": Factory(
         "training-unstructured-upload",
-        fragment = "true",
-        absent = "true",
-        owner = (200,),
-        wrong = (200,),
-        reason = _BLOCK_REASON,
+        fragment="true",
+        absent="true",
+        owner=(200,),
+        wrong=(200,),
+        reason=_BLOCK_REASON,
     ),
     "routes.data_recipe.seed:DELETE:/seed/unstructured-file/{block_id}/{file_id}": Factory(
-        "training-unstructured-upload", fragment = "ok"
+        "training-unstructured-upload", fragment="ok"
     ),
 }
 

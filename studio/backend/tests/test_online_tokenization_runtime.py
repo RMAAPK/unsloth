@@ -49,9 +49,9 @@ class _Tokenizer:
     def __call__(
         self,
         texts,
-        truncation=True,
-        max_length=8,
-        add_special_tokens=True,
+        truncation = True,
+        max_length = 8,
+        add_special_tokens = True,
     ):
         if isinstance(texts, str):
             texts = [texts]
@@ -67,10 +67,10 @@ def _view():
     dataset = datasets.Dataset.from_dict({"text": [f"row {i}" for i in range(ROWS)]})
     return attach_online_tokenization(
         dataset,
-        tokenizer=_Tokenizer(),
-        text_field="text",
-        max_length=8,
-        add_special_tokens=True,
+        tokenizer = _Tokenizer(),
+        text_field = "text",
+        max_length = 8,
+        add_special_tokens = True,
     )
 
 
@@ -85,7 +85,7 @@ class _FakeTrainer:
     def __init__(
         self,
         dataset,
-        shuffle=False,
+        shuffle = False,
     ):
         self.dataset = dataset
         self.shuffle = shuffle
@@ -95,13 +95,13 @@ class _FakeTrainer:
         self.calls += 1
         return DataLoader(
             self.dataset,
-            batch_size=BATCH,
-            sampler=RandomSampler(self.dataset) if self.shuffle else None,
-            shuffle=False,
-            num_workers=WORKERS,
-            prefetch_factor=PREFETCH,
-            persistent_workers=True,
-            collate_fn=_collate,
+            batch_size = BATCH,
+            sampler = RandomSampler(self.dataset) if self.shuffle else None,
+            shuffle = False,
+            num_workers = WORKERS,
+            prefetch_factor = PREFETCH,
+            persistent_workers = True,
+            collate_fn = _collate,
         )
 
 
@@ -135,14 +135,14 @@ def _take(loader, count):
     return taken
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse = True)
 def _no_leaked_workers():
     """A failing assertion must not leave worker processes behind for the next test."""
     before = set(multiprocessing.active_children())
     yield
     for child in set(multiprocessing.active_children()) - before:
         child.terminate()
-        child.join(timeout=5)
+        child.join(timeout = 5)
 
 
 def test_the_prewarm_re_iterates_from_the_start_rather_than_continuing():
@@ -167,7 +167,7 @@ def test_a_shuffled_pass_after_prewarming_still_covers_every_row():
     """Same claim with the sampler a real run uses: nothing is missing, and
     nothing is served twice to make up the count."""
     torch.manual_seed(0)
-    trainer = _FakeTrainer(_view(), shuffle=True)
+    trainer = _FakeTrainer(_view(), shuffle = True)
     _prewarm(trainer, PREWARM)
 
     rows = [row for batch in trainer.get_train_dataloader() for row in batch]
@@ -257,11 +257,11 @@ def test_the_memoized_eval_workers_are_released_too():
 
     eval_loader = DataLoader(
         _view(),
-        batch_size=BATCH,
-        num_workers=WORKERS,
-        prefetch_factor=PREFETCH,
-        persistent_workers=True,
-        collate_fn=_collate,
+        batch_size = BATCH,
+        num_workers = WORKERS,
+        prefetch_factor = PREFETCH,
+        persistent_workers = True,
+        collate_fn = _collate,
     )
     list(eval_loader)  # the eval loop drains it; torch retains the iterator
     trainer._eval_dataloaders = {"eval": eval_loader}

@@ -42,7 +42,7 @@ def client(monkeypatch):
     app = FastAPI()
     app.include_router(settings.router)
     app.dependency_overrides[settings.get_current_subject] = lambda: "admin"
-    return TestClient(app, raise_server_exceptions=False), calls
+    return TestClient(app, raise_server_exceptions = False), calls
 
 
 def test_rotate_preview_links(client):
@@ -64,7 +64,7 @@ def test_get_preview_sharing(client):
 
 def test_put_preview_sharing_disables(client):
     c, calls = client
-    r = c.put("/preview-sharing", json={"enabled": False})
+    r = c.put("/preview-sharing", json = {"enabled": False})
     assert r.status_code == 200
     assert r.json()["enabled"] is False
     assert calls["set"] is False
@@ -73,5 +73,5 @@ def test_put_preview_sharing_disables(client):
 def test_put_preview_sharing_rejects_non_bool(client):
     # Pydantic rejects a non-bool body (422) before the handler runs.
     c, _ = client
-    r = c.put("/preview-sharing", json={"enabled": "maybe"})
+    r = c.put("/preview-sharing", json = {"enabled": "maybe"})
     assert r.status_code == 422

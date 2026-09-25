@@ -598,7 +598,7 @@ def _image_variant_hint(
     family_name: Optional[str],
     single_file_name: Optional[str],
     repo_id: Optional[str],
-    base: Optional[str]
+    base: Optional[str],
 ) -> str:
     """The free-text hint ``estimate_image_runtime_mib`` scans for distilled / turbo / edit markers,
     built from every identifier this load carries. Both ``repo_id`` AND ``base`` go in: picking
@@ -1309,7 +1309,7 @@ def _uncached_prequant_repo(
     requested: Optional[str],
     *,
     base_repo: Optional[str],
-    prequant_path: Optional[str]
+    prequant_path: Optional[str],
 ) -> Optional[str]:
     """The hosted pre-quant repo an AUTO-derived quant would have to DOWNLOAD for this pick, or None
     when it costs no extra bytes (no hosted source, a local override, or already cached).
@@ -1392,7 +1392,7 @@ def _dense_candidate_is_prequant(
     requested: Optional[str],
     *,
     base_repo: Optional[str],
-    prequant_path: Optional[str]
+    prequant_path: Optional[str],
 ) -> bool:
     """Whether the dense-quant fast path would open a PRE-QUANT checkpoint rather than the base repo's
     own dense ``transformer/`` shards.
@@ -2088,7 +2088,7 @@ class DiffusionBackend:
         *,
         base_repo: Optional[str],
         path_override: Optional[str],
-        loras: Any
+        loras: Any,
     ) -> Optional[str]:
         """A lower auto rung than ``chosen`` that HAS a usable prequant, or None. Only when ``auto``
         was requested: an explicit scheme is honored or refused, never swapped. A baked LoRA
@@ -6156,7 +6156,7 @@ class DiffusionBackend:
         fam: DiffusionFamily,
         base: str,
         target: Any,
-        text_encoder_quant: Optional[str]
+        text_encoder_quant: Optional[str],
     ) -> Optional[int]:
         """``candidate.companions_mib`` with the text-encoder share priced at the PRE-CAST size when
         this pick takes its encoder from a hosted fp8 checkpoint. The estimate is always the
@@ -6822,7 +6822,7 @@ class DiffusionBackend:
         specs: list[tuple[str, float]],
         current: tuple,
         quant_baked: bool,
-        cancel: threading.Event
+        cancel: threading.Event,
     ) -> None:
         """Generation-time LoRA handling for a torchao-quantized pipe. The adapters (if any) were
         baked at load time, before quantize_ + compile, so the module topology is immutable here.

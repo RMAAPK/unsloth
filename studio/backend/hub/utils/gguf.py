@@ -873,7 +873,7 @@ def list_empty_gguf_variant_dirs(repo_id: str, root: Optional[Path] = None) -> s
 
 
 def _select_gguf_snapshot(
-    snapshots: Iterable[Path]
+    snapshots: Iterable[Path],
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set, Path]]:
     # Local import: inventory_scan imports this module.
     from hub.utils.inventory_scan import complete_snapshot_variants
@@ -905,7 +905,7 @@ def select_gguf_cache_snapshot(
 
 
 def select_gguf_cache_snapshot_for_repo_dir(
-    repo_dir: Path
+    repo_dir: Path,
 ) -> Optional[tuple[list[GgufVariantInfo], bool, set, Path]]:
     """Select only among snapshots belonging to the exact scanned cache directory."""
     from hub.utils.hf_cache_state import snapshot_selection_key

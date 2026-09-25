@@ -14,10 +14,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "studio/frontend/src"
-INDEX_CSS = (SRC / "index.css").read_text(encoding="utf-8")
-STORE = (SRC / "features/settings/stores/appearance-custom-store.ts").read_text(encoding="utf-8")
-SELECT = (SRC / "components/ui/select.tsx").read_text(encoding="utf-8")
-UTILS = (SRC / "lib/utils.ts").read_text(encoding="utf-8")
+INDEX_CSS = (SRC / "index.css").read_text(encoding = "utf-8")
+STORE = (SRC / "features/settings/stores/appearance-custom-store.ts").read_text(encoding = "utf-8")
+SELECT = (SRC / "components/ui/select.tsx").read_text(encoding = "utf-8")
+UTILS = (SRC / "lib/utils.ts").read_text(encoding = "utf-8")
 
 # Raw numeric fontSize props are only allowed where a scaled stylesheet rule (.recharts-text) overrides the presentation
 # attribute at render time.
@@ -165,7 +165,7 @@ def test_icons_follow_the_ui_font_size_itself():
 def test_no_raw_pixel_text_utilities():
     offenders = []
     for path in _frontend_sources():
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding = "utf-8")
         for m in re.finditer(r"(?<![\w-])(?:text|leading)-\[[0-9.]+px\]", text):
             offenders.append(f"{_rel(path)}: {m.group(0)}")
     assert offenders == [], (
@@ -179,7 +179,7 @@ def test_css_font_sizes_reference_the_scale():
     for path in _frontend_sources():
         if path.suffix != ".css":
             continue
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding = "utf-8")
         for m in re.finditer(r"(font-size|line-height):[^;{}]*;", text):
             decl = m.group(0)
             if re.search(r"[0-9.]+(px|rem)", decl) is None:
@@ -201,7 +201,7 @@ def test_inline_font_size_styles_reference_the_scale():
         rel = _rel(path)
         if rel in FONTSIZE_STYLE_ALLOWLIST:
             continue
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding = "utf-8")
         for m in re.finditer(r"fontSize:\s*([\"'][^\"']+[\"']|[0-9.]+)", text):
             value = m.group(1)
             if "--ui-font-scale" in value:
