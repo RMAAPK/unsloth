@@ -47,3 +47,17 @@ process.on('SIGINT', () => {
     backend.kill();
     process.exit();
 });
+
+// Keep-alive auto-ping trigger
+const selfUrl = process.env.RENDER_EXTERNAL_URL;
+if (selfUrl) {
+    console.log(`Setting up 10-minute auto-ping to keep server alive at ...`);
+    setInterval(() => {
+        const http = selfUrl.startsWith('https') ? require('https') : require('http');
+        http.get(selfUrl + '/health', (res) => {
+            console.log(`[Auto-Ping] Pinged  - Status: `);
+        }).on('error', (err) => {
+            console.error(`[Auto-Ping] Failed: `);
+        });
+    }, 10 * 60 * 1000); // 10 minutes
+}
