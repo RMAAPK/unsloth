@@ -274,3 +274,5 @@ tests/security/fixtures/malicious_sdist.tar.gz
 tests/security/fixtures/clean_wheel.whl
 
 test_prompt.txt
+
+test_prompt.py
